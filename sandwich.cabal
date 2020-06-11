@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8d762aeb9eb2a90172633bfba8a74f315686d8bbe3c401c70f610b575cd51156
+-- hash: e4b0334e6afc64e30de7603ee86280d6ee574d5454b67b002fc8a157df85938e
 
 name:           sandwich
 version:        0.1.0.0
@@ -29,6 +29,8 @@ library
   exposed-modules:
       FreeTest
       FreeTestContext
+      FreeTestContextIntroduce
+      FreeTestContextIntroduceGADT
       Lib
   other-modules:
       Paths_sandwich
