@@ -4,11 +4,13 @@ module Main where
 
 import Control.Concurrent.Async
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.RWS as RWS
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State
 import Control.Scheduler
 import Data.Function
+import Data.IORef
 import Test.Sandwich
 import Test.Sandwich.Interpreters.PrettyShow
 import Test.Sandwich.Interpreters.RunTreeScheduler
@@ -35,15 +37,15 @@ topSpec = do
   introduce "Intro a string" (\() -> getLine >>= \s -> return (s :> ())) (\_ -> return ()) $ do
     it "uses the string" $ \(str :> ()) -> do
       putStrLn $ "Got the string: " <> str
-      return $ Result "" Success
+      return Success
 
     it "uses the string again" $ \(str :> ()) -> do
       putStrLn $ "Got the string here: " <> str
-      return $ Result "" Success
+      return Success
 
   it "does a thing" $ \() -> do
     putStrLn "HI"
-    return $ Result "" Success
+    return Success
 
   describe "it does this thing also" $ do
     it "does a sub-test" pending
@@ -61,39 +63,56 @@ topSpec = do
 main = do
   withScheduler_ (ParN 2) $ \sched -> do
     asyncUnit <- async (return ())
-    rt <- runReaderT (runTree topSpec) (asyncUnit, sched)
+    rts <- runReaderT (runTree topSpec) (asyncUnit, sched)
 
-    print rt
+    print rts
 
     runCurses $ do
       setEcho False
       w <- defaultWindow
 
-      greenColorID <- newColorID ColorGreen ColorDefault 1
-      redColorID <- newColorID ColorRed ColorDefault 2
-      yellowColorID <- newColorID ColorYellow ColorDefault 3
-      defaultColorID <- newColorID ColorDefault ColorDefault 4
+      colorMap <- ColorMap
+        <$> newColorID ColorGreen ColorDefault 1
+        <*> newColorID ColorRed ColorDefault 2
+        <*> newColorID ColorCyan ColorDefault 3
+        <*> newColorID ColorYellow ColorDefault 4
+        <*> newColorID ColorBlue ColorDefault 5
+        <*> newColorID ColorDefault ColorDefault 6
 
-      updateWindow w $ do
-        drawBox Nothing Nothing
-
-        drawRunTree rt
-
-      render
+      updateAll w colorMap rts
 
       fix $ \loop -> do
-        getEvent w Nothing >>= \case
-          Nothing -> loop
+        getEvent w (Just 100) >>= \case
+          Nothing -> do
+            updateAll w colorMap rts
+            loop
           Just ev' -> if ev' == EventCharacter 'q' then return () else loop
 
+updateAll w colorMap rts = do
+  rtFixed <- liftIO $ forM rts fixRunTree
+  updateWindow w $ do
+    drawBox Nothing Nothing
+    drawRunTree colorMap rtFixed
+  render
 
-drawRunTree :: [RunTree] -> Update ()
-drawRunTree rt = do
-  runStateT (drawRunTree' rt) (2, 2)
+
+data ColorMap = ColorMap {
+  colorGreen :: ColorID
+  , colorRed :: ColorID
+  , colorOrange :: ColorID
+  , colorYellow :: ColorID
+  , colorBlue :: ColorID
+  , colorDefault :: ColorID
+  }
+
+drawRunTree :: ColorMap -> [RunTreeFixed] -> Update ()
+drawRunTree colorMap rt = do
+  runRWST (drawRunTree' rt) colorMap (2, 2)
   return ()
 
+type DrawM = RWST ColorMap [()] (Integer, Integer) Update
 
-drawRunTree' :: [RunTree] -> StateT (Integer, Integer) Update ()
+drawRunTree' :: [RunTreeFixed] -> DrawM ()
 drawRunTree' rts = do
   (line, ch) <- get
 
@@ -101,19 +120,14 @@ drawRunTree' rts = do
     drawRunTree'' rt
     advanceLine
 
-drawRunTree'' :: RunTree -> StateT (Integer, Integer) Update ()
+drawRunTree'' :: RunTreeFixed -> DrawM ()
 drawRunTree'' (RunTreeSingle {..}) = do
   setPosition
+  setColorByStatus runTreeStatus
   lift $ drawString runTreeLabel
 drawRunTree'' (RunTreeGroup {..}) = do
   setPosition
-  lift $ drawString runTreeLabel
-  advanceLine
-  advanceColumn
-  drawRunTree' runTreeChildren
-  retreatColumn
-drawRunTree'' (RunTreeGroupWithStatus {..}) = do
-  setPosition
+  setColorByStatus runTreeStatus
   lift $ drawString runTreeLabel
   advanceLine
   advanceColumn
@@ -121,6 +135,18 @@ drawRunTree'' (RunTreeGroupWithStatus {..}) = do
   retreatColumn
 
 indent = 4
+
+setColorByStatus status = do
+  ColorMap {..} <- RWS.ask
+
+  let color = case status of
+        NotStarted -> colorDefault
+        Running {} -> colorYellow
+        Done Success -> colorGreen
+        Done (Pending {}) -> colorOrange
+        Done (Failure {}) -> colorRed
+
+  lift $ setColor color
 
 advanceLine = do
   modify $ \(line, ch) -> (line + 1, ch)

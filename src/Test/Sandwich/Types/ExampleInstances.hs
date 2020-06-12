@@ -6,9 +6,9 @@
 
 module Test.Sandwich.Types.ExampleInstances where
 
-import Test.Sandwich.Types.Example
-import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Reader
+import Test.Sandwich.Types.Example
 
 data Dummy = Dummy
 
@@ -24,4 +24,4 @@ instance Example context (context -> IO ()) where
   evaluateExample e = do
     ItemContext {..} <- ask
     liftIO $ e itemContextContext
-    return $ Result "" Success
+    return $ Success

@@ -6,8 +6,8 @@
 module Test.Sandwich.Types.Example where
 
 import Control.Exception
-import Data.Typeable (Typeable)
 import Control.Monad.Trans.Reader
+import Data.Typeable (Typeable)
 import qualified Test.QuickCheck as QC
 
 -- * Example
@@ -33,16 +33,10 @@ type Progress = (Int, Int)
 -- * Results
 
 -- | The result of running an example
-data Result = Result {
-  resultInfo :: String
-, resultStatus :: ResultStatus
-} deriving (Show, Typeable)
-
-data ResultStatus =
-    Success
+data Result =
+  Success
   | Pending (Maybe Location) (Maybe String)
   | Failure (Maybe Location) FailureReason
-  deriving (Show, Typeable)
 
 data FailureReason =
     NoReason

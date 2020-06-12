@@ -2,17 +2,17 @@
 
 module Test.Sandwich.Interpreters.RunTree (runTree) where
 
-import Control.Monad.Free
-import Control.Monad.Trans.Reader
-import Control.Monad.IO.Class
-import Control.Concurrent.QSem
 import Control.Concurrent.Async
+import Control.Concurrent.QSem
 import Control.Exception
-import Test.Sandwich.Types.Spec
+import Control.Monad.Free
+import Control.Monad.IO.Class
+import Control.Monad.Trans.Reader
 import Data.IORef
-import Test.Sandwich.Types.Example
-import Data.Time.Clock
 import qualified Data.List as L
+import Data.Time.Clock
+import Test.Sandwich.Types.Example
+import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
             | Running UTCTime
@@ -57,7 +57,7 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 
   allocJob2 <- liftIO $ async $ do
     wait allocJob
-    return $ Result "" Success
+    return Success
 
   subtree <- withReaderT (const (sem, allocJob)) $ runTree subspec
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ebca679a240f1f4c87fc5030eae52f9e5ea244802d4d2793a56caed31a215a11
+-- hash: 8e5d22f4c7a52f14b23c7a12f14d9fd21ffdb81de2f9e964e29ebbfb83513054
 
 name:           sandwich
 version:        0.1.0.0
@@ -45,6 +45,7 @@ library
     , base >=4.7 && <5
     , free
     , ncurses
+    , random
     , scheduler
     , time
     , transformers
@@ -63,6 +64,7 @@ executable sandwich-exe
     , base >=4.7 && <5
     , free
     , ncurses
+    , random
     , sandwich
     , scheduler
     , time
@@ -83,6 +85,7 @@ test-suite sandwich-test
     , base >=4.7 && <5
     , free
     , ncurses
+    , random
     , sandwich
     , scheduler
     , time
