@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- |
 
@@ -9,24 +10,17 @@ import Data.Typeable (Typeable)
 import Control.Monad.Trans.Reader
 import qualified Test.QuickCheck as QC
 
+-- * Example
 
--- | A type class for examples
-class Example e where
-  type Arg e
-  type Arg e = ()
-  evaluateExample :: e -> ReaderT (ItemContext (Arg e)) IO Result
-
-data Dummy = Dummy
-
-instance Example Dummy where
-  evaluateExample dummy = undefined
+class Example context e where
+  evaluateExample :: e -> ReaderT (ItemContext context) IO Result
 
 -- * Item context
 
 data ItemContext a = ItemContext {
   itemContextParams :: Params
   , itemContextProgressCallback :: Progress -> IO ()
-  , itemContextArg :: a
+  , itemContextContext :: a
   }
 
 data Params = Params {
