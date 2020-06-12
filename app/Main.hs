@@ -2,7 +2,11 @@ module Main where
 
 import Test.Sandwich
 import Test.Sandwich.Types.Spec
+import Control.Monad.Trans.Reader
+import Control.Concurrent.Async
 import Test.Sandwich.Interpreters.PrettyShow
+import Test.Sandwich.Interpreters.RunTreeScheduler
+import Control.Scheduler
 import Test.Sandwich.Types.Example
 
 import qualified Test.Sandwich.Interpreters.NCursesTest as N
@@ -47,4 +51,10 @@ topSpec = do
 
 -- main2 = traverse (\x -> [show x]) topSpec
 
-main = N.main
+main = do
+  withScheduler_ (ParN 2) $ \sched -> do
+    asyncUnit <- async (return ())
+    rt <- runReaderT (runTree topSpec) (asyncUnit, sched)
+    print rt
+  
+-- main = N.main
