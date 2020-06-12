@@ -3,7 +3,14 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: ncurses-0.2.16@sha256:8ad9fe6562a80d28166d76adbac1eb4d40c6511fe4e9272ed6e1166dc2f1cdf1,3575
+    pantry-tree:
+      size: 674
+      sha256: 093bdc85ed518c81724f5b6b81c24ab4ebdd231551861f4feaa43361136f70b7
+  original:
+    hackage: ncurses-0.2.16@sha256:8ad9fe6562a80d28166d76adbac1eb4d40c6511fe4e9272ed6e1166dc2f1cdf1,3575
 snapshots:
 - completed:
     size: 531237
