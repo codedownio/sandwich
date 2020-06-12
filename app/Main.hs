@@ -12,6 +12,7 @@ import Control.Scheduler
 import Data.Function
 import Data.IORef
 import Test.Sandwich
+import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PrettyShow
 import Test.Sandwich.Interpreters.RunTreeScheduler
 import Test.Sandwich.Types.Example
@@ -51,15 +52,15 @@ topSpec = do
     it "does a sub-test" pending
 
   describeParallel "it does this thing also" $ do
-    it "does a sub-test 1" pending
+    it "does a first sub-test 1" pending
     it "does a sub-test 2" pending
     it "does a sub-test 3" pending
 
--- main :: IO ()
--- main = putStrLn $ prettyShow topSpec
 
--- main2 = traverse (\x -> [show x]) topSpec
+mainFilter :: IO ()
+mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
+main :: IO ()
 main = do
   withScheduler_ (ParN 2) $ \sched -> do
     asyncUnit <- async (return ())
