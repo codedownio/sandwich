@@ -27,6 +27,7 @@ data SpecCommand context next where
   Introduce :: (Show intro) =>
             String
             -> (context -> IO (intro :> context))
+            -> ((intro :> context) -> IO ())
             -> Spec (intro :> context) ()
             -> next -> SpecCommand context next
 

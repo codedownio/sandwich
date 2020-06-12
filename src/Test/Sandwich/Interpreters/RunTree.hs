@@ -18,10 +18,10 @@ data RunningTree =
 
 runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT context IO RunningTree
 -- runTree indent (Free (Before l subspec next)) =
-runTree (Free (Introduce l f subspec next)) = do
+runTree (Free (Introduce l alloc cleanup subspec next)) = do
   ctx <- ask
   -- job <- liftIO $ async $ ex undefined
-  ctx' <- liftIO $ f ctx
+  ctx' <- liftIO $ alloc ctx
   subtree <- withReaderT (const ctx') $ runTree subspec
   return $ RunningTreeGroup "" [subtree]
 -- runTree indent (Free (DescribeParallel l subspec next)) =

@@ -12,7 +12,7 @@ prettyShow = prettyShow' 0
 
 prettyShow' :: (Show r, Show context) => Int -> Free (SpecCommand context) r -> String
 prettyShow' indent (Free (Before l f subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Introduce l f subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Introduce l alloc cleanup subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (Describe l subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (DescribeParallel l subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (It l ex next)) = showNode indent l ((return ()) :: Free (SpecCommand ()) ()) next
