@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f24c7b368dd40933605684aa72916059d0c172948df7917e3ec0483cfd29fa9
+-- hash: a330bea4e20551e5dae92073e7e0ddedd4c089dd932035ed51a31827189b19b6
 
 name:           sandwich
 version:        0.1.0.0
@@ -32,8 +32,10 @@ library
       FreeTestContextIntroduce
       Lib
       Test.Sandwich
+      Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Types.Example
       Test.Sandwich.Types.ExampleInstances
+      Test.Sandwich.Types.Spec
   other-modules:
       Paths_sandwich
   hs-source-dirs:
