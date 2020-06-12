@@ -19,11 +19,29 @@ data (a :: *) :> (b :: *) = a :> b
   deriving Show
 
 data SpecCommand context next where
-  Before :: String -> Spec context () -> next -> SpecCommand context next
-  Introduce :: (Show intro) => String -> (context -> IO (intro :> context)) -> Spec (intro :> context) () -> next -> SpecCommand context next
-  Describe :: String -> Spec context () -> next -> SpecCommand context next
-  DescribeParallel :: String -> Spec context () -> next -> SpecCommand context next
-  It :: (HasCallStack) => String -> (context -> IO Result) -> next -> SpecCommand context next
+  Before :: String
+         -> (context -> IO ())
+         -> Spec context ()
+         -> next -> SpecCommand context next
+
+  Introduce :: (Show intro) =>
+            String
+            -> (context -> IO (intro :> context))
+            -> Spec (intro :> context) ()
+            -> next -> SpecCommand context next
+
+  Describe :: String
+           -> Spec context ()
+           -> next -> SpecCommand context next
+
+  DescribeParallel :: String
+                   -> Spec context ()
+                   -> next -> SpecCommand context next
+
+  It :: (HasCallStack)
+     => String
+     -> (context -> IO Result)
+     -> next -> SpecCommand context next
 
 deriving instance Functor (SpecCommand n)
 

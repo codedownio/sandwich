@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a330bea4e20551e5dae92073e7e0ddedd4c089dd932035ed51a31827189b19b6
+-- hash: 496ed340b0388d49c023db1a86446abe3b7af2513316d97f98bf5cd12d42fc0e
 
 name:           sandwich
 version:        0.1.0.0
@@ -27,12 +27,9 @@ source-repository head
 
 library
   exposed-modules:
-      FreeTest
-      FreeTestContext
-      FreeTestContextIntroduce
-      Lib
       Test.Sandwich
       Test.Sandwich.Interpreters.PrettyShow
+      Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Types.Example
       Test.Sandwich.Types.ExampleInstances
       Test.Sandwich.Types.Spec
@@ -42,6 +39,7 @@ library
       src
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , free
     , transformers
@@ -56,6 +54,7 @@ executable sandwich-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , free
     , sandwich
@@ -72,6 +71,7 @@ test-suite sandwich-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , free
     , sandwich
