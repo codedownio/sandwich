@@ -19,6 +19,8 @@ import Test.Sandwich.Types.Example
 data (a :: *) :> (b :: *) = a :> b
   deriving Show
 
+type ActionWith a = a -> IO ()
+
 data SpecCommand context next where
   Before :: String
          -> (context -> IO ())
@@ -29,6 +31,11 @@ data SpecCommand context next where
             String
             -> (context -> IO (intro :> context))
             -> ((intro :> context) -> IO ())
+            -> Spec (intro :> context) ()
+            -> next -> SpecCommand context next
+
+  Around :: (Show intro) => String
+            -> (ActionWith (intro :> context) -> IO ())
             -> Spec (intro :> context) ()
             -> next -> SpecCommand context next
 
