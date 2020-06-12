@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 496ed340b0388d49c023db1a86446abe3b7af2513316d97f98bf5cd12d42fc0e
+-- hash: 5ca6cdbad4aa8c660dd229c33e86b88ec04da831b167b36185d7dfa04f2487d6
 
 name:           sandwich
 version:        0.1.0.0
@@ -42,6 +42,7 @@ library
     , async
     , base >=4.7 && <5
     , free
+    , time
     , transformers
   default-language: Haskell2010
 
@@ -58,6 +59,7 @@ executable sandwich-exe
     , base >=4.7 && <5
     , free
     , sandwich
+    , time
     , transformers
   default-language: Haskell2010
 
@@ -75,5 +77,6 @@ test-suite sandwich-test
     , base >=4.7 && <5
     , free
     , sandwich
+    , time
     , transformers
   default-language: Haskell2010

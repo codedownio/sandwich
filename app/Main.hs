@@ -37,3 +37,5 @@ topSpec = do
 
 main :: IO ()
 main = putStrLn $ prettyShow topSpec
+
+main2 = traverse (\x -> [show x]) topSpec

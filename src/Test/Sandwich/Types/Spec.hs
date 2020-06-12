@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -45,6 +46,8 @@ data SpecCommand context next where
      -> next -> SpecCommand context next
 
 deriving instance Functor (SpecCommand n)
+deriving instance Foldable (SpecCommand n)
+deriving instance Traversable (SpecCommand n)
 
 type Spec context = Free (SpecCommand context)
 
