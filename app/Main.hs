@@ -71,21 +71,13 @@ main = do
 
       greenColorID <- newColorID ColorGreen ColorDefault 1
       redColorID <- newColorID ColorRed ColorDefault 2
+      yellowColorID <- newColorID ColorYellow ColorDefault 3
+      defaultColorID <- newColorID ColorDefault ColorDefault 4
 
       updateWindow w $ do
         drawBox Nothing Nothing
 
         drawRunTree rt
-        -- moveCursor 1 1
-        -- setColor greenColorID
-        -- drawString "Hello world!"
-
-        -- moveCursor 3 1
-        -- setColor redColorID
-        -- drawString "(press q to quit)"
-
-        -- moveCursor 4 1
-        -- drawLineH (Just (Glyph '-' [])) 999
 
       render
 
@@ -97,11 +89,11 @@ main = do
 
 drawRunTree :: [RunTree] -> Update ()
 drawRunTree rt = do
-  runStateT (drawRunTree' rt) (1, 1)
+  runStateT (drawRunTree' rt) (2, 2)
   return ()
 
 
-drawRunTree' :: [RunTree] -> StateT (Int, Int) Update ()
+drawRunTree' :: [RunTree] -> StateT (Integer, Integer) Update ()
 drawRunTree' rts = do
   (line, ch) <- get
 
@@ -109,16 +101,19 @@ drawRunTree' rts = do
     drawRunTree'' rt
     advanceLine
 
-drawRunTree'' :: RunTree -> StateT (Int, Int) Update ()
+drawRunTree'' :: RunTree -> StateT (Integer, Integer) Update ()
 drawRunTree'' (RunTreeSingle {..}) = do
+  setPosition
   lift $ drawString runTreeLabel
 drawRunTree'' (RunTreeGroup {..}) = do
+  setPosition
   lift $ drawString runTreeLabel
   advanceLine
   advanceColumn
   drawRunTree' runTreeChildren
   retreatColumn
 drawRunTree'' (RunTreeGroupWithStatus {..}) = do
+  setPosition
   lift $ drawString runTreeLabel
   advanceLine
   advanceColumn
@@ -127,6 +122,16 @@ drawRunTree'' (RunTreeGroupWithStatus {..}) = do
 
 indent = 4
 
-advanceLine = modify $ \(line, ch) -> (line + 1, ch)
-advanceColumn = modify $ \(line, ch) -> (line, ch + indent)
-retreatColumn = modify $ \(line, ch) -> (line, ch - indent)
+advanceLine = do
+  modify $ \(line, ch) -> (line + 1, ch)
+  setPosition
+advanceColumn = do
+  modify $ \(line, ch) -> (line, ch + indent)
+  setPosition
+retreatColumn = do
+  modify $ \(line, ch) -> (line, ch - indent)
+  setPosition
+
+setPosition = do
+  (line, ch) <- get
+  lift $ moveCursor line ch
