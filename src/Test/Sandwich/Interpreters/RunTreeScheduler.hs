@@ -26,31 +26,12 @@ import Data.IORef
 import Data.Time.Clock
 import System.Random
 import Test.Sandwich.Types.Example
+import Test.Sandwich.Types.Options
+import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-data Status = NotStarted
-            | Running UTCTime
-            | Done Result
 
-type RunTreeStatus = IORef Status
-
-instance Show RunTreeStatus where
-  show _ = "STATUS"
-
-data RunTreeWithStatus a =
-  RunTreeGroup { runTreeLabel :: String
-               , runTreeStatus :: a
-               , runTreeChildren :: [RunTreeWithStatus a]
-               }
-  | RunTreeSingle { runTreeLabel :: String
-                  , runTreeStatus :: a
-                  }
-  deriving (Show, Functor)
-
-type RunTree = RunTreeWithStatus (RunTreeStatus)
-type RunTreeFixed = RunTreeWithStatus (Status)
-
-runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (Async context, Scheduler IO ()) IO [RunTree]
+runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (Async context, Scheduler IO (), Options) IO [RunTree]
 
 runTree (Free (Before l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
@@ -65,8 +46,8 @@ runTree (Free (Around l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
   liftIO $ async $ runRandomly status
   let asyncContext = undefined
-  (_, sched) <- ask
-  subtree <- withReaderT (const (asyncContext, sched)) $ runTree subspec
+  (_, sched, opts) <- ask
+  subtree <- withReaderT (const (asyncContext, sched, opts)) $ runTree subspec
   let tree = RunTreeGroup l status subtree
   rest <- runTree next
   return (tree : rest)
@@ -75,8 +56,8 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
   status <- liftIO $ newIORef NotStarted
   liftIO $ async $ runRandomly status
   let asyncContext = undefined
-  (_, sched) <- ask
-  subtree <- withReaderT (const (asyncContext, sched)) $ runTree subspec
+  (_, sched, opts) <- ask
+  subtree <- withReaderT (const (asyncContext, sched, opts)) $ runTree subspec
   let tree = RunTreeGroup l status subtree
   rest <- runTree next
   return (tree : rest)

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1760fda65ea833c376096b31d31f85dea0b3676326894dc99d546f25cf4c91e8
+-- hash: 378d23981ebed286d58e7f64ef54332eda98b81e78e33ea36109886e2a51abaa
 
 name:           sandwich
 version:        0.1.0.0
@@ -28,13 +28,16 @@ source-repository head
 library
   exposed-modules:
       Test.Sandwich
+      Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Interpreters.FilterTree
-      Test.Sandwich.Interpreters.NCursesTest
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Interpreters.RunTreeScheduler
       Test.Sandwich.Types.Example
       Test.Sandwich.Types.ExampleInstances
+      Test.Sandwich.Types.Formatter
+      Test.Sandwich.Types.Options
+      Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec
   other-modules:
       Paths_sandwich
@@ -44,12 +47,16 @@ library
       QuickCheck
     , async
     , base >=4.7 && <5
+    , brick
     , free
-    , ncurses
+    , microlens
     , random
     , scheduler
     , time
     , transformers
+    , unix
+    , vector
+    , vty
   default-language: Haskell2010
 
 executable sandwich-exe
@@ -63,13 +70,17 @@ executable sandwich-exe
       QuickCheck
     , async
     , base >=4.7 && <5
+    , brick
     , free
-    , ncurses
+    , microlens
     , random
     , sandwich
     , scheduler
     , time
     , transformers
+    , unix
+    , vector
+    , vty
   default-language: Haskell2010
 
 test-suite sandwich-test
@@ -84,11 +95,15 @@ test-suite sandwich-test
       QuickCheck
     , async
     , base >=4.7 && <5
+    , brick
     , free
-    , ncurses
+    , microlens
     , random
     , sandwich
     , scheduler
     , time
     , transformers
+    , unix
+    , vector
+    , vty
   default-language: Haskell2010

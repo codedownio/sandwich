@@ -20,15 +20,19 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/sandwich#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- QuickCheck
 - async
+- base >= 4.7 && < 5
+- brick
 - free
-- ncurses
+- microlens
 - random
 - scheduler
 - time
 - transformers
-- QuickCheck
+- unix
+- vector
+- vty
 
 library:
   source-dirs: src
