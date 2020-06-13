@@ -1,16 +1,8 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE LambdaCase #-}
 module Main where
 
-import Brick
 import Control.Concurrent.Async
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.RWS as RWS
 import Control.Monad.Trans.Reader
 import Control.Scheduler
-import Data.Function
 import System.Posix.Signals
 import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
@@ -67,7 +59,6 @@ runSandwich options f spec = do
   withScheduler_ (ParN 2) $ \sched -> do
     asyncUnit <- async $ return ()
     rts <- runReaderT (runTree topSpec) (asyncUnit, sched, options)
-    return (rts, sched)
 
     formatterAsync <- async $ runFormatter f rts
   
