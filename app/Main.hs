@@ -28,7 +28,7 @@ topSpec = do
     it "does 1" pending
     it "does 2" pending
   
-  introduce "Intro a string" (\() -> getLine >>= \s -> return (s :> ())) (\_ -> return ()) $ do
+  introduce "Intro a string" (\() -> getLine) (\_ -> return ()) $ do
     it "uses the string" $ \(str :> ()) -> do
       putStrLn $ "Got the string: " <> str
       return Success

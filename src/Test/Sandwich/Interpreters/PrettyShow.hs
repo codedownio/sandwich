@@ -1,10 +1,11 @@
+{-# LANGUAGE FlexibleInstances #-}
 -- |
 
 module Test.Sandwich.Interpreters.PrettyShow (prettyShow) where
 
 import Control.Monad.Free
-import Test.Sandwich.Types.Spec
 import qualified Data.List as L
+import Test.Sandwich.Types.Spec
 
 -- | Pretty show a spec tree
 prettyShow :: Free (SpecCommand context) r -> String
@@ -30,4 +31,3 @@ showNode indent label subspec next = L.intercalate "\n" $ filter (/= "") [
   , prettyShow' (indent + indentSize) subspec
   , prettyShow' indent next
   ]
-
