@@ -17,17 +17,18 @@ import Test.Sandwich.Types.Spec
 
 topSpec :: TopSpec
 topSpec = do
-  beforeEach "before each" (\() -> putStrLn "Before") $ do
-    it "does the first thing" pending
-    it "does the second thing" pending
-    it "does the third thing" pending
-    describe "nested stuff" $ do
-      it "does a nested thing" pending
+  afterEach "after each" (\() -> putStrLn "after") $ do
+    beforeEach "before each" (\() -> putStrLn "before") $ do
+      it "does the first thing" pending
+      it "does the second thing" pending
+      it "does the third thing" pending
+      describe "nested stuff" $ do
+        it "does a nested thing" pending
 
-  around "some around" (\action -> action ()) $ do
+  around "some around" (\context action -> putStrLn "around1" >> action >> putStrLn "around2") $ do
     it "does 1" pending
     it "does 2" pending
-  
+
   introduce "Intro a string" (\() -> getLine) (\_ -> return ()) $ do
     it "uses the string" $ \(str :> ()) -> do
       putStrLn $ "Got the string: " <> str
@@ -71,7 +72,6 @@ mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 mainPretty :: IO ()
 mainPretty = putStrLn $ prettyShow topSpec
 
-  
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
   withScheduler_ (ParN 2) $ \sched -> do

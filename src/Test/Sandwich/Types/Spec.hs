@@ -43,7 +43,7 @@ data SpecCommand context next where
                                , next :: next } -> SpecCommand context next
 
   Around :: { label :: String
-            , actionWith :: (ActionWith context -> IO ())
+            , actionWith :: (context -> IO () -> IO ())
             , subspec :: Spec context ()
             , next :: next } -> SpecCommand context next
 
@@ -121,8 +121,34 @@ beforeEach _ _ (Pure x) = Pure x
 beforeEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (beforeEach l f' subspec) (beforeEach l f next))
   where f' (_ :> context) = f context
 
-afterEach :: MonadFree (SpecCommand context) m => String -> (context -> IO ()) -> Spec context () -> m ()
-afterEach = undefined
+-- | Perform an action after each example in a given spec tree.
+afterEach ::
+  String
+  -> (context -> IO ())
+  -> Spec context ()
+  -> SpecM context ()
+afterEach l f (Free x@(Before {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(After {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(Around {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(Describe {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
+afterEach _ _ (Pure x) = Pure x
+afterEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (afterEach l f' subspec) (afterEach l f next))
+  where f' (_ :> context) = f context
 
-aroundEach :: MonadFree (SpecCommand context) m => String -> (ActionWith context -> IO ()) -> Spec context () -> m ()
-aroundEach = undefined
+aroundEach ::
+  String
+  -> (context -> IO () -> IO ())
+  -> Spec context ()
+  -> SpecM context ()
+aroundEach l f (Free x@(Before {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(After {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(Around {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(Describe {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(It {..})) = Free (Around l f (Free (x { next = Pure () })) (aroundEach l f next))
+aroundEach _ _ (Pure x) = Pure x
+aroundEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (aroundEach l f' subspec) (aroundEach l f next))
+  where
+    f' (_ :> context) = f context
