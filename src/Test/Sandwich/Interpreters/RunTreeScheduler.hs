@@ -41,6 +41,13 @@ runTree (Free (Before l f subspec next)) = do
   rest <- runTree next
   return (tree : rest)
   
+runTree (Free (After l f subspec next)) = do
+  status <- liftIO $ newIORef NotStarted
+  liftIO $ async $ runRandomly status
+  subtree <- runTree subspec
+  let tree = RunTreeGroup l status subtree
+  rest <- runTree next
+  return (tree : rest)
 
 runTree (Free (Around l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
@@ -79,14 +86,15 @@ runTree (Free (DescribeParallel l subspec next)) = do
   return (tree : rest)
 
 runTree (Free (It l ex next)) = do
-  -- (ctxAsync, sched) <- ask
+  (ctxAsync, sched, opts) <- ask
   status <- liftIO $ newIORef NotStarted
   liftIO $ async $ runRandomly status
+
   -- liftIO $ async $ do
   --   ctx <- wait ctxAsync
   --   scheduleWork sched $ do
   --     startTime <- liftIO getCurrentTime
-  --     liftIO $ atomicWriteIORef status (Run startTime)
+  --     liftIO $ atomicWriteIORef status (Running startTime)
   --     ret <- ex ctx
   --     atomicWriteIORef status (Done ret)
 
@@ -117,15 +125,3 @@ runRandomly status = do
       seconds <- randomRIO (1, 10)
       threadDelay (seconds * 1000000)
 
-fixRunTree :: RunTree -> IO RunTreeFixed
-fixRunTree (RunTreeSingle {..}) = do
-  status <- readIORef runTreeStatus
-  return $ RunTreeSingle {runTreeStatus=status, ..}
-fixRunTree (RunTreeGroup {..}) = do
-  status <- readIORef runTreeStatus
-  children <- forM runTreeChildren fixRunTree
-  return $ RunTreeGroup {
-    runTreeStatus = status
-    , runTreeChildren = children
-    , ..
-    }

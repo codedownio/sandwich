@@ -37,6 +37,7 @@ data Result =
   Success
   | Pending (Maybe Location) (Maybe String)
   | Failure (Maybe Location) FailureReason
+  deriving Show
 
 data FailureReason =
     NoReason
