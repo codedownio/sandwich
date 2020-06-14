@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -25,36 +26,38 @@ data (a :: *) :> (b :: *) = a :> b
 type ActionWith a = a -> IO ()
 
 data SpecCommand context next where
-  Before :: String
-         -> (context -> IO ())
-         -> Spec context ()
-         -> next -> SpecCommand context next
+  Before :: { label :: String
+            , action :: context -> IO ()
+            , subspec :: Spec context ()
+            , next :: next } -> SpecCommand context next
 
-  Introduce :: (Show intro) =>
-            String
-            -> (context -> IO intro)
-            -> ((intro :> context) -> IO ())
-            -> Spec (intro :> context) ()
-            -> next -> SpecCommand context next
+  After :: { label :: String
+           , action :: context -> IO ()
+           , subspec :: Spec context ()
+           , next :: next } -> SpecCommand context next
 
-  Around :: (Show intro) =>
-            String
-            -> (ActionWith (intro :> context) -> IO ())
-            -> Spec (intro :> context) ()
-            -> next -> SpecCommand context next
+  Introduce :: (Show intro) => { label :: String
+                               , allocate :: (context -> IO intro)
+                               , cleanup :: ((intro :> context) -> IO ())
+                               , subspecAugmented :: Spec (intro :> context) ()
+                               , next :: next } -> SpecCommand context next
 
-  Describe :: String
-           -> Spec context ()
-           -> next -> SpecCommand context next
+  Around :: { label :: String
+            , actionWith :: (ActionWith context -> IO ())
+            , subspec :: Spec context ()
+            , next :: next } -> SpecCommand context next
 
-  DescribeParallel :: String
-                   -> Spec context ()
-                   -> next -> SpecCommand context next
+  Describe :: { label :: String
+              , subspec :: Spec context ()
+              , next :: next } -> SpecCommand context next
 
-  It :: (HasCallStack)
-     => String
-     -> (context -> IO Result)
-     -> next -> SpecCommand context next
+  DescribeParallel :: { label :: String
+                      , subspec :: Spec context ()
+                      , next :: next } -> SpecCommand context next
+
+  It :: (HasCallStack) => { label :: String
+                          , example :: (context -> IO Result)
+                          , next :: next } -> SpecCommand context next
 
 deriving instance Functor (SpecCommand n)
 deriving instance Foldable (SpecCommand n)
@@ -62,14 +65,64 @@ deriving instance Traversable (SpecCommand n)
 
 type Spec context = Free (SpecCommand context)
 
+type SpecWith context = Spec context ()
+
+-- data SpecM context a = Free (SpecWith context) a
+type SpecM context a = Free (SpecCommand context) a
+
 type TopSpec = Spec () ()
 
 makeFree_ ''SpecCommand
 
 instance (Show context) => Show1 (SpecCommand context) where
-  liftShowsPrec sp _ d (Before s f subspec x) = showsUnaryWith sp [i|Before[#{s}]<#{show subspec}>|] d x
-  liftShowsPrec sp _ d (Introduce s alloc clean subspec x) = showsUnaryWith sp [i|Introduce[#{s}]<#{show subspec}>|] d x
-  liftShowsPrec sp _ d (Around s f subspec x) = showsUnaryWith sp [i|Around[#{s}]<#{show subspec}>|] d x
-  liftShowsPrec sp _ d (Describe s subspec x) = showsUnaryWith sp [i|Describe[#{s}]<#{show subspec}>|] d x
-  liftShowsPrec sp _ d (DescribeParallel s subspec x) = showsUnaryWith sp [i|Describe[#{s}]<#{show subspec}>|] d x
-  liftShowsPrec sp _ d (It s ex x) = showsUnaryWith sp [i|It[#{s}]|] d x
+  liftShowsPrec sp _ d (Before {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Describe {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (DescribeParallel {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (It {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
+
+-- First write beforeEach/afterEach to demonstrate push down approach
+-- Then think about how/whether we can to introduceEach / aroundEach
+
+
+-- | Perform an action before a given spec tree.
+before :: 
+  String
+  -- ^ Label for this context manager
+  -> (context -> IO ())
+  -- ^ Action to perform
+  -> SpecWith context
+  -- ^ Child spec tree
+  -> SpecM context ()
+
+-- before :: MonadFree (SpecCommand context) m =>
+--   String
+--   -- ^ Label for this context manager
+--   -> (context -> IO ())
+--   -- ^ Action to perform
+--   -> SpecWith context
+--   -- ^ Child spec tree
+--   -> m ()
+
+-- | Perform an action before each example in a given spec tree.
+beforeEach ::
+  String
+  -> (context -> IO ())
+  -> Spec context ()
+  -> SpecM context ()
+beforeEach l f (Free x@(Before {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(After {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(Around {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(Describe {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
+beforeEach _ _ (Pure x) = Pure x
+beforeEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (beforeEach l f' subspec) (beforeEach l f next))
+  where f' (_ :> context) = f context
+
+afterEach :: MonadFree (SpecCommand context) m => String -> (context -> IO ()) -> Spec context () -> m ()
+afterEach = undefined
+
+aroundEach :: MonadFree (SpecCommand context) m => String -> (ActionWith context -> IO ()) -> Spec context () -> m ()
+aroundEach = undefined

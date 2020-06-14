@@ -17,14 +17,14 @@ import Test.Sandwich.Types.Spec
 
 topSpec :: TopSpec
 topSpec = do
-  before "asdf" (\() -> putStrLn "Before") $ do
+  beforeEach "before each" (\() -> putStrLn "Before") $ do
     it "does the first thing" pending
     it "does the second thing" pending
     it "does the third thing" pending
     describe "nested stuff" $ do
       it "does a nested thing" pending
 
-  around "some around" (\action -> action (() :> ())) $ do
+  around "some around" (\action -> action ()) $ do
     it "does 1" pending
     it "does 2" pending
   
@@ -50,8 +50,26 @@ topSpec = do
     it "does a sub-test 3" pending
 
 
+
+single :: TopSpec
+single = it "does the first thing" pending
+
+double :: TopSpec
+double = do
+  it "does the first thing" pending
+  it "does the second thing" pending
+
+singleWrapped :: TopSpec
+singleWrapped = beforeEach "before each" (\() -> putStrLn "before") $ single
+
+doubleWrapped :: TopSpec
+doubleWrapped = beforeEach "before each" (\() -> putStrLn "before") $ double
+  
 mainFilter :: IO ()
 mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
+
+mainPretty :: IO ()
+mainPretty = putStrLn $ prettyShow topSpec
 
   
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
