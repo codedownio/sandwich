@@ -63,8 +63,16 @@ sleepThenFail _ = do
   return $ Failure Nothing (ExpectedButGot "2" "3")
   
 simple :: TopSpec
-simple = do
+simple = describe "implicit outer" $ do
   it "does the first thing" sleepThenSucceed
+  describe "should happen sequentially" $ do
+    it "sequential 1" sleepThenSucceed
+    it "sequential 2" sleepThenSucceed
+    it "sequential 3" sleepThenSucceed
+  describeParallel "should happen in parallel" $ do
+    it "sequential 1" sleepThenSucceed
+    it "sequential 2" sleepThenSucceed
+    it "sequential 3" sleepThenSucceed
   it "does the second thing" sleepThenFail
   it "does the third thing" sleepThenSucceed
 

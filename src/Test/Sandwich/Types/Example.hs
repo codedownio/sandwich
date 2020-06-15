@@ -52,3 +52,7 @@ data Location = Location {
 , locationLine :: Int
 , locationColumn :: Int
 } deriving (Eq, Show, Read)
+
+isFailure :: Result -> Bool
+isFailure (Failure {}) = True
+isFailure _ = False

@@ -29,11 +29,11 @@ data RunTreeWithStatus a =
                , runTreeStatus :: a
                , runTreeIsContextManager :: Bool
                , runTreeChildren :: [RunTreeWithStatus a]
-               , runTreeAsync :: Async ()
+               , runTreeAsync :: Async Result
                }
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeStatus :: a
-                  , runTreeAsync :: Async ()
+                  , runTreeAsync :: Async Result
                   }
   deriving (Functor)
 
