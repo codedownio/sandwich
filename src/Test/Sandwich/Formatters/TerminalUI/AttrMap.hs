@@ -23,6 +23,8 @@ mainAttrMap = attrMap V.defAttr [
   , (pendingAttr, fg V.yellow)
   , (successAttr, fg V.green)
   , (failureAttr, fg V.red)
+
+  , (hotkeyAttr, fg V.blue)
   ]
 
 selectedAttr :: AttrName
@@ -42,6 +44,9 @@ successAttr = "success"
 
 failureAttr :: AttrName
 failureAttr = "failure"
+
+hotkeyAttr :: AttrName
+hotkeyAttr = "hotkey"
 
 chooseAttr :: Status -> AttrName
 chooseAttr NotStarted = notStartedAttr

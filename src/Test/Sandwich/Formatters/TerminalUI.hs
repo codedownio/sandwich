@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,8 +21,10 @@ import Control.Monad
 import qualified Data.List as L
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
+import Lens.Micro
+import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
--- import Lens.Micro ((^.))
+import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 
@@ -41,8 +45,9 @@ runApp :: TerminalUIFormatter -> [RunTree] -> IO ()
 runApp (TerminalUIFormatter {..}) rts = do
   rtsFixed <- mapM fixRunTree rts
   let initialState = AppState {
-        showContextManagers = showContextManagers
-        , runTree = rtsFixed
+        _appShowContextManagers = showContextManagers
+        , _appRunTree = rtsFixed
+        , _appMainList = treeToList rtsFixed
         }
 
   eventChan <- newBChan 10
@@ -65,50 +70,52 @@ app = App {
   , appAttrMap = const mainAttrMap
   }
 
-data AppState = AppState {
-  showContextManagers :: Bool
-  , runTree :: [RunTreeFixed]
-  }
-
 drawUI :: AppState -> [Widget ()]
-drawUI (AppState {..}) = [ui]
+drawUI app = [ui]
   where
     ui = vBox [vLimitPercent 10 topBox
               , mainList]
 
-    topBox = vBox [str "This text is at the top.", fill ' ', hBorder]
+    topBox = vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
+                  , fill ' '
+                  , hBorder]
 
     mainList = vBox [ hCenter box
                     -- , str " "
                     , hCenter $ str "Press Esc to exit."
                     ]
 
-    box = padAll 1 $ L.renderList listDrawElement True (L.list () (runTreesToList runTree) 1)
+    box = padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
 
     listDrawElement :: Bool -> MainListElem -> Widget ()
     listDrawElement True (MainListElem {..}) = withAttr selectedAttr $ withAttr (chooseAttr status) (str label)
     listDrawElement False (MainListElem {..}) = withAttr (chooseAttr status) (str label)
 
+toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
+toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
+
+keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
 
 appEvent :: AppState -> BrickEvent () AppEvent -> EventM () (Next AppState)
-appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s { runTree = newTree }
-appEvent s (VtyEvent e) =
+appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
+  & appRunTree .~ newTree
+  & appMainList %~ L.listReplace (runTreesToList newTree) (L.listSelected $ s ^. appMainList)
+
+appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey V.KEsc [] -> halt s
-    ev -> continue s
+    V.EvKey (V.KChar 'q') [] -> halt s
+
+    V.EvKey (V.KChar 'c') [] -> continue $ s & appShowContextManagers %~ not
+
+    ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
+
 appEvent s _ = continue s
-
--- * Events
-
-data AppEvent = RunTreeUpdated [RunTreeFixed]
 
 -- * Main list
 
-data MainListElem = MainListElem {
-  label :: String
-  , folded :: Bool
-  , status :: Status
-  } deriving Show
+treeToList :: [RunTreeFixed] -> L.GenericList () Vec.Vector MainListElem
+treeToList runTree = L.list () (runTreesToList runTree) 1
 
 runTreesToList :: [RunTreeFixed] -> Vec.Vector MainListElem
 runTreesToList = runTreesToList' 0

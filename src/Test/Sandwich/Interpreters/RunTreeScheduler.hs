@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -12,6 +13,7 @@ module Test.Sandwich.Interpreters.RunTreeScheduler (
   , RunTreeFixed
   , Status(..)
   , RunTreeStatus
+  , RunTreeContext(..)
   , fixRunTree
   ) where
 
@@ -20,6 +22,7 @@ import Control.Concurrent.Async
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Reader
 import Control.Scheduler
 import Data.IORef
@@ -30,65 +33,75 @@ import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
+data RunTreeContext context = RunTreeContext {
+  runTreeContext :: Async context
+  , runTreeOptions :: Options
+  }
 
-runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (Async context, Scheduler IO (), Options) IO [RunTree]
+type ScheduleMonad context = ReaderT (RunTreeContext context) IO
 
-runTree (Free (Before l f subspec next)) = do
+runTree :: (Show r, Show context) => Free (SpecCommand context) r -> Scheduler IO a -> (ScheduleMonad context) [RunTree]
+
+runTree (Free (Before l f subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
-  subtree <- runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+
+  groupAsync <- liftIO $ async $ runRandomly status
+  -- scheduleWork sched $ do
+    -- (ctx, opts) <- ask
+
+  subtree <- runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
   
-runTree (Free (After l f subspec next)) = do
+runTree (Free (After l f subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
-  subtree <- runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+  groupAsync <- liftIO $ async $ runRandomly status
+  subtree <- runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Free (Around l f subspec next)) = do
+runTree (Free (Around l f subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
+  groupAsync <- liftIO $ async $ runRandomly status
   let asyncContext = undefined
-  (_, sched, opts) <- ask
-  subtree <- withReaderT (const (asyncContext, sched, opts)) $ runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+  rtc@RunTreeContext {..} <- ask
+  subtree <- withReaderT (const rtc) $ runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Free (Introduce l alloc cleanup subspec next)) = do
+runTree (Free (Introduce l alloc cleanup subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
+  groupAsync <- liftIO $ async $ runRandomly status
   let asyncContext = undefined
-  (_, sched, opts) <- ask
-  subtree <- withReaderT (const (asyncContext, sched, opts)) $ runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+  rtc@RunTreeContext {..} <- ask
+  subtree <- withReaderT (const (RunTreeContext {})) $ runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Free (Describe l subspec next)) = do
+runTree (Free (Describe l subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
-  subtree <- runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+  groupAsync <- liftIO $ async $ runRandomly status
+  subtree <- runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Free (DescribeParallel l subspec next)) = do
+runTree (Free (DescribeParallel l subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
-  subtree <- runTree subspec
-  let tree = RunTreeGroup l status subtree
-  rest <- runTree next
+  groupAsync <- liftIO $ async $ runRandomly status
+  subtree <- runTree subspec sched
+  let tree = RunTreeGroup l status subtree groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Free (It l ex next)) = do
-  (ctxAsync, sched, opts) <- ask
+runTree (Free (It l ex next)) sched = do
+  RunTreeContext {..} <- ask
   status <- liftIO $ newIORef NotStarted
-  liftIO $ async $ runRandomly status
+  groupAsync <- liftIO $ async $ runRandomly status
 
   -- liftIO $ async $ do
   --   ctx <- wait ctxAsync
@@ -98,11 +111,11 @@ runTree (Free (It l ex next)) = do
   --     ret <- ex ctx
   --     atomicWriteIORef status (Done ret)
 
-  let tree = RunTreeSingle l status
-  rest <- runTree next
+  let tree = RunTreeSingle l status groupAsync
+  rest <- runTree next sched
   return (tree : rest)
 
-runTree (Pure _) = return []
+runTree (Pure _) sched = return []
 
 
 

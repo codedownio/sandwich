@@ -6,6 +6,7 @@
 
 module Test.Sandwich.Types.RunTree where
 
+import Control.Concurrent.Async
 import Control.Monad
 import Data.IORef
 import Data.Time.Clock
@@ -25,11 +26,13 @@ data RunTreeWithStatus a =
   RunTreeGroup { runTreeLabel :: String
                , runTreeStatus :: a
                , runTreeChildren :: [RunTreeWithStatus a]
+               , runTreeAsync :: Async ()
                }
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeStatus :: a
+                  , runTreeAsync :: Async ()
                   }
-  deriving (Show, Functor)
+  deriving (Functor)
 
 type RunTree = RunTreeWithStatus (RunTreeStatus)
 type RunTreeFixed = RunTreeWithStatus (Status)

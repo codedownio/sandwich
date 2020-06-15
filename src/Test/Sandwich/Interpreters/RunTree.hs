@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 -- |
 
 module Test.Sandwich.Interpreters.RunTree (runTree) where
@@ -12,16 +13,39 @@ import Data.IORef
 import qualified Data.List as L
 import Data.Time.Clock
 import Test.Sandwich.Types.Example
+import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
 withSemaphore sem = bracket_ (waitQSem sem) (signalQSem sem)
 
-runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (QSem, Async context) IO RunTree
-runTree = undefined
+waitMany :: [Async a] -> Async ()
+waitMany = undefined
 
--- runTree indent (Free (Before l subspec next)) =
+data RunTreeContext context = RunTreeContext {
+  runTreeContext :: Async context
+  , runTreeOptions :: Options
+  }
+  
+runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
+
+runTree (Free (Before l f subspec next)) = do
+  status <- liftIO $ newIORef NotStarted
+
+  rtc@RunTreeContext {..} <- ask
+
+  newContextAsync <- liftIO $ async $ do
+    ctx <- wait runTreeContext
+    f ctx
+    return ctx
+
+  subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
+  
+  let tree = RunTreeGroup l status subtree (waitMany $ fmap runTreeAsync subtree)
+  rest <- runTree next
+  return (tree : rest)
+
 
 -- runTree (Free (Introduce l alloc cleanup subspec next)) = do
 --   (sem, ctxAsync) <- ask
@@ -68,7 +92,23 @@ runTree = undefined
 --       return ret
 --   return $ RunningTreeItem l (status, job)
 
--- runTree (Free (Describe l subspec next)) = undefined
+-- runTree (Free (Describe l subspec next)) = do
+--   status <- liftIO $ newIORef NotStarted
+
+--   rtc@RunTreeContext {..} <- ask
+
+--   newContextAsync <- liftIO $ async $ do
+--     ctx <- wait runTreeContext
+--     f ctx
+--     return ctx
+
+--   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
+
+--   let tree = RunTreeGroup l status subtree
+--   rest <- runTree next
+--   return (tree : rest)
+
+
 
 -- runTree (Free (DescribeParallel l subspec next)) = undefined
 

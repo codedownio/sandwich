@@ -76,7 +76,10 @@ runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
   withScheduler_ (ParN 2) $ \sched -> do
     asyncUnit <- async $ return ()
-    rts <- runReaderT (runTree topSpec) (asyncUnit, sched, options)
+    rts <- runReaderT (runTree topSpec sched) $ RunTreeContext {
+      runTreeContext = asyncUnit
+      , runTreeOptions = options
+      }
 
     formatterAsync <- async $ runFormatter f rts
   

@@ -27,6 +27,7 @@ dependencies:
 - free
 - interpolate
 - microlens
+- microlens-th
 - random
 - scheduler
 - time
