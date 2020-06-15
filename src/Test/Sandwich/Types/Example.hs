@@ -42,7 +42,7 @@ data Result =
 data FailureReason =
     NoReason
   | Reason String
-  | ExpectedButGot (Maybe String) String String
+  | ExpectedButGot String String
   | Error (Maybe String) SomeException
   deriving (Show, Typeable)
 

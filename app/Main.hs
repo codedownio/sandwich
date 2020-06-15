@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad.Trans.Reader
 import Control.Scheduler
@@ -8,7 +9,8 @@ import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PrettyShow
-import Test.Sandwich.Interpreters.RunTreeScheduler
+-- import Test.Sandwich.Interpreters.RunTreeScheduler
+import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
@@ -52,31 +54,31 @@ topSpec = do
 
 
 
-single :: TopSpec
-single = it "does the first thing" pending
+sleepThenSucceed _ = do
+  threadDelay 3000000
+  return Success
 
-double :: TopSpec
-double = do
-  it "does the first thing" pending
-  it "does the second thing" pending
-
-singleWrapped :: TopSpec
-singleWrapped = beforeEach "before each" (\() -> putStrLn "before") $ single
-
-doubleWrapped :: TopSpec
-doubleWrapped = beforeEach "before each" (\() -> putStrLn "before") $ double
+sleepThenFail _ = do
+  threadDelay 3000000
+  return $ Failure Nothing (ExpectedButGot "2" "3")
   
+simple :: TopSpec
+simple = do
+  it "does the first thing" sleepThenSucceed
+  it "does the second thing" sleepThenFail
+  it "does the third thing" sleepThenSucceed
+
 mainFilter :: IO ()
 mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
 mainPretty :: IO ()
 mainPretty = putStrLn $ prettyShow topSpec
 
-runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
-runSandwich options f spec = do
+runSandwichScheduler :: (Formatter f) => Options -> f -> TopSpec -> IO ()
+runSandwichScheduler options f spec = do
   withScheduler_ (ParN 2) $ \sched -> do
     asyncUnit <- async $ return ()
-    rts <- runReaderT (runTree topSpec sched) $ RunTreeContext {
+    rts <- runReaderT (runTree spec) $ RunTreeContext {
       runTreeContext = asyncUnit
       , runTreeOptions = options
       }
@@ -91,6 +93,24 @@ runSandwich options f spec = do
 
     wait formatterAsync
 
+runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
+runSandwich options f spec = do
+  asyncUnit <- async $ return ()
+  rts <- runReaderT (runTree spec) $ RunTreeContext {
+    runTreeContext = asyncUnit
+    , runTreeOptions = options
+    }
+
+  formatterAsync <- async $ runFormatter f rts
+
+  let shutdown = do
+        putStrLn "TODO: shut down!"
+        cancel formatterAsync
+
+  _ <- installHandler sigINT (Catch shutdown) Nothing
+
+  wait formatterAsync
+
 
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter topSpec
+main = runSandwich defaultOptions defaultTerminalUIFormatter simple

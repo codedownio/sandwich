@@ -1,7 +1,12 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 
-module Test.Sandwich.Interpreters.RunTree (runTree) where
+module Test.Sandwich.Interpreters.RunTree (
+  runTree
+  , RunTreeContext(..)
+  ) where
 
 import Control.Concurrent.Async
 import Control.Concurrent.QSem
@@ -10,7 +15,6 @@ import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Reader
 import Data.IORef
-import qualified Data.List as L
 import Data.Time.Clock
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Options
@@ -22,6 +26,10 @@ withSemaphore sem = bracket_ (waitQSem sem) (signalQSem sem)
 
 waitMany :: [Async a] -> Async ()
 waitMany = undefined
+
+waitForTree :: [RunTree] -> Async ()
+waitForTree = undefined
+
 
 data RunTreeContext context = RunTreeContext {
   runTreeContext :: Async context
@@ -37,12 +45,38 @@ runTree (Free (Before l f subspec next)) = do
 
   newContextAsync <- liftIO $ async $ do
     ctx <- wait runTreeContext
-    f ctx
+    (try $ f ctx) >>= \case
+      Left (e :: SomeException) -> do
+        let maybeLoc = Nothing
+        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Exception in before handler") e)))
+        throwIO e
+      Right () -> atomicWriteIORef status (Done Success)
     return ctx
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
   
   let tree = RunTreeGroup l status True subtree (waitMany $ fmap runTreeAsync subtree)
+  rest <- runTree next
+  return (tree : rest)
+
+
+runTree (Free (After l f subspec next)) = do
+  status <- liftIO $ newIORef NotStarted
+
+  RunTreeContext {..} <- ask
+
+  subtree <- runTree subspec
+
+  myAsync <- liftIO $ async $ do
+    wait $ waitForTree subtree
+    ctx <- wait runTreeContext
+    (try $ f ctx) >>= \case
+      Left (e :: SomeException) -> do
+        let maybeLoc = Nothing
+        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Exception in after handler") e)))
+      Right () -> atomicWriteIORef status (Done Success)
+
+  let tree = RunTreeGroup l status True subtree myAsync
   rest <- runTree next
   return (tree : rest)
 
@@ -79,18 +113,25 @@ runTree (Free (Before l f subspec next)) = do
 
 -- -- runTree indent (Free (DescribeParallel l subspec next)) =
 
--- runTree (Free (It l ex next)) = do
---   (sem, ctxAsync) <- ask
---   status <- liftIO $ newIORef NotStarted
---   job <- liftIO $ async $ do
---     ctx <- wait ctxAsync
---     withSemaphore sem $ do
---       startTime <- getCurrentTime
---       atomicWriteIORef status (Running startTime)
---       ret <- ex ctx
---       atomicWriteIORef status (Done ret)
---       return ret
---   return $ RunningTreeItem l (status, job)
+runTree (Free (It l ex next)) = do
+  RunTreeContext {..} <- ask
+  status <- liftIO $ newIORef NotStarted
+
+  myAsync <- liftIO $ async $ do
+    ctx <- wait runTreeContext
+    startTime <- getCurrentTime
+    atomicWriteIORef status (Running startTime)
+    (try $ ex ctx) >>= \case
+      Left (e :: SomeException) -> do
+        let maybeLoc = Nothing
+        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Unknown exception") e)))
+      Right ret -> atomicWriteIORef status (Done ret)
+
+  let tree = RunTreeSingle l status myAsync
+
+  rest <- runTree next
+  return (tree : rest)
+
 
 -- runTree (Free (Describe l subspec next)) = do
 --   status <- liftIO $ newIORef NotStarted
@@ -112,4 +153,4 @@ runTree (Free (Before l f subspec next)) = do
 
 -- runTree (Free (DescribeParallel l subspec next)) = undefined
 
--- runTree (Pure _) = undefined
+runTree (Pure _) = return []
