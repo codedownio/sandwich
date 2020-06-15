@@ -51,6 +51,6 @@ hotkeyAttr = "hotkey"
 chooseAttr :: Status -> AttrName
 chooseAttr NotStarted = notStartedAttr
 chooseAttr (Running {}) = runningAttr
-chooseAttr (Done (Pending {})) = pendingAttr
-chooseAttr (Done (Success {})) = successAttr
-chooseAttr (Done (Failure {})) = failureAttr
+chooseAttr (Done _ _ (Pending {})) = pendingAttr
+chooseAttr (Done _ _ (Success {})) = successAttr
+chooseAttr (Done _ _ (Failure {})) = failureAttr

@@ -20,6 +20,8 @@ import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad
 import qualified Data.List as L
+import Data.Maybe
+import Data.Time.Clock
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
@@ -81,6 +83,7 @@ drawUI app = [ui]
               , mainList]
 
     topBox = vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
+                  , keyIndicator "q" "Exit"
                   , fill ' '
                   , hBorder]
 
@@ -91,14 +94,22 @@ drawUI app = [ui]
   
     mainList = vBox [ hCenter box
                     -- , str " "
-                    , hCenter $ str "Press Esc to exit."
+                    , str "Press Esc to exit."
                     ]
 
     box = padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
 
     listDrawElement :: Bool -> MainListElem -> Widget ()
-    listDrawElement True (MainListElem {..}) = withAttr selectedAttr $ withAttr (chooseAttr status) (str label)
-    listDrawElement False (MainListElem {..}) = withAttr (chooseAttr status) (str label)
+    listDrawElement True elem = withAttr selectedAttr $ renderElem elem
+    listDrawElement False elem = renderElem elem
+
+    renderElem (MainListElem {..}) = hBox $ catMaybes [
+      Just $ withAttr (chooseAttr status) (str label)
+      , case status of
+          Running startTime -> Just $ str $ "    " <> show startTime
+          Done startTime endTime _ -> Just $ str $ "    " <> show (diffUTCTime endTime startTime)
+          _ -> Nothing
+      ]
 
 appEvent :: AppState -> BrickEvent () AppEvent -> EventM () (Next AppState)
 appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s

@@ -45,12 +45,19 @@ runTree (Free (Before l f subspec next)) = do
 
   newContextAsync <- liftIO $ async $ do
     ctx <- wait runTreeContext
+
+    startTime <- getCurrentTime
+    atomicWriteIORef status (Running startTime)
+
     (try $ f ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
-        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Exception in before handler") e)))
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Exception in before handler") e)))
         throwIO e
-      Right () -> atomicWriteIORef status (Done Success)
+      Right () -> do
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime Success)
     return ctx
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
@@ -70,11 +77,18 @@ runTree (Free (After l f subspec next)) = do
   myAsync <- liftIO $ async $ do
     wait $ waitForTree subtree
     ctx <- wait runTreeContext
+
+    startTime <- getCurrentTime
+    atomicWriteIORef status (Running startTime)
+
     (try $ f ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
-        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Exception in after handler") e)))
-      Right () -> atomicWriteIORef status (Done Success)
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Exception in after handler") e)))
+      Right () -> do
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime Success)
 
   let tree = RunTreeGroup l status True subtree myAsync
   rest <- runTree next
@@ -124,8 +138,11 @@ runTree (Free (It l ex next)) = do
     (try $ ex ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
-        atomicWriteIORef status (Done (Failure maybeLoc (Error (Just "Unknown exception") e)))
-      Right ret -> atomicWriteIORef status (Done ret)
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Unknown exception") e)))
+      Right ret -> do
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime ret)
 
   let tree = RunTreeSingle l status myAsync
 

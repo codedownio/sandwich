@@ -13,8 +13,10 @@ import Data.Time.Clock
 import Test.Sandwich.Types.Example
 
 data Status = NotStarted
-            | Running UTCTime
-            | Done Result
+            | Running { statusStartTime :: UTCTime }
+            | Done { statusStartTime :: UTCTime
+                   , statusEndTime :: UTCTime
+                   , statusResult :: Result }
   deriving Show
 
 type RunTreeStatus = IORef Status

@@ -41,97 +41,100 @@ data RunTreeContext context = RunTreeContext {
 type ScheduleMonad context = ReaderT (RunTreeContext context) IO
 
 runTree :: (Show r, Show context) => Free (SpecCommand context) r -> Scheduler IO a -> (ScheduleMonad context) [RunTree]
+runTree = undefined
 
-runTree (Free (Before l f subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
+-- runTree (Free (Before l f subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
 
-  groupAsync <- liftIO $ async $ runRandomly status
-  -- scheduleWork sched $ do
-    -- (ctx, opts) <- ask
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   -- scheduleWork sched $ do
+--     -- (ctx, opts) <- ask
 
-  subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status True subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+--   subtree <- runTree subspec sched
+--   let tree = RunTreeGroup l status True subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
   
-runTree (Free (After l f subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
-  subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status True subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+-- runTree (Free (After l f subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   subtree <- runTree subspec sched
+--   let tree = RunTreeGroup l status True subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Free (Around l f subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
-  let asyncContext = undefined
-  rtc@RunTreeContext {..} <- ask
-  subtree <- withReaderT (const rtc) $ runTree subspec sched
-  let tree = RunTreeGroup l status True subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+-- runTree (Free (Around l f subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   let asyncContext = undefined
+--   rtc@RunTreeContext {..} <- ask
+--   subtree <- withReaderT (const rtc) $ runTree subspec sched
+--   let tree = RunTreeGroup l status True subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Free (Introduce l alloc cleanup subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
-  let asyncContext = undefined
-  rtc@RunTreeContext {..} <- ask
-  subtree <- withReaderT (const (RunTreeContext {})) $ runTree subspec sched
-  let tree = RunTreeGroup l status True subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+-- runTree (Free (Introduce l alloc cleanup subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   let asyncContext = undefined
+--   rtc@RunTreeContext {..} <- ask
+--   subtree <- withReaderT (const (RunTreeContext {})) $ runTree subspec sched
+--   let tree = RunTreeGroup l status True subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Free (Describe l subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
-  subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status False subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+-- runTree (Free (Describe l subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   subtree <- runTree subspec sched
+--   let tree = RunTreeGroup l status False subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Free (DescribeParallel l subspec next)) sched = do
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
-  subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status False subtree groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+-- runTree (Free (DescribeParallel l subspec next)) sched = do
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
+--   subtree <- runTree subspec sched
+--   let tree = RunTreeGroup l status False subtree groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Free (It l ex next)) sched = do
-  RunTreeContext {..} <- ask
-  status <- liftIO $ newIORef NotStarted
-  groupAsync <- liftIO $ async $ runRandomly status
+-- runTree (Free (It l ex next)) sched = do
+--   RunTreeContext {..} <- ask
+--   status <- liftIO $ newIORef NotStarted
+--   groupAsync <- liftIO $ async $ runRandomly status
 
-  -- liftIO $ async $ do
-  --   ctx <- wait ctxAsync
-  --   scheduleWork sched $ do
-  --     startTime <- liftIO getCurrentTime
-  --     liftIO $ atomicWriteIORef status (Running startTime)
-  --     ret <- ex ctx
-  --     atomicWriteIORef status (Done ret)
+--   -- liftIO $ async $ do
+--   --   ctx <- wait ctxAsync
+--   --   scheduleWork sched $ do
+--   --     startTime <- liftIO getCurrentTime
+--   --     liftIO $ atomicWriteIORef status (Running startTime)
+--   --     ret <- ex ctx
+--   --     atomicWriteIORef status (Done ret)
 
-  let tree = RunTreeSingle l status groupAsync
-  rest <- runTree next sched
-  return (tree : rest)
+--   let tree = RunTreeSingle l status groupAsync
+--   rest <- runTree next sched
+--   return (tree : rest)
 
-runTree (Pure _) sched = return []
+-- runTree (Pure _) sched = return []
 
 
 
 
 runRandomly status = do
   waitRandom
-  now <- getCurrentTime
-  atomicWriteIORef status (Running now)
+  startTime <- getCurrentTime
+  atomicWriteIORef status (Running startTime)
   waitRandom
 
   finalResult <- randomRIO (1 :: Int, 4) >>= \case
     1 -> return $ Pending Nothing Nothing
     2 -> return $ Failure Nothing NoReason
     _ -> return $ Success
-  
-  atomicWriteIORef status (Done finalResult)
+
+  endTime <- getCurrentTime
+
+  atomicWriteIORef status (Done startTime endTime finalResult)
 
   where
     waitRandom = do
