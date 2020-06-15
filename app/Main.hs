@@ -63,9 +63,9 @@ sleepThenFail _ = do
   return $ Failure Nothing (ExpectedButGot "2" "3")
 
 simple :: TopSpec
-simple = describe "implicit outer" $ do
+simple = do
   it "does the first thing" sleepThenSucceed
-  it "does the second thing" sleepThenSucceed
+  it "does the second thing" sleepThenFail
   it "does the third thing" sleepThenSucceed
 
 medium :: TopSpec
@@ -93,7 +93,7 @@ mainPretty = putStrLn $ prettyShow topSpec
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
   asyncUnit <- async $ return ()
-  rts <- runReaderT (runTree spec) $ RunTreeContext {
+  rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
     runTreeContext = asyncUnit
     , runTreeOptions = options
     }
@@ -110,5 +110,5 @@ runSandwich options f spec = do
 
 
 main :: IO ()
--- main = runSandwich defaultOptions defaultTerminalUIFormatter simple
-main = runSandwich defaultOptions defaultTerminalUIFormatter medium
+main = runSandwich defaultOptions defaultTerminalUIFormatter simple
+-- main = runSandwich defaultOptions defaultTerminalUIFormatter medium

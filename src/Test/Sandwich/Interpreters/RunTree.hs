@@ -6,14 +6,12 @@
 -- |
 
 module Test.Sandwich.Interpreters.RunTree (
-  -- runTreeMain
-  runTree
+  runTreeMain
   , RunTreeContext(..)
   , getImmediateChildren
   ) where
 
 import Control.Concurrent.Async
-import Control.Concurrent.QSem
 import Control.Exception
 import Control.Monad
 import Control.Monad.Free
@@ -40,10 +38,10 @@ data RunTreeContext context = RunTreeContext {
   , runTreeOptions :: Options
   }
 
--- runTreeMain :: (Show context) => Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
--- runTreeMain spec = do
---   [RunTreeGroup {..}] <- runTree (Free (Describe "implicit outer describe" spec (Pure ())))
---   return runTreeChildren
+runTreeMain :: (Show context) => Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
+runTreeMain spec = do
+  [RunTreeGroup {..}] <- runTree (Free (Describe "implicit outer describe" spec (Pure ())))
+  return runTreeChildren
 
 
 runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
@@ -113,37 +111,53 @@ runTree (Free (After l f subspec next)) = do
   return (tree : rest)
 
 
--- runTree (Free (Introduce l alloc cleanup subspec next)) = do
---   (sem, ctxAsync) <- ask
+runTree (Free (Introduce l alloc cleanup subspec next)) = do
+  status <- liftIO $ newIORef NotStarted
 
---   allocStatus <- liftIO $ newIORef NotStarted
---   allocJob <- liftIO $ async $ do
---     ctx <- wait ctxAsync
---     withSemaphore sem $ do
---       startTime <- getCurrentTime
---       atomicWriteIORef allocStatus (Running startTime)
---       ctx' <- alloc ctx
---       atomicWriteIORef allocStatus (Done undefined)
---       return ctx'
+  rtc@RunTreeContext {..} <- ask
 
---   allocJob2 <- liftIO $ async $ do
---     wait allocJob
---     return Success
+  newContextAsync <- liftIO $ async $ do
+    ctx <- wait runTreeContext
 
---   subtree <- withReaderT (const (sem, allocJob)) $ runTree subspec
+    startTime <- getCurrentTime
+    atomicWriteIORef status (Running startTime)
 
---   cleanupJob <- undefined
---   overallJob <- undefined
-  
---   return $ RunningTreeIntroduce { runningTreeLabel = l
---                                 , runningTreeAllocJob = (allocStatus, allocJob2)
---                                 , runningTreeCleanupJob = cleanupJob
---                                 , runningTreeChildJob = runningTreeJob subtree
---                                 , runningTreeOverallJob = overallJob
---                                 , runningTreeChild = subtree
---                                 }
+    (try $ alloc ctx) >>= \case
+      Left (e :: SomeException) -> do
+        let maybeLoc = Nothing
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Exception in introduce allocate handler") e)))
+        throwIO e
+      Right intro -> do
+        endTime <- getCurrentTime
+        atomicWriteIORef status (Done startTime endTime Success)
+        return (intro :> ctx)
 
--- -- runTree indent (Free (DescribeParallel l subspec next)) =
+  subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
+
+  myAsync <- liftIO $ async $ do
+    _ <- waitForTree subtree
+    ctx <- wait newContextAsync
+
+    startTime <- getCurrentTime -- TODO
+
+    (try $ cleanup ctx) >>= \case
+      Left (e :: SomeException) -> do
+        let maybeLoc = Nothing
+        endTime <- getCurrentTime
+        let ret = Failure maybeLoc (Error (Just "Exception in introduce cleanup handler") e)
+        atomicWriteIORef status (Done startTime endTime ret)
+        return ret
+      Right () -> do
+        endTime <- getCurrentTime
+        let ret = Success
+        atomicWriteIORef status (Done startTime endTime ret)
+        return ret
+
+  let tree = RunTreeGroup l status True subtree myAsync
+  rest <- runTree next
+  return (tree : rest)
+
 
 runTree (Free (It l ex next)) = do
   RunTreeContext {..} <- ask
