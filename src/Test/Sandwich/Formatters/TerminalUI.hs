@@ -3,6 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI (
@@ -24,6 +25,7 @@ import qualified Graphics.Vty as V
 import Lens.Micro
 import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
+import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
@@ -44,10 +46,12 @@ instance Formatter TerminalUIFormatter where
 runApp :: TerminalUIFormatter -> [RunTree] -> IO ()
 runApp (TerminalUIFormatter {..}) rts = do
   rtsFixed <- mapM fixRunTree rts
-  let initialState = AppState {
-        _appShowContextManagers = showContextManagers
-        , _appRunTree = rtsFixed
-        , _appMainList = treeToList rtsFixed
+  let initialState = updateFilteredTree (filterRunTree showContextManagers rtsFixed) $
+        AppState {
+          _appShowContextManagers = showContextManagers
+          , _appRunTree = rtsFixed
+          , _appRunTreeFiltered = []
+          , _appMainList = L.list () mempty 1
         }
 
   eventChan <- newBChan 10
@@ -80,6 +84,11 @@ drawUI app = [ui]
                   , fill ' '
                   , hBorder]
 
+    toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
+    toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
+
+    keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
+  
     mainList = vBox [ hCenter box
                     -- , str " "
                     , hCenter $ str "Press Esc to exit."
@@ -91,48 +100,41 @@ drawUI app = [ui]
     listDrawElement True (MainListElem {..}) = withAttr selectedAttr $ withAttr (chooseAttr status) (str label)
     listDrawElement False (MainListElem {..}) = withAttr (chooseAttr status) (str label)
 
-toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
-toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
-
-keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
-
 appEvent :: AppState -> BrickEvent () AppEvent -> EventM () (Next AppState)
 appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
   & appRunTree .~ newTree
-  & appMainList %~ L.listReplace (runTreesToList newTree) (L.listSelected $ s ^. appMainList)
+  & updateFilteredTree (filterRunTree (s ^. appShowContextManagers) newTree)
 
 appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey V.KEsc [] -> halt s
     V.EvKey (V.KChar 'q') [] -> halt s
 
-    V.EvKey (V.KChar 'c') [] -> continue $ s & appShowContextManagers %~ not
+    V.EvKey (V.KChar 'c') [] -> continue $
+      let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree) in s
+      & appShowContextManagers %~ not
+      & updateFilteredTree runTreeFiltered
 
     ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 
 appEvent s _ = continue s
 
--- * Main list
+updateFilteredTree :: [RunTreeFixed] -> AppState -> AppState
+updateFilteredTree runTreeFiltered s = s
+  & appRunTreeFiltered .~ runTreeFiltered
+  & appMainList %~ L.listReplace (treeToVector runTreeFiltered)
+                                 (L.listSelected $ s ^. appMainList)
 
-treeToList :: [RunTreeFixed] -> L.GenericList () Vec.Vector MainListElem
-treeToList runTree = L.list () (runTreesToList runTree) 1
+-- * Filter tree
 
-runTreesToList :: [RunTreeFixed] -> Vec.Vector MainListElem
-runTreesToList = runTreesToList' 0
+filterRunTree :: Bool -> [RunTreeFixed] -> [RunTreeFixed]
+filterRunTree showContextManagers rtsFixed = rtsFixed
+  & if showContextManagers then id else filterContextManagers
 
-runTreesToList' :: Int -> [RunTreeFixed] -> Vec.Vector MainListElem
-runTreesToList' indent rts = mconcat $ fmap (runTreeToList' indent) rts
+filterContextManagers :: [RunTreeFixed] -> [RunTreeFixed]
+filterContextManagers = mconcat . fmap filterContextManagersSingle
 
-runTreeToList' :: Int -> RunTreeFixed -> Vec.Vector MainListElem
-runTreeToList' indent (RunTreeGroup {..}) = elem `Vec.cons` (runTreesToList' (indent + 1) runTreeChildren)
-  where elem = MainListElem {
-          label = (L.replicate (indent * 4) ' ') <> runTreeLabel
-          , folded = False
-          , status = runTreeStatus
-          }
-runTreeToList' indent (RunTreeSingle {..}) = Vec.singleton elem
-  where elem = MainListElem {
-          label = (L.replicate (indent * 4) ' ') <> runTreeLabel
-          , folded = False
-          , status = runTreeStatus
-          }
+filterContextManagersSingle :: RunTreeFixed -> [RunTreeFixed]
+filterContextManagersSingle rt@(RunTreeGroup {runTreeIsContextManager=False, ..}) = [rt { runTreeChildren = filterContextManagers runTreeChildren }]
+filterContextManagersSingle (RunTreeGroup {runTreeIsContextManager=True, ..}) = filterContextManagers runTreeChildren
+filterContextManagersSingle rt@(RunTreeSingle {}) = [rt]

@@ -14,11 +14,13 @@ data MainListElem = MainListElem {
   label :: String
   , folded :: Bool
   , status :: Status
+  , isContextManager :: Bool
   } deriving Show
 
 data AppState = AppState {
   _appShowContextManagers :: Bool
   , _appRunTree :: [RunTreeFixed]
+  , _appRunTreeFiltered :: [RunTreeFixed]
   , _appMainList :: L.List () MainListElem
   }
 

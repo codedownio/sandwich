@@ -42,7 +42,7 @@ runTree (Free (Before l f subspec next)) = do
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
   
-  let tree = RunTreeGroup l status subtree (waitMany $ fmap runTreeAsync subtree)
+  let tree = RunTreeGroup l status True subtree (waitMany $ fmap runTreeAsync subtree)
   rest <- runTree next
   return (tree : rest)
 

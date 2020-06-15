@@ -50,7 +50,7 @@ runTree (Free (Before l f subspec next)) sched = do
     -- (ctx, opts) <- ask
 
   subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status True subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
   
@@ -58,7 +58,7 @@ runTree (Free (After l f subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
   groupAsync <- liftIO $ async $ runRandomly status
   subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status True subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
 
@@ -68,7 +68,7 @@ runTree (Free (Around l f subspec next)) sched = do
   let asyncContext = undefined
   rtc@RunTreeContext {..} <- ask
   subtree <- withReaderT (const rtc) $ runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status True subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
 
@@ -78,7 +78,7 @@ runTree (Free (Introduce l alloc cleanup subspec next)) sched = do
   let asyncContext = undefined
   rtc@RunTreeContext {..} <- ask
   subtree <- withReaderT (const (RunTreeContext {})) $ runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status True subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
 
@@ -86,7 +86,7 @@ runTree (Free (Describe l subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
   groupAsync <- liftIO $ async $ runRandomly status
   subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status False subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
 
@@ -94,7 +94,7 @@ runTree (Free (DescribeParallel l subspec next)) sched = do
   status <- liftIO $ newIORef NotStarted
   groupAsync <- liftIO $ async $ runRandomly status
   subtree <- runTree subspec sched
-  let tree = RunTreeGroup l status subtree groupAsync
+  let tree = RunTreeGroup l status False subtree groupAsync
   rest <- runTree next sched
   return (tree : rest)
 

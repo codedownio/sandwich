@@ -25,6 +25,7 @@ instance Show RunTreeStatus where
 data RunTreeWithStatus a =
   RunTreeGroup { runTreeLabel :: String
                , runTreeStatus :: a
+               , runTreeIsContextManager :: Bool
                , runTreeChildren :: [RunTreeWithStatus a]
                , runTreeAsync :: Async ()
                }
