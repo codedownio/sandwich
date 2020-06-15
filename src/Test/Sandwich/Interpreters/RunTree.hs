@@ -9,6 +9,7 @@ module Test.Sandwich.Interpreters.RunTree (
   -- runTreeMain
   runTree
   , RunTreeContext(..)
+  , getImmediateChildren
   ) where
 
 import Control.Concurrent.Async
@@ -170,79 +171,44 @@ runTree (Free (It l ex next)) = do
   return (tree : rest)
 
 
-runTree (Free (Describe l subspec next)) = do
-  status <- liftIO $ newIORef NotStarted
+runTree (Free (Describe l subspec next)) = runDescribe False l subspec next
 
-  rtc@RunTreeContext {..} <- ask
-
-  let immediateChildren = getImmediateChildren subspec
-
-  initialContextAsync <- liftIO $ async $ do
-    ctx <- wait runTreeContext
-    startTime <- getCurrentTime
-    atomicWriteIORef status (Running startTime)
-    return ctx
-
-  (mconcat -> subtree, finalAsync) <- flip runStateT initialContextAsync $ do
-    forM immediateChildren $ \child -> do
-      contextAsync <- get
-      tree <- lift $ withReaderT (const $ rtc { runTreeContext = contextAsync }) $ runTree child
-      newContextAsync <- liftIO $ async $ do
-        _ <- waitForTree tree
-        wait runTreeContext
-      put newContextAsync
-      return tree
-
-  myAsync <- liftIO $ async $ do
-    wait finalAsync -- TODO: waitCatch?
-    startTime <- getCurrentTime -- TODO
-    endTime <- getCurrentTime
-    let ret = Success
-    atomicWriteIORef status (Done startTime endTime ret)
-    return ret
-  
-  let tree = RunTreeGroup l status False subtree myAsync
-  rest <- runTree next
-  return (tree : rest)
-
-
-runTree (Free (DescribeParallel l subspec next)) = do
-  status <- liftIO $ newIORef NotStarted
-
-  rtc@RunTreeContext {..} <- ask
-
-  let immediateChildren = getImmediateChildren subspec
-
-  initialContextAsync <- liftIO $ async $ do
-    ctx <- wait runTreeContext
-    startTime <- getCurrentTime
-    atomicWriteIORef status (Running startTime)
-    return ctx
-
-  (mconcat -> subtree, finalAsync) <- flip runStateT initialContextAsync $ do
-    forM immediateChildren $ \child -> do
-      tree <- lift $ withReaderT (const $ rtc { runTreeContext = runTreeContext }) $ runTree child
-      newContextAsync <- liftIO $ async $ do
-        waitForTree tree
-        wait runTreeContext
-      put newContextAsync
-      return tree
-
-  myAsync <- liftIO $ async $ do
-    wait finalAsync -- TODO: waitCatch?
-    startTime <- getCurrentTime -- TODO
-    endTime <- getCurrentTime
-    let ret = Success
-    atomicWriteIORef status (Done startTime endTime ret)
-    return ret
-
-  let tree = RunTreeGroup l status False subtree myAsync
-  rest <- runTree next
-  return (tree : rest)
+runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec next
 
 runTree (Pure _) = return []
 
 
+
+runDescribe :: (Show a, Show r) => Bool -> [Char] -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTreeWithStatus (IORef Status)]
+runDescribe parallel l subspec next = do
+  status <- liftIO $ newIORef NotStarted
+
+  rtc@RunTreeContext {..} <- ask
+
+  (mconcat -> subtree) <- flip evalStateT runTreeContext $
+    forM (getImmediateChildren subspec) $ \child -> do
+      contextAsync <- get
+      let asyncToUse = if parallel then runTreeContext else contextAsync
+      tree <- lift $ withReaderT (const $ rtc { runTreeContext = asyncToUse }) $ runTree child
+      put =<< liftIO (async $ waitForTree tree >> wait runTreeContext)
+      return tree
+
+  myAsync <- liftIO $ async $ do
+    _ <- wait runTreeContext
+    startTime <- getCurrentTime
+    atomicWriteIORef status (Running startTime)
+    _ <- waitForTree subtree
+    endTime <- getCurrentTime
+    let ret = Success
+    atomicWriteIORef status (Done startTime endTime ret)
+    return ret
+
+  let tree = RunTreeGroup l status False subtree myAsync
+  rest <- runTree next
+  return (tree : rest)
+
+
+  
 
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next

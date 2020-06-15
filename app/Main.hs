@@ -55,16 +55,24 @@ topSpec = do
 
 
 sleepThenSucceed _ = do
-  threadDelay 3000000
+  threadDelay (2 * 10^6)
   return Success
 
 sleepThenFail _ = do
-  threadDelay 3000000
+  threadDelay (2 * 10^6)
   return $ Failure Nothing (ExpectedButGot "2" "3")
-  
+
 simple :: TopSpec
 simple = describe "implicit outer" $ do
   it "does the first thing" sleepThenSucceed
+  it "does the second thing" sleepThenSucceed
+  it "does the third thing" sleepThenSucceed
+
+medium :: TopSpec
+medium = describe "implicit outer" $ do
+  it "does the first thing" sleepThenSucceed
+  it "does the 1.5 thing" sleepThenFail
+  it "does the 1.8 thing" sleepThenFail
   describe "should happen sequentially" $ do
     it "sequential 1" sleepThenSucceed
     it "sequential 2" sleepThenSucceed
@@ -81,25 +89,6 @@ mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
 mainPretty :: IO ()
 mainPretty = putStrLn $ prettyShow topSpec
-
-runSandwichScheduler :: (Formatter f) => Options -> f -> TopSpec -> IO ()
-runSandwichScheduler options f spec = do
-  withScheduler_ (ParN 2) $ \sched -> do
-    asyncUnit <- async $ return ()
-    rts <- runReaderT (runTree spec) $ RunTreeContext {
-      runTreeContext = asyncUnit
-      , runTreeOptions = options
-      }
-
-    formatterAsync <- async $ runFormatter f rts
-  
-    let shutdown = do
-          putStrLn "TODO: shut down!"
-          cancel formatterAsync
-
-    _ <- installHandler sigINT (Catch shutdown) Nothing
-
-    wait formatterAsync
 
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
@@ -121,4 +110,5 @@ runSandwich options f spec = do
 
 
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter simple
+-- main = runSandwich defaultOptions defaultTerminalUIFormatter simple
+main = runSandwich defaultOptions defaultTerminalUIFormatter medium
