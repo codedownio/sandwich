@@ -115,8 +115,8 @@ drawUI app = [ui]
     renderElem (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr (chooseAttr status) (str label)
       , case status of
-          Running startTime _ -> Just $ str $ "    " <> show startTime
-          Done startTime endTime _ _ -> Just $ str $ "    " <> show (diffUTCTime endTime startTime)
+          Running {..} -> Just $ str $ "    " <> show statusStartTime
+          Done {..} -> Just $ str $ "    " <> show (diffUTCTime statusEndTime statusStartTime)
           _ -> Nothing
       ]
 

@@ -49,6 +49,7 @@ runTree :: Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [
 
 runTree (Free (Before l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
 
   rtc@RunTreeContext {..} <- ask
 
@@ -56,18 +57,17 @@ runTree (Free (Before l f subspec next)) = do
     ctx <- wait runTreeContext
 
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
 
     (try $ f ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
-        atomicWriteIORef status (Done startTime endTime logsVar (Failure maybeLoc (Error (Just "Exception in before handler") e)))
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Exception in before handler") e)))
         throwIO e
       Right () -> do
         endTime <- getCurrentTime
-        atomicWriteIORef status (Done startTime endTime logsVar Success)
+        atomicWriteIORef status (Done startTime endTime Success)
     return ctx
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
@@ -76,13 +76,14 @@ runTree (Free (Before l f subspec next)) = do
     mapM_ wait (fmap runTreeAsync subtree)
     return Success
 
-  let tree = RunTreeGroup l status True subtree myAsync
+  let tree = RunTreeGroup l status True subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 
 
 runTree (Free (After l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
 
   RunTreeContext {..} <- ask
 
@@ -93,29 +94,29 @@ runTree (Free (After l f subspec next)) = do
     ctx <- wait runTreeContext
 
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
 
     (try $ f ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         let ret = Failure maybeLoc (Error (Just "Exception in after handler") e)
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
       Right () -> do
         endTime <- getCurrentTime
         let ret = Success
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
 
-  let tree = RunTreeGroup l status True subtree myAsync
+  let tree = RunTreeGroup l status True subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 
 
 runTree (Free (Around l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
 
   rtc@RunTreeContext {..} <- ask
 
@@ -132,8 +133,7 @@ runTree (Free (Around l f subspec next)) = do
     ctx <- wait runTreeContext
 
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
 
     eitherResult <- try $ f ctx $ do
       putMVar mvar ()
@@ -147,16 +147,17 @@ runTree (Free (Around l f subspec next)) = do
         return $ Failure maybeLoc $ Error (Just "Exception in around handler") e
       Right _ -> return Success
 
-    atomicWriteIORef status (Done startTime endTime logsVar Success)
+    atomicWriteIORef status (Done startTime endTime Success)
     return ret
 
-  let tree = RunTreeGroup l status True subtree myAsync
+  let tree = RunTreeGroup l status True subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 
 
 runTree (Free (Introduce l alloc cleanup subspec next)) = do
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
 
   rtc@RunTreeContext {..} <- ask
 
@@ -164,18 +165,17 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
     ctx <- wait runTreeContext
 
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
 
     (try $ alloc ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
-        atomicWriteIORef status (Done startTime endTime logsVar (Failure maybeLoc (Error (Just "Exception in introduce allocate handler") e)))
+        atomicWriteIORef status (Done startTime endTime (Failure maybeLoc (Error (Just "Exception in introduce allocate handler") e)))
         throwIO e
       Right intro -> do
         endTime <- getCurrentTime
-        atomicWriteIORef status (Done startTime endTime logsVar Success)
+        atomicWriteIORef status (Done startTime endTime Success)
         return (intro :> ctx)
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
@@ -185,48 +185,48 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
     ctx <- wait newContextAsync
 
     startTime <- getCurrentTime -- TODO
-    logsVar <- newIORef mempty
 
     (try $ cleanup ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         let ret = Failure maybeLoc (Error (Just "Exception in introduce cleanup handler") e)
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
       Right () -> do
         endTime <- getCurrentTime
         let ret = Success
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
 
-  let tree = RunTreeGroup l status True subtree myAsync
+  let tree = RunTreeGroup l status True subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 
 
 runTree (Free (It l ex next)) = do
-  RunTreeContext {..} <- ask
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
+
+  RunTreeContext {..} <- ask
 
   myAsync <- liftIO $ async $ do
     ctx <- wait runTreeContext
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
     (try $ ex ctx) >>= \case
       Left (e :: SomeException) -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         let ret = Failure maybeLoc (Error (Just "Unknown exception") e)
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
       Right ret -> do
         endTime <- getCurrentTime
-        atomicWriteIORef status (Done startTime endTime logsVar ret)
+        atomicWriteIORef status (Done startTime endTime ret)
         return ret
 
-  let tree = RunTreeSingle l status myAsync
+  let tree = RunTreeSingle l status logs myAsync
 
   rest <- runTree next
   return (tree : rest)
@@ -243,6 +243,7 @@ runTree (Pure _) = return []
 runDescribe :: Bool -> [Char] -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTree]
 runDescribe parallel l subspec next = do
   status <- liftIO $ newIORef NotStarted
+  logs <- liftIO $ newIORef mempty
 
   rtc@RunTreeContext {..} <- ask
 
@@ -257,15 +258,14 @@ runDescribe parallel l subspec next = do
   myAsync <- liftIO $ async $ do
     _ <- wait runTreeContext
     startTime <- getCurrentTime
-    logsVar <- newIORef mempty
-    atomicWriteIORef status (Running startTime logsVar)
+    atomicWriteIORef status (Running startTime)
     _ <- waitForTree subtree
     endTime <- getCurrentTime
     let ret = Success
-    atomicWriteIORef status (Done startTime endTime logsVar ret)
+    atomicWriteIORef status (Done startTime endTime ret)
     return ret
 
-  let tree = RunTreeGroup l status False subtree myAsync
+  let tree = RunTreeGroup l status False subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 

@@ -38,8 +38,9 @@ data RunTreeWithStatus a l =
   deriving (Functor)
 
 type Var = IORef
-type RunTree = RunTreeWithStatus (Var Status) (Var (Seq Text))
-type RunTreeFixed = RunTreeWithStatus Status (Seq Text)
+type LogEntry = Text
+type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry))
+type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry)
 
 fixRunTree :: RunTree -> IO RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
