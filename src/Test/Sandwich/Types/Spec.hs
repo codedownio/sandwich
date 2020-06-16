@@ -36,11 +36,11 @@ data SpecCommand context next where
            , subspec :: Spec context ()
            , next :: next } -> SpecCommand context next
 
-  Introduce :: (Show intro) => { label :: String
-                               , allocate :: (context -> IO intro)
-                               , cleanup :: ((intro :> context) -> IO ())
-                               , subspecAugmented :: Spec (intro :> context) ()
-                               , next :: next } -> SpecCommand context next
+  Introduce :: { label :: String
+               , allocate :: (context -> IO intro)
+               , cleanup :: ((intro :> context) -> IO ())
+               , subspecAugmented :: Spec (intro :> context) ()
+               , next :: next } -> SpecCommand context next
 
   Around :: { label :: String
             , actionWith :: (context -> IO () -> IO ())
@@ -74,7 +74,7 @@ type TopSpec = Spec () ()
 
 makeFree_ ''SpecCommand
 
-instance (Show context) => Show1 (SpecCommand context) where
+instance Show1 (SpecCommand context) where
   liftShowsPrec sp _ d (Before {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
   liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next

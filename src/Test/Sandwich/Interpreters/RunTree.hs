@@ -38,13 +38,13 @@ data RunTreeContext context = RunTreeContext {
   , runTreeOptions :: Options
   }
 
-runTreeMain :: (Show context) => Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
+runTreeMain :: Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
 runTreeMain spec = do
   [RunTreeGroup {..}] <- runTree (Free (Describe "implicit outer describe" spec (Pure ())))
   return runTreeChildren
 
 
-runTree :: (Show r, Show context) => Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
+runTree :: Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
 
 runTree (Free (Before l f subspec next)) = do
   status <- liftIO $ newIORef NotStarted
@@ -193,7 +193,7 @@ runTree (Pure _) = return []
 
 
 
-runDescribe :: (Show a, Show r) => Bool -> [Char] -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTreeWithStatus (IORef Status)]
+runDescribe :: Bool -> [Char] -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTreeWithStatus (IORef Status)]
 runDescribe parallel l subspec next = do
   status <- liftIO $ newIORef NotStarted
 

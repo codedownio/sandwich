@@ -81,6 +81,14 @@ medium = describe "implicit outer" $ do
     it "sequential 1" sleepThenSucceed
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
+
+  introduce "Database" (\() -> makeDB) (\(db :> ()) -> cleanupDB db) $ do
+    it "uses the DB 1" $ \(db :> ()) -> do
+      return Success
+
+    it "uses the DB 2" $ \(db :> ()) -> do
+      return Success
+
   it "does the second thing" sleepThenFail
   it "does the third thing" sleepThenSucceed
 
@@ -112,3 +120,11 @@ runSandwich options f spec = do
 main :: IO ()
 -- main = runSandwich defaultOptions defaultTerminalUIFormatter simple
 main = runSandwich defaultOptions defaultTerminalUIFormatter medium
+
+data Database = Database deriving Show
+
+makeDB :: IO Database
+makeDB = return Database
+
+cleanupDB :: Database -> IO ()
+cleanupDB _ = return ()
