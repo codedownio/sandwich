@@ -31,3 +31,6 @@ isFailedItBlock _ = False
 
 isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
 isDoneItBlock _ = False
+
+isNotStartedItBlock (RunTreeSingle {runTreeStatus=(NotStarted {})}) = True
+isNotStartedItBlock _ = False

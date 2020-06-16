@@ -100,14 +100,14 @@ drawUI app = [ui]
 
     keybindingBox = vBox
 
-    topBox = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) [toggleShowContextManagersKey] "Hide context managers" "Show context managers"
-                                                                            , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"
-                                                                            , keyIndicator "Tab/Enter" "Toggle selected"])
+    topBox = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
+                                                                            , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                                                            , keyIndicator (showKeys toggleKeys) "Toggle selected"])
                         , vBorder
-                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator [cancelAllKey] "Cancel all"
-                                                                           , keyIndicator [cancelSelectedKey] "Cancel selected"
-                                                                           , keyIndicator [clearResultsKey] "Clear results"
-                                                                           , keyIndicator [runAgainKey] "Run again"])
+                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
+                                                                           , keyIndicator (showKey cancelSelectedKey) "Cancel selected"
+                                                                           , keyIndicator (showKey clearResultsKey) "Clear results"
+                                                                           , keyIndicator (showKey runAgainKey) "Run again"])
                         , vBorder
                         , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]
                   , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])]
@@ -117,6 +117,7 @@ drawUI app = [ui]
       <> (if totalFailedTests > 0 then [[withAttr failureAttr $ str $ show totalFailedTests, str " failed"]] else mempty)
       <> (if totalPendingTests > 0 then [[withAttr pendingAttr $ str $ show totalPendingTests, str " pending"]] else mempty)
       <> (if totalRunningTests > 0 then [[withAttr runningAttr $ str $ show totalRunningTests, str " running"]] else mempty)
+      <> (if totalNotStartedTests > 0 then [[str $ show totalNotStartedTests, str " not started"]] else mempty)
 
     totalNumTests = countWhere isItBlock (app ^. appRunTree)
     totalSucceededTests = countWhere isSuccessItBlock (app ^. appRunTree)
@@ -124,6 +125,7 @@ drawUI app = [ui]
     totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
     totalDoneTests = countWhere isDoneItBlock (app ^. appRunTree)
+    totalNotStartedTests = countWhere isNotStartedItBlock (app ^. appRunTree)
 
     toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
     toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
@@ -162,31 +164,31 @@ appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
 appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey V.KEsc [] -> halt s
-    V.EvKey (V.KChar c) [] | c == exitKey-> halt s
+    V.EvKey c [] | c == exitKey-> halt s
 
-    V.EvKey (V.KChar c) [] | c == toggleShowContextManagersKey -> do
-                               let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTreeBase)
-                               let runTreeFilteredFixed = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree)
-                               continue $ s
-                                 & appShowContextManagers %~ not
-                                 & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
+    V.EvKey c [] | c == toggleShowContextManagersKey -> do
+                     let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTreeBase)
+                     let runTreeFilteredFixed = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree)
+                     continue $ s
+                       & appShowContextManagers %~ not
+                       & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
 
-    V.EvKey (V.KChar c) [] | c == toggleShowRunTimesKey -> continue $ s
+    V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
 
-    V.EvKey c [] | c `elem` [V.KEnter, V.KChar '\t'] -> 
+    V.EvKey c [] | c `elem` toggleKeys ->
       case L.listSelectedElement (s ^. appMainList) of
         Nothing -> continue s
         Just (i, MainListElem {..}) -> do
           liftIO $ atomically $ modifyTVar (runTreeToggled node) not
           continue s
 
-    V.EvKey (V.KChar c) [] | c == cancelAllKey -> do
+    V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
       continue s
-    V.EvKey (V.KChar c) [] | c == clearResultsKey -> do
-                               liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
-                               continue $ s
+    V.EvKey c [] | c == clearResultsKey -> do
+      liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
+      continue $ s
 
     -- V.EvKey (V.KChar c) [] | c == runAgainKey -> do
     --   liftIO $

@@ -2,12 +2,23 @@
 
 module Test.Sandwich.Formatters.TerminalUI.Keys where
 
-toggleShowRunTimesKey = 't'
-toggleShowContextManagersKey = 'm'
+import qualified Data.List as L
+import qualified Graphics.Vty as V
 
-cancelSelectedKey = 'c'
-cancelAllKey = 'C'
-clearResultsKey = 'k'
-runAgainKey = 'r'
+toggleShowRunTimesKey = V.KChar 't'
+toggleShowContextManagersKey = V.KChar 'm'
 
-exitKey = 'q'
+cancelSelectedKey = V.KChar 'c'
+cancelAllKey = V.KChar 'C'
+clearResultsKey = V.KChar 'k'
+runAgainKey = V.KChar 'r'
+
+exitKey = V.KChar 'q'
+
+toggleKeys = [V.KEnter, V.KChar '\t']
+
+showKey (V.KChar '\t') = "Tab"
+showKey (V.KChar c) = [c]
+showKey V.KEnter = "Enter"
+
+showKeys = L.intercalate "/" . fmap showKey
