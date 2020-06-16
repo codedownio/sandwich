@@ -51,7 +51,7 @@ runTreeMain spec = do
 runTree :: Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
 
 runTree (Free (Before l f subspec next)) = do
-  (status, logs, rtc@RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
@@ -76,9 +76,9 @@ runTree (Free (Before l f subspec next)) = do
       mapM_ wait (fmap runTreeAsync subtree)
       return Success
 
-  continueWith (RunTreeGroup l status True subtree logs myAsync) next
+  continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (After l f subspec next)) = do
-  (status, logs, RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
   subtree <- runTree subspec
 
@@ -101,9 +101,9 @@ runTree (Free (After l f subspec next)) = do
         atomically $ writeTVar status (Done startTime endTime ret)
         return ret
 
-  continueWith (RunTreeGroup l status True subtree logs myAsync) next
+  continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (Around l f subspec next)) = do
-  (status, logs, rtc@RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   -- Use mvar to control when subspec is allowed to run
   mvar :: MVar () <- liftIO newEmptyMVar
@@ -134,9 +134,9 @@ runTree (Free (Around l f subspec next)) = do
     atomically $ writeTVar status (Done startTime endTime Success)
     return ret
 
-  continueWith (RunTreeGroup l status True subtree logs myAsync) next
+  continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (Introduce l alloc cleanup subspec next)) = do
-  (status, logs, rtc@RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   newContextAsync <- liftIO $ async $ do
     ctx <- waitOrHandleContextException runTreeContext status
@@ -157,8 +157,8 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
   myAsync <- liftIO $ async $ do
-    _ <- waitForTree subtree
-    ctx <- wait newContextAsync
+    _ <- waitForTree subtree -- TODO: catch exception here to ensure the cleanup runs
+    ctx <- waitOrHandleContextException newContextAsync status
 
     startTime <- getCurrentTime -- TODO
 
@@ -175,9 +175,9 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
         atomically $ writeTVar status (Done startTime endTime ret)
         return ret
 
-  continueWith (RunTreeGroup l status True subtree logs myAsync) next
+  continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
-  (status, logs, RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
@@ -190,7 +190,7 @@ runTree (Free (It l ex next)) = do
       atomically $ writeTVar status (Done startTime endTime ret)
       return ret
 
-  continueWith (RunTreeSingle l status logs myAsync) next
+  continueWith (RunTreeSingle l toggled status logs myAsync) next
 runTree (Free (Describe l subspec next)) = runDescribe False l subspec next
 runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec next
 runTree (Pure _) = return []
@@ -198,7 +198,7 @@ runTree (Pure _) = return []
 
 runDescribe :: Bool -> String -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTree]
 runDescribe parallel l subspec next = do
-  (status, logs, rtc@RunTreeContext {..}) <- getInfo
+  (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   (mconcat -> subtree) <- flip evalStateT runTreeContext $
     forM (getImmediateChildren subspec) $ \child -> do
@@ -219,7 +219,7 @@ runDescribe parallel l subspec next = do
       atomically $ writeTVar status (Done startTime endTime ret)
       return ret
 
-  let tree = RunTreeGroup l status False subtree logs myAsync
+  let tree = RunTreeGroup l toggled status False subtree logs myAsync
   rest <- runTree next
   return (tree : rest)
 
@@ -242,8 +242,9 @@ handleAsyncException status e = do
 getInfo = do
   status <- liftIO $ newTVarIO NotStarted
   logs <- liftIO $ newTVarIO mempty
+  toggled <- liftIO $ newTVarIO False
   rts <- ask
-  return (status, logs, rts)
+  return (status, logs, toggled, rts)
 
 logMsg logs msg = atomically $ modifyTVar logs (|> msg)
 

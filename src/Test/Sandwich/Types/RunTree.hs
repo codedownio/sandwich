@@ -10,7 +10,6 @@ module Test.Sandwich.Types.RunTree where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
-import Data.IORef
 import Data.Sequence
 import Data.Text
 import Data.Time.Clock
@@ -23,15 +22,17 @@ data Status = NotStarted
                    , statusResult :: Result }
   deriving (Show, Eq)
 
-data RunTreeWithStatus a l =
+data RunTreeWithStatus a l t =
   RunTreeGroup { runTreeLabel :: String
+               , runTreeToggled :: t
                , runTreeStatus :: a
                , runTreeIsContextManager :: Bool
-               , runTreeChildren :: [RunTreeWithStatus a l]
+               , runTreeChildren :: [RunTreeWithStatus a l t]
                , runTreeLogs :: l
                , runTreeAsync :: Async Result
                }
   | RunTreeSingle { runTreeLabel :: String
+                  , runTreeToggled :: t
                   , runTreeStatus :: a
                   , runTreeLogs :: l
                   , runTreeAsync :: Async Result
@@ -40,24 +41,32 @@ data RunTreeWithStatus a l =
 
 type Var = TVar
 type LogEntry = Text
-type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry))
-type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry)
+type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
+type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
 
 fixRunTree :: RunTree -> STM RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
   status <- readTVar runTreeStatus
   logs <- readTVar runTreeLogs
+  toggled <- readTVar runTreeToggled
 
-  return $ RunTreeSingle {runTreeStatus=status, runTreeLogs=logs, ..}
+  return $ RunTreeSingle {
+    runTreeStatus=status
+    , runTreeLogs=logs
+    , runTreeToggled=toggled
+    , ..
+    }
 fixRunTree (RunTreeGroup {..}) = do
   status <- readTVar runTreeStatus
   logs <- readTVar runTreeLogs
+  toggled <- readTVar runTreeToggled
 
   children <- forM runTreeChildren fixRunTree
 
   return $ RunTreeGroup {
     runTreeStatus = status
     , runTreeLogs = logs
+    , runTreeToggled = toggled
     , runTreeChildren = children
     , ..
     }

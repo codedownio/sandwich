@@ -15,11 +15,12 @@ data AppEvent = RunTreeUpdated [RunTreeFixed]
 data MainListElem = MainListElem {
   label :: String
   , depth :: Int
-  , folded :: Bool
+  , toggled :: Bool
   , status :: Status
   , logs :: Seq LogEntry
   , isContextManager :: Bool
-  } deriving Show
+  , node :: RunTree
+  }
 
 data AppState = AppState {
   _appRunTreeBase :: [RunTree]

@@ -57,7 +57,7 @@ instance Formatter TerminalUIFormatter where
 runApp :: TerminalUIFormatter -> [RunTree] -> IO ()
 runApp (TerminalUIFormatter {..}) rts = do
   rtsFixed <- atomically $ mapM fixRunTree rts
-  let initialState = updateFilteredTree (filterRunTree showContextManagers rtsFixed) $
+  let initialState = updateFilteredTree (zip (filterRunTree showContextManagers rts) (filterRunTree showContextManagers rtsFixed)) $
         AppState {
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
@@ -139,13 +139,13 @@ drawUI app = [ui]
     listDrawElement True elem = withAttr selectedAttr $ renderElem elem
     listDrawElement False elem = renderElem elem
 
-    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox [renderLine elem
-                                                                           , padLeft (Pad 4) $ border $ str $ show status
-                                                                           , padLeft (Pad 4) $ border $ str $ show logs]
+    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox $ catMaybes [Just $ renderLine elem
+                                                                                       , if toggled then Just $ padLeft (Pad 4) $ border $ str $ show status else Nothing
+                                                                                       , if toggled then Just $ padLeft (Pad 4) $ border $ str $ show logs else Nothing]
     -- renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ renderLine elem
 
     renderLine (MainListElem {..}) = hBox $ catMaybes [
-      Just $ withAttr toggleMarkerAttr $ str "[+] "
+      Just $ withAttr toggleMarkerAttr $ str (if toggled then "[-] " else "[+] ")
       , Just $ padRight Max $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ "    " <> show statusStartTime
@@ -156,20 +156,31 @@ drawUI app = [ui]
 appEvent :: AppState -> BrickEvent () AppEvent -> EventM () (Next AppState)
 appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
   & appRunTree .~ newTree
-  & updateFilteredTree (filterRunTree (s ^. appShowContextManagers) newTree)
+  & updateFilteredTree (zip (filterRunTree (s ^. appShowContextManagers) (s ^. appRunTreeBase))
+                            (filterRunTree (s ^. appShowContextManagers) newTree))
 
 appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey V.KEsc [] -> halt s
     V.EvKey (V.KChar c) [] | c == exitKey-> halt s
 
-    V.EvKey (V.KChar c) [] | c == toggleShowContextManagersKey -> continue $
-      let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree) in s
-      & appShowContextManagers %~ not
-      & updateFilteredTree runTreeFiltered
+    V.EvKey (V.KChar c) [] | c == toggleShowContextManagersKey -> do
+                               let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTreeBase)
+                               let runTreeFilteredFixed = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree)
+                               continue $ s
+                                 & appShowContextManagers %~ not
+                                 & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
 
     V.EvKey (V.KChar c) [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
+
+    V.EvKey c [] | c `elem` [V.KEnter] -> do
+      let selectedIndex = s ^. (appMainList . L.listSelectedL)
+      case L.listSelectedElement (s ^. appMainList) of
+        Nothing -> continue s
+        Just (i, MainListElem {..}) -> do
+          liftIO $ atomically $ modifyTVar (runTreeToggled node) not
+          continue s
 
     V.EvKey (V.KChar c) [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
@@ -185,10 +196,10 @@ appEvent s x@(VtyEvent e) =
     ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 appEvent s _ = continue s
 
-updateFilteredTree :: [RunTreeFixed] -> AppState -> AppState
-updateFilteredTree runTreeFiltered s = s
-  & appRunTreeFiltered .~ runTreeFiltered
-  & appMainList %~ L.listReplace (treeToVector runTreeFiltered)
+updateFilteredTree :: [(RunTree, RunTreeFixed)] -> AppState -> AppState
+updateFilteredTree pairs s = s
+  & appRunTreeFiltered .~ (fmap snd pairs)
+  & appMainList %~ L.listReplace (treeToVector pairs)
                                  (L.listSelected $ s ^. appMainList)
 
 -- * Cancelling
