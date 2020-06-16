@@ -30,6 +30,7 @@ dependencies:
 - microlens
 - microlens-th
 - random
+- safe-exceptions
 - stm
 - text
 - time

@@ -5,7 +5,7 @@
 
 module Test.Sandwich.Types.Example where
 
-import Control.Exception
+import Control.Exception.Safe
 import Control.Monad.Trans.Reader
 import Data.Typeable (Typeable)
 import qualified Test.QuickCheck as QC
@@ -44,14 +44,18 @@ data FailureReason =
   | Reason String
   | ExpectedButGot String String
   | GotException (Maybe String) SomeExceptionWithEq
-  | GotAsyncException (Maybe String) AsyncException
+  | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
   deriving (Show, Typeable, Eq)
 
 data SomeExceptionWithEq = SomeExceptionWithEq SomeException
   deriving Show
-
 instance Eq SomeExceptionWithEq where
   (SomeExceptionWithEq e1) == (SomeExceptionWithEq e2) = show e1 == show e2
+
+data SomeAsyncExceptionWithEq = SomeAsyncExceptionWithEq SomeAsyncException
+  deriving Show
+instance Eq SomeAsyncExceptionWithEq where
+  (SomeAsyncExceptionWithEq e1) == (SomeAsyncExceptionWithEq e2) = show e1 == show e2
 
 -- | @Location@ is used to represent source locations.
 data Location = Location {

@@ -1,8 +1,13 @@
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main where
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import Control.Exception.Safe
 import Control.Monad.Trans.Reader
+import Data.String.Interpolate
 import System.Posix.Signals
 import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
@@ -60,11 +65,18 @@ sleepThenFail _ = do
   threadDelay (2 * 10^6)
   return $ Failure Nothing (ExpectedButGot "2" "3")
 
+verySimple :: TopSpec
+verySimple = do
+  it "does the only thing" (\_ -> threadDelay (15 * 10^6) >> return Success)
+
 simple :: TopSpec
 simple = do
-  it "does the first thing" sleepThenSucceed
-  it "does the second thing" sleepThenFail
-  it "does the third thing" sleepThenSucceed
+  it "does the thing 1" sleepThenSucceed
+  it "does the thing 2" sleepThenSucceed
+  it "does the thing 3" sleepThenSucceed
+  it "does the thing 4" sleepThenSucceed
+  it "does the thing 5" sleepThenSucceed
+  it "does the thing 6" sleepThenSucceed
 
 medium :: TopSpec
 medium = do
@@ -101,4 +113,4 @@ mainPretty :: IO ()
 mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter medium -- simple
+main = runSandwich defaultOptions defaultTerminalUIFormatter medium

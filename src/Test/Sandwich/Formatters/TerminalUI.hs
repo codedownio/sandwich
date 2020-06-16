@@ -28,6 +28,7 @@ import Data.String.Interpolate
 import Data.Time.Clock
 import qualified Graphics.Vty as V
 import Lens.Micro
+import System.IO
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
 import Test.Sandwich.Formatters.TerminalUI.Filter
@@ -138,8 +139,10 @@ drawUI app = [ui]
     listDrawElement True elem = withAttr selectedAttr $ renderElem elem
     listDrawElement False elem = renderElem elem
 
-    -- renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox [renderLine elem, border $ str $ show status]
-    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ renderLine elem
+    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox [renderLine elem
+                                                                           , padLeft (Pad 4) $ border $ str $ show status
+                                                                           , padLeft (Pad 4) $ border $ str $ show logs]
+    -- renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ renderLine elem
 
     renderLine (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr toggleMarkerAttr $ str "[+] "
@@ -187,9 +190,6 @@ updateFilteredTree runTreeFiltered s = s
   & appRunTreeFiltered .~ runTreeFiltered
   & appMainList %~ L.listReplace (treeToVector runTreeFiltered)
                                  (L.listSelected $ s ^. appMainList)
-
--- * Filter tree
-
 
 -- * Cancelling
 

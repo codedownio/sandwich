@@ -1,6 +1,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
 -- |
@@ -14,13 +15,15 @@ module Test.Sandwich.Interpreters.RunTree (
 import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Concurrent.STM
-import Control.Exception
+import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
+import Data.Sequence hiding ((:>))
+import Data.String.Interpolate
 import Data.Time.Clock
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Options
@@ -56,8 +59,8 @@ runTree (Free (Before l f subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    (try $ f ctx) >>= \case
-      Left (e :: SomeException) -> do
+    (tryAny $ f ctx) >>= \case
+      Left e -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         atomically $ writeTVar status (Done startTime endTime (Failure maybeLoc (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))))
@@ -87,8 +90,8 @@ runTree (Free (After l f subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    (try $ f ctx) >>= \case
-      Left (e :: SomeException) -> do
+    (tryAny $ f ctx) >>= \case
+      Left e -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         let ret = Failure maybeLoc (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))
@@ -105,7 +108,7 @@ runTree (Free (Around l f subspec next)) = do
   (status, logs, rtc@RunTreeContext {..}) <- getInfo
 
   -- Use mvar to control when subspec is allowed to run
-  mvar :: MVar () <- liftIO $ newEmptyMVar
+  mvar :: MVar () <- liftIO newEmptyMVar
   newContextAsync <- liftIO $ async $ do
     ret <- wait runTreeContext
     void $ takeMVar mvar
@@ -118,14 +121,14 @@ runTree (Free (Around l f subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    eitherResult <- try $ f ctx $ do
+    eitherResult <- tryAny $ f ctx $ do
       putMVar mvar ()
       void $ waitForTree subtree
 
     endTime <- getCurrentTime
 
     ret <- case eitherResult of
-      Left (e :: SomeException) -> do
+      Left e -> do
         let maybeLoc = Nothing
         return $ Failure maybeLoc $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
       Right _ -> return Success
@@ -143,8 +146,8 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    (try $ alloc ctx) >>= \case
-      Left (e :: SomeException) -> do
+    (tryAny $ alloc ctx) >>= \case
+      Left e -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         atomically $ writeTVar status (Done startTime endTime (Failure maybeLoc (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e))))
@@ -162,8 +165,8 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 
     startTime <- getCurrentTime -- TODO
 
-    (try $ cleanup ctx) >>= \case
-      Left (e :: SomeException) -> do
+    (tryAny $ cleanup ctx) >>= \case
+      Left e -> do
         let maybeLoc = Nothing
         endTime <- getCurrentTime
         let ret = Failure maybeLoc (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))
@@ -180,23 +183,17 @@ runTree (Free (It l ex next)) = do
   (status, logs, RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    handle (handleAsyncException status) $ unmask $ do
+    flip withException (handleAsyncException status) $ unmask $ do
       ctx <- wait runTreeContext
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      (try $ ex ctx) >>= \case
-        Left (e :: SomeException) -> do
-          let maybeLoc = Nothing
-          endTime <- getCurrentTime
-          let ret = Failure maybeLoc (GotException (Just "Unknown exception") (SomeExceptionWithEq e))
-          atomically $ writeTVar status (Done startTime endTime ret)
-          return ret
-        Right ret -> do
-          endTime <- getCurrentTime
-          atomically $ writeTVar status (Done startTime endTime ret)
-          return ret
+      eitherResult <- tryAny $ ex ctx
+      endTime <- getCurrentTime
+      let ret = either (Failure Nothing . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
+      atomically $ writeTVar status (Done startTime endTime ret)
+      return ret
 
-  continueWith( RunTreeSingle l status logs myAsync) next
+  continueWith (RunTreeSingle l status logs myAsync) next
 runTree (Free (Describe l subspec next)) = runDescribe False l subspec next
 runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec next
 runTree (Pure _) = return []
@@ -214,15 +211,16 @@ runDescribe parallel l subspec next = do
       put =<< liftIO (async $ waitForTree tree >> wait runTreeContext)
       return tree
 
-  myAsync <- liftIO $ async $ do
-    _ <- wait runTreeContext
-    startTime <- getCurrentTime
-    atomically $ writeTVar status (Running startTime)
-    _ <- waitForTree subtree
-    endTime <- getCurrentTime
-    let ret = Success
-    atomically $ writeTVar status (Done startTime endTime ret)
-    return ret
+  myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
+    flip withException (handleAsyncException status) $ unmask $ do
+      _ <- wait runTreeContext
+      startTime <- getCurrentTime
+      atomically $ writeTVar status (Running startTime)
+      _ <- waitForTree subtree
+      endTime <- getCurrentTime
+      let ret = Success
+      atomically $ writeTVar status (Done startTime endTime ret)
+      return ret
 
   let tree = RunTreeGroup l status False subtree logs myAsync
   rest <- runTree next
@@ -233,11 +231,12 @@ continueWith tree next = do
   rest <- runTree next
   return (tree : rest)
 
+handleAsyncException :: TVar Status -> SomeAsyncException -> IO Result
 handleAsyncException status e = do
   -- TODO: get start time
   endTime <- getCurrentTime
   let maybeLoc = Nothing
-  let ret = Failure maybeLoc (GotAsyncException Nothing e)
+  let ret = Failure maybeLoc (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
   atomically $ writeTVar status (Done endTime endTime ret)
   return ret
 
@@ -246,6 +245,8 @@ getInfo = do
   logs <- liftIO $ newTVarIO mempty
   rts <- ask
   return (status, logs, rts)
+
+logMsg logs msg = atomically $ modifyTVar logs (|> msg)
 
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
