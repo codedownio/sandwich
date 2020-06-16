@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8e428bdc644339f2f62e30ebc59ec99364612b6caacf8920f8763fc266f2750d
+-- hash: 109defcfd0738974e22ef3aa58abc6021a0542d16731b6e599b4090c39ffab7e
 
 name:           sandwich
 version:        0.1.0.0
@@ -50,6 +50,7 @@ library
     , async
     , base >=4.7 && <5
     , brick
+    , containers
     , free
     , interpolate
     , microlens
@@ -76,6 +77,7 @@ executable sandwich-exe
     , async
     , base >=4.7 && <5
     , brick
+    , containers
     , free
     , interpolate
     , microlens
@@ -104,6 +106,7 @@ test-suite sandwich-test
     , async
     , base >=4.7 && <5
     , brick
+    , containers
     , free
     , interpolate
     , microlens

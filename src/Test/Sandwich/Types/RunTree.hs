@@ -10,65 +10,52 @@ module Test.Sandwich.Types.RunTree where
 import Control.Concurrent.Async
 import Control.Monad
 import Data.IORef
+import Data.Sequence
 import Data.Text
 import Data.Time.Clock
 import Test.Sandwich.Types.Example
 
-data Status l = NotStarted
-              | Running { statusStartTime :: UTCTime
-                        , statusLogs :: l }
-              | Done { statusStartTime :: UTCTime
-                     , statusEndTime :: UTCTime
-                     , statusLogs :: l
-                     , statusResult :: Result }
+data Status = NotStarted
+            | Running { statusStartTime :: UTCTime }
+            | Done { statusStartTime :: UTCTime
+                   , statusEndTime :: UTCTime
+                   , statusResult :: Result }
   deriving Show
 
-data RunTreeWithStatus a =
+data RunTreeWithStatus a l =
   RunTreeGroup { runTreeLabel :: String
                , runTreeStatus :: a
                , runTreeIsContextManager :: Bool
-               , runTreeChildren :: [RunTreeWithStatus a]
+               , runTreeChildren :: [RunTreeWithStatus a l]
+               , runTreeLogs :: l
                , runTreeAsync :: Async Result
                }
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeStatus :: a
+                  , runTreeLogs :: l
                   , runTreeAsync :: Async Result
                   }
   deriving (Functor)
 
-type RunTree = RunTreeWithStatus (IORef (Status (IORef [Text])))
-type RunTreeFixed = RunTreeWithStatus (Status [Text])
+type Var = IORef
+type RunTree = RunTreeWithStatus (Var Status) (Var (Seq Text))
+type RunTreeFixed = RunTreeWithStatus Status (Seq Text)
 
 fixRunTree :: RunTree -> IO RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
   status <- readIORef runTreeStatus
+  logs <- readIORef runTreeLogs
 
-  status' <- case status of
-    Running {statusLogs} -> do
-      logs <- readIORef statusLogs
-      return $ status { statusLogs = logs }
-    Done {statusLogs} -> do
-      logs <- readIORef statusLogs
-      return $ status { statusLogs = logs }
-    NotStarted -> return NotStarted
-
-  return $ RunTreeSingle {runTreeStatus=status', ..}
+  return $ RunTreeSingle {runTreeStatus=status, runTreeLogs=logs, ..}
 fixRunTree (RunTreeGroup {..}) = do
   status <- readIORef runTreeStatus
-
-  status' <- case status of
-    Running {statusLogs} -> do
-      logs <- readIORef statusLogs
-      return $ status { statusLogs = logs }
-    Done {statusLogs} -> do
-      logs <- readIORef statusLogs
-      return $ status { statusLogs = logs }
-    NotStarted -> return NotStarted
+  logs <- readIORef runTreeLogs
 
   children <- forM runTreeChildren fixRunTree
 
   return $ RunTreeGroup {
-    runTreeStatus = status'
+    runTreeStatus = status
+    , runTreeLogs = logs
     , runTreeChildren = children
     , ..
     }
