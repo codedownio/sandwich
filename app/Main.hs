@@ -84,11 +84,11 @@ medium = do
 
   introduce "Database" (\() -> return 42) (\(num :> ()) -> return ()) $ do
     it "uses the DB 1" $ \(num :> ()) -> do
-      putStrLn ("Got num 1: " <> show num)
+      -- putStrLn ("Got num 1: " <> show num)
       return Success
 
     it "uses the DB 2" $ \(num :> ()) -> do
-      putStrLn ("Got num 2: " <> show num)
+      -- putStrLn ("Got num 2: " <> show num)
       return Success
 
   it "does foo" sleepThenFail

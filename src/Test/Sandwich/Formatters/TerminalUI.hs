@@ -18,7 +18,6 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
 import Brick.Widgets.ProgressBar
-import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
@@ -31,6 +30,7 @@ import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.Formatters.TerminalUI.Util
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
@@ -93,15 +93,15 @@ drawUI app = [ui]
     ui = vBox [vLimitPercent 10 topBox
               , mainList]
 
-    topBox = vBox [hBox [hLimitPercent 33 (vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
-                                                , toggleIndicator (app ^. appShowRunTimes) "t" "Hide run times" "Show run times"])
-                        , hLimitPercent 33 (vBox [keyIndicator "C" "Clear results"])
-                        , hLimitPercent 33 (vBox [keyIndicator "q" "Exit"])]
-                  , fill ' '
-                  , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str " | "] countWidgets
-                                                              <> [str [i| of #{totalNumTests}|]])]
+    keybindingBox = padAll 1 . vBox
 
-                    -- str [i|  #{totalRunningTests} running, #{totalDoneTests} done of #{totalNumTests}  |]]
+    topBox = vBox [hBox [hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
+                                                         , toggleIndicator (app ^. appShowRunTimes) "t" "Hide run times" "Show run times"])
+                        , vBorder
+                        , hLimitPercent 33 (keybindingBox [keyIndicator "C" "Clear results"])
+                        , vBorder
+                        , hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]
+                  , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])]
 
     countWidgets =
       (if totalSucceededTests > 0 then [[withAttr successAttr $ str $ show totalSucceededTests, str " succeeded"]] else mempty)
@@ -121,10 +121,8 @@ drawUI app = [ui]
 
     keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
   
-    mainList = vBox [ hCenter box
-                    -- , str " "
-                    , progressBar Nothing (fromIntegral totalDoneTests / fromIntegral totalNumTests)
-                    ]
+    mainList = vBox [hCenter box
+                    , progressBar Nothing (fromIntegral totalDoneTests / fromIntegral totalNumTests)]
 
     box = padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
 
@@ -133,10 +131,10 @@ drawUI app = [ui]
     listDrawElement False elem = renderElem elem
 
     renderElem (MainListElem {..}) = hBox $ catMaybes [
-      Just $ withAttr (chooseAttr status) (str label)
-      , case status of
+      Just $ padRight Max $ withAttr (chooseAttr status) (str label)
+      , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ "    " <> show statusStartTime
-          Done {..} -> Just $ str $ "    " <> show (diffUTCTime statusEndTime statusStartTime)
+          Done {..} -> Just $ str $ "    " <> formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
           _ -> Nothing
       ]
 
@@ -155,6 +153,9 @@ appEvent s x@(VtyEvent e) =
       & appShowContextManagers %~ not
       & updateFilteredTree runTreeFiltered
 
+    V.EvKey (V.KChar 't') [] -> continue $ s
+      & appShowRunTimes %~ not
+  
     ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 
 appEvent s _ = continue s
@@ -206,3 +207,4 @@ isFailedItBlock _ = False
 
 isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
 isDoneItBlock _ = False
+
