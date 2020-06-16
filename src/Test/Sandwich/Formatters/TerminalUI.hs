@@ -28,7 +28,6 @@ import Data.String.Interpolate
 import Data.Time.Clock
 import qualified Graphics.Vty as V
 import Lens.Micro
-import System.IO
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
 import Test.Sandwich.Formatters.TerminalUI.Filter
@@ -102,7 +101,8 @@ drawUI app = [ui]
     keybindingBox = vBox
 
     topBox = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) [toggleShowContextManagersKey] "Hide context managers" "Show context managers"
-                                                                            , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"])
+                                                                            , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"
+                                                                            , keyIndicator "Tab/Enter" "Toggle selected"])
                         , vBorder
                         , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator [cancelAllKey] "Cancel all"
                                                                            , keyIndicator [cancelSelectedKey] "Cancel selected"
@@ -174,8 +174,7 @@ appEvent s x@(VtyEvent e) =
     V.EvKey (V.KChar c) [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
 
-    V.EvKey c [] | c `elem` [V.KEnter] -> do
-      let selectedIndex = s ^. (appMainList . L.listSelectedL)
+    V.EvKey c [] | c `elem` [V.KEnter, V.KChar '\t'] -> 
       case L.listSelectedElement (s ^. appMainList) of
         Nothing -> continue s
         Just (i, MainListElem {..}) -> do
@@ -198,7 +197,7 @@ appEvent s _ = continue s
 
 updateFilteredTree :: [(RunTree, RunTreeFixed)] -> AppState -> AppState
 updateFilteredTree pairs s = s
-  & appRunTreeFiltered .~ (fmap snd pairs)
+  & appRunTreeFiltered .~ fmap snd pairs
   & appMainList %~ L.listReplace (treeToVector pairs)
                                  (L.listSelected $ s ^. appMainList)
 
