@@ -30,6 +30,7 @@ dependencies:
 - microlens-th
 - random
 - scheduler
+- text
 - time
 - transformers
 - unix

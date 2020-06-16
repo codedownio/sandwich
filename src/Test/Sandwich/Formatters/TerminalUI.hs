@@ -35,11 +35,13 @@ import Test.Sandwich.Types.RunTree
 
 data TerminalUIFormatter = TerminalUIFormatter {
   showContextManagers :: Bool
+  , showRunTimes :: Bool
   }
 
 defaultTerminalUIFormatter :: TerminalUIFormatter
 defaultTerminalUIFormatter = TerminalUIFormatter {
   showContextManagers = True
+  , showRunTimes = True
   }
   
 instance Formatter TerminalUIFormatter where
@@ -51,6 +53,7 @@ runApp (TerminalUIFormatter {..}) rts = do
   let initialState = updateFilteredTree (filterRunTree showContextManagers rtsFixed) $
         AppState {
           _appShowContextManagers = showContextManagers
+          , _appShowRunTimes = showRunTimes
           , _appRunTree = rtsFixed
           , _appRunTreeFiltered = []
           , _appMainList = L.list () mempty 1
@@ -82,9 +85,10 @@ drawUI app = [ui]
     ui = vBox [vLimitPercent 10 topBox
               , mainList]
 
-    topBox = vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
-                  , keyIndicator "q" "Exit"
-                  , keyIndicator "C" "Clear results"
+    topBox = vBox [hBox [hLimitPercent 33 (vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
+                                                , toggleIndicator (app ^. appShowRunTimes) "t" "Hide run times" "Show run times"])
+                        , hLimitPercent 33 (vBox [keyIndicator "C" "Clear results"])
+                        , hLimitPercent 33 (vBox [keyIndicator "q" "Exit"])]
                   , fill ' '
                   , hBorderWithLabel $ str [i|  #{totalRunningTests} running, #{totalDoneTests} done of #{totalNumTests}  |]]
 
@@ -111,8 +115,8 @@ drawUI app = [ui]
     renderElem (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr (chooseAttr status) (str label)
       , case status of
-          Running startTime -> Just $ str $ "    " <> show startTime
-          Done startTime endTime _ -> Just $ str $ "    " <> show (diffUTCTime endTime startTime)
+          Running startTime _ -> Just $ str $ "    " <> show startTime
+          Done startTime endTime _ _ -> Just $ str $ "    " <> show (diffUTCTime endTime startTime)
           _ -> Nothing
       ]
 
