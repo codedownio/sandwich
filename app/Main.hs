@@ -3,7 +3,6 @@ module Main where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad.Trans.Reader
-import Control.Scheduler
 import System.Posix.Signals
 import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
@@ -32,11 +31,11 @@ topSpec = do
 
   introduce "Intro a string" (\() -> getLine) (\_ -> return ()) $ do
     it "uses the string" $ \(str :> ()) -> do
-      putStrLn $ "Got the string: " <> str
+      -- putStrLn $ "Got the string: " <> str
       return Success
 
     it "uses the string again" $ \(str :> ()) -> do
-      putStrLn $ "Got the string here: " <> str
+      -- putStrLn $ "Got the string here: " <> str
       return Success
 
   it "does a thing" $ \() -> do

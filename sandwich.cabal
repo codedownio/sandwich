@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 109defcfd0738974e22ef3aa58abc6021a0542d16731b6e599b4090c39ffab7e
+-- hash: 4bcabdf548db953daa6e375ed14136046c3416afc15e2809347e3979d02b3bcc
 
 name:           sandwich
 version:        0.1.0.0
@@ -56,7 +56,7 @@ library
     , microlens
     , microlens-th
     , random
-    , scheduler
+    , stm
     , text
     , time
     , transformers
@@ -84,7 +84,7 @@ executable sandwich-exe
     , microlens-th
     , random
     , sandwich
-    , scheduler
+    , stm
     , text
     , time
     , transformers
@@ -113,7 +113,7 @@ test-suite sandwich-test
     , microlens-th
     , random
     , sandwich
-    , scheduler
+    , stm
     , text
     , time
     , transformers

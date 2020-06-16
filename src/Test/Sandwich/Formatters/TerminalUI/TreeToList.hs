@@ -27,6 +27,7 @@ runTreeToList' indent (RunTreeGroup {..}) = elem `Vec.cons` (runTreesToList' (in
           label = (L.replicate (indent * 4) ' ') <> runTreeLabel
           , folded = False
           , status = runTreeStatus
+          , logs = runTreeLogs
           , isContextManager = runTreeIsContextManager
           }
 runTreeToList' indent (RunTreeSingle {..}) = Vec.singleton elem
@@ -34,5 +35,6 @@ runTreeToList' indent (RunTreeSingle {..}) = Vec.singleton elem
           label = (L.replicate (indent * 4) ' ') <> runTreeLabel
           , folded = False
           , status = runTreeStatus
+          , logs = runTreeLogs
           , isContextManager = False
           }

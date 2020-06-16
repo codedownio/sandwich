@@ -20,7 +20,9 @@ import qualified Brick.Widgets.List as L
 import Brick.Widgets.ProgressBar
 import Control.Concurrent
 import Control.Concurrent.Async
+import Control.Concurrent.STM
 import Control.Monad
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
 import Data.Time.Clock
@@ -29,6 +31,7 @@ import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 
@@ -49,7 +52,7 @@ instance Formatter TerminalUIFormatter where
 
 runApp :: TerminalUIFormatter -> [RunTree] -> IO ()
 runApp (TerminalUIFormatter {..}) rts = do
-  rtsFixed <- mapM fixRunTree rts
+  rtsFixed <- atomically $ mapM fixRunTree rts
   let initialState = updateFilteredTree (filterRunTree showContextManagers rtsFixed) $
         AppState {
           _appShowContextManagers = showContextManagers
@@ -61,10 +64,15 @@ runApp (TerminalUIFormatter {..}) rts = do
 
   eventChan <- newBChan 10
 
+  currentFixedTree <- newTVarIO rtsFixed
   async $ forever $ do
-    rtsFixed <- mapM fixRunTree rts
-    writeBChan eventChan (RunTreeUpdated rtsFixed)
-    threadDelay 100000
+    newFixedTree <- atomically $ do
+      currentFixed <- readTVar currentFixedTree
+      newFixed <- mapM fixRunTree rts
+      when (newFixed == currentFixed) retry
+      writeTVar currentFixedTree newFixed
+      return newFixed
+    writeBChan eventChan (RunTreeUpdated newFixedTree)
   
   let buildVty = V.mkVty V.defaultConfig
   initialVty <- buildVty
@@ -90,9 +98,21 @@ drawUI app = [ui]
                         , hLimitPercent 33 (vBox [keyIndicator "C" "Clear results"])
                         , hLimitPercent 33 (vBox [keyIndicator "q" "Exit"])]
                   , fill ' '
-                  , hBorderWithLabel $ str [i|  #{totalRunningTests} running, #{totalDoneTests} done of #{totalNumTests}  |]]
+                  , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str " | "] countWidgets
+                                                              <> [str [i| of #{totalNumTests}|]])]
+
+                    -- str [i|  #{totalRunningTests} running, #{totalDoneTests} done of #{totalNumTests}  |]]
+
+    countWidgets =
+      (if totalSucceededTests > 0 then [[withAttr successAttr $ str $ show totalSucceededTests, str " succeeded"]] else mempty)
+      <> (if totalFailedTests > 0 then [[withAttr failureAttr $ str $ show totalFailedTests, str " failed"]] else mempty)
+      <> (if totalPendingTests > 0 then [[withAttr pendingAttr $ str $ show totalPendingTests, str " pending"]] else mempty)
+      <> (if totalRunningTests > 0 then [[withAttr runningAttr $ str $ show totalRunningTests, str " running"]] else mempty)
 
     totalNumTests = countWhere isItBlock (app ^. appRunTree)
+    totalSucceededTests = countWhere isSuccessItBlock (app ^. appRunTree)
+    totalPendingTests = countWhere isPendingItBlock (app ^. appRunTree)
+    totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
     totalDoneTests = countWhere isDoneItBlock (app ^. appRunTree)
 
@@ -174,6 +194,15 @@ isItBlock _ = False
 
 isRunningItBlock (RunTreeSingle {runTreeStatus=(Running {})}) = True
 isRunningItBlock _ = False
+
+isSuccessItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=Success})}) = True
+isSuccessItBlock _ = False
+
+isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Pending {})})}) = True
+isPendingItBlock _ = False
+  
+isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = True
+isFailedItBlock _ = False
 
 isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
 isDoneItBlock _ = False

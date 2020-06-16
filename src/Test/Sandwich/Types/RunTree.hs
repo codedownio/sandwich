@@ -8,6 +8,7 @@
 module Test.Sandwich.Types.RunTree where
 
 import Control.Concurrent.Async
+import Control.Concurrent.STM
 import Control.Monad
 import Data.IORef
 import Data.Sequence
@@ -20,7 +21,7 @@ data Status = NotStarted
             | Done { statusStartTime :: UTCTime
                    , statusEndTime :: UTCTime
                    , statusResult :: Result }
-  deriving Show
+  deriving (Show, Eq)
 
 data RunTreeWithStatus a l =
   RunTreeGroup { runTreeLabel :: String
@@ -35,22 +36,22 @@ data RunTreeWithStatus a l =
                   , runTreeLogs :: l
                   , runTreeAsync :: Async Result
                   }
-  deriving (Functor)
+  deriving (Functor, Eq)
 
-type Var = IORef
+type Var = TVar
 type LogEntry = Text
 type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry))
 type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry)
 
-fixRunTree :: RunTree -> IO RunTreeFixed
+fixRunTree :: RunTree -> STM RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
-  status <- readIORef runTreeStatus
-  logs <- readIORef runTreeLogs
+  status <- readTVar runTreeStatus
+  logs <- readTVar runTreeLogs
 
   return $ RunTreeSingle {runTreeStatus=status, runTreeLogs=logs, ..}
 fixRunTree (RunTreeGroup {..}) = do
-  status <- readIORef runTreeStatus
-  logs <- readIORef runTreeLogs
+  status <- readTVar runTreeStatus
+  logs <- readTVar runTreeLogs
 
   children <- forM runTreeChildren fixRunTree
 

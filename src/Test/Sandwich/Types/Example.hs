@@ -37,14 +37,20 @@ data Result =
   Success
   | Pending (Maybe Location) (Maybe String)
   | Failure (Maybe Location) FailureReason
-  deriving Show
+  deriving (Show, Eq)
 
 data FailureReason =
     NoReason
   | Reason String
   | ExpectedButGot String String
-  | Error (Maybe String) SomeException
-  deriving (Show, Typeable)
+  | Error (Maybe String) SomeExceptionWithEq
+  deriving (Show, Typeable, Eq)
+
+data SomeExceptionWithEq = SomeExceptionWithEq SomeException
+  deriving Show
+
+instance Eq SomeExceptionWithEq where
+  (SomeExceptionWithEq e1) == (SomeExceptionWithEq e2) = show e1 == show e2
 
 -- | @Location@ is used to represent source locations.
 data Location = Location {
