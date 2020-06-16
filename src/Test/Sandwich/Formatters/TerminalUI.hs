@@ -21,6 +21,7 @@ import Brick.Widgets.ProgressBar
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
+import Control.Monad.IO.Class
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
@@ -28,6 +29,7 @@ import Data.Time.Clock
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
+import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Formatters.TerminalUI.Util
@@ -95,10 +97,13 @@ drawUI app = [ui]
 
     keybindingBox = padAll 1 . vBox
 
-    topBox = vBox [hBox [hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
-                                                         , toggleIndicator (app ^. appShowRunTimes) "t" "Hide run times" "Show run times"])
+    topBox = vBox [hBox [hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) [toggleShowContextManagersKey] "Hide context managers" "Show context managers"
+                                                         , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"])
                         , vBorder
-                        , hLimitPercent 33 (keybindingBox [keyIndicator "C" "Clear results"])
+                        , hLimitPercent 33 (keybindingBox [keyIndicator [cancelAllKey] "Cancel all"
+                                                          , keyIndicator [cancelSelectedKey] "Cancel selected"
+                                                          , keyIndicator [clearResultsKey] "Clear results"
+                                                          , keyIndicator [runAgainKey] "Run again"])
                         , vBorder
                         , hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]
                   , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])]
@@ -146,18 +151,21 @@ appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
 appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey V.KEsc [] -> halt s
-    V.EvKey (V.KChar 'q') [] -> halt s
+    V.EvKey (V.KChar c) [] | c == exitKey-> halt s
 
-    V.EvKey (V.KChar 'c') [] -> continue $
+    V.EvKey (V.KChar c) [] | c == toggleShowContextManagersKey -> continue $
       let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree) in s
       & appShowContextManagers %~ not
       & updateFilteredTree runTreeFiltered
 
-    V.EvKey (V.KChar 't') [] -> continue $ s
+    V.EvKey (V.KChar c) [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
-  
-    ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 
+    V.EvKey (V.KChar c) [] | c == cancelAllKey -> do
+      liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
+      continue s
+
+    ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 appEvent s _ = continue s
 
 updateFilteredTree :: [RunTreeFixed] -> AppState -> AppState
@@ -208,3 +216,11 @@ isFailedItBlock _ = False
 isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
 isDoneItBlock _ = False
 
+-- * Cancelling
+
+cancelRecursively :: RunTreeFixed -> IO ()
+cancelRecursively (RunTreeGroup {..}) = do
+  forM_ runTreeChildren cancelRecursively
+  cancel runTreeAsync
+cancelRecursively (RunTreeSingle {..}) =
+  cancel runTreeAsync

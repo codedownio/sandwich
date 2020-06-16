@@ -43,7 +43,8 @@ data FailureReason =
     NoReason
   | Reason String
   | ExpectedButGot String String
-  | Error (Maybe String) SomeExceptionWithEq
+  | GotException (Maybe String) SomeExceptionWithEq
+  | GotAsyncException (Maybe String) AsyncException
   deriving (Show, Typeable, Eq)
 
 data SomeExceptionWithEq = SomeExceptionWithEq SomeException
