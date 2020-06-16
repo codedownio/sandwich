@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: de13e04295f23cd76258fe617f9b9cf1391efb85777fdef99271dccd51580f90
+-- hash: 43f1bdb704c5feabc1b231ead661185aa1309f4c1276d646b05c6b44d855880b
 
 name:           sandwich
 version:        0.1.0.0
@@ -35,7 +35,6 @@ library
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree
-      Test.Sandwich.Interpreters.RunTreeScheduler
       Test.Sandwich.Types.Example
       Test.Sandwich.Types.ExampleInstances
       Test.Sandwich.Types.Formatter

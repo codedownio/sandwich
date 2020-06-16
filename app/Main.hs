@@ -9,7 +9,6 @@ import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PrettyShow
--- import Test.Sandwich.Interpreters.RunTreeScheduler
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Formatter
@@ -69,28 +68,32 @@ simple = do
   it "does the third thing" sleepThenSucceed
 
 medium :: TopSpec
-medium = describe "implicit outer" $ do
+medium = do
   it "does the first thing" sleepThenSucceed
   it "does the 1.5 thing" sleepThenFail
   it "does the 1.8 thing" sleepThenFail
+
   describe "should happen sequentially" $ do
     it "sequential 1" sleepThenSucceed
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
+
   describeParallel "should happen in parallel" $ do
     it "sequential 1" sleepThenSucceed
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
 
-  introduce "Database" (\() -> makeDB) (\(db :> ()) -> cleanupDB db) $ do
-    it "uses the DB 1" $ \(db :> ()) -> do
+  introduce "Database" (\() -> return 42) (\(num :> ()) -> return ()) $ do
+    it "uses the DB 1" $ \(num :> ()) -> do
+      putStrLn ("Got num 1: " <> show num)
       return Success
 
-    it "uses the DB 2" $ \(db :> ()) -> do
+    it "uses the DB 2" $ \(num :> ()) -> do
+      putStrLn ("Got num 2: " <> show num)
       return Success
 
-  it "does the second thing" sleepThenFail
-  it "does the third thing" sleepThenSucceed
+  it "does foo" sleepThenFail
+  it "does bar" sleepThenSucceed
 
 mainFilter :: IO ()
 mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
@@ -98,33 +101,5 @@ mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 mainPretty :: IO ()
 mainPretty = putStrLn $ prettyShow topSpec
 
-runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
-runSandwich options f spec = do
-  asyncUnit <- async $ return ()
-  rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
-    runTreeContext = asyncUnit
-    , runTreeOptions = options
-    }
-
-  formatterAsync <- async $ runFormatter f rts
-
-  let shutdown = do
-        putStrLn "TODO: shut down!"
-        cancel formatterAsync
-
-  _ <- installHandler sigINT (Catch shutdown) Nothing
-
-  wait formatterAsync
-
-
 main :: IO ()
--- main = runSandwich defaultOptions defaultTerminalUIFormatter simple
-main = runSandwich defaultOptions defaultTerminalUIFormatter medium
-
-data Database = Database deriving Show
-
-makeDB :: IO Database
-makeDB = return Database
-
-cleanupDB :: Database -> IO ()
-cleanupDB _ = return ()
+main = runSandwich defaultOptions defaultTerminalUIFormatter medium -- simple
