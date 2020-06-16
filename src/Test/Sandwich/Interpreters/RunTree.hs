@@ -53,32 +53,30 @@ runTree :: Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [
 runTree (Free (Before l f subspec next)) = do
   (status, logs, rtc@RunTreeContext {..}) <- getInfo
 
-  newContextAsync <- liftIO $ async $ do
-    ctx <- wait runTreeContext
+  newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
+    flip withException (handleAsyncException status) $ unmask $ do
+      ctx <- wait runTreeContext
+      startTime <- getCurrentTime
+      atomically $ writeTVar status (Running startTime)
 
-    startTime <- getCurrentTime
-    atomically $ writeTVar status (Running startTime)
+      eitherResult <- tryAny $ f ctx
 
-    (tryAny $ f ctx) >>= \case
-      Left e -> do
-        let maybeLoc = Nothing
-        endTime <- getCurrentTime
-        atomically $ writeTVar status (Done startTime endTime (Failure maybeLoc (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))))
-        throwIO e
-      Right () -> do
-        endTime <- getCurrentTime
-        atomically $ writeTVar status (Done startTime endTime Success)
-    return ctx
+      let ret = either (\e -> Failure Nothing (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
+      endTime <- getCurrentTime
+      atomically $ writeTVar status (Done startTime endTime ret)
+
+      case eitherResult of
+        Left e -> throwIO e
+        Right _ -> return ctx
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
-  myAsync <- liftIO $ async $ do
-    mapM_ wait (fmap runTreeAsync subtree)
-    return Success
+  myAsync <- liftIO $ liftIO $ asyncWithUnmask $ \unmask -> do
+    flip withException (handleAsyncException status) $ unmask $ do
+      mapM_ wait (fmap runTreeAsync subtree)
+      return Success
 
   continueWith (RunTreeGroup l status True subtree logs myAsync) next
-
-
 runTree (Free (After l f subspec next)) = do
   (status, logs, RunTreeContext {..}) <- getInfo
 
@@ -141,21 +139,20 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
   (status, logs, rtc@RunTreeContext {..}) <- getInfo
 
   newContextAsync <- liftIO $ async $ do
-    ctx <- wait runTreeContext
+    ctx <- waitOrHandleContextException runTreeContext status
 
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    (tryAny $ alloc ctx) >>= \case
-      Left e -> do
-        let maybeLoc = Nothing
-        endTime <- getCurrentTime
-        atomically $ writeTVar status (Done startTime endTime (Failure maybeLoc (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e))))
-        throwIO e
-      Right intro -> do
-        endTime <- getCurrentTime
-        atomically $ writeTVar status (Done startTime endTime Success)
-        return (intro :> ctx)
+    eitherResult <- tryAny $ alloc ctx
+
+    let ret = either (\e -> (Failure Nothing (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e)))) (const Success) eitherResult
+    endTime <- getCurrentTime
+    atomically $ writeTVar status (Done startTime endTime ret)
+
+    case eitherResult of
+      Left e -> throwIO e
+      Right intro -> return (intro :> ctx)
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
@@ -184,7 +181,7 @@ runTree (Free (It l ex next)) = do
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
-      ctx <- wait runTreeContext
+      ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
       eitherResult <- tryAny $ ex ctx
@@ -199,7 +196,7 @@ runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec ne
 runTree (Pure _) = return []
 
 
-runDescribe :: Bool -> [Char] -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTree]
+runDescribe :: Bool -> String -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTree]
 runDescribe parallel l subspec next = do
   (status, logs, rtc@RunTreeContext {..}) <- getInfo
 
@@ -227,6 +224,8 @@ runDescribe parallel l subspec next = do
   return (tree : rest)
 
 
+-- * Helpers
+
 continueWith tree next = do
   rest <- runTree next
   return (tree : rest)
@@ -248,6 +247,19 @@ getInfo = do
 
 logMsg logs msg = atomically $ modifyTVar logs (|> msg)
 
+waitOrHandleContextException contextAsync status = do
+  (tryAny $ wait contextAsync) >>= \case
+    Left e -> do
+      let ret = Failure Nothing (GetContextException (SomeExceptionWithEq e))
+      endTime <- getCurrentTime
+      atomically $ modifyTVar status $ \case
+        Running startTime -> (Done startTime endTime ret) -- TODO: make startTime a Maybe
+        _ -> (Done endTime endTime ret) -- TODO: make startTime a Maybe
+      throwIO e
+    Right ctx -> return ctx
+
+
+  
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Before l f subspec next)) = (Free (Before l f subspec (Pure ()))) : getImmediateChildren next

@@ -44,6 +44,7 @@ data FailureReason =
   | Reason String
   | ExpectedButGot String String
   | GotException (Maybe String) SomeExceptionWithEq
+  | GetContextException SomeExceptionWithEq
   | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
   deriving (Show, Typeable, Eq)
 
