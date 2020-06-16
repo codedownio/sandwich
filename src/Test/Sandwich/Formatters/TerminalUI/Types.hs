@@ -22,11 +22,13 @@ data MainListElem = MainListElem {
   } deriving Show
 
 data AppState = AppState {
-  _appShowContextManagers :: Bool
-  , _appShowRunTimes :: Bool
+  _appRunTreeBase :: [RunTree]
   , _appRunTree :: [RunTreeFixed]
   , _appRunTreeFiltered :: [RunTreeFixed]
   , _appMainList :: L.List () MainListElem
+
+  , _appShowContextManagers :: Bool
+  , _appShowRunTimes :: Bool
   }
 
 makeLenses ''AppState

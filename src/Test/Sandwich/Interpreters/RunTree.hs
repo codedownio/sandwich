@@ -177,7 +177,7 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 
   continueWith (RunTreeGroup l status True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
-  (status, logs, rtc@RunTreeContext {..}) <- getInfo
+  (status, logs, RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     handle (handleAsyncException status) $ unmask $ do

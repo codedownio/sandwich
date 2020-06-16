@@ -29,11 +29,12 @@ import Data.Time.Clock
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
+import Test.Sandwich.Formatters.TerminalUI.Count
+import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Formatters.TerminalUI.Util
-import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 
@@ -57,11 +58,13 @@ runApp (TerminalUIFormatter {..}) rts = do
   rtsFixed <- atomically $ mapM fixRunTree rts
   let initialState = updateFilteredTree (filterRunTree showContextManagers rtsFixed) $
         AppState {
-          _appShowContextManagers = showContextManagers
-          , _appShowRunTimes = showRunTimes
+          _appRunTreeBase = rts
           , _appRunTree = rtsFixed
           , _appRunTreeFiltered = []
           , _appMainList = L.list () mempty 1
+
+          , _appShowContextManagers = showContextManagers
+          , _appShowRunTimes = showRunTimes
         }
 
   eventChan <- newBChan 10
@@ -168,6 +171,13 @@ appEvent s x@(VtyEvent e) =
     V.EvKey (V.KChar c) [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
       continue s
+    V.EvKey (V.KChar c) [] | c == clearResultsKey -> do
+                               liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
+                               continue $ s
+
+    -- V.EvKey (V.KChar c) [] | c == runAgainKey -> do
+    --   liftIO $
+    --   continue s
 
     ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 appEvent s _ = continue s
@@ -180,45 +190,6 @@ updateFilteredTree runTreeFiltered s = s
 
 -- * Filter tree
 
-filterRunTree :: Bool -> [RunTreeFixed] -> [RunTreeFixed]
-filterRunTree showContextManagers rtsFixed = rtsFixed
-  & if showContextManagers then id else filterContextManagers
-
-filterContextManagers :: [RunTreeFixed] -> [RunTreeFixed]
-filterContextManagers = mconcat . fmap filterContextManagersSingle
-
-filterContextManagersSingle :: RunTreeFixed -> [RunTreeFixed]
-filterContextManagersSingle rt@(RunTreeGroup {runTreeIsContextManager=False, ..}) = [rt { runTreeChildren = filterContextManagers runTreeChildren }]
-filterContextManagersSingle (RunTreeGroup {runTreeIsContextManager=True, ..}) = filterContextManagers runTreeChildren
-filterContextManagersSingle rt@(RunTreeSingle {}) = [rt]
-
--- * Counting
-
-countWhere :: (RunTreeFixed -> Bool) -> [RunTreeFixed] -> Int
-countWhere p rts = sum $ fmap (countWhere' p) rts
-
-countWhere' :: (RunTreeFixed -> Bool) -> RunTreeFixed -> Int
-countWhere' p rt@(RunTreeGroup {..}) =
-  (if p rt then 1 else 0) + countWhere p runTreeChildren
-countWhere' picate rt@(RunTreeSingle {..}) = if picate rt then 1 else 0
-
-isItBlock (RunTreeSingle {}) = True
-isItBlock _ = False
-
-isRunningItBlock (RunTreeSingle {runTreeStatus=(Running {})}) = True
-isRunningItBlock _ = False
-
-isSuccessItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=Success})}) = True
-isSuccessItBlock _ = False
-
-isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Pending {})})}) = True
-isPendingItBlock _ = False
-  
-isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = True
-isFailedItBlock _ = False
-
-isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
-isDoneItBlock _ = False
 
 -- * Cancelling
 
@@ -228,3 +199,14 @@ cancelRecursively (RunTreeGroup {..}) = do
   cancel runTreeAsync
 cancelRecursively (RunTreeSingle {..}) =
   cancel runTreeAsync
+
+-- * Clearing
+
+clearRecursively :: RunTree -> IO ()
+clearRecursively (RunTreeGroup {..}) = do
+  forM_ runTreeChildren clearRecursively
+  atomically $ writeTVar runTreeStatus NotStarted
+  atomically $ writeTVar runTreeLogs mempty
+clearRecursively (RunTreeSingle {..}) = do
+  atomically $ writeTVar runTreeStatus NotStarted
+  atomically $ writeTVar runTreeLogs mempty
