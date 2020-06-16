@@ -139,7 +139,8 @@ drawUI app = [ui]
     renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ renderLine elem
 
     renderLine (MainListElem {..}) = hBox $ catMaybes [
-      Just $ padRight Max $ withAttr (chooseAttr status) (str label)
+      Just $ withAttr toggleMarkerAttr $ str "[+] "
+      , Just $ padRight Max $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ "    " <> show statusStartTime
           Done {..} -> Just $ str $ "    " <> formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)

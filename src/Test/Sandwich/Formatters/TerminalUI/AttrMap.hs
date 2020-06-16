@@ -15,7 +15,7 @@ mainAttrMap :: AttrMap
 mainAttrMap = attrMap V.defAttr [
   -- (listAttr, V.white `on` V.blue)
    -- (listSelectedAttr, V.blue `on` V.white)
-  (listSelectedAttr, bg (V.Color240 225))
+  (listSelectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
 
   -- , (selectedAttr, fg V.cyan)
 
@@ -28,8 +28,12 @@ mainAttrMap = attrMap V.defAttr [
   , (progressCompleteAttr, bg (V.Color240 235))
   , (progressIncompleteAttr, bg (V.Color240 225))
 
+  , (toggleMarkerAttr, fg (grayAt 50))
+  
   , (hotkeyAttr, fg V.blue)
   ]
+
+grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
 
 selectedAttr :: AttrName
 selectedAttr = listSelectedAttr <> "custom"
@@ -48,6 +52,9 @@ successAttr = "success"
 
 failureAttr :: AttrName
 failureAttr = "failure"
+
+toggleMarkerAttr :: AttrName
+toggleMarkerAttr = "toggleMarker"
 
 hotkeyAttr :: AttrName
 hotkeyAttr = "hotkey"
