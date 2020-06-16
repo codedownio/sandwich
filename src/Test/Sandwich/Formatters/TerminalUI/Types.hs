@@ -14,6 +14,7 @@ data AppEvent = RunTreeUpdated [RunTreeFixed]
 
 data MainListElem = MainListElem {
   label :: String
+  , depth :: Int
   , folded :: Bool
   , status :: Status
   , logs :: Seq LogEntry

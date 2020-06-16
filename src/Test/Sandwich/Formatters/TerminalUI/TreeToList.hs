@@ -24,7 +24,8 @@ runTreesToList' indent rts = mconcat $ fmap (runTreeToList' indent) rts
 runTreeToList' :: Int -> RunTreeFixed -> Vec.Vector MainListElem
 runTreeToList' indent (RunTreeGroup {..}) = elem `Vec.cons` (runTreesToList' (indent + 1) runTreeChildren)
   where elem = MainListElem {
-          label = (L.replicate (indent * 4) ' ') <> runTreeLabel
+          label = runTreeLabel
+          , depth = indent
           , folded = False
           , status = runTreeStatus
           , logs = runTreeLogs
@@ -32,7 +33,8 @@ runTreeToList' indent (RunTreeGroup {..}) = elem `Vec.cons` (runTreesToList' (in
           }
 runTreeToList' indent (RunTreeSingle {..}) = Vec.singleton elem
   where elem = MainListElem {
-          label = (L.replicate (indent * 4) ' ') <> runTreeLabel
+          label = runTreeLabel
+          , depth = indent
           , folded = False
           , status = runTreeStatus
           , logs = runTreeLogs

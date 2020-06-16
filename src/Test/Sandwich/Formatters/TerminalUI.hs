@@ -95,17 +95,17 @@ drawUI app = [ui]
     ui = vBox [vLimitPercent 10 topBox
               , mainList]
 
-    keybindingBox = padAll 1 . vBox
+    keybindingBox = vBox
 
-    topBox = vBox [hBox [hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) [toggleShowContextManagersKey] "Hide context managers" "Show context managers"
-                                                         , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"])
+    topBox = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) [toggleShowContextManagersKey] "Hide context managers" "Show context managers"
+                                                                            , toggleIndicator (app ^. appShowRunTimes) [toggleShowRunTimesKey] "Hide run times" "Show run times"])
                         , vBorder
-                        , hLimitPercent 33 (keybindingBox [keyIndicator [cancelAllKey] "Cancel all"
-                                                          , keyIndicator [cancelSelectedKey] "Cancel selected"
-                                                          , keyIndicator [clearResultsKey] "Clear results"
-                                                          , keyIndicator [runAgainKey] "Run again"])
+                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator [cancelAllKey] "Cancel all"
+                                                                           , keyIndicator [cancelSelectedKey] "Cancel selected"
+                                                                           , keyIndicator [clearResultsKey] "Clear results"
+                                                                           , keyIndicator [runAgainKey] "Run again"])
                         , vBorder
-                        , hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]
+                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]
                   , hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])]
 
     countWidgets =
@@ -135,7 +135,10 @@ drawUI app = [ui]
     listDrawElement True elem = withAttr selectedAttr $ renderElem elem
     listDrawElement False elem = renderElem elem
 
-    renderElem (MainListElem {..}) = hBox $ catMaybes [
+    -- renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox [renderLine elem, border $ str $ show status]
+    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ renderLine elem
+
+    renderLine (MainListElem {..}) = hBox $ catMaybes [
       Just $ padRight Max $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ "    " <> show statusStartTime
