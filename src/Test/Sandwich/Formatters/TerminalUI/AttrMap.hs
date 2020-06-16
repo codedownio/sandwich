@@ -4,7 +4,8 @@
 module Test.Sandwich.Formatters.TerminalUI.AttrMap where
 
 import Brick
-import qualified Brick.Widgets.List as L
+import Brick.Widgets.List
+import Brick.Widgets.ProgressBar
 import qualified Graphics.Vty as V
 import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.RunTree
@@ -12,9 +13,9 @@ import Test.Sandwich.Types.RunTree
 
 mainAttrMap :: AttrMap
 mainAttrMap = attrMap V.defAttr [
-  -- (L.listAttr, V.white `on` V.blue)
-  -- , (L.listSelectedAttr, V.blue `on` V.white)
-  (L.listSelectedAttr, bg V.red)
+  -- (listAttr, V.white `on` V.blue)
+   -- (listSelectedAttr, V.blue `on` V.white)
+  (listSelectedAttr, bg (V.Color240 225))
 
   -- , (selectedAttr, fg V.cyan)
 
@@ -24,11 +25,14 @@ mainAttrMap = attrMap V.defAttr [
   , (successAttr, fg V.green)
   , (failureAttr, fg V.red)
 
+  , (progressCompleteAttr, bg (V.Color240 235))
+  , (progressIncompleteAttr, bg (V.Color240 225))
+
   , (hotkeyAttr, fg V.blue)
   ]
 
 selectedAttr :: AttrName
-selectedAttr = L.listSelectedAttr <> "custom"
+selectedAttr = listSelectedAttr <> "custom"
 
 runningAttr :: AttrName
 runningAttr = "running"

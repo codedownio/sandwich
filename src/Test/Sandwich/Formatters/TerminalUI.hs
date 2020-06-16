@@ -4,6 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE QuasiQuotes #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI (
@@ -16,16 +17,15 @@ import Brick.BChan
 import Brick.Widgets.Border
 import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
+import Brick.Widgets.ProgressBar
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Monad
-import qualified Data.List as L
 import Data.Maybe
+import Data.String.Interpolate
 import Data.Time.Clock
-import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
-import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
@@ -84,8 +84,13 @@ drawUI app = [ui]
 
     topBox = vBox [toggleIndicator (app ^. appShowContextManagers) "c" "Hide context managers" "Show context managers"
                   , keyIndicator "q" "Exit"
+                  , keyIndicator "C" "Clear results"
                   , fill ' '
-                  , hBorder]
+                  , hBorderWithLabel $ str [i|  #{totalRunningTests} running, #{totalDoneTests} done of #{totalNumTests}  |]]
+
+    totalNumTests = countWhere isItBlock (app ^. appRunTree)
+    totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
+    totalDoneTests = countWhere isDoneItBlock (app ^. appRunTree)
 
     toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
     toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
@@ -94,7 +99,7 @@ drawUI app = [ui]
   
     mainList = vBox [ hCenter box
                     -- , str " "
-                    , str "Press Esc to exit."
+                    , progressBar Nothing (fromIntegral totalDoneTests / fromIntegral totalNumTests)
                     ]
 
     box = padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
@@ -149,3 +154,22 @@ filterContextManagersSingle :: RunTreeFixed -> [RunTreeFixed]
 filterContextManagersSingle rt@(RunTreeGroup {runTreeIsContextManager=False, ..}) = [rt { runTreeChildren = filterContextManagers runTreeChildren }]
 filterContextManagersSingle (RunTreeGroup {runTreeIsContextManager=True, ..}) = filterContextManagers runTreeChildren
 filterContextManagersSingle rt@(RunTreeSingle {}) = [rt]
+
+-- * Counting
+
+countWhere :: (RunTreeFixed -> Bool) -> [RunTreeFixed] -> Int
+countWhere p rts = sum $ fmap (countWhere' p) rts
+
+countWhere' :: (RunTreeFixed -> Bool) -> RunTreeFixed -> Int
+countWhere' p rt@(RunTreeGroup {..}) =
+  (if p rt then 1 else 0) + countWhere p runTreeChildren
+countWhere' picate rt@(RunTreeSingle {..}) = if picate rt then 1 else 0
+
+isItBlock (RunTreeSingle {}) = True
+isItBlock _ = False
+
+isRunningItBlock (RunTreeSingle {runTreeStatus=(Running {})}) = True
+isRunningItBlock _ = False
+
+isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
+isDoneItBlock _ = False

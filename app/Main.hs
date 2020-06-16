@@ -110,5 +110,5 @@ runSandwich options f spec = do
 
 
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter simple
--- main = runSandwich defaultOptions defaultTerminalUIFormatter medium
+-- main = runSandwich defaultOptions defaultTerminalUIFormatter simple
+main = runSandwich defaultOptions defaultTerminalUIFormatter medium
