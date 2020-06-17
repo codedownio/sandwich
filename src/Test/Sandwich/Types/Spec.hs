@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -7,6 +8,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
@@ -55,9 +57,9 @@ data SpecCommand context next where
                       , subspec :: Spec context ()
                       , next :: next } -> SpecCommand context next
 
-  It :: (HasCallStack) => { label :: String
-                          , example :: (context -> IO Result)
-                          , next :: next } -> SpecCommand context next
+  It :: (HasCallStack, Example context e) => { label :: String
+                                             , example :: e
+                                             , next :: next } -> SpecCommand context next
 
 deriving instance Functor (SpecCommand n)
 deriving instance Foldable (SpecCommand n)

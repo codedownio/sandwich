@@ -184,7 +184,7 @@ runTree (Free (It l ex next)) = do
       ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ ex ctx
+      eitherResult <- tryAny $ runExample ex ctx
       endTime <- getCurrentTime
       let ret = either (Failure Nothing . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
       atomically $ writeTVar status (Done startTime endTime ret)

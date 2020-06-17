@@ -1,5 +1,7 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
 
@@ -12,8 +14,31 @@ import qualified Test.QuickCheck as QC
 
 -- * Example
 
+-- * Example type
+
 class Example context e where
-  evaluateExample :: e -> ReaderT (ItemContext context) IO Result
+  runExample :: e -> context -> IO Result
+
+instance Example context (context -> IO Result) where
+  runExample action = action
+
+instance Example context (context -> IO ()) where
+  runExample action context = do
+    action context
+    return Success
+
+instance Example context (IO Result) where
+  runExample action _ = action
+
+instance Example context (IO ()) where
+  runExample action _ = action >> return Success
+
+instance Example context (ExampleM context Result) where
+  runExample action _ = undefined
+
+newtype ExampleM context a = ExampleM (ReaderT context IO a)
+  deriving (Functor, Applicative, Monad)
+
 
 -- * Item context
 

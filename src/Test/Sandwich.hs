@@ -10,7 +10,8 @@ import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
 
-pending _ = return $ Pending Nothing Nothing
+pending :: IO Result
+pending = return $ Pending Nothing Nothing
 
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
