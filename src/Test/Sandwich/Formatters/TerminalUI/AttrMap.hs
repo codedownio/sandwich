@@ -19,12 +19,16 @@ mainAttrMap = attrMap V.defAttr [
 
   (selectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
 
+  -- Statuses
   -- , (notStartedAttr, fg V.)
-  , (runningAttr, fg V.blue)
-  , (pendingAttr, fg V.yellow)
-  , (successAttr, fg V.green)
-  , (failureAttr, fg V.red)
+  , (runningAttr, fg V.blue), (pendingAttr, fg V.yellow), (successAttr, fg V.green), (failureAttr, fg V.red)
 
+  -- Logging
+  , (debugAttr, fg V.blue), (infoAttr, fg V.yellow), (warnAttr, fg V.red), (errorAttr, fg V.red), (otherAttr, V.defAttr)
+  , (logTimestampAttr, fg (grayAt 50))
+  , (logFilenameAttr, fg V.blue), (logModuleAttr, fg V.magenta), (logLineAttr, fg V.cyan), (logChAttr, fg V.magenta)
+
+  -- Progress bar
   , (progressCompleteAttr, bg (V.Color240 235))
   , (progressIncompleteAttr, bg (V.Color240 225))
 
@@ -65,3 +69,22 @@ chooseAttr (Running {}) = runningAttr
 chooseAttr (Done _ _ (Pending {})) = pendingAttr
 chooseAttr (Done _ _ (Success {})) = successAttr
 chooseAttr (Done _ _ (Failure {})) = failureAttr
+
+
+-- * Logging
+
+debugAttr, infoAttr, warnAttr, errorAttr, otherAttr :: AttrName
+debugAttr = "log_debug"
+infoAttr = "log_info"
+warnAttr = "log_warn"
+errorAttr = "log_error"
+otherAttr = "log_other"
+
+logTimestampAttr :: AttrName
+logTimestampAttr = "log_timestamp"
+
+logFilenameAttr, logModuleAttr, logLineAttr, logChAttr :: AttrName
+logFilenameAttr = "log_filename"
+logModuleAttr = "log_module"
+logLineAttr = "log_line"
+logChAttr = "log_ch"

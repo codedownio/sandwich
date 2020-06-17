@@ -10,11 +10,13 @@ import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
 import Brick.Widgets.ProgressBar
 import Control.Monad
+import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
 import Data.String.Interpolate
+import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import GHC.Stack
 import Lens.Micro
@@ -56,24 +58,40 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
       ]
 
     getInfoWidgets (MainListElem {..}) = catMaybes [
-      Just $ strWrap $ show status
+      Just $ borderWithLabel (padLeftRight 1 $ str "Info") $ strWrap $ show status
       , do
           cs <- getCallStackFromStatus status
-          return $ border $ strWrap $ prettyCallStack cs
+          return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ strWrap $ prettyCallStack cs
       , do
           guard (not $ Seq.null logs)
-          return $ vBox (toList $ fmap logEntryWidget logs)
+          return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox (toList $ fmap logEntryWidget logs)
       ]
 
     logEntryWidget (LogEntry {..}) = hBox [
-      str (show logEntryLevel)
+      withAttr logTimestampAttr $ str (show logEntryTime)
       , str " "
-      , str (show logEntryStr)
+      , logLevelWidget logEntryLevel
       , str " "
-      , str (show logEntryLoc)
+      , logLocWidget logEntryLoc
       , str " "
-      , str (show logEntrySource)
+      , txtWrap (E.decodeUtf8 $ fromLogStr logEntryStr)
       ]
+
+    logLocWidget (Loc {loc_start=(line, ch), ..}) = hBox [
+      str "["
+      , withAttr logFilenameAttr $ str loc_filename
+      , str ":"
+      , withAttr logLineAttr $ str (show line)
+      , str ":"
+      , withAttr logChAttr $ str (show ch)
+      , str "]"
+      ]
+
+    logLevelWidget LevelDebug = withAttr debugAttr $ str "(DEBUG)"
+    logLevelWidget LevelInfo = withAttr infoAttr $ str "(INFO)"
+    logLevelWidget LevelWarn = withAttr infoAttr $ str "(WARN)"
+    logLevelWidget LevelError = withAttr infoAttr $ str "(ERROR)"
+    logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
 topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn
                         , vBorder
@@ -94,8 +112,8 @@ topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn
 
     keybindingBox = vBox
 
-    toggleIndicator True key onMsg offMsg = keyIndicator key onMsg
-    toggleIndicator False key onMsg offMsg = keyIndicator key offMsg
+    toggleIndicator True key onMsg _ = keyIndicator key onMsg
+    toggleIndicator False key _ offMsg = keyIndicator key offMsg
 
     keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
 
@@ -114,7 +132,6 @@ borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [
     totalPendingTests = countWhere isPendingItBlock (app ^. appRunTree)
     totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
-    totalDoneTests = countWhere isDoneItBlock (app ^. appRunTree)
     totalNotStartedTests = countWhere isNotStartedItBlock (app ^. appRunTree)
 
 bottomProgressBar app = progressBar Nothing (fromIntegral totalDoneTests / fromIntegral totalNumTests)

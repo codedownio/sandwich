@@ -41,7 +41,8 @@ data RunTreeWithStatus a l t =
   deriving (Functor, Eq)
 
 type Var = TVar
-data LogEntry = LogEntry { logEntryLoc :: Loc
+data LogEntry = LogEntry { logEntryTime :: UTCTime
+                         , logEntryLoc :: Loc
                          , logEntrySource :: LogSource
                          , logEntryLevel :: LogLevel
                          , logEntryStr :: LogStr

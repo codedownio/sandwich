@@ -177,7 +177,8 @@ runTree (Free (It l (ExampleM ex) next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
   let logFn loc logSrc logLevel logStr = do
-        atomically $ modifyTVar logs (|> LogEntry loc logSrc logLevel logStr)
+        ts <- getCurrentTime
+        atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
