@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE QuasiQuotes #-}
 -- |
 
 module Test.Sandwich.Interpreters.RunTree (
@@ -24,6 +25,7 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
+import qualified Data.List as L
 import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
 import Data.Time.Clock
@@ -32,11 +34,8 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-waitForTree :: [RunTree] -> IO Result
-waitForTree rts = do
-  results <- mapM wait (fmap runTreeAsync rts)
-  return $ if | any isFailure results -> Failure (Reason Nothing "Some child nodes failed")
-              | otherwise -> Success
+waitForTree :: [RunTree] -> IO (Either SomeException [Result])
+waitForTree rts = tryAny (mapM wait (fmap runTreeAsync rts))
 
 data RunTreeContext context = RunTreeContext {
   runTreeContext :: Async context
@@ -74,8 +73,12 @@ runTree (Free (Before l f subspec next)) = do
 
   myAsync <- liftIO $ liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
-      mapM_ wait (fmap runTreeAsync subtree)
-      return Success
+      _ <- tryAny $ mapM_ wait (fmap runTreeAsync subtree)
+      atomically $ do
+        (readTVar status) >>= \case
+          NotStarted -> retry -- Should never happen
+          Running {} -> retry -- Should never happen
+          Done _ _ result -> return result
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (After l f subspec next)) = do
@@ -214,12 +217,17 @@ runDescribe parallel l subspec next = do
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
-      _ <- wait runTreeContext
+      _ <- waitOrHandleContextException runTreeContext status
+
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      _ <- waitForTree subtree
+      eitherResults <- waitForTree subtree
       endTime <- getCurrentTime
-      let ret = Success
+      let ret = case eitherResults of
+            Left e -> Failure (Reason Nothing "Child tree threw an exception")
+            Right results -> case L.length (L.filter isFailure results) of
+              0 -> Success
+              n -> Failure (Reason Nothing [i|#{n} children failed|])
       atomically $ writeTVar status (Done startTime endTime ret)
       return ret
 

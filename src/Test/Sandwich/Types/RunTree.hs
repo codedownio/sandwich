@@ -23,18 +23,18 @@ data Status = NotStarted
                    , statusResult :: Result }
   deriving (Show, Eq)
 
-data RunTreeWithStatus a l t =
+data RunTreeWithStatus s l t =
   RunTreeGroup { runTreeLabel :: String
                , runTreeToggled :: t
-               , runTreeStatus :: a
+               , runTreeStatus :: s
                , runTreeIsContextManager :: Bool
-               , runTreeChildren :: [RunTreeWithStatus a l t]
+               , runTreeChildren :: [RunTreeWithStatus s l t]
                , runTreeLogs :: l
                , runTreeAsync :: Async Result
                }
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeToggled :: t
-                  , runTreeStatus :: a
+                  , runTreeStatus :: s
                   , runTreeLogs :: l
                   , runTreeAsync :: Async Result
                   }
