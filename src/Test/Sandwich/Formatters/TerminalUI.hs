@@ -14,28 +14,19 @@ module Test.Sandwich.Formatters.TerminalUI (
 
 import Brick
 import Brick.BChan
-import Brick.Widgets.Border
-import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
-import Brick.Widgets.ProgressBar
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
-import qualified Data.List as L
-import Data.Maybe
-import Data.String.Interpolate
-import Data.Time.Clock
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
-import Test.Sandwich.Formatters.TerminalUI.Count
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
-import Test.Sandwich.Formatters.TerminalUI.Util
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 

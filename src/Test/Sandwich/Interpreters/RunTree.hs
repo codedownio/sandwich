@@ -34,7 +34,7 @@ import Test.Sandwich.Types.Spec
 waitForTree :: [RunTree] -> IO Result
 waitForTree rts = do
   results <- mapM wait (fmap runTreeAsync rts)
-  return $ if | any isFailure results -> Failure Nothing (Reason "Some child nodes failed")
+  return $ if | any isFailure results -> Failure (Reason Nothing "Some child nodes failed")
               | otherwise -> Success
 
 data RunTreeContext context = RunTreeContext {
@@ -61,7 +61,7 @@ runTree (Free (Before l f subspec next)) = do
 
       eitherResult <- tryAny $ f ctx
 
-      let ret = either (\e -> Failure Nothing (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
+      let ret = either (\e -> Failure (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
       endTime <- getCurrentTime
       atomically $ writeTVar status (Done startTime endTime ret)
 
@@ -90,9 +90,8 @@ runTree (Free (After l f subspec next)) = do
 
     (tryAny $ f ctx) >>= \case
       Left e -> do
-        let maybeLoc = Nothing
         endTime <- getCurrentTime
-        let ret = Failure maybeLoc (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))
+        let ret = Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))
         atomically $ writeTVar status (Done startTime endTime ret)
         return ret
       Right () -> do
@@ -125,11 +124,9 @@ runTree (Free (Around l f subspec next)) = do
 
     endTime <- getCurrentTime
 
-    ret <- case eitherResult of
-      Left e -> do
-        let maybeLoc = Nothing
-        return $ Failure maybeLoc $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
-      Right _ -> return Success
+    let ret = case eitherResult of
+          Left e -> Failure $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
+          Right _ -> Success
 
     atomically $ writeTVar status (Done startTime endTime Success)
     return ret
@@ -146,7 +143,7 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 
     eitherResult <- tryAny $ alloc ctx
 
-    let ret = either (\e -> (Failure Nothing (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e)))) (const Success) eitherResult
+    let ret = either (\e -> (Failure (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e)))) (const Success) eitherResult
     endTime <- getCurrentTime
     atomically $ writeTVar status (Done startTime endTime ret)
 
@@ -164,9 +161,8 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 
     (tryAny $ cleanup ctx) >>= \case
       Left e -> do
-        let maybeLoc = Nothing
         endTime <- getCurrentTime
-        let ret = Failure maybeLoc (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))
+        let ret = Failure (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))
         atomically $ writeTVar status (Done startTime endTime ret)
         return ret
       Right () -> do
@@ -186,10 +182,10 @@ runTree (Free (It l (ExampleM ex) next)) = do
       atomically $ writeTVar status (Running startTime)
       eitherResult <- tryAny $ do
         (runExceptT $ runReaderT ex ctx) >>= \case
-          Left err -> return $ Failure Nothing err
+          Left err -> return $ Failure err
           Right () -> return Success
       endTime <- getCurrentTime
-      let ret = either (Failure Nothing . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
+      let ret = either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
       atomically $ writeTVar status (Done startTime endTime ret)
       return ret
 
@@ -237,8 +233,7 @@ handleAsyncException :: TVar Status -> SomeAsyncException -> IO Result
 handleAsyncException status e = do
   -- TODO: get start time
   endTime <- getCurrentTime
-  let maybeLoc = Nothing
-  let ret = Failure maybeLoc (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
+  let ret = Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
   atomically $ writeTVar status (Done endTime endTime ret)
   return ret
 
@@ -254,7 +249,7 @@ logMsg logs msg = atomically $ modifyTVar logs (|> msg)
 waitOrHandleContextException contextAsync status = do
   (tryAny $ wait contextAsync) >>= \case
     Left e -> do
-      let ret = Failure Nothing (GetContextException (SomeExceptionWithEq e))
+      let ret = Failure (GetContextException (SomeExceptionWithEq e))
       endTime <- getCurrentTime
       atomically $ modifyTVar status $ \case
         Running startTime -> (Done startTime endTime ret) -- TODO: make startTime a Maybe

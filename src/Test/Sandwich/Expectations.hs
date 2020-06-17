@@ -6,8 +6,8 @@ import Control.Monad.Except
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 
-expectationFailure :: String -> ExampleM context ()
-expectationFailure = throwError . Reason
+expectationFailure :: (HasCallStack) => String -> ExampleM context ()
+expectationFailure = throwError . Reason (Just callStack)
 
 shouldBe :: (HasCallStack, Eq a, Show a) => a -> a -> ExampleM context ()
 shouldBe x y

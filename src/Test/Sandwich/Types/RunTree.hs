@@ -13,6 +13,7 @@ import Control.Monad
 import Data.Sequence
 import Data.Text
 import Data.Time.Clock
+import GHC.Stack
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
@@ -70,3 +71,18 @@ fixRunTree (RunTreeGroup {..}) = do
     , runTreeChildren = children
     , ..
     }
+
+getCallStackFromStatus :: Status -> Maybe CallStack
+getCallStackFromStatus NotStarted {} = Nothing
+getCallStackFromStatus Running {} = Nothing
+getCallStackFromStatus Done {statusResult} = getCallStackFromResult statusResult
+
+getCallStackFromResult :: Result -> Maybe CallStack
+getCallStackFromResult (Success {}) = Nothing
+getCallStackFromResult (Pending x _) = x
+getCallStackFromResult (Failure (Reason x _)) = x
+getCallStackFromResult (Failure (ExpectedButGot x _ _)) = x
+getCallStackFromResult (Failure (DidNotExpectButGot x _)) = x
+getCallStackFromResult (Failure (GotException {})) = Nothing
+getCallStackFromResult (Failure (GetContextException {})) = Nothing
+getCallStackFromResult (Failure (GotAsyncException {})) = Nothing

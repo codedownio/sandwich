@@ -9,10 +9,12 @@ import Brick.Widgets.Border
 import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
 import Brick.Widgets.ProgressBar
+import Control.Monad
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
 import Data.Time.Clock
+import GHC.Stack
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
@@ -27,44 +29,56 @@ drawUI app = [ui]
   where
     ui = vBox [vLimitPercent 10 (topBox app)
               , borderWithCounts app
-              , mainList
+              , mainList app
               , bottomProgressBar app]
 
-    mainList = vBox [hCenter box]
-
-    box = padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
-
+mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
+  where
     listDrawElement :: Bool -> MainListElem -> Widget ()
-    listDrawElement True elem = withAttr selectedAttr $ renderElem elem
-    listDrawElement False elem = renderElem elem
+    listDrawElement isSelected x@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox $ catMaybes [
+      Just $ renderLine isSelected x
+      , do
+          guard toggled
+          let infoWidgets = getInfoWidgets x
+          guard (not $ L.null infoWidgets)
+          return $ padLeft (Pad 4) (vBox infoWidgets)
+      ]
 
-    renderElem elem@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox $ catMaybes [Just $ renderLine elem
-                                                                                       , if toggled then Just $ padLeft (Pad 4) $ border $ str $ show status else Nothing
-                                                                                       , if toggled then Just $ padLeft (Pad 4) $ border $ str $ show logs else Nothing]
-
-    renderLine (MainListElem {..}) = hBox $ catMaybes [
+    renderLine isSelected (MainListElem {..}) = (if isSelected then border else id) $ hBox $ catMaybes [
       Just $ withAttr toggleMarkerAttr $ str (if toggled then "[-] " else "[+] ")
       , Just $ padRight Max $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowRunTimes) then Nothing else case status of
-          Running {..} -> Just $ str $ "    " <> show statusStartTime
-          Done {..} -> Just $ str $ "    " <> formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
+          Running {..} -> Just $ str $ show statusStartTime
+          Done {..} -> Just $ str $ formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
           _ -> Nothing
       ]
 
+    getInfoWidgets (MainListElem {..}) = catMaybes [
+      Just $ strWrap $ show status
+      , do
+          cs <- getCallStackFromStatus status
+          return $ border $ strWrap $ prettyCallStack cs
+      , do
+          guard (logs /= mempty)
+          return $ strWrap $ show logs
+      ]
 
-topBox app = topBox
+topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn
+                        , vBorder
+                        , padLeftRight 3 $ hLimitPercent 33 actionsColumn
+                        , vBorder
+                        , padLeftRight 3 $ hLimitPercent 33 otherActionsColumn]]
   where
-    topBox = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 (keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
-                                                                            , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
-                                                                            , keyIndicator (showKeys toggleKeys) "Toggle selected"])
-                        , vBorder
-                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
-                                                                           , keyIndicator (showKey cancelSelectedKey) "Cancel selected"
-                                                                           , keyIndicator (showKey clearResultsKey) "Clear results"
-                                                                           , keyIndicator (showKey runAgainKey) "Run again"])
-                        , vBorder
-                        , padLeftRight 3 $ hLimitPercent 33 (keybindingBox [keyIndicator "q" "Exit"])]]
+    settingsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
+                                   , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                   , keyIndicator (showKeys toggleKeys) "Toggle selected"]
 
+    actionsColumn = keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
+                                  , keyIndicator (showKey cancelSelectedKey) "Cancel selected"
+                                  , keyIndicator (showKey clearResultsKey) "Clear results"
+                                  , keyIndicator (showKey runAgainKey) "Run again"]
+
+    otherActionsColumn = keybindingBox [keyIndicator "q" "Exit"]
 
     keybindingBox = vBox
 
