@@ -10,8 +10,8 @@ module Test.Sandwich.Types.RunTree where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
+import Control.Monad.Logger
 import Data.Sequence
-import Data.Text
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Types.Spec
@@ -41,7 +41,11 @@ data RunTreeWithStatus a l t =
   deriving (Functor, Eq)
 
 type Var = TVar
-type LogEntry = Text
+data LogEntry = LogEntry { logEntryLoc :: Loc
+                         , logEntrySource :: LogSource
+                         , logEntryLevel :: LogLevel
+                         , logEntryStr :: LogStr
+                         } deriving Eq
 type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
 type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
 

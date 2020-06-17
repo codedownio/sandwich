@@ -1,5 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -16,6 +17,7 @@ import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PrettyShow
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Logging
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
@@ -25,6 +27,11 @@ verySimple = do
   it "succeeds" (return ())
   it "tries shouldBe" (2 `shouldBe` 3)
   it "tries shouldNotBe" (2 `shouldNotBe` 2)
+  it "does some logging" $ do
+    debug "debug message"
+    info "info message"
+    warn "warn message"
+    logError "error message"
 
 simple :: TopSpec
 simple = do

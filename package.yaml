@@ -29,6 +29,7 @@ dependencies:
 - interpolate
 - microlens
 - microlens-th
+- monad-logger
 - mtl
 - random
 - safe-exceptions

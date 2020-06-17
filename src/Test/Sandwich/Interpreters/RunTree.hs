@@ -19,6 +19,7 @@ import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
@@ -175,13 +176,16 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
 runTree (Free (It l (ExampleM ex) next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
+  let logFn loc logSrc logLevel logStr = do
+        atomically $ modifyTVar logs (|> LogEntry loc logSrc logLevel logStr)
+
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
       ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
       eitherResult <- tryAny $ do
-        (runExceptT $ runReaderT ex ctx) >>= \case
+        (runLoggingT (runExceptT $ runReaderT ex ctx) logFn) >>= \case
           Left err -> return $ Failure err
           Right () -> return Success
       endTime <- getCurrentTime

@@ -1,15 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE QuasiQuotes #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI (
   defaultTerminalUIFormatter
-
   ) where
 
 import Brick

@@ -10,8 +10,10 @@ import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
 import Brick.Widgets.ProgressBar
 import Control.Monad
+import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
+import qualified Data.Sequence as Seq
 import Data.String.Interpolate
 import Data.Time.Clock
 import GHC.Stack
@@ -59,8 +61,18 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
           cs <- getCallStackFromStatus status
           return $ border $ strWrap $ prettyCallStack cs
       , do
-          guard (logs /= mempty)
-          return $ strWrap $ show logs
+          guard (not $ Seq.null logs)
+          return $ vBox (toList $ fmap logEntryWidget logs)
+      ]
+
+    logEntryWidget (LogEntry {..}) = hBox [
+      str (show logEntryLevel)
+      , str " "
+      , str (show logEntryStr)
+      , str " "
+      , str (show logEntryLoc)
+      , str " "
+      , str (show logEntrySource)
       ]
 
 topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn

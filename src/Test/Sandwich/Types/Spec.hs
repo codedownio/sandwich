@@ -20,6 +20,7 @@ import Control.Exception.Safe
 import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Free.TH
+import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Functor.Classes
 import Data.String.Interpolate
@@ -27,8 +28,8 @@ import GHC.Stack
 
 -- * ExampleM monad
 
-newtype ExampleM context a = ExampleM (ReaderT context (ExceptT FailureReason IO) a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason)
+newtype ExampleM context a = ExampleM (ReaderT context (ExceptT FailureReason (LoggingT IO)) a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
 
 -- * Results
 
