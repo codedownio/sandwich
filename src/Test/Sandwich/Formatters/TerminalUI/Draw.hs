@@ -39,7 +39,7 @@ drawUI app = [ui]
 mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
   where
     listDrawElement :: Bool -> MainListElem -> Widget ()
-    listDrawElement isSelected x@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ vBox $ catMaybes [
+    listDrawElement isSelected x@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
       Just $ renderLine isSelected x
       , do
           guard toggled
@@ -48,7 +48,7 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
           return $ padLeft (Pad 4) (vBox infoWidgets)
       ]
 
-    renderLine isSelected (MainListElem {..}) = (if isSelected then border else id) $ hBox $ catMaybes [
+    renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr toggleMarkerAttr $ str (if toggled then "[-] " else "[+] ")
       , Just $ padRight Max $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowRunTimes) then Nothing else case status of
@@ -93,14 +93,16 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
     logLevelWidget LevelError = withAttr infoAttr $ str "(ERROR)"
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
-topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn
+topBox app = vBox [hBox [columnPadding $ hLimitPercent 33 settingsColumn
                         , vBorder
-                        , padLeftRight 3 $ hLimitPercent 33 actionsColumn
+                        , columnPadding $ hLimitPercent 33 actionsColumn
                         , vBorder
-                        , padLeftRight 3 $ hLimitPercent 33 otherActionsColumn]]
+                        , columnPadding $ hLimitPercent 33 otherActionsColumn]]
   where
-    settingsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
-                                   , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+    columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
+
+    settingsColumn = keybindingBox [keyIndicator "n/↑" "Next"
+                                   , keyIndicator "p/↓" "Previous"
                                    , keyIndicator (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
@@ -108,7 +110,9 @@ topBox app = vBox [hBox [padRight (Pad 3) $ hLimitPercent 33 settingsColumn
                                   , keyIndicator (showKey clearResultsKey) "Clear results"
                                   , keyIndicator (showKey runAgainKey) "Run again"]
 
-    otherActionsColumn = keybindingBox [keyIndicator "q" "Exit"]
+    otherActionsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
+                                       , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                       , keyIndicator "q" "Exit"]
 
     keybindingBox = vBox
 
