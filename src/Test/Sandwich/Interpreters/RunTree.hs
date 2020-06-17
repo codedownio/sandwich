@@ -20,12 +20,12 @@ import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
 import Data.Time.Clock
-import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -176,7 +176,7 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
         return ret
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
-runTree (Free (It l ex next)) = do
+runTree (Free (It l (ExampleM ex) next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
@@ -184,7 +184,10 @@ runTree (Free (It l ex next)) = do
       ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ runExample ex ctx
+      eitherResult <- tryAny $ do
+        (runExceptT $ runReaderT ex ctx) >>= \case
+          Left err -> return $ Failure Nothing err
+          Right () -> return Success
       endTime <- getCurrentTime
       let ret = either (Failure Nothing . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
       atomically $ writeTVar status (Done startTime endTime ret)

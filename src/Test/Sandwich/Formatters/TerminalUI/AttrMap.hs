@@ -7,8 +7,8 @@ import Brick
 import Brick.Widgets.List
 import Brick.Widgets.ProgressBar
 import qualified Graphics.Vty as V
-import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 
 mainAttrMap :: AttrMap

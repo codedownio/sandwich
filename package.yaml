@@ -29,6 +29,7 @@ dependencies:
 - interpolate
 - microlens
 - microlens-th
+- mtl
 - random
 - safe-exceptions
 - stm

@@ -13,7 +13,7 @@ import Control.Monad
 import Data.Sequence
 import Data.Text
 import Data.Time.Clock
-import Test.Sandwich.Types.Example
+import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
             | Running { statusStartTime :: UTCTime }

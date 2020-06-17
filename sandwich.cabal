@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b234fb9782b4effc62a893eaef8a86c69c44fc16983674632903a3250db41ef5
+-- hash: 689bd3b0a06ffdecf8ef77ef0d93dae6dc35e9d524ecefd1db74cd9b14fa8aa5
 
 name:           sandwich
 version:        0.1.0.0
@@ -28,6 +28,7 @@ source-repository head
 library
   exposed-modules:
       Test.Sandwich
+      Test.Sandwich.Expectations
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.Count
@@ -39,7 +40,6 @@ library
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree
-      Test.Sandwich.Types.Example
       Test.Sandwich.Types.Formatter
       Test.Sandwich.Types.Options
       Test.Sandwich.Types.RunTree
@@ -58,6 +58,7 @@ library
     , interpolate
     , microlens
     , microlens-th
+    , mtl
     , random
     , safe-exceptions
     , stm
@@ -86,6 +87,7 @@ executable sandwich-exe
     , interpolate
     , microlens
     , microlens-th
+    , mtl
     , random
     , safe-exceptions
     , sandwich
@@ -116,6 +118,7 @@ test-suite sandwich-test
     , interpolate
     , microlens
     , microlens-th
+    , mtl
     , random
     , safe-exceptions
     , sandwich

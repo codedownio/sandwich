@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -15,12 +16,62 @@
 
 module Test.Sandwich.Types.Spec where
 
+import Control.Exception.Safe
+import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Free.TH
+import Control.Monad.Reader
 import Data.Functor.Classes
 import Data.String.Interpolate
 import GHC.Stack
-import Test.Sandwich.Types.Example
+
+-- * ExampleM monad
+
+newtype ExampleM context a = ExampleM (ReaderT context (ExceptT FailureReason IO) a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason)
+
+-- * Results
+
+data Result = Success
+            | Pending (Maybe Location) (Maybe String)
+            | Failure (Maybe Location) FailureReason
+  deriving (Show, Eq)
+
+data FailureReason = NoReason
+                   | Reason String
+                   | ExpectedButGot (Maybe CallStack) String String
+                   | DidNotExpectButGot (Maybe CallStack) String
+                   | GotException (Maybe String) SomeExceptionWithEq
+                   | GetContextException SomeExceptionWithEq
+                   | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
+  deriving (Show, Typeable, Eq)
+
+instance Eq CallStack where
+  c1 == c2 = show c1 == show c2
+
+newtype SomeExceptionWithEq = SomeExceptionWithEq SomeException
+  deriving Show
+instance Eq SomeExceptionWithEq where
+  (SomeExceptionWithEq e1) == (SomeExceptionWithEq e2) = show e1 == show e2
+
+newtype SomeAsyncExceptionWithEq = SomeAsyncExceptionWithEq SomeAsyncException
+  deriving Show
+instance Eq SomeAsyncExceptionWithEq where
+  (SomeAsyncExceptionWithEq e1) == (SomeAsyncExceptionWithEq e2) = show e1 == show e2
+
+-- | @Location@ is used to represent source locations.
+data Location = Location {
+  locationFile :: FilePath
+, locationLine :: Int
+, locationColumn :: Int
+} deriving (Eq, Show, Read)
+
+isFailure :: Result -> Bool
+isFailure (Failure {}) = True
+isFailure _ = False
+
+
+-- * Free monad language
 
 data (a :: *) :> (b :: *) = a :> b
   deriving Show
@@ -57,9 +108,9 @@ data SpecCommand context next where
                       , subspec :: Spec context ()
                       , next :: next } -> SpecCommand context next
 
-  It :: (HasCallStack, Example context e) => { label :: String
-                                             , example :: e
-                                             , next :: next } -> SpecCommand context next
+  It :: (HasCallStack) => { label :: String
+                          , example :: ExampleM context ()
+                          , next :: next } -> SpecCommand context next
 
 deriving instance Functor (SpecCommand n)
 deriving instance Foldable (SpecCommand n)
@@ -97,15 +148,6 @@ before ::
   -> SpecWith context
   -- ^ Child spec tree
   -> SpecM context ()
-
--- before :: MonadFree (SpecCommand context) m =>
---   String
---   -- ^ Label for this context manager
---   -> (context -> IO ())
---   -- ^ Action to perform
---   -> SpecWith context
---   -- ^ Child spec tree
---   -> m ()
 
 -- | Perform an action before each example in a given spec tree.
 beforeEach ::
@@ -154,3 +196,5 @@ aroundEach _ _ (Pure x) = Pure x
 aroundEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (aroundEach l f' subspec) (aroundEach l f next))
   where
     f' (_ :> context) = f context
+
+

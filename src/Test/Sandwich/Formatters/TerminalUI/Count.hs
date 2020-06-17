@@ -3,8 +3,8 @@
 
 module Test.Sandwich.Formatters.TerminalUI.Count where
 
-import Test.Sandwich.Types.Example
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 countWhere :: (RunTreeFixed -> Bool) -> [RunTreeFixed] -> Int
 countWhere p rts = sum $ fmap (countWhere' p) rts
