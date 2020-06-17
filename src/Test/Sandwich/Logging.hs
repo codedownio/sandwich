@@ -2,22 +2,22 @@
 
 module Test.Sandwich.Logging where
 
-import Control.Monad.Logger.CallStack
+import Control.Monad.Logger
 import Data.Text
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 
 debug :: (HasCallStack) => Text -> ExampleM context ()
-debug = logDebugN
+debug = logDebugCS callStack
 
 info :: (HasCallStack) => Text -> ExampleM context ()
-info = logInfoN
+info = logInfoCS callStack
 
 warn :: (HasCallStack) => Text -> ExampleM context ()
-warn = logWarnN
+warn = logWarnCS callStack
 
 logError :: (HasCallStack) => Text -> ExampleM context ()
-logError = logErrorN
+logError = logErrorCS callStack
 
 logOther :: (HasCallStack) => LogLevel -> Text -> ExampleM context ()
-logOther = logOtherN
+logOther = logOtherCS callStack
