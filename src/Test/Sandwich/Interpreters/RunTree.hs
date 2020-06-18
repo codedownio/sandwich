@@ -42,13 +42,13 @@ data RunTreeContext context = RunTreeContext {
   , runTreeOptions :: Options
   }
 
-runTreeMain :: Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
+runTreeMain :: (HasBaseContext context) => Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
 runTreeMain spec = do
   [RunTreeGroup {..}] <- runTree (Free (Describe "implicit outer describe" spec (Pure ())))
   return runTreeChildren
 
 
-runTree :: Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
+runTree :: (HasBaseContext context) => Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
 
 runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
@@ -203,7 +203,7 @@ runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec ne
 runTree (Pure _) = return []
 
 
-runDescribe :: Bool -> String -> Free (SpecCommand a) () -> Free (SpecCommand a) r -> ReaderT (RunTreeContext a) IO [RunTree]
+runDescribe :: (HasBaseContext context) => Bool -> String -> Spec context () -> Spec context r -> ReaderT (RunTreeContext context) IO [RunTree]
 runDescribe parallel l subspec next = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 

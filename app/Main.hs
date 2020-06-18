@@ -62,9 +62,9 @@ medium = do
   --   it "does 1" sleepThenSucceed -- pending
   --   it "does 2" sleepThenSucceed -- pending
 
-  introduce "Database" (\() -> return (42 :: Int)) (\(num :> ()) -> return ()) $ do
+  introduce "Database" (\_ -> return (42 :: Int)) (\_ -> return ()) $ do
     it "uses the DB 1" $ do
-      num :> () <- ask
+      num :> _ <- ask
       return ()
       -- liftIO $ putStrLn ("Got num 1: " <> show num)
 
@@ -72,8 +72,8 @@ medium = do
   --     -- putStrLn ("Got num 2: " <> show num)
   --     return Success
 
-  afterEach "after each" (\() -> return ()) $ do
-    beforeEach "before each" (\() -> return ()) $ do
+  afterEach "after each" (\_ -> return ()) $ do
+    beforeEach "before each" (\_ -> return ()) $ do
       it "does the first thing" sleepThenSucceed
       it "does the second thing" sleepThenSucceed
       it "does the third thing" sleepThenSucceed

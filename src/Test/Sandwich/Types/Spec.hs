@@ -25,6 +25,7 @@ import Control.Monad.Reader
 import Data.Functor.Classes
 import Data.String.Interpolate
 import GHC.Stack
+import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
@@ -70,6 +71,25 @@ isFailure :: Result -> Bool
 isFailure (Failure {}) = True
 isFailure _ = False
 
+
+-- * Base context
+
+data PathSegment = PathSegment {
+  name :: String
+  , isContextManager :: Bool
+  }
+
+data BaseContext = BaseContext { baseContextPath :: [PathSegment]
+                               , baseContextOptions :: Options }
+
+class HasBaseContext a where
+  getBaseContext :: a -> BaseContext
+
+instance HasBaseContext BaseContext where
+  getBaseContext = id
+
+instance HasBaseContext context => HasBaseContext (intro :> context) where
+  getBaseContext (_ :> ctx) = getBaseContext ctx
 
 -- * Free monad language
 
@@ -123,7 +143,7 @@ type SpecWith context = Spec context ()
 -- data SpecM context a = Free (SpecWith context) a
 type SpecM context a = Free (SpecCommand context) a
 
-type TopSpec = Spec () ()
+type TopSpec = Spec BaseContext ()
 
 makeFree_ ''SpecCommand
 

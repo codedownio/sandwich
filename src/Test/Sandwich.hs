@@ -34,9 +34,13 @@ import Test.Sandwich.Types.Spec
 
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
-  asyncUnit <- async $ return ()
+  asyncBaseContext <- async $ return $ BaseContext {
+    baseContextPath = []
+    , baseContextOptions = options
+    }
+
   rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
-    runTreeContext = asyncUnit
+    runTreeContext = asyncBaseContext
     , runTreeOptions = options
     }
 
@@ -53,9 +57,13 @@ runSandwich options f spec = do
 
 runSandwichTree :: Options -> TopSpec -> IO [RunTree]
 runSandwichTree options spec = do
-  asyncUnit <- async $ return ()
+  asyncBaseContext <- async $ return $ BaseContext {
+    baseContextPath = []
+    , baseContextOptions = options
+    }
+
   rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
-    runTreeContext = asyncUnit
+    runTreeContext = asyncBaseContext
     , runTreeOptions = options
     }
 
