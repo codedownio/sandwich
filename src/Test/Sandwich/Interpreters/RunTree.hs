@@ -285,7 +285,7 @@ runExampleM pathSegment ex ctx logs = do
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextRunRoot of
       Nothing -> return Nothing
       Just base -> do
-        let dir = foldl (</>) base (fmap pathSegmentName baseContextPath)
+        let dir = (foldl (</>) base (fmap pathSegmentName baseContextPath)) </> "results"
         createDirectoryIfMissing True dir
         return $ Just dir
 
