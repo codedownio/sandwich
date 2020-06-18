@@ -23,13 +23,14 @@ import Control.Monad.Free.TH
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Functor.Classes
+import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
-newtype ExampleM context a = ExampleM { unExampleM :: (ReaderT context (ExceptT FailureReason (LoggingT IO)) a) }
+newtype ExampleM context a = ExampleM { unExampleM :: ReaderT context (ExceptT FailureReason (LoggingT IO)) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
 
 -- * Results
@@ -75,21 +76,25 @@ isFailure _ = False
 -- * Base context
 
 data PathSegment = PathSegment {
-  name :: String
-  , isContextManager :: Bool
+  pathSegmentName :: String
+  , pathSegmentIsContextManager :: Bool
   }
 
-data BaseContext = BaseContext { baseContextPath :: [PathSegment]
+data BaseContext = BaseContext { baseContextPath :: Seq PathSegment
+                               , baseContextRunRoot :: Maybe FilePath
                                , baseContextOptions :: Options }
 
 class HasBaseContext a where
   getBaseContext :: a -> BaseContext
+  modifyBaseContext :: a -> (BaseContext -> BaseContext) -> a
 
 instance HasBaseContext BaseContext where
   getBaseContext = id
+  modifyBaseContext x f = f x
 
 instance HasBaseContext context => HasBaseContext (intro :> context) where
   getBaseContext (_ :> ctx) = getBaseContext ctx
+  modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
 
 -- * Free monad language
 

@@ -25,6 +25,8 @@ dependencies:
 - base >= 4.7 && < 5
 - containers
 - brick
+- bytestring
+- directory
 - filepath
 - free
 - interpolate

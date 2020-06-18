@@ -29,6 +29,10 @@ import qualified Data.List as L
 import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
 import Data.Time.Clock
+import System.Directory
+import System.FilePath
+import System.IO
+import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -62,12 +66,7 @@ runTree (Free (Before l f subspec next)) = do
       ctx <- wait runTreeContext
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-
-      eitherResult <- tryAny $ do
-        (runLoggingT (runExceptT $ runReaderT (unExampleM f) ctx) logFn) >>= \case
-          Left err -> return $ Failure err
-          Right () -> return Success
-
+      eitherResult <- tryAny $ runExampleM (PathSegment l True) f ctx logs
       let ret = either (\e -> Failure (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
       endTime <- getCurrentTime
       atomically $ writeTVar status (Done startTime endTime ret)
@@ -98,7 +97,7 @@ runTree (Free (After l f subspec next)) = do
     ctx <- wait runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-    eitherResult <- tryAny $ runExampleM f ctx logs
+    eitherResult <- tryAny $ runExampleM (PathSegment l True) f ctx logs
     endTime <- getCurrentTime
     let ret = either (\e -> Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
     atomically $ writeTVar status (Done startTime endTime ret)
@@ -126,7 +125,7 @@ runTree (Free (Around l f subspec next)) = do
           putMVar mvar ()
           void $ waitForTree subtree
 
-    eitherResult <- tryAny $ runExampleM (f action) ctx logs
+    eitherResult <- tryAny $ runExampleM (PathSegment l True) (f action) ctx logs
 
     endTime <- getCurrentTime
 
@@ -186,7 +185,7 @@ runTree (Free (It l ex next)) = do
       ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ runExampleM ex ctx logs
+      eitherResult <- tryAny $ runExampleM (PathSegment l False) ex ctx logs
       endTime <- getCurrentTime
       let ret = either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
       atomically $ writeTVar status (Done startTime endTime ret)
@@ -265,15 +264,30 @@ waitOrHandleContextException contextAsync status = do
       throwIO e
     Right ctx -> return ctx
 
-runExampleM ex ctx logs = do
-  (runLoggingT (runExceptT $ runReaderT (unExampleM ex) ctx) logFn) >>= \case
-    Left err -> return $ Failure err
-    Right () -> return Success
+runExampleM pathSegment ex ctx logs = do
+  let ctx' = modifyBaseContext ctx (\x@(BaseContext {..}) -> x { baseContextPath = baseContextPath |> pathSegment  })
+
+  maybeTestDirectory <- getTestDirectory ctx'
+  let options = baseContextOptions $ getBaseContext ctx'
+
+  withLogFn maybeTestDirectory options $ \logFn ->
+    (runLoggingT (runExceptT $ runReaderT (unExampleM ex) ctx') logFn) >>= \case
+      Left err -> return $ Failure err
+      Right () -> return Success
 
   where
-    logFn loc logSrc logLevel logStr = do
-      ts <- getCurrentTime
-      atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
+    withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
+    withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
+      hSetBuffering h LineBuffering
+      action (logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel logs h)
+
+    getTestDirectory :: (HasBaseContext a) => a -> IO (Maybe FilePath)
+    getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextRunRoot of
+      Nothing -> return Nothing
+      Just base -> do
+        let dir = foldl (</>) base (fmap pathSegmentName baseContextPath)
+        createDirectoryIfMissing True dir
+        return $ Just dir
 
 
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]

@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Sandwich (
   runSandwich
@@ -23,6 +24,8 @@ module Test.Sandwich (
 
 import Control.Concurrent.Async
 import Control.Monad.Trans.Reader
+import System.Directory
+import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.RunTree
@@ -34,15 +37,7 @@ import Test.Sandwich.Types.Spec
 
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
-  asyncBaseContext <- async $ return $ BaseContext {
-    baseContextPath = []
-    , baseContextOptions = options
-    }
-
-  rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
-    runTreeContext = asyncBaseContext
-    , runTreeOptions = options
-    }
+  rts <- startSandwichTree options spec
 
   formatterAsync <- async $ runFormatter f rts
 
@@ -54,12 +49,23 @@ runSandwich options f spec = do
 
   wait formatterAsync
 
+startSandwichTree :: Options -> TopSpec -> IO [RunTree]
+startSandwichTree options@(Options {..}) spec = do
+  runRoot <- case optionsTestArtifactsDirectory of
+    TestArtifactsNone -> return Nothing
+    TestArtifactsFixedDirectory dir -> do
+      createDirectoryIfMissing True dir
+      return $ Just dir
+    TestArtifactsGeneratedDirectory base f -> do
+      name <- f
+      let dir = base </> name
+      createDirectoryIfMissing True dir
+      return $ Just dir
 
-runSandwichTree :: Options -> TopSpec -> IO [RunTree]
-runSandwichTree options spec = do
   asyncBaseContext <- async $ return $ BaseContext {
-    baseContextPath = []
+    baseContextPath = mempty
     , baseContextOptions = options
+    , baseContextRunRoot = runRoot
     }
 
   rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
@@ -67,6 +73,10 @@ runSandwichTree options spec = do
     , runTreeOptions = options
     }
 
-  mapM_ (wait . runTreeAsync) rts
+  return rts
 
+runSandwichTree :: Options -> TopSpec -> IO [RunTree]
+runSandwichTree options spec = do
+  rts <- startSandwichTree options spec
+  mapM_ (wait . runTreeAsync) rts
   return rts

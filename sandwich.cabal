@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5a739118d45c5feeddf29389165fe6459c29f1ec397c3a3fb08364913b88e0f3
+-- hash: cfe4e5ad4134ecd51a2606d0000b246b0184c458ae26788168628ca030a32387
 
 name:           sandwich
 version:        0.1.0.0
@@ -42,6 +42,7 @@ library
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree
+      Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Logging
       Test.Sandwich.Types.Formatter
       Test.Sandwich.Types.Options
@@ -56,7 +57,9 @@ library
     , async
     , base >=4.7 && <5
     , brick
+    , bytestring
     , containers
+    , directory
     , filepath
     , free
     , interpolate
@@ -87,7 +90,9 @@ executable sandwich-exe
     , async
     , base >=4.7 && <5
     , brick
+    , bytestring
     , containers
+    , directory
     , filepath
     , free
     , interpolate
@@ -120,7 +125,9 @@ test-suite sandwich-test
     , async
     , base >=4.7 && <5
     , brick
+    , bytestring
     , containers
+    , directory
     , filepath
     , free
     , interpolate

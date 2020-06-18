@@ -10,6 +10,7 @@ import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.String.Interpolate
+import Data.Time.Clock
 import System.Posix.Signals
 import Test.Sandwich
 import Test.Sandwich.Expectations
@@ -89,8 +90,12 @@ medium = do
 -- mainPretty :: IO ()
 -- mainPretty = putStrLn $ prettyShow topSpec
 
+options = defaultOptions {
+  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  }
+
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter medium
+main = runSandwich options defaultTerminalUIFormatter verySimple
 
 
 -- * Util

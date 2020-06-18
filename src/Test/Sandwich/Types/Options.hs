@@ -23,13 +23,16 @@ data TestArtifactsDirectory =
 
 data Options = Options {
   optionsTestArtifactsDirectory :: TestArtifactsDirectory
-  -- ^ Where to save test artifacts (logs, screenshots, failure reports, etc.)
-  , optionsSaveTestLogs :: Maybe LogLevel
-  -- ^ Minimum test log level to save (has no effect if 'optionsTestArtifactsDirectory' is 'TestArtifactsNone')
+  -- ^ Where to save test artifacts (logs, screenshots, failure reports, etc.).
+  , optionsSavedLogLevel :: Maybe LogLevel
+  -- ^ Minimum test log level to save (has no effect if 'optionsTestArtifactsDirectory' is 'TestArtifactsNone').
+  , optionsMemoryLogLevel :: Maybe LogLevel
+  -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
   }
 
 defaultOptions :: Options
 defaultOptions = Options {
   optionsTestArtifactsDirectory = TestArtifactsNone
-  , optionsSaveTestLogs = Just LevelDebug
+  , optionsSavedLogLevel = Just LevelDebug
+  , optionsMemoryLogLevel = Just LevelDebug
   }
