@@ -84,10 +84,10 @@ getCallStackFromStatus Done {statusResult} = getCallStackFromResult statusResult
 
 getCallStackFromResult :: Result -> Maybe CallStack
 getCallStackFromResult (Success {}) = Nothing
-getCallStackFromResult (Pending x _) = x
 getCallStackFromResult (Failure (Reason x _)) = x
 getCallStackFromResult (Failure (ExpectedButGot x _ _)) = x
 getCallStackFromResult (Failure (DidNotExpectButGot x _)) = x
+getCallStackFromResult (Failure (Pending x _)) = x
 getCallStackFromResult (Failure (GotException {})) = Nothing
 getCallStackFromResult (Failure (GetContextException {})) = Nothing
 getCallStackFromResult (Failure (GotAsyncException {})) = Nothing

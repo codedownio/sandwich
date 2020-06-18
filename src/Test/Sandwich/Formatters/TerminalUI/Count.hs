@@ -23,9 +23,11 @@ isRunningItBlock _ = False
 isSuccessItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=Success})}) = True
 isSuccessItBlock _ = False
 
-isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Pending {})})}) = True
+isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})}) = True
+isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = False
 isPendingItBlock _ = False
 
+isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})}) = False
 isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = True
 isFailedItBlock _ = False
 

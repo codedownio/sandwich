@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI.Draw where
@@ -8,7 +10,6 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
-import Brick.Widgets.ProgressBar
 import Control.Monad
 import Control.Monad.Logger
 import Data.Foldable
@@ -22,6 +23,7 @@ import GHC.Stack
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
+import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Formatters.TerminalUI.Util
@@ -34,7 +36,8 @@ drawUI app = [ui]
     ui = vBox [vLimitPercent 10 (topBox app)
               , borderWithCounts app
               , mainList app
-              , bottomProgressBar app]
+              , bottomProgressBarColored app
+              ]
 
 mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
   where
@@ -137,8 +140,3 @@ borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [
     totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
     totalNotStartedTests = countWhere isNotStartedItBlock (app ^. appRunTree)
-
-bottomProgressBar app = progressBar Nothing (fromIntegral totalDoneTests / fromIntegral totalNumTests)
-  where
-    totalNumTests = countWhere isItBlock (app ^. appRunTree)
-    totalDoneTests = countWhere isDoneItBlock (app ^. appRunTree)

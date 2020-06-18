@@ -5,7 +5,6 @@ module Test.Sandwich.Formatters.TerminalUI.Types where
 
 import qualified Brick.Widgets.List as L
 import Data.Sequence
-import Data.Text
 import Lens.Micro.TH
 import Test.Sandwich.Types.RunTree
 

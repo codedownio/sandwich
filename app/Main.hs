@@ -37,8 +37,8 @@ simple :: TopSpec
 simple = do
   it "does the thing 1" sleepThenSucceed
   it "does the thing 2" sleepThenSucceed
-  it "does the thing 3" sleepThenSucceed
-  it "does the thing 4" sleepThenSucceed
+  it "does the thing 3" sleepThenFail
+  it "does the thing 4" sleepThenFail
   it "does the thing 5" sleepThenSucceed
   it "does the thing 6" sleepThenSucceed
 
@@ -50,7 +50,7 @@ medium = do
 
   describe "should happen sequentially" $ do
     it "sequential 1" sleepThenSucceed
-    it "sequential 2" sleepThenSucceed
+    it "sequential 2" sleepThenFail
     it "sequential 3" sleepThenSucceed
 
   describeParallel "should happen in parallel" $ do
@@ -58,21 +58,22 @@ medium = do
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
 
-  around "some around" (\context action -> putStrLn "around1" >> action >> putStrLn "around2") $ do
-    it "does 1" sleepThenSucceed -- pending
-    it "does 2" sleepThenSucceed -- pending
+  -- around "some around" (\context action -> putStrLn "around1" >> action >> putStrLn "around2") $ do
+  --   it "does 1" sleepThenSucceed -- pending
+  --   it "does 2" sleepThenSucceed -- pending
 
   introduce "Database" (\() -> return (42 :: Int)) (\(num :> ()) -> return ()) $ do
     it "uses the DB 1" $ do
       num :> () <- ask
-      liftIO $ putStrLn ("Got num 1: " <> show num)
+      return ()
+      -- liftIO $ putStrLn ("Got num 1: " <> show num)
 
   --   it "uses the DB 2" $ \((num :: Int) :> ()) -> do
   --     -- putStrLn ("Got num 2: " <> show num)
   --     return Success
 
-  afterEach "after each" (\() -> putStrLn "after") $ do
-    beforeEach "before each" (\() -> putStrLn "before") $ do
+  afterEach "after each" (\() -> return ()) $ do
+    beforeEach "before each" (\() -> return ()) $ do
       it "does the first thing" sleepThenSucceed
       it "does the second thing" sleepThenSucceed
       it "does the third thing" sleepThenSucceed
@@ -89,7 +90,7 @@ medium = do
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich defaultOptions defaultTerminalUIFormatter verySimple
+main = runSandwich defaultOptions defaultTerminalUIFormatter medium
 
 
 -- * Util
@@ -101,7 +102,7 @@ sleepThenSucceed = do
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
   liftIO $ threadDelay (2 * 10^6)
-  -- failTest (ExpectedButGot "2" "3")
+  2 `shouldBe` 3
 
 pending :: ExampleM context ()
 pending = do

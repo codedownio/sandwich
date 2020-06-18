@@ -34,7 +34,6 @@ newtype ExampleM context a = ExampleM (ReaderT context (ExceptT FailureReason (L
 -- * Results
 
 data Result = Success
-            | Pending (Maybe CallStack) (Maybe String)
             | Failure FailureReason
   deriving (Show, Eq)
 
@@ -42,6 +41,7 @@ data FailureReason = Reason (Maybe CallStack) String
                    | ExpectedButGot (Maybe CallStack) String String
                    | DidNotExpectButGot (Maybe CallStack) String
                    | GotException (Maybe String) SomeExceptionWithEq
+                   | Pending (Maybe CallStack) (Maybe String)
                    | GetContextException SomeExceptionWithEq
                    | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
   deriving (Show, Typeable, Eq)
