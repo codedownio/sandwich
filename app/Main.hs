@@ -72,8 +72,8 @@ medium = do
   --     -- putStrLn ("Got num 2: " <> show num)
   --     return Success
 
-  afterEach "after each" (\_ -> return ()) $ do
-    beforeEach "before each" (\_ -> return ()) $ do
+  afterEach "after each" (return ()) $ do
+    beforeEach "before each" (return ()) $ do
       it "does the first thing" sleepThenSucceed
       it "does the second thing" sleepThenSucceed
       it "does the third thing" sleepThenSucceed

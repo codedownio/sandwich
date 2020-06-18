@@ -29,7 +29,7 @@ import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
-newtype ExampleM context a = ExampleM (ReaderT context (ExceptT FailureReason (LoggingT IO)) a)
+newtype ExampleM context a = ExampleM { unExampleM :: (ReaderT context (ExceptT FailureReason (LoggingT IO)) a) }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
 
 -- * Results
@@ -100,12 +100,12 @@ type ActionWith a = a -> IO ()
 
 data SpecCommand context next where
   Before :: { label :: String
-            , action :: context -> IO ()
+            , action :: ExampleM context ()
             , subspec :: Spec context ()
             , next :: next } -> SpecCommand context next
 
   After :: { label :: String
-           , action :: context -> IO ()
+           , action :: ExampleM context ()
            , subspec :: Spec context ()
            , next :: next } -> SpecCommand context next
 
@@ -116,7 +116,7 @@ data SpecCommand context next where
                , next :: next } -> SpecCommand context next
 
   Around :: { label :: String
-            , actionWith :: (context -> IO () -> IO ())
+            , actionWith :: (IO () -> ExampleM context ())
             , subspec :: Spec context ()
             , next :: next } -> SpecCommand context next
 
@@ -163,7 +163,7 @@ instance Show1 (SpecCommand context) where
 before :: 
   String
   -- ^ Label for this context manager
-  -> (context -> IO ())
+  -> (ExampleM context ())
   -- ^ Action to perform
   -> SpecWith context
   -- ^ Child spec tree
@@ -172,7 +172,7 @@ before ::
 -- | Perform an action before each example in a given spec tree.
 beforeEach ::
   String
-  -> (context -> IO ())
+  -> (ExampleM context ())
   -> Spec context ()
   -> SpecM context ()
 beforeEach l f (Free x@(Before {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
@@ -183,12 +183,14 @@ beforeEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = beforeEach
 beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
 beforeEach _ _ (Pure x) = Pure x
 beforeEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (beforeEach l f' subspec) (beforeEach l f next))
-  where f' (_ :> context) = f context
+  where f' = do
+          let ExampleM r = f
+          ExampleM $ withReaderT (\(_ :> context) -> context) r
 
 -- | Perform an action after each example in a given spec tree.
 afterEach ::
   String
-  -> (context -> IO ())
+  -> (ExampleM context ())
   -> Spec context ()
   -> SpecM context ()
 afterEach l f (Free x@(Before {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
@@ -199,11 +201,13 @@ afterEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = afterEach l
 afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
 afterEach _ _ (Pure x) = Pure x
 afterEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (afterEach l f' subspec) (afterEach l f next))
-  where f' (_ :> context) = f context
+  where f' = do
+          let ExampleM r = f
+          ExampleM $ withReaderT (\(_ :> context) -> context) r
 
 aroundEach ::
   String
-  -> (context -> IO () -> IO ())
+  -> (IO () -> ExampleM context ())
   -> Spec context ()
   -> SpecM context ()
 aroundEach l f (Free x@(Before {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
@@ -215,6 +219,6 @@ aroundEach l f (Free x@(It {..})) = Free (Around l f (Free (x { next = Pure () }
 aroundEach _ _ (Pure x) = Pure x
 aroundEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (aroundEach l f' subspec) (aroundEach l f next))
   where
-    f' (_ :> context) = f context
-
-
+    f' action = do
+      let ExampleM r = f action
+      ExampleM $ withReaderT (\(_ :> context) -> context) r

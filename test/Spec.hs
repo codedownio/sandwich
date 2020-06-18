@@ -3,6 +3,7 @@
 
 import Control.Concurrent.STM
 import Control.Exception.Safe
+import Control.Monad.IO.Class
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import GHC.IO.Exception
@@ -21,7 +22,7 @@ main = do
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
-  results <- runAndGetResults $ before "before" (\_ -> throwIO someUserError) $ do
+  results <- runAndGetResults $ before "before" (liftIO $ throwIO someUserError) $ do
     it "does thing 1" $ return ()
     it "does thing 2" $ return ()
 
@@ -30,7 +31,7 @@ beforeExceptionSafety = do
 
 beforeExceptionSafetyNested :: (HasCallStack) => IO ()
 beforeExceptionSafetyNested = do
-  results <- runAndGetResults $ before "before" (\_ -> throwIO someUserError) $ do
+  results <- runAndGetResults $ before "before" (liftIO $ throwIO someUserError) $ do
     it "does thing 1" $ return ()
     it "does thing 2" $ return ()
     describe "nested things" $ do

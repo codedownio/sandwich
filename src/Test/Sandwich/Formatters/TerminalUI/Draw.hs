@@ -61,7 +61,7 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
       ]
 
     getInfoWidgets (MainListElem {..}) = catMaybes [
-      Just $ borderWithLabel (padLeftRight 1 $ str "Info") $ strWrap $ show status
+      Just $ borderWithLabel (padLeftRight 1 $ str "Result") $ strWrap $ show status
       , do
           cs <- getCallStackFromStatus status
           return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ strWrap $ prettyCallStack cs

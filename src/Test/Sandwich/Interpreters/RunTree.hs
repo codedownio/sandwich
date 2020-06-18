@@ -53,13 +53,20 @@ runTree :: (HasBaseContext context) => Free (SpecCommand context) r -> ReaderT (
 runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
+  let logFn loc logSrc logLevel logStr = do
+        ts <- getCurrentTime
+        atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
+
   newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
       ctx <- wait runTreeContext
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
 
-      eitherResult <- tryAny $ f ctx
+      eitherResult <- tryAny $ do
+        (runLoggingT (runExceptT $ runReaderT (unExampleM f) ctx) logFn) >>= \case
+          Left err -> return $ Failure err
+          Right () -> return Success
 
       let ret = either (\e -> Failure (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
       endTime <- getCurrentTime
@@ -91,18 +98,11 @@ runTree (Free (After l f subspec next)) = do
     ctx <- wait runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-
-    (tryAny $ f ctx) >>= \case
-      Left e -> do
-        endTime <- getCurrentTime
-        let ret = Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))
-        atomically $ writeTVar status (Done startTime endTime ret)
-        return ret
-      Right () -> do
-        endTime <- getCurrentTime
-        let ret = Success
-        atomically $ writeTVar status (Done startTime endTime ret)
-        return ret
+    eitherResult <- tryAny $ runExampleM f ctx logs
+    endTime <- getCurrentTime
+    let ret = either (\e -> Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
+    atomically $ writeTVar status (Done startTime endTime ret)
+    return ret
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (Around l f subspec next)) = do
@@ -122,9 +122,11 @@ runTree (Free (Around l f subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
 
-    eitherResult <- tryAny $ f ctx $ do
-      putMVar mvar ()
-      void $ waitForTree subtree
+    let action = do
+          putMVar mvar ()
+          void $ waitForTree subtree
+
+    eitherResult <- tryAny $ runExampleM (f action) ctx logs
 
     endTime <- getCurrentTime
 
@@ -176,22 +178,15 @@ runTree (Free (Introduce l alloc cleanup subspec next)) = do
         return ret
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
-runTree (Free (It l (ExampleM ex) next)) = do
+runTree (Free (It l ex next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
-
-  let logFn loc logSrc logLevel logStr = do
-        ts <- getCurrentTime
-        atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
       ctx <- waitOrHandleContextException runTreeContext status
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ do
-        (runLoggingT (runExceptT $ runReaderT ex ctx) logFn) >>= \case
-          Left err -> return $ Failure err
-          Right () -> return Success
+      eitherResult <- tryAny $ runExampleM ex ctx logs
       endTime <- getCurrentTime
       let ret = either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
       atomically $ writeTVar status (Done startTime endTime ret)
@@ -270,8 +265,17 @@ waitOrHandleContextException contextAsync status = do
       throwIO e
     Right ctx -> return ctx
 
+runExampleM ex ctx logs = do
+  (runLoggingT (runExceptT $ runReaderT (unExampleM ex) ctx) logFn) >>= \case
+    Left err -> return $ Failure err
+    Right () -> return Success
 
-  
+  where
+    logFn loc logSrc logLevel logStr = do
+      ts <- getCurrentTime
+      atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
+
+
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Before l f subspec next)) = (Free (Before l f subspec (Pure ()))) : getImmediateChildren next
