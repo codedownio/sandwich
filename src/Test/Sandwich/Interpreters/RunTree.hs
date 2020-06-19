@@ -137,44 +137,33 @@ runTree (Free (Around l f subspec next)) = do
     return ret
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
-runTree (Free (Introduce l alloc cleanup subspec next)) = do
+runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   newContextAsync <- liftIO $ async $ do
     ctx <- waitOrHandleContextException runTreeContext status
-
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-
-    eitherResult <- tryAny $ alloc ctx
-
+    eitherResult <- tryAny $ runExampleM' (PathSegment l True) alloc ctx logs
     let ret = either (\e -> (Failure (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e)))) (const Success) eitherResult
     endTime <- getCurrentTime
     atomically $ writeTVar status (Done startTime endTime ret)
-
     case eitherResult of
-      Left e -> throwIO e
-      Right intro -> return (intro :> ctx)
+      Left e -> throwIO e -- caught an exception
+      Right (Left e) -> throwIO e -- the ExampleM failed
+      Right (Right intro) -> return (LabelValue intro :> ctx)
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
   myAsync <- liftIO $ async $ do
-    _ <- waitForTree subtree -- TODO: catch exception here to ensure the cleanup runs
+    _ <- waitForTree subtree
     ctx <- waitOrHandleContextException newContextAsync status
-
     startTime <- getCurrentTime -- TODO
-
-    (tryAny $ cleanup ctx) >>= \case
-      Left e -> do
-        endTime <- getCurrentTime
-        let ret = Failure (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))
-        atomically $ writeTVar status (Done startTime endTime ret)
-        return ret
-      Right () -> do
-        endTime <- getCurrentTime
-        let ret = Success
-        atomically $ writeTVar status (Done startTime endTime ret)
-        return ret
+    eitherResult <- tryAny $ runExampleM (PathSegment l True) cleanup ctx logs
+    endTime <- getCurrentTime
+    let ret = either (\e -> Failure (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))) id eitherResult
+    atomically $ writeTVar status (Done startTime endTime ret)
+    return ret
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
@@ -264,7 +253,13 @@ waitOrHandleContextException contextAsync status = do
       throwIO e
     Right ctx -> return ctx
 
-runExampleM pathSegment ex ctx logs = do
+runExampleM :: HasBaseContext r => PathSegment -> ExampleM r () -> r -> TVar (Seq LogEntry) -> IO Result
+runExampleM pathSegment ex ctx logs = runExampleM' pathSegment ex ctx logs >>= \case
+  Left err -> return $ Failure err
+  Right () -> return Success
+
+runExampleM' :: HasBaseContext r => PathSegment -> ExampleM r a -> r -> TVar (Seq LogEntry) -> IO (Either FailureReason a)
+runExampleM' pathSegment ex ctx logs = do
   let ctx' = modifyBaseContext ctx (\x@(BaseContext {..}) -> x { baseContextPath = baseContextPath |> pathSegment  })
 
   maybeTestDirectory <- getTestDirectory ctx'
@@ -272,8 +267,8 @@ runExampleM pathSegment ex ctx logs = do
 
   withLogFn maybeTestDirectory options $ \logFn ->
     (runLoggingT (runExceptT $ runReaderT (unExampleM ex) ctx') logFn) >>= \case
-      Left err -> return $ Failure err
-      Right () -> return Success
+      Left err -> return $ Left err
+      Right x -> return $ Right x
 
   where
     withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
@@ -294,7 +289,7 @@ getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand cont
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Before l f subspec next)) = (Free (Before l f subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (After l f subspec next)) = (Free (After l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Introduce l alloc cleanup subspec next)) = (Free (Introduce l alloc cleanup subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Introduce l cl alloc cleanup subspec next)) = (Free (Introduce l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Around l f subspec next)) = (Free (Around l f subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Describe l subspec next)) = (Free (Describe l subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (DescribeParallel l subspec next)) = (Free (DescribeParallel l subspec (Pure ()))) : getImmediateChildren next

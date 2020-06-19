@@ -1,7 +1,10 @@
+{-# LANGUAGE RoleAnnotations #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -9,6 +12,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 
@@ -26,6 +30,7 @@ import Data.Functor.Classes
 import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
 import GHC.Stack
+import GHC.TypeLits
 import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
@@ -47,6 +52,8 @@ data FailureReason = Reason (Maybe CallStack) String
                    | GetContextException SomeExceptionWithEq
                    | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
   deriving (Show, Typeable, Eq)
+
+instance Exception FailureReason
 
 instance Eq CallStack where
   c1 == c2 = show c1 == show c2
@@ -96,10 +103,27 @@ instance HasBaseContext context => HasBaseContext (intro :> context) where
   getBaseContext (_ :> ctx) = getBaseContext ctx
   modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
 
+data Label (l :: Symbol) a = Label
+
+data LabelValue (l :: Symbol) a = LabelValue a
+
+-- TODO: get rid of overlapping instance
+-- Maybe look at https://kseo.github.io/posts/2017-02-05-avoid-overlapping-instances-with-closed-type-families.html
+class HasLabel context (l :: Symbol) a where
+  getLabelValue :: Label l a -> context -> a
+instance HasLabel (LabelValue l a) l a where
+  getLabelValue _ (LabelValue x) = x
+instance {-# OVERLAPPING #-} HasLabel (LabelValue l a :> context) l a where
+  getLabelValue _ (LabelValue x :> _) = x
+instance {-# OVERLAPPING #-} HasLabel context l a => HasLabel (intro :> context) l a where
+  getLabelValue l (_ :> ctx) = getLabelValue l ctx
+
+
 -- * Free monad language
 
 data (a :: *) :> (b :: *) = a :> b
   deriving Show
+infixr :>
 
 type ActionWith a = a -> IO ()
 
@@ -115,9 +139,10 @@ data SpecCommand context next where
            , next :: next } -> SpecCommand context next
 
   Introduce :: { label :: String
-               , allocate :: (context -> IO intro)
-               , cleanup :: ((intro :> context) -> IO ())
-               , subspecAugmented :: Spec (intro :> context) ()
+               , contextLabel :: Label l intro
+               , allocate :: ExampleM context intro
+               , cleanup :: ExampleM (LabelValue l intro :> context) ()
+               , subspecAugmented :: Spec (LabelValue l intro :> context) ()
                , next :: next } -> SpecCommand context next
 
   Around :: { label :: String
@@ -145,7 +170,6 @@ type Spec context = Free (SpecCommand context)
 
 type SpecWith context = Spec context ()
 
--- data SpecM context a = Free (SpecWith context) a
 type SpecM context a = Free (SpecCommand context) a
 
 type TopSpec = Spec BaseContext ()
@@ -154,6 +178,7 @@ makeFree_ ''SpecCommand
 
 instance Show1 (SpecCommand context) where
   liftShowsPrec sp _ d (Before {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (After {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
   liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Describe {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
@@ -187,7 +212,7 @@ beforeEach l f (Free x@(Describe {..})) = Free (x { subspec = beforeEach l f sub
 beforeEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
 beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
 beforeEach _ _ (Pure x) = Pure x
-beforeEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (beforeEach l f' subspec) (beforeEach l f next))
+beforeEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (beforeEach l f' subspec) (beforeEach l f next))
   where f' = do
           let ExampleM r = f
           ExampleM $ withReaderT (\(_ :> context) -> context) r
@@ -205,7 +230,7 @@ afterEach l f (Free x@(Describe {..})) = Free (x { subspec = afterEach l f subsp
 afterEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
 afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
 afterEach _ _ (Pure x) = Pure x
-afterEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (afterEach l f' subspec) (afterEach l f next))
+afterEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (afterEach l f' subspec) (afterEach l f next))
   where f' = do
           let ExampleM r = f
           ExampleM $ withReaderT (\(_ :> context) -> context) r
@@ -222,7 +247,7 @@ aroundEach l f (Free x@(Describe {..})) = Free (x { subspec = aroundEach l f sub
 aroundEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
 aroundEach l f (Free x@(It {..})) = Free (Around l f (Free (x { next = Pure () })) (aroundEach l f next))
 aroundEach _ _ (Pure x) = Pure x
-aroundEach l f (Free (Introduce li alloc clean subspec next)) = Free (Introduce li alloc clean (aroundEach l f' subspec) (aroundEach l f next))
+aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l f' subspec) (aroundEach l f next))
   where
     f' action = do
       let ExampleM r = f action

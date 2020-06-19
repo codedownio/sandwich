@@ -13,11 +13,11 @@ filterTree match (Free (Before l f subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Before l f x next)
-filterTree match (Free (Introduce l alloc cleanup subspec next))
-  | l `matches` match = Free (Introduce l alloc cleanup subspec (filterTree match next))
+filterTree match (Free (Introduce l cl alloc cleanup subspec next))
+  | l `matches` match = Free (Introduce l cl alloc cleanup subspec (filterTree match next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
-      x -> Free (Introduce l alloc cleanup x next)
+      x -> Free (Introduce l cl alloc cleanup x next)
 filterTree match (Free (Around l f subspec next))
   | l `matches` match = Free (Around l f subspec (filterTree match next))
   | otherwise = case filterTree match subspec of

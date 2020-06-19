@@ -1,6 +1,8 @@
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
 
 module Main where
 
@@ -9,7 +11,7 @@ import Control.Concurrent.Async
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Data.String.Interpolate
+import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import System.Posix.Signals
 import Test.Sandwich
@@ -22,6 +24,13 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
+
+data Database = Database String
+  deriving Show
+
+database = Label :: Label "database" Database
+otherDatabase = Label :: Label "otherDatabase" Database
+
 
 verySimple :: TopSpec
 verySimple = do
@@ -63,15 +72,18 @@ medium = do
   --   it "does 1" sleepThenSucceed -- pending
   --   it "does 2" sleepThenSucceed -- pending
 
-  introduce "Database" (\_ -> return (42 :: Int)) (\_ -> return ()) $ do
+  introduce "Database" database (return $ Database "outer") (return ()) $ do
     it "uses the DB 1" $ do
-      num :> _ <- ask
-      return ()
-      -- liftIO $ putStrLn ("Got num 1: " <> show num)
+      db <- askLabel database
+      debug [i|Got db: #{db}|]
 
-  --   it "uses the DB 2" $ \((num :: Int) :> ()) -> do
-  --     -- putStrLn ("Got num 2: " <> show num)
-  --     return Success
+    introduce "Database again" database (return $ Database "shadowing") (return ()) $ do
+      introduce "Database again" otherDatabase (return $ Database "other") (return ()) $ do
+        it "uses the DB 2" $ do
+          db <- askLabel database
+          debug [i|Got db: #{db}|]
+          otherDb <- askLabel otherDatabase
+          debug [i|Got otherDb: #{otherDb}|]
 
   afterEach "after each" (return ()) $ do
     beforeEach "before each" (return ()) $ do
@@ -95,7 +107,7 @@ options = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter verySimple
+main = runSandwich options defaultTerminalUIFormatter medium
 
 
 -- * Util

@@ -18,6 +18,9 @@ module Test.Sandwich (
   , Result(..)
   , FailureReason(..)
 
+  , askLabel
+  , Label(..)
+
   , module Test.Sandwich.Expectations
 
   ) where
@@ -27,6 +30,7 @@ import Control.Monad.Trans.Reader
 import System.Directory
 import System.FilePath
 import System.Posix.Signals
+import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Types.Formatter
