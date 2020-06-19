@@ -46,7 +46,7 @@ data LogEntry = LogEntry { logEntryTime :: UTCTime
                          , logEntrySource :: LogSource
                          , logEntryLevel :: LogLevel
                          , logEntryStr :: LogStr
-                         } deriving Eq
+                         } deriving (Show, Eq)
 type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
 type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
 
