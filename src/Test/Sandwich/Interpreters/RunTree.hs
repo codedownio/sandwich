@@ -282,10 +282,15 @@ runExampleM' pathSegment ex ctx logs = do
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextRunRoot of
       Nothing -> return Nothing
       Just base -> do
-        let dir = (foldl (</>) base (fmap pathSegmentName baseContextPath)) </> "results"
+        -- Note the drop 1 because of the implicit outer describe
+        let dir = (foldl (</>) base (fmap (fixupPathSegmentName . pathSegmentName) $ Seq.drop 1 baseContextPath)) </> "results"
         createDirectoryIfMissing True dir
         return $ Just dir
 
+    fixupPathSegmentName = replace '/' '_'
+
+    replace :: Eq a => a -> a -> [a] -> [a]
+    replace a b = map $ \c -> if c == a then b else c
 
 getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
