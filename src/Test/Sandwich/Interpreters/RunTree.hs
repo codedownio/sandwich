@@ -26,7 +26,7 @@ import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import qualified Data.List as L
-import Data.Sequence hiding ((:>))
+import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
 import Data.Time.Clock
 import System.Directory
@@ -56,10 +56,6 @@ runTree :: (HasBaseContext context) => Free (SpecCommand context) r -> ReaderT (
 
 runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
-
-  let logFn loc logSrc logLevel logStr = do
-        ts <- getCurrentTime
-        atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
 
   newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (handleAsyncException status) $ unmask $ do
@@ -194,7 +190,13 @@ runDescribe parallel l subspec next = do
     forM (getImmediateChildren subspec) $ \child -> do
       contextAsync <- get
       let asyncToUse = if parallel then runTreeContext else contextAsync
-      tree <- lift $ withReaderT (const $ rtc { runTreeContext = asyncToUse }) $ runTree child
+
+      asyncWithPathSegment <- liftIO $ async $ do
+        ctx <- wait asyncToUse
+        let pathSegment = PathSegment l False
+        return $ modifyBaseContext ctx (\x@(BaseContext {..}) -> x { baseContextPath = baseContextPath |> pathSegment })
+
+      tree <- lift $ withReaderT (const $ rtc { runTreeContext = asyncWithPathSegment }) $ runTree child
       put =<< liftIO (async $ waitForTree tree >> wait runTreeContext)
       return tree
 
