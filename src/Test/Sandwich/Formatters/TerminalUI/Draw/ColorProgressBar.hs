@@ -49,7 +49,7 @@ splitIntoChunks chunkSize remaining = chunk : (splitIntoChunks chunkSize remaini
 
 -- TODO: improve this to use block chars
 getCharForChunk :: [(Rational, Status)] -> Widget n
-getCharForChunk chunk = withAttr attrToUse (str "█")
+getCharForChunk chunk = withAttr attrToUse (str full_five_eighth_height)
   where ChunkSum {..} = sumChunk chunk
         (_, attrToUse) = maxBy fst [(_running, runningAttr)
                                    , (_notStarted, notStartedAttr)
@@ -82,6 +82,8 @@ three_eighth = "▍"
 two_eighth = "▎"
 one_eighth = "▏"
 
+
+full_five_eighth_height = "▆"
 
 -- * Exports
 
