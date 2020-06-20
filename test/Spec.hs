@@ -15,6 +15,7 @@ import qualified Control.Exception as E
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Trans.Writer
 import Data.Either
 import Data.Foldable
 import qualified Data.List as L
@@ -27,13 +28,24 @@ import Test.Sandwich.Types.Spec
 
 main :: (HasCallStack) => IO ()
 main = do
-  beforeExceptionSafety
-  beforeExceptionSafetyNested
+  results <- execWriterT $ do
+    run beforeExceptionSafety
+    run beforeExceptionSafetyNested
 
-  introduceCleansUpOnTestException
-  introduceDoesNotCleanUpOnAllocateException
-  introduceFailsOnCleanUpException
-  introduceCleansUpOnCancelDuringTest
+    run introduceCleansUpOnTestException
+    run introduceDoesNotCleanUpOnAllocateException
+    run introduceFailsOnCleanUpException
+    run introduceCleansUpOnCancelDuringTest
+
+  case results of
+    [] -> return ()
+    xs -> do
+      putStrLn [i|\n\n#{length xs} test(s) failed\n\n|]
+      forM_ xs $ \x -> putStrLn [i|#{x}\n\n|]
+
+run test = (liftIO $ tryAny test) >>= \case
+  Left err -> tell [err]
+  Right () -> return ()
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
