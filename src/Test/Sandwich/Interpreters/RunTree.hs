@@ -250,10 +250,11 @@ continueWith tree next = do
 
 handleAsyncException :: TVar Status -> SomeAsyncException -> IO Result
 handleAsyncException status e = do
-  -- TODO: get start time
   endTime <- getCurrentTime
   let ret = Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
-  atomically $ writeTVar status (Done endTime endTime ret)
+  atomically $ modifyTVar status $ \case
+    Running startTime -> Done startTime endTime ret
+    _ -> Done endTime endTime ret
   return ret
 
 getInfo = do
