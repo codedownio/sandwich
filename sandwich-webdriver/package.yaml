@@ -1,0 +1,84 @@
+name:                sandwich-webdriver
+version:             0.1.0.0
+github:              "githubuser/sandwich-webdriver"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2020 Author name here"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/githubuser/sandwich-webdriver#readme>
+
+dependencies:
+- aeson
+- async
+- base >= 4.7 && < 5
+- containers
+- convertible
+- data-default
+- directory
+- filepath
+- http-client
+- http-conduit
+- interpolate
+- lifted-base
+- monad-control
+- network
+- process
+- random
+- retry
+- safe
+- safe-exceptions
+- sandwich
+- temporary
+- text
+- transformers
+- transformers-base
+- unix
+- webdriver
+
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+
+library:
+  source-dirs: src
+
+executables:
+  sandwich-webdriver-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sandwich-webdriver
+    - time
+
+tests:
+  sandwich-webdriver-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sandwich-webdriver

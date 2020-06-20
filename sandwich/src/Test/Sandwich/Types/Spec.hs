@@ -1,4 +1,3 @@
-{-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -15,6 +14,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
 
@@ -26,6 +26,7 @@ import Control.Monad.Free
 import Control.Monad.Free.TH
 import Control.Monad.Logger
 import Control.Monad.Reader
+import Control.Monad.Trans.Control
 import Data.Functor.Classes
 import Data.Sequence hiding ((:>))
 import Data.String.Interpolate
@@ -35,8 +36,26 @@ import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
-newtype ExampleM context a = ExampleM { unExampleM :: ReaderT context (ExceptT FailureReason (LoggingT IO)) a }
+newtype ExampleM context a = ExampleT { unExampleM :: ReaderT context (ExceptT FailureReason (LoggingT IO)) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
+
+type ExampleT = ExampleM
+
+-- newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
+--   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
+
+-- type ExampleM context = ExampleT context IO
+
+-- type WrappedT context m a = ReaderT context (ExceptT FailureReason (LoggingT m)) a
+-- instance MonadTransControl (ExampleT context) where
+--     type StT (ExampleT context) a = StT (WrappedT context) a
+--     liftWith = defaultLiftWith ExampleT unExampleT
+--     restoreT = defaultRestoreT ExampleT
+
+
+-- instance MonadBaseControl IO (ExampleM context) where
+--   liftBaseWith = undefined -- defaultLiftBaseWith
+--   restoreM = undefined -- defaultRestoreM
 
 -- * Results
 
@@ -214,8 +233,8 @@ beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () }
 beforeEach _ _ (Pure x) = Pure x
 beforeEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (beforeEach l f' subspec) (beforeEach l f next))
   where f' = do
-          let ExampleM r = f
-          ExampleM $ withReaderT (\(_ :> context) -> context) r
+          let ExampleT r = f
+          ExampleT $ withReaderT (\(_ :> context) -> context) r
 
 -- | Perform an action after each example in a given spec tree.
 afterEach ::
@@ -232,8 +251,8 @@ afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () }))
 afterEach _ _ (Pure x) = Pure x
 afterEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (afterEach l f' subspec) (afterEach l f next))
   where f' = do
-          let ExampleM r = f
-          ExampleM $ withReaderT (\(_ :> context) -> context) r
+          let ExampleT r = f
+          ExampleT $ withReaderT (\(_ :> context) -> context) r
 
 aroundEach ::
   String
@@ -250,5 +269,5 @@ aroundEach _ _ (Pure x) = Pure x
 aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l f' subspec) (aroundEach l f next))
   where
     f' action = do
-      let ExampleM r = f action
-      ExampleM $ withReaderT (\(_ :> context) -> context) r
+      let ExampleT r = f action
+      ExampleT $ withReaderT (\(_ :> context) -> context) r

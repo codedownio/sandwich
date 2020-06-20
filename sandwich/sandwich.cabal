@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 526a389b9fd63e58ec5862149a9c31cbdc0abe1d0488020b8abc3ecb8a88f9a1
+-- hash: 3e4c233024226223a25a92dc8176ba06ace126aedc39e32e7cbc24894b0ff1ea
 
 name:           sandwich
 version:        0.1.0.0
@@ -66,6 +66,7 @@ library
     , interpolate
     , microlens
     , microlens-th
+    , monad-control
     , monad-logger
     , mtl
     , random
@@ -99,6 +100,7 @@ executable sandwich-exe
     , interpolate
     , microlens
     , microlens-th
+    , monad-control
     , monad-logger
     , mtl
     , random
@@ -134,6 +136,7 @@ test-suite sandwich-test
     , interpolate
     , microlens
     , microlens-th
+    , monad-control
     , monad-logger
     , mtl
     , random

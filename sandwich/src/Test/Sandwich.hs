@@ -14,14 +14,18 @@ module Test.Sandwich (
   , afterEach
   , around
 
+  , TopSpec
+
   , defaultOptions
 
   , Result(..)
   , FailureReason(..)
 
-  , askLabel
   , Label(..)
 
+  , Spec, HasBaseContext, HasLabel, LabelValue, (:>), ExampleM -- Used in sandwich-webdriver
+
+  , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
 

@@ -74,15 +74,15 @@ medium = do
 
   introduce "Database" database (return $ Database "outer") (return ()) $ do
     it "uses the DB 1" $ do
-      db <- askLabel database
+      db <- getContext database
       debug [i|Got db: #{db}|]
 
     introduce "Database again" database (return $ Database "shadowing") (return ()) $ do
       introduce "Database again" otherDatabase (return $ Database "other") (return ()) $ do
         it "uses the DB 2" $ do
-          db <- askLabel database
+          db <- getContext database
           debug [i|Got db: #{db}|]
-          otherDb <- askLabel otherDatabase
+          otherDb <- getContext otherDatabase
           debug [i|Got otherDb: #{otherDb}|]
 
   afterEach "after each" (return ()) $ do
