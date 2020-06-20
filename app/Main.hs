@@ -114,11 +114,13 @@ main = runSandwich options defaultTerminalUIFormatter medium
 
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
-  liftIO $ threadDelay (2 * 10^6)
+  liftIO $ threadDelay (2 * 10^1)
+  -- liftIO $ threadDelay (2 * 10^6)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
-  liftIO $ threadDelay (2 * 10^6)
+  liftIO $ threadDelay (2 * 10^1)
+  -- liftIO $ threadDelay (2 * 10^6)
   2 `shouldBe` 3
 
 pending :: ExampleM context ()

@@ -1,12 +1,19 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE OverloadedLists #-}
 
+module Main where
+
+import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Data.Foldable
 import qualified Data.List as L
 import Data.Sequence as Seq
 import Data.String.Interpolate.IsString
@@ -24,6 +31,8 @@ main = do
 
   introduceCleansUpOnTestException
   introduceDoesNotCleanUpOnAllocateException
+  introduceFailsOnCleanUpException
+  introduceCleansUpOnCancelDuringTest
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
@@ -42,7 +51,6 @@ beforeExceptionSafetyNested = do
     describe "nested things" $ do
       it "does nested thing 1" $ return ()
       it "does nested thing 2" $ return ()
-
 
   results `mustBe` (Failure (GotException (Just "Exception in before handler") someUserErrorWrapped)
                     : L.replicate 5 (Failure (GetContextException someUserErrorWrapped)))
@@ -65,6 +73,41 @@ introduceDoesNotCleanUpOnAllocateException = do
   results `mustBe` [Failure (GetContextException someUserErrorWrapped)
                    , Failure (GetContextException someUserErrorWrapped)]
 
+introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
+introduceFailsOnCleanUpException = do
+  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) throwSomeUserError $ do
+    it "does thing 1" $ return ()
+
+  msgs `mustBe` [[], []]
+  results `mustBe` [Failure (GotException (Just "Exception in introduce cleanup handler") someUserErrorWrapped)
+                   , Success]
+
+introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
+introduceCleansUpOnCancelDuringTest = do
+  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) throwSomeUserError $ do
+    it "does thing 1" $ liftIO $ threadDelay 999999999999999
+
+  let [RunTreeGroup {runTreeChildren=[RunTreeSingle {runTreeStatus=status, runTreeAsync=theAsync}]}] = rts
+
+  waitUntilRunning status
+  cancel theAsync
+
+  mapM_ (wait . runTreeAsync) rts
+
+  fixedTree <- atomically $ mapM fixRunTree rts
+  let results = fmap statusToResult $ concatMap getStatuses fixedTree
+  let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
+
+  msgs `mustBe` [[], []]
+  results `mustBe` [Failure (GotException (Just "Exception in introduce cleanup handler") someUserErrorWrapped)
+                   , Success]
+
+
+
+
+
+
+
 -- * Values
 
 data FakeDatabase = FakeDatabase deriving Show
@@ -84,12 +127,12 @@ runAndGetResults spec = do
   fixedTree <- atomically $ mapM fixRunTree finalTree
   return $ fmap statusToResult $ concatMap getStatuses fixedTree
 
--- runAndGetResultsAndLogs :: (HasCallStack) => TopSpec -> IO ([Result], [])
+runAndGetResultsAndLogs :: TopSpec -> IO ([Result], [[LogStr]])
 runAndGetResultsAndLogs spec = do
   finalTree <- runSandwichTree defaultOptions spec
   fixedTree <- atomically $ mapM fixRunTree finalTree
   let results = fmap statusToResult $ concatMap getStatuses fixedTree
-  let msgs = fmap (fmap logEntryStr) $ concatMap getLogs fixedTree
+  let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
   return (results, msgs)
 
 getStatuses :: (HasCallStack) => RunTreeWithStatus a l t -> [a]
@@ -109,3 +152,8 @@ mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y
   | x == y = return ()
   | otherwise = error [i|Expected #{y} but got #{x}|]
+
+waitUntilRunning status = atomically $ do
+  readTVar status >>= \case
+    Running {} -> return ()
+    _ -> retry

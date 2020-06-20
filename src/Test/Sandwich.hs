@@ -3,6 +3,7 @@
 module Test.Sandwich (
   runSandwich
   , runSandwichTree
+  , startSandwichTree
 
   , it
   , describe
@@ -22,6 +23,7 @@ module Test.Sandwich (
   , Label(..)
 
   , module Test.Sandwich.Expectations
+  , module Test.Sandwich.Logging
 
   ) where
 
@@ -33,6 +35,7 @@ import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Logging
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
