@@ -11,9 +11,10 @@ wdOptions = defaultWdOptions "/tmp/tools"
 
 simple :: TopSpec
 simple = introduceWebdriver wdOptions $ do
-  it "does the thing 1" $ withBrowser1 $ do
+  it "does the thing 1" $ do
     wdSession <- getContext webdriver
-    openPage "www.google.com"
+    withBrowser1 $ do
+      openPage "www.google.com"
     return ()
   it "does the thing 2" $ do
     return ()

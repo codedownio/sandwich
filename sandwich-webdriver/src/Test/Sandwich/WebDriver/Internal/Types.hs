@@ -16,6 +16,7 @@ import qualified Test.WebDriver.Session as W
 
 type Browser = String
 
+-- TODO: remove
 class HasWdSession a where
   getWdSession :: a -> WdSession
 
