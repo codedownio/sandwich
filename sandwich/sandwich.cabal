@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3e4c233024226223a25a92dc8176ba06ace126aedc39e32e7cbc24894b0ff1ea
+-- hash: 5018ece9234d64064e57cfcdaec295bec7da373d1912ed19e9e49d5cb05ce9ef
 
 name:           sandwich
 version:        0.1.0.0
@@ -75,6 +75,7 @@ library
     , text
     , time
     , transformers
+    , transformers-base
     , unix
     , vector
     , vty
@@ -110,6 +111,7 @@ executable sandwich-exe
     , text
     , time
     , transformers
+    , transformers-base
     , unix
     , vector
     , vty
@@ -146,6 +148,7 @@ test-suite sandwich-test
     , text
     , time
     , transformers
+    , transformers-base
     , unix
     , vector
     , vty

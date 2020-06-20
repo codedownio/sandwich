@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -21,6 +22,7 @@
 module Test.Sandwich.Types.Spec where
 
 import Control.Exception.Safe
+import Control.Monad.Base
 import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Free.TH
@@ -36,26 +38,54 @@ import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
-newtype ExampleM context a = ExampleT { unExampleM :: ReaderT context (ExceptT FailureReason (LoggingT IO)) a }
+newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
+type ExampleM context = ExampleT context IO
 
-type ExampleT = ExampleM
+instance (MonadBase b m) => MonadBase b (ExampleT context m) where
+  liftBase = liftBaseDefault
 
--- newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
---   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
+instance MonadTrans (ExampleT context) where
+  lift x = ExampleT $ ReaderT (\_ -> ExceptT $ liftM Right (LoggingT (\_ -> x)))
 
--- type ExampleM context = ExampleT context IO
+instance MonadTransControl (ExampleT context) where
+  type StT (ExampleT context) a = StT LoggingT (StT (ExceptT FailureReason) (StT (ReaderT context) a))
+  liftWith = defaultLiftWith3 ExampleT unExampleT
+  restoreT = defaultRestoreT3 ExampleT
 
--- type WrappedT context m a = ReaderT context (ExceptT FailureReason (LoggingT m)) a
--- instance MonadTransControl (ExampleT context) where
---     type StT (ExampleT context) a = StT (WrappedT context) a
---     liftWith = defaultLiftWith ExampleT unExampleT
---     restoreT = defaultRestoreT ExampleT
+instance (MonadBaseControl b m) => MonadBaseControl b (ExampleT context m) where
+  type StM (ExampleT context m) a = ComposeSt (ExampleT context) m a
+  liftBaseWith = defaultLiftBaseWith
+  restoreM = defaultRestoreM
 
+-- IO specialized classes, not needed anymore
+-- instance MonadBase IO (ExampleT context IO) where
+--   liftBase = liftIO
+-- instance (MonadBaseControl b IO) => MonadBaseControl IO (ExampleT context IO) where
+--   type StM (ExampleT context IO) a = ComposeSt (ExampleT context) IO a
+--   liftBaseWith = defaultLiftBaseWith
+--   restoreM = defaultRestoreM
 
--- instance MonadBaseControl IO (ExampleM context) where
---   liftBaseWith = undefined -- defaultLiftBaseWith
---   restoreM = undefined -- defaultRestoreM
+type RunDefault3 t n n' n'' = forall m b. (Monad m, Monad (n'' m), Monad (n' (n'' m))) => t m b -> m (StT n'' (StT n' (StT n b)))
+
+defaultLiftWith3 :: (Monad m, Monad (n'' m), Monad (n' (n'' m)), MonadTransControl n, MonadTransControl n', MonadTransControl n'')
+                 => (forall b.   n (n' (n'' m)) b -> t m b)     -- ^ Monad constructor
+                 -> (forall o b. t o b -> n (n' (n'' o)) b)     -- ^ Monad deconstructor
+                 -> (RunDefault3 t n n' n'' -> m a)
+                 -> t m a
+defaultLiftWith3 t unT = \f -> t $
+  liftWith $ \run ->
+  liftWith $ \run' ->
+  liftWith $ \run'' ->
+  f $ run'' . run' . run . unT
+{-# INLINABLE defaultLiftWith3 #-}
+
+defaultRestoreT3 :: (Monad m, Monad (n'' m), Monad (n' (n'' m)), MonadTransControl n, MonadTransControl n', MonadTransControl n'')
+                 => (n (n' (n'' m)) a -> t m a)     -- ^ Monad constructor
+                 -> m (StT n'' (StT n' (StT n a)))
+                 -> t m a
+defaultRestoreT3 t = t . restoreT . restoreT . restoreT
+{-# INLINABLE defaultRestoreT3 #-}
 
 -- * Results
 

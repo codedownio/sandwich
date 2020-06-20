@@ -23,7 +23,7 @@ module Test.Sandwich (
 
   , Label(..)
 
-  , Spec, HasBaseContext, HasLabel, LabelValue, (:>), ExampleM -- Used in sandwich-webdriver
+  , Spec, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
 
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations

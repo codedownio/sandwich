@@ -282,7 +282,7 @@ runExampleM' pathSegment ex ctx logs = do
   let options = baseContextOptions $ getBaseContext ctx'
 
   withLogFn maybeTestDirectory options $ \logFn ->
-    (runLoggingT (runExceptT $ runReaderT (unExampleM ex) ctx') logFn) >>= \case
+    (runLoggingT (runExceptT $ runReaderT (unExampleT ex) ctx') logFn) >>= \case
       Left err -> return $ Left err
       Right x -> return $ Right x
 

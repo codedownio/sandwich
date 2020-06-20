@@ -8,6 +8,8 @@ module Test.Sandwich.WebDriver (
   , allocateWebDriver
   , cleanupWebDriver
 
+  , withBrowser1
+
   , WdOptions
   , defaultWdOptions
   ) where
@@ -18,9 +20,11 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Except
+import Control.Monad.Trans.Reader
 import Control.Retry
 import qualified Data.Aeson as A
 import Data.Default
+import Data.IORef
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate.IsString
@@ -51,6 +55,7 @@ import System.Posix.Types
 #endif
 
 webdriver = Label :: Label "webdriver" WdSession
+webdriverSession = Label :: Label "webdriverSession" (IORef W.WDSession)
 
 introduceWebdriver :: (HasBaseContext context) => WdOptions -> Spec (LabelValue "webdriver" WdSession :> context) () -> Spec context ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
@@ -66,14 +71,19 @@ cleanupWebDriver = do
   liftIO $ closeAllSessions session
   liftIO $ stopWebDriver session
 
-instance (HasLabel context "webdriver" WdSession) => W.WDSessionState (ExampleM context) where
-  getSession = undefined
-  putSession = undefined
+instance (HasLabel context "webdriverSession" (IORef W.WDSession)) => W.WDSessionState (ExampleM context) where
+  getSession = do
+    sessVar <- getContext webdriverSession
+    liftIO $ readIORef sessVar
+  putSession sess = do
+    sessVar <- getContext webdriverSession
+    liftIO $ writeIORef sessVar sess
 
-instance MonadBaseControl IO (ExampleM context) where
-  liftBaseWith = undefined
-  restoreM = undefined
-  
+withBrowser1 :: ExampleM (LabelValue "webdriverSession" (IORef W.WDSession) :> context) a -> ExampleM context a
+withBrowser1 (ExampleT readerMonad) = do
+  sess <- undefined
+  ExampleT (withReaderT (\ctx -> LabelValue sess :> ctx) readerMonad)
+
 -- * Lower level
 
 -- | Spin up a Selenium WebDriver and create a WdSession

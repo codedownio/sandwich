@@ -41,6 +41,7 @@ dependencies:
 - text
 - time
 - transformers
+- transformers-base
 - unix
 - vector
 - vty
