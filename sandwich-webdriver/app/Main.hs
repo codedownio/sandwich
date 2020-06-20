@@ -9,12 +9,6 @@ import Test.Sandwich.Types.Options
 import Test.Sandwich.WebDriver
 import Test.WebDriver
 
-wdOptions = (defaultWdOptions "/tmp/tools") {
-        capabilities = chromeCapabilities
-        , saveSeleniumMessageHistory = Always
-        , runMode = Normal
-        }
-
 simple :: TopSpec
 simple = introduceWebdriver wdOptions $ do
   it "does the thing 1" $ do
@@ -26,9 +20,15 @@ simple = introduceWebdriver wdOptions $ do
   it "does the thing 2" $ do
     return ()
 
-options = defaultOptions {
+wdOptions = (defaultWdOptions "/tmp/tools") {
+        capabilities = chromeCapabilities
+        , saveSeleniumMessageHistory = Always
+        , runMode = Normal
+        }
+
+testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
   }
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter simple
+main = runSandwich testOptions defaultTerminalUIFormatter simple
