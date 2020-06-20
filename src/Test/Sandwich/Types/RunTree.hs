@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 -- |
@@ -11,7 +12,9 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Logger
+import qualified Data.List as L
 import Data.Sequence
+import Data.String.Interpolate
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Types.Spec

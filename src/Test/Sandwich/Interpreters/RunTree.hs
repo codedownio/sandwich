@@ -212,20 +212,19 @@ runDescribe parallel l subspec next = do
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
-      (tryAny $ wait runTreeContext) >>= \case
-        Left e -> do
-          endTime <- getCurrentTime
-          atomically $ writeTVar status $ Done endTime endTime $ Failure (GetContextException (SomeExceptionWithEq e))
+      eitherContextResult <- tryAny $ wait runTreeContext
+      startTime <- getCurrentTime
+      atomically $ writeTVar status (Running startTime)
+      _ <- waitForTree subtree
+      endTime <- getCurrentTime
+      finalStatus <- case eitherContextResult of
+        Left e -> return $ Failure (GetContextException (SomeExceptionWithEq e))
         Right _ -> do
-          startTime <- getCurrentTime
-          atomically $ writeTVar status (Running startTime)
-          _ <- waitForTree subtree
-          endTime <- getCurrentTime
           subTreeResults <- forM subtree (readTVarIO . runTreeStatus)
-          atomically $ writeTVar status $ Done startTime endTime $
-            case L.length (L.filter (isFailure . (\(Done _ _ r) -> r)) subTreeResults) of
-              0 -> Success
-              n -> Failure (Reason Nothing [i|#{n} children failed|])
+          return $ case L.length (L.filter (isFailure . (\(Done _ _ r) -> r)) subTreeResults) of
+            0 -> Success
+            n -> Failure (Reason Nothing [i|#{n} children failed|])
+      atomically $ writeTVar status $ Done startTime endTime finalStatus
 
   let tree = RunTreeGroup l toggled status False subtree logs myAsync
   rest <- runTree next

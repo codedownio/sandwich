@@ -43,10 +43,6 @@ main = do
       putStrLn [i|\n\n#{length xs} test(s) failed\n\n|]
       forM_ xs $ \x -> putStrLn [i|#{x}\n\n|]
 
-run test = (liftIO $ tryAny test) >>= \case
-  Left err -> tell [err]
-  Right () -> return ()
-
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
   results <- runAndGetResults $ before "before" throwSomeUserError $ do
@@ -114,7 +110,7 @@ introduceCleansUpOnCancelDuringTest = do
 
   msgs `mustBe` [["doing cleanup"], []]
   results `mustBe` [Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
-                   ,Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
+                   , Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
 
 
 -- * Values
@@ -126,6 +122,10 @@ someUserError = userError "Oh no"
 someUserErrorWrapped = SomeExceptionWithEq $ SomeException $ userError "Oh no"
 
 -- * Helpers
+
+run test = (liftIO $ tryAny test) >>= \case
+  Left err -> tell [err]
+  Right () -> return ()
 
 throwSomeUserError :: (MonadIO m) => m ()
 throwSomeUserError = liftIO $ throwIO someUserError
@@ -166,3 +166,14 @@ waitUntilRunning status = atomically $ do
   readTVar status >>= \case
     Running {} -> return ()
     _ -> retry
+
+printFixedRunTree :: RunTreeFixed -> IO ()
+printFixedRunTree = printFixedRunTree' 0
+  where
+    printFixedRunTree' :: Int -> RunTreeFixed -> IO ()
+    printFixedRunTree' indent (RunTreeGroup {..}) = do
+      putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
+      forM_ runTreeChildren (printFixedRunTree' (indent + 1))
+      where indentation = L.replicate (indent * 4) ' '
+    printFixedRunTree' indent (RunTreeSingle {..}) = putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
+      where indentation = L.replicate (indent * 4) ' '
