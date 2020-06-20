@@ -38,8 +38,8 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-waitForTree :: [RunTree] -> IO (Either SomeException [Result])
-waitForTree rts = tryAny (mapM wait (fmap runTreeAsync rts))
+waitForTree :: [RunTree] -> IO (Either SomeException ())
+waitForTree rts = tryAny (mapM_ wait (fmap runTreeAsync rts))
 
 data RunTreeContext context = RunTreeContext {
   runTreeContext :: Async context
@@ -75,12 +75,7 @@ runTree (Free (Before l f subspec next)) = do
 
   myAsync <- liftIO $ liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
-      _ <- tryAny $ mapM_ wait (fmap runTreeAsync subtree)
-      atomically $ do
-        (readTVar status) >>= \case
-          NotStarted -> retry -- Should never happen
-          Running {} -> retry -- Should never happen
-          Done _ _ result -> return result
+      void $ waitForTree subtree
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (After l f subspec next)) = do
@@ -95,9 +90,8 @@ runTree (Free (After l f subspec next)) = do
     atomically $ writeTVar status (Running startTime)
     eitherResult <- tryAny $ runExampleM (PathSegment l True) f ctx logs
     endTime <- getCurrentTime
-    let ret = either (\e -> Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
-    atomically $ writeTVar status (Done startTime endTime ret)
-    return ret
+    atomically $ writeTVar status $ Done startTime endTime $
+      either (\e -> Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (Around l f subspec next)) = do
@@ -125,12 +119,9 @@ runTree (Free (Around l f subspec next)) = do
 
     endTime <- getCurrentTime
 
-    let ret = case eitherResult of
-          Left e -> Failure $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
-          Right _ -> Success
-
-    atomically $ writeTVar status (Done startTime endTime Success)
-    return ret
+    atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
+      Left e -> Failure $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
+      Right _ -> Success
 
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
@@ -177,10 +168,7 @@ runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
                     Running startTime -> Done startTime endTime finalStatus
                     _ -> Done endTime endTime finalStatus
               )
-              (\_ -> do
-                  _ <- waitForTree subtree
-                  return Success
-              )
+              (\_ -> void $ waitForTree subtree)
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
@@ -189,19 +177,15 @@ runTree (Free (It l ex next)) = do
     flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
       (tryAny $ wait runTreeContext) >>= \case
         Left e -> do
-          let ret = Failure (GetContextException (SomeExceptionWithEq e))
           endTime <- getCurrentTime
-          atomically $ writeTVar status $ Done endTime endTime ret
-          return ret
+          atomically $ writeTVar status $ Done endTime endTime $ Failure (GetContextException (SomeExceptionWithEq e))
         Right ctx -> do
           startTime <- getCurrentTime
           atomically $ writeTVar status (Running startTime)
           eitherResult <- tryAny $ runExampleM (PathSegment l False) ex ctx logs
           endTime <- getCurrentTime
-          let ret = either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
-          atomically $ writeTVar status (Done startTime endTime ret)
-          return ret
-
+          atomically $ writeTVar status $ Done startTime endTime $
+            either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
   continueWith (RunTreeSingle l toggled status logs myAsync) next
 runTree (Free (Describe l subspec next)) = runDescribe False l subspec next
 runTree (Free (DescribeParallel l subspec next)) = runDescribe True l subspec next
@@ -228,19 +212,20 @@ runDescribe parallel l subspec next = do
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
-      _ <- waitAndHandleContextExceptionRethrow runTreeContext status -- TODO: don't rethrow here
-
-      startTime <- getCurrentTime
-      atomically $ writeTVar status (Running startTime)
-      eitherResults <- waitForTree subtree
-      endTime <- getCurrentTime
-      let ret = case eitherResults of
-            Left e -> Failure (Reason Nothing "Child tree threw an exception")
-            Right results -> case L.length (L.filter isFailure results) of
+      (tryAny $ wait runTreeContext) >>= \case
+        Left e -> do
+          endTime <- getCurrentTime
+          atomically $ writeTVar status $ Done endTime endTime $ Failure (GetContextException (SomeExceptionWithEq e))
+        Right _ -> do
+          startTime <- getCurrentTime
+          atomically $ writeTVar status (Running startTime)
+          _ <- waitForTree subtree
+          endTime <- getCurrentTime
+          subTreeResults <- forM subtree (readTVarIO . runTreeStatus)
+          atomically $ writeTVar status $ Done startTime endTime $
+            case L.length (L.filter (isFailure . (\(Done _ _ r) -> r)) subTreeResults) of
               0 -> Success
               n -> Failure (Reason Nothing [i|#{n} children failed|])
-      atomically $ writeTVar status (Done startTime endTime ret)
-      return ret
 
   let tree = RunTreeGroup l toggled status False subtree logs myAsync
   rest <- runTree next

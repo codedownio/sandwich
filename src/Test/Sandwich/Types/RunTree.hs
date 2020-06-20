@@ -30,13 +30,13 @@ data RunTreeWithStatus s l t =
                , runTreeIsContextManager :: Bool
                , runTreeChildren :: [RunTreeWithStatus s l t]
                , runTreeLogs :: l
-               , runTreeAsync :: Async Result
+               , runTreeAsync :: Async ()
                }
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeToggled :: t
                   , runTreeStatus :: s
                   , runTreeLogs :: l
-                  , runTreeAsync :: Async Result
+                  , runTreeAsync :: Async ()
                   }
   deriving (Functor, Eq)
 
