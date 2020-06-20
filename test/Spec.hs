@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,14 +11,14 @@ module Main where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import qualified Control.Exception as E
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Data.Either
 import Data.Foldable
 import qualified Data.List as L
-import Data.Sequence as Seq
 import Data.String.Interpolate.IsString
-import GHC.IO.Exception
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Types.RunTree
@@ -32,7 +33,7 @@ main = do
   introduceCleansUpOnTestException
   introduceDoesNotCleanUpOnAllocateException
   introduceFailsOnCleanUpException
-  introduceCleansUpOnCancelDuringTest
+  -- introduceCleansUpOnCancelDuringTest
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
@@ -92,20 +93,16 @@ introduceCleansUpOnCancelDuringTest = do
   waitUntilRunning status
   cancel theAsync
 
-  mapM_ (wait . runTreeAsync) rts
+  eitherResult :: Either SomeException () <- E.try $ mapM_ (wait . runTreeAsync) rts
+  isLeft eitherResult `mustBe` True
 
   fixedTree <- atomically $ mapM fixRunTree rts
   let results = fmap statusToResult $ concatMap getStatuses fixedTree
   let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-  msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException (Just "Exception in introduce cleanup handler") someUserErrorWrapped)
-                   , Success]
-
-
-
-
-
+  msgs `mustBe` [["doing cleanup"], []]
+  results `mustBe` [Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
+                   ,Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
 
 
 -- * Values
