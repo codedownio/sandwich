@@ -33,7 +33,7 @@ main = do
   introduceCleansUpOnTestException
   introduceDoesNotCleanUpOnAllocateException
   introduceFailsOnCleanUpException
-  -- introduceCleansUpOnCancelDuringTest
+  introduceCleansUpOnCancelDuringTest
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
@@ -71,8 +71,8 @@ introduceDoesNotCleanUpOnAllocateException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GetContextException someUserErrorWrapped)
-                   , Failure (GetContextException someUserErrorWrapped)]
+  results `mustBe` [Failure (GotException (Just "Exception in allocation handler") someUserErrorWrapped)
+                   , Failure (GetContextException (SomeExceptionWithEq (SomeException (GotException (Just "Exception in allocation handler") someUserErrorWrapped))))]
 
 introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
 introduceFailsOnCleanUpException = do
@@ -80,12 +80,12 @@ introduceFailsOnCleanUpException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException (Just "Exception in introduce cleanup handler") someUserErrorWrapped)
+  results `mustBe` [Failure (GotException (Just "Exception in cleanup handler") someUserErrorWrapped)
                    , Success]
 
 introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
 introduceCleansUpOnCancelDuringTest = do
-  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) throwSomeUserError $ do
+  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (debug "doing cleanup") $ do
     it "does thing 1" $ liftIO $ threadDelay 999999999999999
 
   let [RunTreeGroup {runTreeChildren=[RunTreeSingle {runTreeStatus=status, runTreeAsync=theAsync}]}] = rts

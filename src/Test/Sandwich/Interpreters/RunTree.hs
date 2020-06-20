@@ -25,7 +25,6 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
-import Data.Either
 import qualified Data.List as L
 import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
@@ -59,7 +58,7 @@ runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
+    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
       ctx <- wait runTreeContext
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
@@ -75,7 +74,7 @@ runTree (Free (Before l f subspec next)) = do
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
   myAsync <- liftIO $ liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
+    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
       _ <- tryAny $ mapM_ wait (fmap runTreeAsync subtree)
       atomically $ do
         (readTVar status) >>= \case
@@ -137,50 +136,57 @@ runTree (Free (Around l f subspec next)) = do
 runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
-  newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
-      ctx <- waitAndHandleContextExceptionRethrow runTreeContext status
-      startTime <- getCurrentTime
-      atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ runExampleM' (PathSegment l True) alloc ctx logs
-      let ret = either (\e -> (Failure (GotException (Just "Exception in introduce allocate handler") (SomeExceptionWithEq e)))) (const Success) eitherResult
-      when (isLeft eitherResult) $ do
-        endTime <- getCurrentTime
-        atomically $ writeTVar status (Done startTime endTime ret)
-      case eitherResult of
-        Left e -> throwIO e -- caught an exception
-        Right (Left e) -> throwIO e -- the ExampleM failed
-        Right (Right intro) -> return (LabelValue intro :> ctx)
+  mvar <- liftIO newEmptyMVar
+
+  newContextAsync <- liftIO $ async $ takeMVar mvar
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTree subspec
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
-      _ <- waitForTree subtree
+    -- On any async exception, record it in our status and throw it to the context async
+    -- (to ensure no child ends up waiting on it forever. the child may have already finished waiting on it at this point)
+    flip withException (\e -> recordAsyncExceptionInStatus status e >> cancelWith newContextAsync e) $ unmask $ do
+      bracket (do
+                  ctx <- waitAndHandleContextExceptionRethrow runTreeContext status
+                  startTime <- getCurrentTime
+                  atomically $ writeTVar status (Running startTime)
+                  eitherResult <- tryAny $ runExampleM' (PathSegment l True) alloc ctx logs
+                  case eitherResult of
+                    Right (Right x) -> do
+                      let newCtx = LabelValue x :> ctx
+                      putMVar mvar newCtx
+                      return $ Right newCtx
+                    Right (Left err') -> do -- Alloc ExceptT had some failure
+                      let err = GotException (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
+                      cancelWith newContextAsync err
+                      return $ Left err
+                    Left err' -> do -- Exception while running alloc
+                      let err = GotException (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
+                      cancelWith newContextAsync err
+                      return $ Left err
+              )
+              (\eitherStatus -> do
+                  finalStatus <- case eitherStatus of
+                    Right newCtx -> do
+                      eitherResult <- tryAny $ runExampleM (PathSegment l True) cleanup newCtx logs
+                      return $ either (\e -> Failure (GotException (Just "Exception in cleanup handler") (SomeExceptionWithEq e))) id eitherResult
+                    Left e -> return $ Failure e
 
-      (tryAny $ wait newContextAsync) >>= \case
-        Left e -> do
-          endTime <- getCurrentTime
-          let ret = Failure (GetContextException (SomeExceptionWithEq e))
-          atomically $ modifyTVar status $ \case
-            Running startTime -> Done startTime endTime ret
-            _ -> Done endTime endTime ret
-          return ret
-        Right ctx -> do
-          eitherResult <- tryAny $ runExampleM (PathSegment l True) cleanup ctx logs
-          endTime <- getCurrentTime
-          let ret = either (\e -> Failure (GotException (Just "Exception in introduce cleanup handler") (SomeExceptionWithEq e))) id eitherResult
-          atomically $ modifyTVar status $ \case
-            Running startTime -> Done startTime endTime ret
-            _ -> Done endTime endTime ret
-          return ret
-
+                  endTime <- getCurrentTime
+                  atomically $ modifyTVar status $ \case
+                    Running startTime -> Done startTime endTime finalStatus
+                    _ -> Done endTime endTime finalStatus
+              )
+              (\_ -> do
+                  _ <- waitForTree subtree
+                  return Success
+              )
   continueWith (RunTreeGroup l toggled status True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
   (status, logs, toggled, RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
+    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
       (tryAny $ wait runTreeContext) >>= \case
         Left e -> do
           let ret = Failure (GetContextException (SomeExceptionWithEq e))
@@ -221,7 +227,7 @@ runDescribe parallel l subspec next = do
       return tree
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (handleAsyncException status) $ unmask $ do
+    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
       _ <- waitAndHandleContextExceptionRethrow runTreeContext status -- TODO: don't rethrow here
 
       startTime <- getCurrentTime
@@ -248,8 +254,8 @@ continueWith tree next = do
   rest <- runTree next
   return (tree : rest)
 
-handleAsyncException :: TVar Status -> SomeAsyncException -> IO Result
-handleAsyncException status e = do
+recordAsyncExceptionInStatus :: TVar Status -> SomeAsyncException -> IO Result
+recordAsyncExceptionInStatus status e = do
   endTime <- getCurrentTime
   let ret = Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
   atomically $ modifyTVar status $ \case
