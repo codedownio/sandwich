@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns #-}
+{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, FlexibleContexts #-}
 
 module Test.Sandwich.WebDriver.Internal.Util where
 

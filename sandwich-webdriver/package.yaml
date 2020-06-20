@@ -33,6 +33,8 @@ dependencies:
 - interpolate
 - lifted-base
 - monad-control
+- monad-logger
+- mtl
 - network
 - process
 - random
@@ -45,6 +47,7 @@ dependencies:
 - transformers
 - transformers-base
 - unix
+- unordered-containers
 - webdriver
 
 default-extensions:

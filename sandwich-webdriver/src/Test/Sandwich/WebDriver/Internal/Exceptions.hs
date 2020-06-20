@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, MultiWayIf, ScopedTypeVariables, CPP, QuasiQuotes, RecordWildCards #-}
+{-# LANGUAGE RankNTypes, MultiWayIf, ScopedTypeVariables, CPP, QuasiQuotes, RecordWildCards, OverloadedStrings #-}
 
 module Test.Sandwich.WebDriver.Internal.Exceptions where
 

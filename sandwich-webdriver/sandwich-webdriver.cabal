@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6bb4d7fc32b1edd7ca4d9795dd60df74ed0137546ecce8a536dea98501f6f390
+-- hash: f853152c31a44eb7e217fe2f3fe58518b7302d0b77af492c90e0d26fd997a714
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -32,9 +32,11 @@ library
       Test.Sandwich.WebDriver.Internal.Action
       Test.Sandwich.WebDriver.Internal.Binaries
       Test.Sandwich.WebDriver.Internal.Binaries.Util
+      Test.Sandwich.WebDriver.Internal.Capabilities
       Test.Sandwich.WebDriver.Internal.Exceptions
       Test.Sandwich.WebDriver.Internal.Ports
       Test.Sandwich.WebDriver.Internal.Screenshots
+      Test.Sandwich.WebDriver.Internal.StartWebDriver
       Test.Sandwich.WebDriver.Internal.Types
       Test.Sandwich.WebDriver.Internal.Util
   other-modules:
@@ -56,6 +58,8 @@ library
     , interpolate
     , lifted-base
     , monad-control
+    , monad-logger
+    , mtl
     , network
     , process
     , random
@@ -68,6 +72,7 @@ library
     , transformers
     , transformers-base
     , unix
+    , unordered-containers
     , webdriver
   default-language: Haskell2010
 
@@ -93,6 +98,8 @@ executable sandwich-webdriver-exe
     , interpolate
     , lifted-base
     , monad-control
+    , monad-logger
+    , mtl
     , network
     , process
     , random
@@ -107,6 +114,7 @@ executable sandwich-webdriver-exe
     , transformers
     , transformers-base
     , unix
+    , unordered-containers
     , webdriver
   default-language: Haskell2010
 
@@ -133,6 +141,8 @@ test-suite sandwich-webdriver-test
     , interpolate
     , lifted-base
     , monad-control
+    , monad-logger
+    , mtl
     , network
     , process
     , random
@@ -146,5 +156,6 @@ test-suite sandwich-webdriver-test
     , transformers
     , transformers-base
     , unix
+    , unordered-containers
     , webdriver
   default-language: Haskell2010

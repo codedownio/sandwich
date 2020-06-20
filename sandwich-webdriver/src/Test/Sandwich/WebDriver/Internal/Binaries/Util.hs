@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, MultiWayIf, ViewPatterns #-}
+{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries.Util (
   detectPlatform

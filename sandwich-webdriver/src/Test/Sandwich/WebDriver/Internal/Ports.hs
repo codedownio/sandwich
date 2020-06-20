@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, MultiWayIf, ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes, MultiWayIf, ScopedTypeVariables, LambdaCase #-}
 
 module Test.Sandwich.WebDriver.Internal.Ports (
   findFreePortOrException
