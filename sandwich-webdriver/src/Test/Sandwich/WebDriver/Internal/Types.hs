@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, InstanceSigs, RecordWildCards, ScopedTypeVariables, QuasiQuotes, Rank2Types, NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies, InstanceSigs, RecordWildCards, ScopedTypeVariables, QuasiQuotes, Rank2Types, NamedFieldPuns, DataKinds, ConstraintKinds #-}
 
 module Test.Sandwich.WebDriver.Internal.Types where
 
@@ -6,15 +6,24 @@ import Control.Concurrent.MVar
 import Control.Exception
 import qualified Data.Aeson as A
 import Data.Default
+import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import System.IO
 import System.Process
+import Test.Sandwich
 import qualified Test.WebDriver as W
+import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
 
 type Browser = String
+
+-- * Labels
+webdriver = Label :: Label "webdriver" WdSession
+webdriverSession = Label :: Label "webdriverSession" (IORef W.WDSession)
+
+type HasWebDriver context wd = (HasLabel context "webdriver" WdSession, W.WebDriver (ExampleT context wd))
 
 -- TODO: remove
 class HasWdSession a where
