@@ -110,15 +110,9 @@ runTree (Free (Around l f subspec next)) = do
     ctx <- wait runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-
-    let action = do
-          putMVar mvar ()
-          void $ waitForTree subtree
-
+    let action = putMVar mvar () >> void (waitForTree subtree)
     eitherResult <- tryAny $ runExampleM (PathSegment l True) (f action) ctx logs
-
     endTime <- getCurrentTime
-
     atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
       Left e -> Failure $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
       Right _ -> Success
