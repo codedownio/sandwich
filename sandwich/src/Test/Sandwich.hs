@@ -73,18 +73,13 @@ startSandwichTree options@(Options {..}) spec = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
-  asyncBaseContext <- async $ return $ BaseContext {
-    baseContextPath = mempty
-    , baseContextOptions = options
-    , baseContextRunRoot = runRoot
-    }
+  let baseContext = BaseContext {
+        baseContextPath = mempty
+        , baseContextOptions = options
+        , baseContextRunRoot = runRoot
+        }
 
-  rts <- runReaderT (runTreeMain spec) $ RunTreeContext {
-    runTreeContext = asyncBaseContext
-    , runTreeOptions = options
-    }
-
-  return rts
+  runTreeMain baseContext spec
 
 runSandwichTree :: Options -> TopSpec -> IO [RunTree]
 runSandwichTree options spec = do

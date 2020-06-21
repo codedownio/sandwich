@@ -85,6 +85,11 @@ medium = do
           otherDb <- getContext otherDatabase
           debug [i|Got otherDb: #{otherDb}|]
 
+    it "does a thing sequentially" $ sleepThenSucceed
+    it "does a thing sequentially 2" $ sleepThenSucceed
+    it "does a thing sequentially 3" $ sleepThenSucceed
+    it "does a thing sequentially 4" $ sleepThenSucceed
+
   afterEach "after each" (return ()) $ do
     beforeEach "before each" (return ()) $ do
       it "does the first thing" sleepThenSucceed
@@ -114,13 +119,13 @@ main = runSandwich options defaultTerminalUIFormatter medium
 
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
-  liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^6)
+  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^6)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
-  liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^6)
+  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^6)
   2 `shouldBe` 3
 
 pending :: ExampleM context ()
