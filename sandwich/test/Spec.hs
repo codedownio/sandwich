@@ -139,10 +139,16 @@ runAndGetResults spec = do
 runAndGetResultsAndLogs :: TopSpec -> IO ([Result], [[LogStr]])
 runAndGetResultsAndLogs spec = do
   finalTree <- runSandwichTree defaultOptions spec
-  fixedTree <- atomically $ mapM fixRunTree finalTree
-  let results = fmap statusToResult $ concatMap getStatuses fixedTree
-  let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
-  return (results, msgs)
+  getResultsAndMessages <$> fixTree finalTree
+
+fixTree rts = atomically $ mapM fixRunTree rts
+
+getResultsAndMessages fixedTree = (results, msgs)
+  where
+    results = fmap statusToResult $ concatMap getStatuses fixedTree
+    msgs = getMessages fixedTree
+
+getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
 getStatuses :: (HasCallStack) => RunTreeWithStatus a l t -> [a]
 getStatuses (RunTreeGroup {..}) = runTreeStatus : (concatMap getStatuses runTreeChildren)
