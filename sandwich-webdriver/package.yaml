@@ -49,6 +49,7 @@ dependencies:
 - unix
 - unordered-containers
 - webdriver
+- X11
 
 default-extensions:
 - OverloadedStrings
