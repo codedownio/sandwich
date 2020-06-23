@@ -40,7 +40,7 @@ import Test.Sandwich.Types.Util
 -- * ExampleM monad
 
 newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger, MonadThrow, MonadCatch)
 type ExampleM context = ExampleT context IO
 
 instance (MonadBase b m) => MonadBase b (ExampleT context m) where
