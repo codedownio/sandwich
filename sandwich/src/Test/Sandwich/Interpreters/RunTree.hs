@@ -153,8 +153,8 @@ runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
               )
               (\eitherStatus -> do
                   finalStatus <- case eitherStatus of
-                    Right newCtx -> do
-                      eitherResult <- tryAny $ runExampleM (PathSegment l True) cleanup newCtx logs
+                    Right (LabelValue intro :> ctx) -> do
+                      eitherResult <- tryAny $ runExampleM (PathSegment l True) (cleanup intro) ctx logs
                       return $ either (\e -> Failure (GotException (Just "Exception in cleanup handler") (SomeExceptionWithEq e))) id eitherResult
                     Left e -> return $ Failure e
 

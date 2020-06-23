@@ -162,7 +162,7 @@ data SpecCommand context next where
   Introduce :: { label :: String
                , contextLabel :: Label l intro
                , allocate :: ExampleM context intro
-               , cleanup :: ExampleM (LabelValue l intro :> context) ()
+               , cleanup :: intro -> ExampleM context ()
                , subspecAugmented :: Spec (LabelValue l intro :> context) ()
                , next :: next } -> SpecCommand context next
 

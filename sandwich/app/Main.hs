@@ -72,13 +72,13 @@ medium = do
   --   it "does 1" sleepThenSucceed -- pending
   --   it "does 2" sleepThenSucceed -- pending
 
-  introduce "Database" database (return $ Database "outer") (return ()) $ do
+  introduce "Database" database (return $ Database "outer") (const $ return ()) $ do
     it "uses the DB 1" $ do
       db <- getContext database
       debug [i|Got db: #{db}|]
 
-    introduce "Database again" database (return $ Database "shadowing") (return ()) $ do
-      introduce "Database again" otherDatabase (return $ Database "other") (return ()) $ do
+    introduce "Database again" database (return $ Database "shadowing") (const $ return ()) $ do
+      introduce "Database again" otherDatabase (return $ Database "other") (const $ return ()) $ do
         it "uses the DB 2" $ do
           db <- getContext database
           debug [i|Got db: #{db}|]
@@ -112,7 +112,7 @@ options = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter medium
+main = runSandwich options defaultTerminalUIFormatter simple
 
 
 -- * Util
