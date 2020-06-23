@@ -63,7 +63,7 @@ withBrowser1 :: HasLabel context "webdriver" WdSession => ExampleT (ContextWithS
 withBrowser1 = withBrowser "browser1"
 
 withBrowser2 :: HasLabel context "webdriver" WdSession => ExampleT (ContextWithSession context) W.WD a -> ExampleT context IO a
-withBrowser2 = withBrowser "browser1"
+withBrowser2 = withBrowser "browser2"
 
 withBrowser :: HasLabel context "webdriver" WdSession => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context IO a
 withBrowser browser (ExampleT readerMonad) = do
