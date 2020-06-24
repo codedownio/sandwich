@@ -48,6 +48,10 @@ simple = do
   it "does the thing 1" sleepThenSucceed
   it "does the thing 2" sleepThenSucceed
   it "does the thing 3" sleepThenFail
+  describe "should happen sequentially" $ do
+    it "sequential 1" sleepThenSucceed
+    it "sequential 2" sleepThenFail
+    it "sequential 3" sleepThenSucceed
   it "does the thing 4" sleepThenFail
   it "does the thing 5" sleepThenSucceed
   it "does the thing 6" sleepThenSucceed
@@ -63,7 +67,7 @@ medium = do
     it "sequential 2" sleepThenFail
     it "sequential 3" sleepThenSucceed
 
-  describeParallel "should happen in parallel" $ do
+  describe "should happen in parallel" $ parallel $ do
     it "sequential 1" sleepThenSucceed
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
@@ -71,6 +75,12 @@ medium = do
   -- around "some around" (\context action -> putStrLn "around1" >> action >> putStrLn "around2") $ do
   --   it "does 1" sleepThenSucceed -- pending
   --   it "does 2" sleepThenSucceed -- pending
+
+  introduceWith "Database around" database (\action -> liftIO $ action (Database "foo")) $ do
+    it "uses the DB" $ do
+      db <- getContext database
+      debug [i|Got db: #{db}|]
+      liftIO $ threadDelay (3 * 10^6)
 
   introduce "Database" database (return $ Database "outer") (const $ return ()) $ do
     it "uses the DB 1" $ do
@@ -120,12 +130,12 @@ main = runSandwich options defaultTerminalUIFormatter simple
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
   -- liftIO $ threadDelay (2 * 10^1)
-  liftIO $ threadDelay (2 * 10^6)
+  liftIO $ threadDelay (2 * 10^5)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
   -- liftIO $ threadDelay (2 * 10^1)
-  liftIO $ threadDelay (2 * 10^6)
+  liftIO $ threadDelay (2 * 10^5)
   2 `shouldBe` 3
 
 pending :: ExampleM context ()

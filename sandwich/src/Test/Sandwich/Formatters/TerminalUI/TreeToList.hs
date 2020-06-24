@@ -25,6 +25,7 @@ runTreeToList' indent (node, fixedNode@(RunTreeGroup {})) = elem `Vec.cons` (run
           , status = runTreeStatus fixedNode
           , logs = runTreeLogs fixedNode
           , isContextManager = runTreeIsContextManager fixedNode
+          , folderPath = runTreeFolder fixedNode
           , node = node
           }
 runTreeToList' indent (node, (RunTreeSingle {..})) = Vec.singleton elem
@@ -35,5 +36,6 @@ runTreeToList' indent (node, (RunTreeSingle {..})) = Vec.singleton elem
           , status = runTreeStatus
           , logs = runTreeLogs
           , isContextManager = False
+          , folderPath = runTreeFolder
           , node = node
           }

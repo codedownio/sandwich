@@ -41,7 +41,7 @@ handleTestException session@(WdSession {wdOptions=(WdOptions {}), ..}) runRoot r
   createDirectoryIfMissing True errorsDir
 
   let paddedNum :: String = printf "%04d" failureNum
-  let errorFolderName = [i|#{paddedNum}_|] <> head wdLabels
+  let errorFolderName = [i|#{paddedNum}_|]
 #ifdef mingw32_HOST_OS
   -- Windows is stupid about symlinks, let's just copy
   shelly $ silently $ cp_r (fromString resultsDir) (fromString (dir </> errorFolderName))

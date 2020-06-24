@@ -8,11 +8,13 @@ module Test.Sandwich (
   , it
   , describe
   , introduce
+  , introduceWith
   , before
   , beforeEach
   , after
   , afterEach
   , around
+  , parallel
 
   , TopSpec
 
@@ -23,7 +25,7 @@ module Test.Sandwich (
 
   , Label(..)
 
-  , Spec, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
+  , Spec, SpecWith, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
 
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations

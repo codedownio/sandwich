@@ -53,6 +53,9 @@ import System.Posix.Types
 -- | Spin up a Selenium WebDriver and create a WdSession
 startWebDriver :: WdOptions -> FilePath -> IO WdSession
 startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = do
+  -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
+  webdriverName <- ("webdriver_" <>) <$> makeUUID
+
   -- Set up config
   port <- findFreePortOrException
   let capabilities = case runMode of
@@ -70,7 +73,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
     Right x -> return x
 
   -- Open output handles
-  let logsDir = runRoot </> "selenium_logs"
+  let logsDir = runRoot </> (T.unpack webdriverName)
   createDirectoryIfMissing True logsDir
   hout <- openFile (logsDir </> seleniumOutFileName) AppendMode
   herr <- openFile (logsDir </> seleniumErrFileName) AppendMode
@@ -100,12 +103,11 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
     error [i|Selenium server failed to start after 60 seconds|]
 
   -- Make the WdSession
-  WdSession <$> pure []
+  WdSession <$> pure (T.unpack webdriverName)
             <*> pure (hout, herr, p, logsDir </> seleniumOutFileName, logsDir </> seleniumErrFileName, maybeXvfbSession)
             <*> pure wdOptions
             <*> newMVar mempty
             <*> newMVar 0
-            <*> newMVar (A.object [])
             <*> newMVar mempty
             <*> pure wdConfig
 
@@ -121,8 +123,8 @@ stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) 
 
 -- * Util
 
-seleniumOutFileName = "selenium_stdout.txt"
-seleniumErrFileName = "selenium_stderr.txt"
+seleniumOutFileName = "stdout.txt"
+seleniumErrFileName = "stderr.txt"
 
 getWebdriverCreateProcess :: WdOptions -> FilePath -> PortNumber -> IO (Either T.Text (CreateProcess, Maybe XvfbSession))
 getWebdriverCreateProcess (WdOptions {toolsRoot, runMode}) runRoot port = runExceptT $ do

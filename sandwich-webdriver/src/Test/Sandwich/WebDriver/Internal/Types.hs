@@ -77,12 +77,11 @@ defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty Normal
 
 type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text, W.LogEntry -> Bool)
 
-data WdSession = WdSession { wdLabels :: [String]
+data WdSession = WdSession { wdName :: String
                            , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
                            , wdOptions :: WdOptions
                            , wdSessionMap :: MVar (M.Map Browser W.WDSession)
                            , wdFailureCounter :: MVar Int
-                           , wdTimingInfo :: MVar A.Value
                            , wdSaveBrowserLogs :: MVar SaveLogSettings
                            , wdConfig :: W.WDConfig }
 

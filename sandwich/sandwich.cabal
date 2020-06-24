@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8c73efcf9a140e400a02c2bd3d5191ff744cb13b560b85da8c1dffe69755fe52
+-- hash: 7c45821ab462aea5ce0d9f1999ec8da0224f25239d3dbbcdfc3fab263b089348
 
 name:           sandwich
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.Count
+      Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
       Test.Sandwich.Formatters.TerminalUI.Filter
@@ -44,12 +45,14 @@ library
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Interpreters.RunTree.Logging
+      Test.Sandwich.Interpreters.RunTree.Util
       Test.Sandwich.Logging
       Test.Sandwich.Types.Formatter
       Test.Sandwich.Types.Options
       Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec
       Test.Sandwich.Types.Util
+      Test.Sandwich.Util
   other-modules:
       Paths_sandwich
   hs-source-dirs:
@@ -70,6 +73,7 @@ library
     , monad-control
     , monad-logger
     , mtl
+    , process
     , random
     , safe-exceptions
     , stm
@@ -105,6 +109,7 @@ executable sandwich-exe
     , monad-control
     , monad-logger
     , mtl
+    , process
     , random
     , safe-exceptions
     , sandwich
@@ -142,6 +147,7 @@ test-suite sandwich-test
     , monad-control
     , monad-logger
     , mtl
+    , process
     , random
     , safe-exceptions
     , sandwich

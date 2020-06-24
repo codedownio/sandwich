@@ -23,6 +23,7 @@ import GHC.Stack
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
+import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
@@ -106,12 +107,14 @@ topBox app = vBox [hBox [columnPadding $ hLimitPercent 33 settingsColumn
 
     settingsColumn = keybindingBox [keyIndicator "n/↑" "Next"
                                    , keyIndicator "p/↓" "Previous"
-                                   , keyIndicator (showKeys toggleKeys) "Toggle selected"]
+                                   , keyIndicatorHasSelected (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
-                                  , keyIndicator (showKey cancelSelectedKey) "Cancel selected"
+                                  , keyIndicatorHasSelected (showKey cancelSelectedKey) "Cancel selected"
                                   , keyIndicator (showKey clearResultsKey) "Clear results"
-                                  , keyIndicator (showKey runAgainKey) "Run again"]
+                                  , keyIndicator (showKey runAgainKey) "Run again"
+                                  , keyIndicatorHasSelectedAndFolder (showKey openSelectedFolderInFileExplorer) "Open in file explorer"
+                                  ]
 
     otherActionsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
@@ -122,7 +125,17 @@ topBox app = vBox [hBox [columnPadding $ hLimitPercent 33 settingsColumn
     toggleIndicator True key onMsg _ = keyIndicator key onMsg
     toggleIndicator False key _ offMsg = keyIndicator key offMsg
 
-    keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", str msg]
+    keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
+
+    keyIndicatorHasSelected = keyIndicatorContextual (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
+
+    keyIndicatorHasSelectedAndFolder = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
+      Just (_, MainListElem {folderPath=(Just _)}) -> True
+      _ -> False
+
+    keyIndicatorContextual p key msg = case p app of
+      True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
+      False -> hBox [str "[", withAttr disabledHotkeyAttr $ str key, str "] ", withAttr disabledHotkeyMessageAttr $ str msg]
 
 
 borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])

@@ -18,6 +18,7 @@ data MainListElem = MainListElem {
   , status :: Status
   , logs :: Seq LogEntry
   , isContextManager :: Bool
+  , folderPath :: Maybe FilePath
   , node :: RunTree
   }
 

@@ -1,4 +1,13 @@
-{-# LANGUAGE QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, TypeOperators, LambdaCase, DataKinds, UndecidableInstances, MultiParamTypeClasses, RecordWildCards, FlexibleContexts #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 -- |
 
@@ -6,7 +15,9 @@ module Test.Sandwich.WebDriver (
   webdriver
   , introduceWebdriver
   , allocateWebDriver
+  , allocateWebDriver'
   , cleanupWebDriver
+  , cleanupWebDriver'
 
   , withBrowser1
   , withBrowser2
@@ -16,6 +27,8 @@ module Test.Sandwich.WebDriver (
 
   , chromeCapabilities
   , headlessChromeCapabilities
+
+  , WdSession
 
   , WdOptions
   , defaultWdOptions
@@ -48,24 +61,31 @@ import qualified Test.WebDriver.Session as W
 introduceWebdriver :: (HasBaseContext context) => WdOptions -> Spec (LabelValue "webdriver" WdSession :> context) () -> Spec context ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
+allocateWebDriver :: (HasBaseContext context, MonadIO m) => WdOptions -> ExampleT context m WdSession
 allocateWebDriver wdOptions = do
   maybeRunRoot <- getRunRoot
   let runRoot = fromMaybe "/tmp" maybeRunRoot
-  liftIO $ startWebDriver wdOptions runRoot
+  liftIO $ allocateWebDriver' runRoot wdOptions
 
-cleanupWebDriver :: (HasBaseContext context) => ExampleM (LabelValue "webdriver" WdSession :> context) ()
-cleanupWebDriver = do
-  session <- getContext webdriver
-  liftIO $ closeAllSessions session
-  liftIO $ stopWebDriver session
+allocateWebDriver' :: FilePath -> WdOptions -> IO WdSession
+allocateWebDriver' runRoot wdOptions = do
+  startWebDriver wdOptions runRoot
 
-withBrowser1 :: HasLabel context "webdriver" WdSession => ExampleT (ContextWithSession context) W.WD a -> ExampleT context IO a
+cleanupWebDriver :: (HasBaseContext context, MonadIO m) => WdSession -> ExampleT context m ()
+cleanupWebDriver = liftIO . cleanupWebDriver'
+
+cleanupWebDriver' :: WdSession -> IO ()
+cleanupWebDriver' session = do
+  closeAllSessions session
+  stopWebDriver session
+
+withBrowser1 :: (HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser1 = withBrowser "browser1"
 
-withBrowser2 :: HasLabel context "webdriver" WdSession => ExampleT (ContextWithSession context) W.WD a -> ExampleT context IO a
+withBrowser2 :: (HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser2 = withBrowser "browser2"
 
-withBrowser :: HasLabel context "webdriver" WdSession => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context IO a
+withBrowser :: (HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser browser (ExampleT readerMonad) = do
   WdSession {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
@@ -79,7 +99,7 @@ withBrowser browser (ExampleT readerMonad) = do
 
   ref <- liftIO $ newIORef sess
 
-  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ W.runWD sess) readerMonad)
+  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ (liftIO . W.runWD sess)) readerMonad)
 
 type ContextWithSession context = LabelValue "webdriverSession" (IORef W.WDSession) :> context
 

@@ -12,6 +12,7 @@ cancelSelectedKey = V.KChar 'c'
 cancelAllKey = V.KChar 'C'
 clearResultsKey = V.KChar 'k'
 runAgainKey = V.KChar 'r'
+openSelectedFolderInFileExplorer = V.KChar 'o'
 
 exitKey = V.KChar 'q'
 

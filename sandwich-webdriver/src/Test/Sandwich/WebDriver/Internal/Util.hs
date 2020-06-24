@@ -14,6 +14,7 @@ import qualified Data.Text as T
 import System.Directory
 import System.FilePath
 import System.Process
+import qualified System.Random as R
 import Test.Sandwich.WebDriver.Internal.Types
 
 -- * Truncating log files
@@ -58,3 +59,6 @@ whenLeft (Right _) _ = return ()
 whenRight :: (Monad m) => Either a b -> (b -> m ()) -> m ()
 whenRight (Left _) _ = return ()
 whenRight (Right x) action = action x
+
+makeUUID :: IO T.Text
+makeUUID = (convert . take 10 . R.randomRs ('a','z')) <$> R.newStdGen

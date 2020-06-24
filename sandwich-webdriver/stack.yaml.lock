@@ -15,6 +15,13 @@ packages:
   original:
     git: https://github.com/codedownio/hs-webdriver
     commit: 8bc94c291838d6d4152138cf4ab94d1db6f8da7e
+- completed:
+    hackage: ex-pool-0.2.1@sha256:c8249338ced27bc4d6395ad9c3069eec394fb111813d6ec736814d095f7e6a24,1293
+    pantry-tree:
+      size: 253
+      sha256: 863f042cd38e712406ac3ca414eb83e4f2264a71913fca0319d940655ebc873a
+  original:
+    hackage: ex-pool-0.2.1@sha256:c8249338ced27bc4d6395ad9c3069eec394fb111813d6ec736814d095f7e6a24,1293
 snapshots:
 - completed:
     size: 531237

@@ -35,6 +35,9 @@ mainAttrMap = attrMap V.defAttr [
   , (toggleMarkerAttr, fg (grayAt 50))
   
   , (hotkeyAttr, fg V.blue)
+  , (disabledHotkeyAttr, fg (grayAt 50))
+  , (hotkeyMessageAttr, fg (grayAt 200))
+  , (disabledHotkeyMessageAttr, fg (grayAt 80))
   ]
 
 grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
@@ -60,8 +63,11 @@ failureAttr = "failure"
 toggleMarkerAttr :: AttrName
 toggleMarkerAttr = "toggleMarker"
 
-hotkeyAttr :: AttrName
+hotkeyAttr, disabledHotkeyAttr, hotkeyMessageAttr, disabledHotkeyMessageAttr :: AttrName
 hotkeyAttr = "hotkey"
+disabledHotkeyAttr = "disableHotkey"
+hotkeyMessageAttr = "hotkeyMessage"
+disabledHotkeyMessageAttr = "disabledHotkeyMessage"
 
 chooseAttr :: Status -> AttrName
 chooseAttr NotStarted = notStartedAttr

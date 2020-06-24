@@ -18,6 +18,7 @@ import Control.Monad.IO.Class
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
+import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
@@ -113,6 +114,12 @@ appEvent s x@(VtyEvent e) =
       continue s
     V.EvKey c [] | c == clearResultsKey -> do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
+      continue $ s
+    V.EvKey c [] | c == openSelectedFolderInFileExplorer -> do
+      case L.listSelectedElement (s ^. appMainList) of
+        Just (_i, MainListElem {folderPath=(Just path)}) ->
+          liftIO $ openFileExplorerFolderPortable path
+        _ -> return () -- Shouldn't happen
       continue $ s
 
     -- V.EvKey (V.KChar c) [] | c == runAgainKey -> do

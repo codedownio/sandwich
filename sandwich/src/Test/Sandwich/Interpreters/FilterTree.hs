@@ -13,11 +13,21 @@ filterTree match (Free (Before l f subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Before l f x next)
+filterTree match (Free (After l f subspec next))
+  | l `matches` match = Free (After l f subspec (filterTree match next))
+  | otherwise = case filterTree match subspec of
+      (Pure _) -> filterTree match next
+      x -> Free (After l f x next)
 filterTree match (Free (Introduce l cl alloc cleanup subspec next))
   | l `matches` match = Free (Introduce l cl alloc cleanup subspec (filterTree match next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Introduce l cl alloc cleanup x next)
+filterTree match (Free (IntroduceWith l cl action subspec next))
+  | l `matches` match = Free (IntroduceWith l cl action subspec (filterTree match next))
+  | otherwise = case filterTree match subspec of
+      (Pure _) -> filterTree match next
+      x -> Free (IntroduceWith l cl action x next)
 filterTree match (Free (Around l f subspec next))
   | l `matches` match = Free (Around l f subspec (filterTree match next))
   | otherwise = case filterTree match subspec of
@@ -28,11 +38,10 @@ filterTree match (Free (Describe l subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Describe l x (filterTree match next))
-filterTree match (Free (DescribeParallel l subspec next))
-  | l `matches` match = Free (DescribeParallel l subspec (filterTree match next))
+filterTree match (Free (Parallel subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
-      x -> Free (DescribeParallel l x next)
+      x -> Free (Parallel x next)
 filterTree match (Free (It l ex next))
   | l `matches` match = Free (It l ex (filterTree match next))
   | otherwise = filterTree match next

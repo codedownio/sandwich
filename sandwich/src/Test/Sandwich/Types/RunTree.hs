@@ -12,11 +12,10 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Logger
-import qualified Data.List as L
 import Data.Sequence
-import Data.String.Interpolate
 import Data.Time.Clock
 import GHC.Stack
+import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
@@ -30,6 +29,7 @@ data RunTreeWithStatus s l t =
   RunTreeGroup { runTreeLabel :: String
                , runTreeToggled :: t
                , runTreeStatus :: s
+               , runTreeFolder :: Maybe FilePath
                , runTreeIsContextManager :: Bool
                , runTreeChildren :: [RunTreeWithStatus s l t]
                , runTreeLogs :: l
@@ -38,6 +38,7 @@ data RunTreeWithStatus s l t =
   | RunTreeSingle { runTreeLabel :: String
                   , runTreeToggled :: t
                   , runTreeStatus :: s
+                  , runTreeFolder :: Maybe FilePath
                   , runTreeLogs :: l
                   , runTreeAsync :: Async ()
                   }
@@ -52,6 +53,15 @@ data LogEntry = LogEntry { logEntryTime :: UTCTime
                          } deriving (Show, Eq)
 type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
 type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
+
+-- | Context passed around through the evaluation of a RunTree
+data RunTreeContext context = RunTreeContext {
+  runTreeContext :: Async context
+  , runTreeOptions :: Options
+  , runTreeCurrentFolder :: Maybe FilePath
+  , runTreeIndexInParent :: Int
+  , runTreeNumSiblings :: Int
+  }
 
 fixRunTree :: RunTree -> STM RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
@@ -94,3 +104,7 @@ getCallStackFromResult (Failure (Pending x _)) = x
 getCallStackFromResult (Failure (GotException {})) = Nothing
 getCallStackFromResult (Failure (GetContextException {})) = Nothing
 getCallStackFromResult (Failure (GotAsyncException {})) = Nothing
+
+isDone :: Status -> Bool
+isDone (Done {}) = True
+isDone _ = False

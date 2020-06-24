@@ -40,7 +40,7 @@ import Test.Sandwich.Types.Util
 -- * ExampleM monad
 
 newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger, MonadThrow, MonadCatch)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger, MonadThrow, MonadCatch, MonadMask)
 type ExampleM context = ExampleT context IO
 
 instance (MonadBase b m) => MonadBase b (ExampleT context m) where
@@ -106,6 +106,8 @@ isFailure _ = False
 data PathSegment = PathSegment {
   pathSegmentName :: String
   , pathSegmentIsContextManager :: Bool
+  , pathSegmentIndexInParent :: Int
+  , pathSegmentNumSiblings :: Int
   }
 
 data BaseContext = BaseContext { baseContextPath :: Seq PathSegment
@@ -166,6 +168,12 @@ data SpecCommand context next where
                , subspecAugmented :: Spec (LabelValue l intro :> context) ()
                , next :: next } -> SpecCommand context next
 
+  IntroduceWith :: { label :: String
+                   , contextLabel :: Label l intro
+                   , introduceAction :: ActionWith intro -> ExampleM context ()
+                   , subspecAugmented :: Spec (LabelValue l intro :> context) ()
+                   , next :: next } -> SpecCommand context next
+
   Around :: { label :: String
             , actionWith :: (IO () -> ExampleM context ())
             , subspec :: Spec context ()
@@ -175,9 +183,8 @@ data SpecCommand context next where
               , subspec :: Spec context ()
               , next :: next } -> SpecCommand context next
 
-  DescribeParallel :: { label :: String
-                      , subspec :: Spec context ()
-                      , next :: next } -> SpecCommand context next
+  Parallel :: { subspec :: Spec context ()
+              , next :: next } -> SpecCommand context next
 
   It :: (HasCallStack) => { label :: String
                           , example :: ExampleM context ()
@@ -203,7 +210,7 @@ instance Show1 (SpecCommand context) where
   liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
   liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Describe {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (DescribeParallel {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Parallel {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
   liftShowsPrec sp _ d (It {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
 
 -- First write beforeEach/afterEach to demonstrate push down approach
@@ -230,7 +237,7 @@ beforeEach l f (Free x@(Before {..})) = Free (x { subspec = beforeEach l f subsp
 beforeEach l f (Free x@(After {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
 beforeEach l f (Free x@(Around {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
 beforeEach l f (Free x@(Describe {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
+beforeEach l f (Free x@(Parallel {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
 beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
 beforeEach _ _ (Pure x) = Pure x
 beforeEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (beforeEach l f' subspec) (beforeEach l f next))
@@ -248,7 +255,7 @@ afterEach l f (Free x@(Before {..})) = Free (x { subspec = afterEach l f subspec
 afterEach l f (Free x@(After {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
 afterEach l f (Free x@(Around {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
 afterEach l f (Free x@(Describe {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
+afterEach l f (Free x@(Parallel {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
 afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
 afterEach _ _ (Pure x) = Pure x
 afterEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (afterEach l f' subspec) (afterEach l f next))
@@ -265,11 +272,13 @@ aroundEach l f (Free x@(Before {..})) = Free (x { subspec = aroundEach l f subsp
 aroundEach l f (Free x@(After {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
 aroundEach l f (Free x@(Around {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
 aroundEach l f (Free x@(Describe {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(DescribeParallel {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
+aroundEach l f (Free x@(Parallel {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
 aroundEach l f (Free x@(It {..})) = Free (Around l f (Free (x { next = Pure () })) (aroundEach l f next))
 aroundEach _ _ (Pure x) = Pure x
-aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l f' subspec) (aroundEach l f next))
-  where
-    f' action = do
-      let ExampleT r = f action
-      ExampleT $ withReaderT (\(_ :> context) -> context) r
+aroundEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
+aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
+
+unwrapContext :: (t -> ExampleT context m a) -> t -> ExampleT (introduce :> context) m a
+unwrapContext f action = do
+  let ExampleT r = f action
+  ExampleT $ withReaderT (\(_ :> context) -> context) r
