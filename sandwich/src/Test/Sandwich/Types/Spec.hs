@@ -175,7 +175,7 @@ data SpecCommand context next where
                    , next :: next } -> SpecCommand context next
 
   Around :: { label :: String
-            , actionWith :: (IO () -> ExampleM context ())
+            , actionWith :: IO () -> ExampleM context ()
             , subspec :: Spec context ()
             , next :: next } -> SpecCommand context next
 

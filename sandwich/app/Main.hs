@@ -72,9 +72,9 @@ medium = do
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
 
-  -- around "some around" (\context action -> putStrLn "around1" >> action >> putStrLn "around2") $ do
-  --   it "does 1" sleepThenSucceed -- pending
-  --   it "does 2" sleepThenSucceed -- pending
+  around "some around" (\action -> debug "around1" >> liftIO action >> debug "around2") $ do
+    it "does 1" sleepThenSucceed -- pending
+    it "does 2" sleepThenSucceed -- pending
 
   introduceWith "Database around" database (\action -> liftIO $ action (Database "foo")) $ do
     it "uses the DB" $ do
@@ -82,7 +82,7 @@ medium = do
       debug [i|Got db: #{db}|]
       liftIO $ threadDelay (3 * 10^6)
 
-  introduce "Database" database (return $ Database "outer") (const $ return ()) $ do
+  introduce "Database" database (debug "making DB" >> (return $ Database "outer")) (const $ return ()) $ do
     it "uses the DB 1" $ do
       db <- getContext database
       debug [i|Got db: #{db}|]
@@ -111,19 +111,22 @@ medium = do
   it "does foo" sleepThenFail
   it "does bar" sleepThenSucceed
 
+  after "after" (debug "doing after") $ do
+    it "has a thing after it" $ sleepThenSucceed
+  
 -- mainFilter :: IO ()
 -- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
 -- mainPretty :: IO ()
 -- mainPretty = putStrLn $ prettyShow topSpec
 
-options = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-  }
-
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter simple
-
+main = runSandwich options defaultTerminalUIFormatter medium
+  where
+    options = defaultOptions {
+      optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+      }
+    
 
 -- * Util
 
