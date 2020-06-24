@@ -113,7 +113,7 @@ medium = do
 
   after "after" (debug "doing after") $ do
     it "has a thing after it" $ sleepThenSucceed
-  
+
 -- mainFilter :: IO ()
 -- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
