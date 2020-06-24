@@ -35,6 +35,7 @@ dependencies:
 - monad-control
 - monad-logger
 - mtl
+- pretty-show
 - process
 - random
 - safe-exceptions

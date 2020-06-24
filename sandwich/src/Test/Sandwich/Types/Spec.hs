@@ -36,6 +36,7 @@ import GHC.Stack
 import GHC.TypeLits
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Util
+import qualified Text.Show.Pretty as P
 
 -- * ExampleM monad
 
@@ -67,7 +68,9 @@ data Result = Success
 
 data FailureReason = Reason (Maybe CallStack) String
                    | ExpectedButGot (Maybe CallStack) String String
+                   | ExpectedButGotValue (Maybe CallStack) P.Value P.Value
                    | DidNotExpectButGot (Maybe CallStack) String
+                   | DidNotExpectButGotValue (Maybe CallStack) P.Value
                    | GotException (Maybe String) SomeExceptionWithEq
                    | Pending (Maybe CallStack) (Maybe String)
                    | GetContextException SomeExceptionWithEq

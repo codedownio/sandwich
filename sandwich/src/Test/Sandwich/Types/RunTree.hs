@@ -99,7 +99,9 @@ getCallStackFromResult :: Result -> Maybe CallStack
 getCallStackFromResult (Success {}) = Nothing
 getCallStackFromResult (Failure (Reason x _)) = x
 getCallStackFromResult (Failure (ExpectedButGot x _ _)) = x
+getCallStackFromResult (Failure (ExpectedButGotValue x _ _)) = x
 getCallStackFromResult (Failure (DidNotExpectButGot x _)) = x
+getCallStackFromResult (Failure (DidNotExpectButGotValue x _)) = x
 getCallStackFromResult (Failure (Pending x _)) = x
 getCallStackFromResult (Failure (GotException {})) = Nothing
 getCallStackFromResult (Failure (GetContextException {})) = Nothing

@@ -26,9 +26,11 @@ import Test.Sandwich.Formatters.TerminalUI.Count
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Keys
+import Test.Sandwich.Formatters.TerminalUI.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Formatters.TerminalUI.Util
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 
 drawUI :: AppState -> [Widget ()]
@@ -62,7 +64,7 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
       ]
 
     getInfoWidgets (MainListElem {..}) = catMaybes [
-      Just $ borderWithLabel (padLeftRight 1 $ str "Result") $ strWrap $ show status
+      Just $ borderWithLabel (padLeftRight 1 $ getResultTitle status) $ toBrickWidget status
       , do
           cs <- getCallStackFromStatus status
           return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ strWrap $ prettyCallStack cs
@@ -70,6 +72,12 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
           guard (not $ Seq.null logs)
           return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox (toList $ fmap logEntryWidget logs)
       ]
+
+    getResultTitle (NotStarted {}) = str "Not started"
+    getResultTitle (Running {}) = withAttr runningAttr $ str "Running"
+    getResultTitle (Done {statusResult=(Success)}) = withAttr successAttr $ str "Success"
+    getResultTitle (Done {statusResult=(Failure (Pending {}))}) = withAttr pendingAttr $ str "Pending"
+    getResultTitle (Done {statusResult=(Failure _)}) = withAttr failureAttr $ str "Failure"
 
     logEntryWidget (LogEntry {..}) = hBox [
       withAttr logTimestampAttr $ str (show logEntryTime)

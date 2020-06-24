@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7c45821ab462aea5ce0d9f1999ec8da0224f25239d3dbbcdfc3fab263b089348
+-- hash: 7bbdbe3446185fddfaea8e3dcbfc26612ff255ac0bdf223f7a7f555b33c9f308
 
 name:           sandwich
 version:        0.1.0.0
@@ -38,6 +38,7 @@ library
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
       Test.Sandwich.Formatters.TerminalUI.Filter
       Test.Sandwich.Formatters.TerminalUI.Keys
+      Test.Sandwich.Formatters.TerminalUI.ToBrickWidget
       Test.Sandwich.Formatters.TerminalUI.TreeToList
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Formatters.TerminalUI.Util
@@ -73,6 +74,7 @@ library
     , monad-control
     , monad-logger
     , mtl
+    , pretty-show
     , process
     , random
     , safe-exceptions
@@ -109,6 +111,7 @@ executable sandwich-exe
     , monad-control
     , monad-logger
     , mtl
+    , pretty-show
     , process
     , random
     , safe-exceptions
@@ -147,6 +150,7 @@ test-suite sandwich-test
     , monad-control
     , monad-logger
     , mtl
+    , pretty-show
     , process
     , random
     , safe-exceptions
