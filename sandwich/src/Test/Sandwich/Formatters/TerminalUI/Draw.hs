@@ -36,11 +36,12 @@ import Test.Sandwich.Types.Spec
 drawUI :: AppState -> [Widget ()]
 drawUI app = [ui]
   where
-    ui = vBox [vLimitPercent 10 (topBox app)
-              , borderWithCounts app
-              , mainList app
-              , bottomProgressBarColored app
-              ]
+    ui = joinBorders $ vBox [
+      vLimitPercent 10 (topBox app)
+      , borderWithCounts app
+      , mainList app
+      , bottomProgressBarColored app
+      ]
 
 mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
   where
@@ -64,7 +65,7 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
       ]
 
     getInfoWidgets (MainListElem {..}) = catMaybes [
-      Just $ borderWithLabel (padLeftRight 1 $ getResultTitle status) $ toBrickWidget status
+      Just $ toBrickWidget status
       , do
           cs <- getCallStackFromStatus status
           return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ strWrap $ prettyCallStack cs

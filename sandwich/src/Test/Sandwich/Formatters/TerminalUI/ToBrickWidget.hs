@@ -25,20 +25,41 @@ instance ToBrickWidget Status where
 
 instance ToBrickWidget FailureReason where
   toBrickWidget (ExpectedButGot _ (SEB x1) (SEB x2)) = hBox [
-    hLimitPercent 50 (vBox [withAttr expectedAttr $ padBottom (Pad 1) $ str "Expected:", widget1])
-    , padLeft (Pad 4) $ hLimitPercent 50 (vBox [withAttr gotAttr $ padBottom (Pad 1) $ str "Got:", widget2])
+    hLimitPercent 50 $
+      border $
+        padAll 1 $
+          (padBottom (Pad 1) (withAttr expectedAttr $ str "Expected:"))
+          <=>
+          widget1
+    , padLeft (Pad 1) $
+        hLimitPercent 50 $
+          border $
+            padAll 1 $
+              (padBottom (Pad 1) (withAttr sawAttr $ str "Saw:"))
+              <=>
+              widget2
+
     ]
     where
       (widget1, widget2) = case (P.reify x1, P.reify x2) of
         (Just v1, Just v2) -> (toBrickWidget v1, toBrickWidget v2)
         _ -> (str (show x1), str (show x2))
   toBrickWidget (DidNotExpectButGot _ x) = hBox [
-    vBox [str "Did not expect", widget]
+    border $
+      padAll 1 $
+        (padBottom (Pad 1) (withAttr expectedAttr $ str "Did not expect:"))
+        <=>
+        widget
     ]
     where
       widget = case P.reify x of
         Just v -> toBrickWidget v
         _ -> str (show x)
+  toBrickWidget (Pending _ maybeMessage) = case maybeMessage of
+    Nothing -> withAttr pendingAttr $ str "Pending"
+    Just msg -> hBox [withAttr pendingAttr $ str "Pending"
+                     , str (": " <> msg)]
+
   toBrickWidget x = strWrap [i|TODO: #{x}|]
 
 

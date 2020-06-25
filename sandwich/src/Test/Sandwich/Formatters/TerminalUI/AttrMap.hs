@@ -25,7 +25,7 @@ mainAttrMap = attrMap V.defAttr [
 
   -- Logging
   , (debugAttr, fg V.blue), (infoAttr, fg V.yellow), (warnAttr, fg V.red), (errorAttr, fg V.red), (otherAttr, V.defAttr)
-  , (logTimestampAttr, fg (grayAt 50))
+  , (logTimestampAttr, fg midGray)
   , (logFilenameAttr, fg V.blue), (logModuleAttr, fg V.magenta), (logLineAttr, fg V.cyan), (logChAttr, fg V.magenta)
 
   -- Progress bar
@@ -33,15 +33,17 @@ mainAttrMap = attrMap V.defAttr [
   , (progressIncompleteAttr, bg (V.Color240 225))
 
   -- Main list
-  , (toggleMarkerAttr, fg (grayAt 50))
+  , (toggleMarkerAttr, fg midGray)
 
   -- Hotkey stuff
   , (hotkeyAttr, fg V.blue)
-  , (disabledHotkeyAttr, fg (grayAt 50))
-  , (hotkeyMessageAttr, fg (grayAt 200))
-  , (disabledHotkeyMessageAttr, fg (grayAt 80))
+  , (disabledHotkeyAttr, fg midGray)
+  , (hotkeyMessageAttr, fg brightWhite)
+  , (disabledHotkeyMessageAttr, fg brightGray)
 
-  -- Pretty printing
+  -- Exceptions and pretty printing
+  , (expectedAttr, fg midWhite)
+  , (sawAttr, fg midWhite)
   , (integerAttr, fg solarizedMagenta)
   , (floatAttr, fg solarizedMagenta)
   , (charAttr, fg solarizedCyan)
@@ -59,8 +61,6 @@ mainAttrMap = attrMap V.defAttr [
   , (fieldNameAttr, fg solarizedYellow)
   , (constructorNameAttr, fg solarizedViolet)
   ]
-
-grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
 
 selectedAttr :: AttrName
 selectedAttr = "list_line_selected"
@@ -117,9 +117,9 @@ logChAttr = "log_ch"
 
 -- * Exceptions and pretty printing
 
-expectedAttr, gotAttr :: AttrName
+expectedAttr, sawAttr :: AttrName
 expectedAttr = "expected"
-gotAttr = "got"
+sawAttr = "saw"
 
 integerAttr, timeAttr, dateAttr, stringAttr, charAttr, floatAttr, quoteAttr, slashAttr, negAttr :: AttrName
 listBracketAttr, tupleBracketAttr, braceAttr, ellipsesAttr, recordNameAttr, fieldNameAttr, constructorNameAttr :: AttrName
@@ -140,7 +140,7 @@ recordNameAttr = "recordName"
 fieldNameAttr = "fieldName"
 constructorNameAttr = "fieldName"
 
--- * Solarized colors
+-- * Colors
 
 solarizedBase03 = V.rgbColor 0x00 0x2b 0x36
 solarizedBase02 = V.rgbColor 0x07 0x36 0x42
@@ -158,3 +158,10 @@ solarizedViolet = V.rgbColor 0x6c 0x71 0xc4
 solarizedBlue = V.rgbColor 0x26 0x8b 0xd2
 solarizedCyan = V.rgbColor 0x2a 0xa1 0x98
 solarizedGreen = V.rgbColor 0x85 0x99 0x00
+
+midGray = grayAt 50
+brightGray = grayAt 80
+midWhite = grayAt 140
+brightWhite = grayAt 200
+
+grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
