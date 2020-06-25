@@ -17,7 +17,9 @@ import Test.Sandwich.Types.Options
 data Database = Database String
   deriving Show
 
-data Foo = Foo { fooInt :: Int, fooString :: String } deriving (Show, Eq)
+data Foo = Foo { fooInt :: Int, fooString :: String, fooBar :: Bar } deriving (Show, Eq)
+
+data Bar = Bar { barInt :: Int, barString :: String } deriving (Show, Eq)
 
 database = Label :: Label "database" Database
 otherDatabase = Label :: Label "otherDatabase" Database
@@ -27,7 +29,7 @@ verySimple :: TopSpec
 verySimple = do
   it "succeeds" (return ())
   it "tries shouldBe" (2 `shouldBe` 3)
-  it "tries shouldBe with Foo" (Foo 2 "asdf" `shouldBe` Foo 3 "fdsa")
+  it "tries shouldBe with Foo" (Foo 2 "asdf" (Bar 2 "asdf") `shouldBe` Foo 3 "fdsa" (Bar 3 "fdsa"))
   it "tries shouldNotBe" (2 `shouldNotBe` 2)
   it "does some logging" $ do
     debug "debug message"
