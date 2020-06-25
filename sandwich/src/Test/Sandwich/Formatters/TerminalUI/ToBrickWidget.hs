@@ -24,20 +24,21 @@ instance ToBrickWidget Status where
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
 
 instance ToBrickWidget FailureReason where
-  toBrickWidget (ExpectedButGot _ s1 s2) = hBox [
-    hLimitPercent 50 (vBox [withAttr expectedAttr $ padBottom (Pad 1) $ str "Expected:", str s1])
-    , padLeft (Pad 4) $ hLimitPercent 50 (vBox [withAttr gotAttr $ padBottom (Pad 1) $ str "Got:", str s2])
+  toBrickWidget (ExpectedButGot _ (SEB x1) (SEB x2)) = hBox [
+    hLimitPercent 50 (vBox [withAttr expectedAttr $ padBottom (Pad 1) $ str "Expected:", widget1])
+    , padLeft (Pad 4) $ hLimitPercent 50 (vBox [withAttr gotAttr $ padBottom (Pad 1) $ str "Got:", widget2])
     ]
-  toBrickWidget (ExpectedButGotValue _ v1 v2) = hBox [
-    hLimitPercent 50 (vBox [withAttr expectedAttr $ padBottom (Pad 1) $ str "Expected:", toBrickWidget v1])
-    , padLeft (Pad 4) $ hLimitPercent 50 (vBox [withAttr gotAttr $ padBottom (Pad 1) $ str "Got:", toBrickWidget v2])
+    where
+      (widget1, widget2) = case (P.reify x1, P.reify x2) of
+        (Just v1, Just v2) -> (toBrickWidget v1, toBrickWidget v2)
+        _ -> (str (show x1), str (show x2))
+  toBrickWidget (DidNotExpectButGot _ x) = hBox [
+    vBox [str "Did not expect", widget]
     ]
-  toBrickWidget (DidNotExpectButGot _ s) = hBox [
-    vBox [str "Did not expect", str s]
-    ]
-  toBrickWidget (DidNotExpectButGotValue _ v) = hBox [
-    vBox [str "Did not expect", toBrickWidget v]
-    ]
+    where
+      widget = case P.reify x of
+        Just v -> toBrickWidget v
+        _ -> str (show x)
   toBrickWidget x = strWrap [i|TODO: #{x}|]
 
 

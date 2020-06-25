@@ -66,11 +66,13 @@ data Result = Success
             | Failure FailureReason
   deriving (Show, Eq)
 
+data ShowEqBox = forall s. (Show s, Eq s) => SEB s
+instance Show ShowEqBox where show (SEB x) = show x
+instance Eq ShowEqBox where (SEB x1) == (SEB x2) = show x1 == show x2
+
 data FailureReason = Reason (Maybe CallStack) String
-                   | ExpectedButGot (Maybe CallStack) String String
-                   | ExpectedButGotValue (Maybe CallStack) P.Value P.Value
-                   | DidNotExpectButGot (Maybe CallStack) String
-                   | DidNotExpectButGotValue (Maybe CallStack) P.Value
+                   | ExpectedButGot (Maybe CallStack) ShowEqBox ShowEqBox
+                   | DidNotExpectButGot (Maybe CallStack) ShowEqBox
                    | GotException (Maybe String) SomeExceptionWithEq
                    | Pending (Maybe CallStack) (Maybe String)
                    | GetContextException SomeExceptionWithEq
