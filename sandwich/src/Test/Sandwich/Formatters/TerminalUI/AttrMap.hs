@@ -4,7 +4,6 @@
 module Test.Sandwich.Formatters.TerminalUI.AttrMap where
 
 import Brick
-import Brick.Widgets.List
 import Brick.Widgets.ProgressBar
 import qualified Graphics.Vty as V
 import Test.Sandwich.Types.RunTree
@@ -26,7 +25,12 @@ mainAttrMap = attrMap V.defAttr [
   -- Logging
   , (debugAttr, fg V.blue), (infoAttr, fg V.yellow), (warnAttr, fg V.red), (errorAttr, fg V.red), (otherAttr, V.defAttr)
   , (logTimestampAttr, fg midGray)
-  , (logFilenameAttr, fg V.blue), (logModuleAttr, fg V.magenta), (logLineAttr, fg V.cyan), (logChAttr, fg V.magenta)
+  , (logFilenameAttr, fg solarizedViolet)
+  , (logModuleAttr, fg solarizedMagenta)
+  , (logPackageAttr, fg solarizedGreen)
+  , (logLineAttr, fg solarizedCyan)
+  , (logChAttr, fg solarizedOrange)
+  , (logFunctionAttr, fg solarizedBlue)
 
   -- Progress bar
   , (progressCompleteAttr, bg (V.Color240 235))
@@ -96,7 +100,7 @@ chooseAttr (Done _ _ (Success {})) = successAttr
 chooseAttr (Done _ _ (Failure (Pending {}))) = pendingAttr
 chooseAttr (Done _ _ (Failure {})) = failureAttr
 
--- * Logging
+-- * Logging and callstacks
 
 debugAttr, infoAttr, warnAttr, errorAttr, otherAttr :: AttrName
 debugAttr = "log_debug"
@@ -108,12 +112,13 @@ otherAttr = "log_other"
 logTimestampAttr :: AttrName
 logTimestampAttr = "log_timestamp"
 
-logFilenameAttr, logModuleAttr, logLineAttr, logChAttr :: AttrName
-logFilenameAttr = "log_filename"
-logModuleAttr = "log_module"
-logLineAttr = "log_line"
-logChAttr = "log_ch"
-
+logFilenameAttr, logModuleAttr, logPackageAttr, logLineAttr, logChAttr :: AttrName
+logFilenameAttr = "logFilename"
+logModuleAttr = "logModule"
+logPackageAttr = "logPackage"
+logLineAttr = "logLine"
+logChAttr = "logCh"
+logFunctionAttr = "logFunction"
 
 -- * Exceptions and pretty printing
 

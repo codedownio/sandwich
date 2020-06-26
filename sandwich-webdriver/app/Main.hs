@@ -20,11 +20,11 @@ simple = introduceWebdriver wdOptions $ do
   it "does the thing 1" $ withBrowser1 $ do
     openPage "http://www.google.com"
     setWindowLeftSide
-    liftIO $ threadDelay 10000000
+    liftIO $ threadDelay 1000000
   it "does the thing 2" $ withBrowser2 $ do
     openPage "http://www.cnn.com"
     setWindowRightSide
-    liftIO $ threadDelay 10000000
+    liftIO $ threadDelay 1000000
 
 concurrent :: TopSpec
 concurrent = introduceWebdriver wdOptions $ parallel $ do
@@ -78,4 +78,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich testOptions defaultTerminalUIFormatter pooled
+main = runSandwich testOptions defaultTerminalUIFormatter concurrent

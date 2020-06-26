@@ -25,8 +25,8 @@ import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Count
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Keys
-import Test.Sandwich.Formatters.TerminalUI.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Formatters.TerminalUI.Util
 import Test.Sandwich.Types.RunTree
@@ -68,7 +68,7 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
       Just $ toBrickWidget status
       , do
           cs <- getCallStackFromStatus status
-          return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ strWrap $ prettyCallStack cs
+          return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ toBrickWidget cs
       , do
           guard (not $ Seq.null logs)
           return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox (toList $ fmap logEntryWidget logs)

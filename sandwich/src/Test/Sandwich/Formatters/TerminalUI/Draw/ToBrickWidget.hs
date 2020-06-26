@@ -1,13 +1,15 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 -- |
 
-module Test.Sandwich.Formatters.TerminalUI.ToBrickWidget where
+module Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget where
 
 import Brick
 import Brick.Widgets.Border
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
+import GHC.Stack
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Util
 import Test.Sandwich.Types.RunTree
@@ -122,9 +124,31 @@ instance ToBrickWidget P.Value where
                                          , str " = "
                                          , toBrickWidget v]
 
+instance ToBrickWidget CallStack where
+  toBrickWidget cs = vBox (fmap renderLine $ getCallStack cs)
+    where
+      renderLine (f, srcLoc) = hBox [
+        withAttr logFunctionAttr $ str f
+        , str " called at "
+        , toBrickWidget srcLoc
+        ]
+
+instance ToBrickWidget SrcLoc where
+  toBrickWidget (SrcLoc {..}) = hBox [
+    withAttr logFilenameAttr $ str srcLocFile
+    , str ":"
+    , withAttr logLineAttr $ str $ show srcLocStartLine
+    , str ":"
+    , withAttr logChAttr $ str $ show srcLocStartCol
+    , str " in "
+    , withAttr logPackageAttr $ str srcLocPackage
+    , str ":"
+    , str srcLocModule
+    ]
+
 -- * Util
 
 takeEnd :: Int -> [a] -> [a]
-takeEnd i xs = f xs (drop i xs)
-  where f (_:xs) (_:ys) = f xs ys
-        f xs _ = xs
+takeEnd j xs = f xs (drop j xs)
+  where f (_:zs) (_:ys) = f zs ys
+        f zs _ = zs

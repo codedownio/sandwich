@@ -18,7 +18,6 @@ data Database = Database String
   deriving Show
 
 data Foo = Foo { fooInt :: Int, fooString :: String, fooBar :: Bar } deriving (Show, Eq)
-
 data Bar = Bar { barInt :: Int, barString :: String } deriving (Show, Eq)
 
 database = Label :: Label "database" Database

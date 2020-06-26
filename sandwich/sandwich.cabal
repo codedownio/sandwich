@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7bbdbe3446185fddfaea8e3dcbfc26612ff255ac0bdf223f7a7f555b33c9f308
+-- hash: 923ad11834bc00ae9a5ba10190433687126c304ca4bc91a8a999a17e055b3f28
 
 name:           sandwich
 version:        0.1.0.0
@@ -36,9 +36,9 @@ library
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+      Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
       Test.Sandwich.Formatters.TerminalUI.Filter
       Test.Sandwich.Formatters.TerminalUI.Keys
-      Test.Sandwich.Formatters.TerminalUI.ToBrickWidget
       Test.Sandwich.Formatters.TerminalUI.TreeToList
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Formatters.TerminalUI.Util
