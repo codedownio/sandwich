@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 923ad11834bc00ae9a5ba10190433687126c304ca4bc91a8a999a17e055b3f28
+-- hash: 9dc828f920091bfc70ee286b112bf9b39666acab4de36bb9055eb384c7fbc4a7
 
 name:           sandwich
 version:        0.1.0.0
@@ -30,9 +30,10 @@ library
       Test.Sandwich
       Test.Sandwich.Contexts
       Test.Sandwich.Expectations
+      Test.Sandwich.Formatters.Common.Count
+      Test.Sandwich.Formatters.Print
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Formatters.TerminalUI.AttrMap
-      Test.Sandwich.Formatters.TerminalUI.Count
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
@@ -60,6 +61,7 @@ library
       src
   build-depends:
       QuickCheck
+    , ansi-terminal
     , async
     , base >=4.7 && <5
     , brick
@@ -97,6 +99,7 @@ executable sandwich-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , ansi-terminal
     , async
     , base >=4.7 && <5
     , brick
@@ -136,6 +139,7 @@ test-suite sandwich-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , ansi-terminal
     , async
     , base >=4.7 && <5
     , brick

@@ -11,6 +11,7 @@ import Control.Monad.IO.Class
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
+import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Types.Options
 
@@ -114,7 +115,7 @@ medium = do
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter verySimple
+main = runSandwich options defaultPrintFormatter medium
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

@@ -19,11 +19,9 @@ import qualified Data.Sequence as Seq
 import Data.String.Interpolate
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
-import GHC.Stack
 import Lens.Micro
+import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
-import Test.Sandwich.Formatters.TerminalUI.Count
-import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Keys

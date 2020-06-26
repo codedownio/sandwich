@@ -1,15 +1,16 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
 
-module Test.Sandwich.Formatters.TerminalUI.Count where
+module Test.Sandwich.Formatters.Common.Count where
 
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-countWhere :: (RunTreeFixed -> Bool) -> [RunTreeFixed] -> Int
+countWhere :: forall s l t. (RunTreeWithStatus s l t -> Bool) -> [RunTreeWithStatus s l t] -> Int
 countWhere p rts = sum $ fmap (countWhere' p) rts
   where
-    countWhere' :: (RunTreeFixed -> Bool) -> RunTreeFixed -> Int
+    countWhere' :: (RunTreeWithStatus s l t -> Bool) -> RunTreeWithStatus s l t -> Int
     countWhere' p rt@(RunTreeGroup {..}) =
       (if p rt then 1 else 0) + countWhere p runTreeChildren
     countWhere' picate rt@(RunTreeSingle {..}) = if picate rt then 1 else 0
