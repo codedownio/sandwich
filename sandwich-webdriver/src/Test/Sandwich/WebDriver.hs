@@ -64,7 +64,7 @@ import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 
 
-introduceWebdriver :: (HasBaseContext context) => WdOptions -> Spec (LabelValue "webdriver" WdSession :> context) () -> Spec context ()
+introduceWebdriver :: (HasBaseContext context, MonadIO m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 allocateWebDriver :: (HasBaseContext context, MonadIO m) => WdOptions -> ExampleT context m WdSession

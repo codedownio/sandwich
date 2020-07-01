@@ -31,7 +31,7 @@ appendLogMessage logs msg = do
   ts <- getCurrentTime
   atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
-getImmediateChildren :: Free (SpecCommand context) () -> [Free (SpecCommand context) ()]
+getImmediateChildren :: Free (SpecCommand context m) () -> [Free (SpecCommand context m) ()]
 getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Before l f subspec next)) = (Free (Before l f subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (After l f subspec next)) = (Free (After l f subspec (Pure ()))) : getImmediateChildren next
@@ -42,7 +42,7 @@ getImmediateChildren (Free (Describe l subspec next)) = (Free (Describe l subspe
 getImmediateChildren (Free (Parallel subspec next)) = (Free (Parallel subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Pure ()) = [Pure ()]
 
-countChildren :: Free (SpecCommand context) () -> Int
+countChildren :: Free (SpecCommand context m) () -> Int
 countChildren = L.length . getImmediateChildren
 
 appendFolder :: RunTreeContext context -> String -> Maybe FilePath

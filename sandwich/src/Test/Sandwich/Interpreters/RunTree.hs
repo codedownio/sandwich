@@ -41,7 +41,7 @@ import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 
-runTreeMain :: BaseContext -> Free (SpecCommand BaseContext) () -> IO [RunTree]
+runTreeMain :: BaseContext -> Free (SpecCommand BaseContext IO) () -> IO [RunTree]
 runTreeMain baseContext spec = do
   asyncBaseContext <- async $ return baseContext
   runReaderT (runTreeSequentially spec) $ RunTreeContext {
@@ -52,7 +52,7 @@ runTreeMain baseContext spec = do
     , runTreeCurrentFolder = baseContextRunRoot baseContext
     }
 
-runTree :: (HasBaseContext context) => Free (SpecCommand context) r -> ReaderT (RunTreeContext context) IO [RunTree]
+runTree :: (HasBaseContext context) => Free (SpecCommand context IO) r -> ReaderT (RunTreeContext context) IO [RunTree]
 runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
@@ -258,7 +258,7 @@ runTree (Free (Parallel subspec next)) = do
 runTree (Pure _) = return []
 
 
-runDescribe :: (HasBaseContext context) => Bool -> String -> [RunTree] -> Spec context r -> ReaderT (RunTreeContext context) IO [RunTree]
+runDescribe :: (HasBaseContext context) => Bool -> String -> [RunTree] -> SpecFree context IO r -> ReaderT (RunTreeContext context) IO [RunTree]
 runDescribe isContextManager l subtree next = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
@@ -284,7 +284,7 @@ runDescribe isContextManager l subtree next = do
 
 -- * Helpers
 
-runTreeSequentially :: (HasBaseContext context) => Free (SpecCommand context) () -> ReaderT (RunTreeContext context) IO [RunTree]
+runTreeSequentially :: (HasBaseContext context) => Free (SpecCommand context IO) () -> ReaderT (RunTreeContext context) IO [RunTree]
 runTreeSequentially spec = do
   (_, _, _, rtc@RunTreeContext {..}) <- getInfo
 
@@ -301,7 +301,7 @@ runTreeSequentially spec = do
 
   return subtree
 
-continueWith :: HasBaseContext context => RunTree -> SpecM context r -> ReaderT (RunTreeContext context) IO [RunTree]
+continueWith :: HasBaseContext context => RunTree -> SpecFree context IO r -> ReaderT (RunTreeContext context) IO [RunTree]
 continueWith tree next = do
   rest <- local (\rtc@(RunTreeContext {..}) -> rtc { runTreeIndexInParent = runTreeIndexInParent + 1}) $ runTree next
   return (tree : rest)

@@ -25,7 +25,7 @@ module Test.Sandwich (
 
   , Label(..)
 
-  , Spec, SpecWith, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
+  , Spec, SpecWith, SpecFree, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
 
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations

@@ -4,7 +4,6 @@ module Test.Sandwich.WebDriver.Internal.Types where
 
 import Control.Concurrent.MVar
 import Control.Exception
-import qualified Data.Aeson as A
 import Data.Default
 import Data.IORef
 import qualified Data.Map as M

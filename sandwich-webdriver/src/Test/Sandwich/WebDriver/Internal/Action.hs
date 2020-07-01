@@ -18,7 +18,7 @@ import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 
 runActionWithBrowser :: (HasCallStack) => Browser -> W.WD a -> WdSession -> IO a
-runActionWithBrowser browser action sessionWithLabels@(WdSession {..}) = do
+runActionWithBrowser browser action (WdSession {..}) = do
   -- Create new session if necessary (this can throw an exception)
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup browser sessionMap of
     Just sess -> return (sessionMap, sess)

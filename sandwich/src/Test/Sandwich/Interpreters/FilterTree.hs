@@ -7,7 +7,7 @@ import qualified Data.List as L
 import Test.Sandwich.Types.Spec
 
 -- | Filter a spec tree using a string
-filterTree :: String -> Free (SpecCommand context) () -> Free (SpecCommand context) ()
+filterTree :: String -> Free (SpecCommand context m) () -> Free (SpecCommand context m) ()
 filterTree match (Free (Before l f subspec next))
   | l `matches` match = Free (Before l f subspec (filterTree match next))
   | otherwise = case filterTree match subspec of
