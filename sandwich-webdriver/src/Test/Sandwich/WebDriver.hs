@@ -1,3 +1,5 @@
+{-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -29,6 +31,8 @@ module Test.Sandwich.WebDriver (
   , headlessChromeCapabilities
 
   , WdSession
+
+  , ExampleWithWebDriver
 
   , WdOptions
   , defaultWdOptions
@@ -121,3 +125,4 @@ instance W.WebDriver wd => W.WebDriver (LoggingT wd) where
 instance (W.WDSessionState (ExampleT context wd), W.WebDriver wd) => W.WebDriver (ExampleT context wd) where
   doCommand rm t a = lift (W.doCommand rm t a)
 
+type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)
