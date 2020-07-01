@@ -33,6 +33,8 @@ module Test.Sandwich.WebDriver (
   , WdSession
 
   , ExampleWithWebDriver
+  , HasWebDriverContext
+  , HasWebDriverSessionContext
 
   , WdOptions
   , defaultWdOptions
@@ -125,4 +127,6 @@ instance W.WebDriver wd => W.WebDriver (LoggingT wd) where
 instance (W.WDSessionState (ExampleT context wd), W.WebDriver wd) => W.WebDriver (ExampleT context wd) where
   doCommand rm t a = lift (W.doCommand rm t a)
 
+type HasWebDriverContext context = HasLabel context "webdriver" WdSession
+type HasWebDriverSessionContext context = HasLabel context "webdriverSession" (IORef W.WDSession)
 type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)

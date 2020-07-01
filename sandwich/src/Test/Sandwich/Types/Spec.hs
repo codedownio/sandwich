@@ -10,7 +10,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -36,7 +35,6 @@ import GHC.Stack
 import GHC.TypeLits
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Util
-import qualified Text.Show.Pretty as P
 
 -- * ExampleM monad
 
@@ -213,6 +211,7 @@ instance Show1 (SpecCommand context) where
   liftShowsPrec sp _ d (Before {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (After {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (IntroduceWith {..}) = showsUnaryWith sp [i|IntroduceWith[#{label}]<#{show subspecAugmented}>|] d next
   liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Describe {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (Parallel {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
@@ -246,9 +245,9 @@ beforeEach l f (Free x@(Parallel {..})) = Free (x { subspec = beforeEach l f sub
 beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
 beforeEach _ _ (Pure x) = Pure x
 beforeEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (beforeEach l f' subspec) (beforeEach l f next))
-  where f' = do
-          let ExampleT r = f
-          ExampleT $ withReaderT (\(_ :> context) -> context) r
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+beforeEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (beforeEach l f' subspec) (beforeEach l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
 
 -- | Perform an action after each example in a given spec tree.
 afterEach ::
@@ -264,9 +263,9 @@ afterEach l f (Free x@(Parallel {..})) = Free (x { subspec = afterEach l f subsp
 afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
 afterEach _ _ (Pure x) = Pure x
 afterEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (afterEach l f' subspec) (afterEach l f next))
-  where f' = do
-          let ExampleT r = f
-          ExampleT $ withReaderT (\(_ :> context) -> context) r
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+afterEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (afterEach l f' subspec) (afterEach l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
 
 aroundEach ::
   String

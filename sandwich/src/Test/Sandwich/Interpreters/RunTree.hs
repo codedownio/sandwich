@@ -123,7 +123,7 @@ runTree (Free (Around l f subspec next)) = do
       Right _ -> Success
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
-runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
+runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   mvar <- liftIO newEmptyMVar
@@ -169,7 +169,7 @@ runTree (Free (Introduce l cl alloc cleanup subspec next)) = do
               )
               (\_ -> void $ waitForTree subtree)
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
-runTree (Free (IntroduceWith l cl action subspec next)) = do
+runTree (Free (IntroduceWith l _cl action subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   mvar <- liftIO newEmptyMVar
@@ -265,7 +265,7 @@ runDescribe isContextManager l subtree next = do
   tree <- RunTreeGroup l toggled status (appendFolder rtc l) isContextManager subtree logs <$> do
     liftIO $ asyncWithUnmask $ \unmask -> do
       flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
-        ctx <- waitAndHandleContextExceptionRethrow runTreeContext status
+        _ctx <- waitAndHandleContextExceptionRethrow runTreeContext status
         startTime <- getCurrentTime
         atomically $ writeTVar status (Running startTime)
         treeResult <- waitForTree subtree

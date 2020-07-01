@@ -34,7 +34,6 @@ module Test.Sandwich (
   ) where
 
 import Control.Concurrent.Async
-import Control.Monad.Trans.Reader
 import System.Directory
 import System.FilePath
 import System.Posix.Signals

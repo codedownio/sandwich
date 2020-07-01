@@ -8,14 +8,11 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Convertible
-import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import System.Directory
-import System.FilePath
 import System.Process
 import qualified System.Random as R
-import Test.Sandwich.WebDriver.Internal.Types
 
 -- * Truncating log files
 

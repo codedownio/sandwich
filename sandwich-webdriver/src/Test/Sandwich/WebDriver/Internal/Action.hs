@@ -11,7 +11,6 @@ import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import GHC.Stack
-import Test.Sandwich.WebDriver.Internal.Exceptions
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W

@@ -8,17 +8,10 @@ import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Logger
-import Control.Monad.Trans
-import Control.Monad.Trans.Control
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.Reader
 import Control.Retry
-import qualified Data.Aeson as A
 import Data.Default
-import Data.IORef
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
@@ -31,18 +24,11 @@ import System.FilePath
 import System.IO
 import System.IO.Temp
 import System.Process
-import Test.Sandwich
-import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Ports
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Capabilities as W
-import qualified Test.WebDriver.Class as W
-import qualified Test.WebDriver.Config as W
-import qualified Test.WebDriver.Monad as W
-import qualified Test.WebDriver.Session as W
 
 #ifdef linux_HOST_OS
 import System.Posix.IO
