@@ -25,6 +25,7 @@ import Graphics.Vty
 import System.Console.ANSI
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Print.Color
+import Test.Sandwich.Formatters.Print.PrintPretty
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
@@ -77,19 +78,25 @@ runWithIndentation (RunTreeSingle {..}) = do
           pRedLn runTreeLabel
           withBumpIndent $ printFailureReason reason
 
-withBumpIndent action = do
-  (PrintFormatter {..}, indent) <- ask
-  withBumpIndent' printFormatterIndentSize action
-withBumpIndent' n = local (\(pf, indent) -> (pf, indent + n))
+-- * Pretty printing failure reason
 
+printFailureReason (Reason maybeCallStack s) = do
+  printShowBoxPrettyWithTitle "Reason: " (SEB s)
 printFailureReason (ExpectedButGot maybeCallStack seb1 seb2) = do
   printShowBoxPrettyWithTitle "Expected: " seb1
-  -- p "\n"
   printShowBoxPrettyWithTitle "But got: " seb2
-printFailureReason reason = do
-  p (show reason)
-
-
+printFailureReason (DidNotExpectButGot maybeCallStack seb) = do
+  printShowBoxPrettyWithTitle "Did not expect: " seb
+printFailureReason (GotException maybeCallStack e) = do
+  printShowBoxPrettyWithTitle "Got exception: " (SEB e)
+printFailureReason (Pending maybeCallStack maybeMessage) = case maybeMessage of
+  Nothing -> return () -- Just allow the yellow heading to show the pending state
+  Just s -> printShowBoxPrettyWithTitle "Pending reason: " (SEB s)
+printFailureReason (GetContextException e) = do
+  printShowBoxPrettyWithTitle "Got exception: " (SEB e)
+printFailureReason (GotAsyncException maybeMessage e) = case maybeMessage of
+  Nothing -> printShowBoxPrettyWithTitle "Async exception" (SEB e)
+  Just s -> printShowBoxPrettyWithTitle [i|Async exception (#{e}) |] (SEB s)
 
 -- * Pretty printing
 
@@ -109,53 +116,3 @@ printShowBoxPrettyWithTitle title (SEB v) = case P.reify v of
 printShowBoxPretty (SEB v) = case P.reify v of
   Nothing -> p $ show v
   Just x -> printPretty True x >> p "\n"
-
-printPretty (getPrintFn -> f) (Quote s) = f (quoteColor) s
-printPretty (getPrintFn -> f) (Time s) = f (timeColor) s
-printPretty (getPrintFn -> f) (Date s) = f (dateColor) s
-printPretty (getPrintFn -> f) (String s) = f (stringColor) s
-printPretty (getPrintFn -> f) (Char s) = f (charColor) s
-printPretty (getPrintFn -> f) (Float s) = f (floatColor) s
-printPretty (getPrintFn -> f) (Integer s) = f (integerColor) s
-printPretty indentFirst (Rec name tuples) = do
-  (if indentFirst then pic else pc) recordNameColor name
-  pcn braceColor " {"
-  withBumpIndent $
-    forM_ tuples $ \(name, val) -> do
-      pic fieldNameColor name
-      p " = "
-      withBumpIndent' (L.length name + L.length " = ") $ do
-        printPretty False val
-        p "\n"
-  pic braceColor "}"
-printPretty indentFirst (Con name values) = do
-  (if indentFirst then pic else pc) constructorNameColor (name <> " ")
-  case values of
-    [] -> return ()
-    (x:xs) -> do
-      printPretty False x
-      p "\n"
-      withBumpIndent' (L.length name + L.length " ") $ do
-        sequence_ (L.intercalate [p "\n"] [[printPretty True v] | v <- xs])
-printPretty indentFirst (List values) = printListWrappedIn ("[", "]") indentFirst values
-printPretty indentFirst (Tuple values) = printListWrappedIn ("(", ")") indentFirst values
-printPretty indentFirst x = pin $ show x
-
--- printPretty (Ratio v1 v2) = printIndentedWithRGBColor (Just (ratioColor))
--- printPretty (Neg s) = printIndentedWithRGBColor (Just (negColor)) s
-
-printListWrappedIn (begin, end) (getPrintFn -> f) values | all isSingleLine values = do
-  f listBracketColor begin
-  sequence_ (L.intercalate [p ", "] [[printPretty False v] | v <- values])
-  pc listBracketColor end
-printListWrappedIn (begin, end) (getPrintFn -> f) values = do
-  f listBracketColor begin
-  p "\n"
-  withBumpIndent $ do
-    forM_ values $ \v -> do
-      printPretty True v
-      p "\n"
-  pic listBracketColor end
-
-getPrintFn True = pic
-getPrintFn False = pc
