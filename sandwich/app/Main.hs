@@ -115,24 +115,24 @@ medium = do
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultPrintFormatter medium
+main = runSandwich options defaultPrintFormatter verySimple
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
       }
-    
+
 
 -- * Util
 
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
-  -- liftIO $ threadDelay (2 * 10^1)
-  liftIO $ threadDelay (2 * 10^5)
+  liftIO $ threadDelay (2 * 10^1)
+  -- liftIO $ threadDelay (2 * 10^5)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
-  -- liftIO $ threadDelay (2 * 10^1)
-  liftIO $ threadDelay (2 * 10^5)
+  liftIO $ threadDelay (2 * 10^1)
+  -- liftIO $ threadDelay (2 * 10^5)
   2 `shouldBe` 3
 
 pending :: ExampleM context ()

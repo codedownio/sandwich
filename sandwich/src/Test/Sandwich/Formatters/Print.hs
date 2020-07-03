@@ -16,13 +16,18 @@ import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Data.Colour.RGBSpace
+import Data.Colour.SRGB
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import System.Console.ANSI
 import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
+import Text.Show.Pretty as P
 
 data PrintFormatter = PrintFormatter {
   printFormatterUseColor :: Bool
@@ -47,7 +52,7 @@ runApp pf@(PrintFormatter {..}) rts = do
   putStrLn "\n"
   putStrLn [i|Beginning suite of #{total} tests\n|]
 
-  runReaderT (mapM_ (runWithIndentation 0) rts) pf
+  runReaderT (mapM_ runWithIndentation rts) (pf, 0)
   putStrLn "\n"
 
   fixedTree <- atomically $ mapM fixRunTree rts
@@ -63,34 +68,69 @@ runApp pf@(PrintFormatter {..}) rts = do
     _ -> putStrLn [i| (#{pending} pending)|]
 
 
-runWithIndentation :: Int -> RunTree -> ReaderT PrintFormatter IO ()
-runWithIndentation indent (RunTreeGroup {..}) = do
-  size <- asks printFormatterIndentSize
-  liftIO $ putStrLn [i|#{L.replicate (size * indent) ' '}#{runTreeLabel}|]
-  forM_ runTreeChildren (runWithIndentation (indent + 1))
-runWithIndentation indent (RunTreeSingle {..}) = do
-  size <- asks printFormatterIndentSize
+runWithIndentation :: RunTree -> ReaderT (PrintFormatter, Int) IO ()
+runWithIndentation (RunTreeGroup {..}) = do
+  p runTreeLabel
+  withBumpIndent $ forM_ runTreeChildren runWithIndentation
+runWithIndentation (RunTreeSingle {..}) = do
   liftIO $ wait runTreeAsync
   (liftIO $ readTVarIO runTreeStatus) >>= \case
     NotStarted -> return ()
     Running {} -> return ()
     Done {statusResult} -> do
-      liftIO $ putStr $ L.replicate (size * indent) ' '
       case statusResult of
-        Success -> printGreen runTreeLabel
-        Failure (Pending _ maybeMessage) -> printYellow runTreeLabel
-        Failure reason -> printRed runTreeLabel
+        Success -> pGreen runTreeLabel
+        Failure (Pending _ maybeMessage) -> pYellow runTreeLabel
+        Failure reason -> do
+          pRed runTreeLabel
+          withBumpIndent $ printFailureReason reason
 
--- * Printing with colors
+withBumpIndent = local (\(pf, indent) -> (pf, indent + 1))
 
-printGreen, printYellow, printRed :: (MonadReader PrintFormatter m, MonadIO m) => String -> m ()
-printGreen = printColor Dull Green
-printYellow = printColor Dull Yellow
-printRed = printColor Dull Red
+printFailureReason (ExpectedButGot maybeCallStack seb1 seb2) = do
+  pRed "Expected:"
+  withBumpIndent $ printShowBoxPretty seb1
+  pRed "But got:"
+  withBumpIndent $ printShowBoxPretty seb2
+printFailureReason reason = do
+  p (show reason)
 
-printColor :: (MonadReader PrintFormatter m, MonadIO m) => ColorIntensity -> Color -> String -> m ()
-printColor brightness color s = do
-  useColor <- asks printFormatterUseColor
-  when (useColor) $ liftIO $ setSGR [SetColor Foreground brightness color]
-  liftIO $ putStrLn s
-  when (useColor) $ liftIO $ setSGR [Reset]
+-- * Printing indented
+
+p msg = printIndentedWithColor Nothing msg
+
+pGreen = printIndentedWithColor (Just (Dull, Green))
+pYellow = printIndentedWithColor (Just (Dull, Yellow))
+pRed = printIndentedWithColor (Just (Dull, Red))
+
+printIndentedWithColor maybeColor msg = do
+  (PrintFormatter {..}, indent) <- ask
+  liftIO $ putStr $ L.replicate (printFormatterIndentSize * indent) ' '
+  when (printFormatterUseColor) $ whenJust maybeColor $ \(brightness, color) ->
+    liftIO $ setSGR [SetColor Foreground brightness color]
+  liftIO $ putStrLn msg
+  when (printFormatterUseColor) $ whenJust maybeColor $ \_ -> liftIO $ setSGR [Reset]
+
+printIndentedWithRGBColor maybeColor msg = do
+  (PrintFormatter {..}, indent) <- ask
+  liftIO $ putStr $ L.replicate (printFormatterIndentSize * indent) ' '
+  when (printFormatterUseColor) $ whenJust maybeColor $ \color ->
+    liftIO $ setSGR [SetRGBColor Foreground color]
+  liftIO $ putStrLn msg
+  when (printFormatterUseColor) $ whenJust maybeColor $ \_ -> liftIO $ setSGR [Reset]
+
+-- * Pretty printing
+
+printShowBoxPretty (SEB v) = case P.reify v of
+  Nothing -> p $ show v
+  Just x -> printPretty x
+
+printPretty (Quote s) = printIndentedWithRGBColor (Just (quoteColor)) s
+printPretty (Time s) = printIndentedWithRGBColor (Just (timeColor)) s
+printPretty (Date s) = printIndentedWithRGBColor (Just (dateColor)) s
+printPretty (String s) = printIndentedWithRGBColor (Just (stringColor)) s
+printPretty (Char s) = printIndentedWithRGBColor (Just (charColor)) s
+printPretty (Float s) = printIndentedWithRGBColor (Just (floatColor)) s
+printPretty (Integer s) = printIndentedWithRGBColor (Just (integerColor)) s
+-- printPretty (Ratio v1 v2) = printIndentedWithRGBColor (Just (ratioColor))
+-- printPretty (Neg s) = printIndentedWithRGBColor (Just (negColor)) s

@@ -24,6 +24,7 @@ dependencies:
 - ansi-terminal
 - async
 - base >= 4.7 && < 5
+- colour
 - containers
 - brick
 - bytestring

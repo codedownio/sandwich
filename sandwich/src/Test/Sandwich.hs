@@ -19,6 +19,10 @@ module Test.Sandwich (
   , TopSpec
 
   , defaultOptions
+  , optionsTestArtifactsDirectory
+  , TestArtifactsDirectory(..)
+
+  , BaseContext
 
   , Result(..)
   , FailureReason(..)

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9dc828f920091bfc70ee286b112bf9b39666acab4de36bb9055eb384c7fbc4a7
+-- hash: ea7a82df1883fa9d8b1e791a6a18c789c116778dff9c73289969bca7740c06bd
 
 name:           sandwich
 version:        0.1.0.0
@@ -32,6 +32,7 @@ library
       Test.Sandwich.Expectations
       Test.Sandwich.Formatters.Common.Count
       Test.Sandwich.Formatters.Print
+      Test.Sandwich.Formatters.Print.Color
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
@@ -66,6 +67,7 @@ library
     , base >=4.7 && <5
     , brick
     , bytestring
+    , colour
     , containers
     , directory
     , filepath
@@ -104,6 +106,7 @@ executable sandwich-exe
     , base >=4.7 && <5
     , brick
     , bytestring
+    , colour
     , containers
     , directory
     , filepath
@@ -144,6 +147,7 @@ test-suite sandwich-test
     , base >=4.7 && <5
     , brick
     , bytestring
+    , colour
     , containers
     , directory
     , filepath
