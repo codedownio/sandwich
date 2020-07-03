@@ -88,9 +88,9 @@ runWithIndentation (RunTreeSingle {..}) = do
 withBumpIndent = local (\(pf, indent) -> (pf, indent + 1))
 
 printFailureReason (ExpectedButGot maybeCallStack seb1 seb2) = do
-  pRed "Expected:"
+  pRGB midWhite "Expected:"
   withBumpIndent $ printShowBoxPretty seb1
-  pRed "But got:"
+  pRGB midWhite "But got:"
   withBumpIndent $ printShowBoxPretty seb2
 printFailureReason reason = do
   p (show reason)
@@ -99,9 +99,11 @@ printFailureReason reason = do
 
 p msg = printIndentedWithColor Nothing msg
 
+pRGB color msg = printIndentedWithRGBColor (Just color) msg
+
 pGreen = printIndentedWithColor (Just (Dull, Green))
 pYellow = printIndentedWithColor (Just (Dull, Yellow))
-pRed = printIndentedWithColor (Just (Dull, Red))
+pRed = printIndentedWithColor (Just (Dull, Red)) -- Tried solarizedRed here but it was too orange
 
 printIndentedWithColor maybeColor msg = do
   (PrintFormatter {..}, indent) <- ask
@@ -125,12 +127,13 @@ printShowBoxPretty (SEB v) = case P.reify v of
   Nothing -> p $ show v
   Just x -> printPretty x
 
-printPretty (Quote s) = printIndentedWithRGBColor (Just (quoteColor)) s
-printPretty (Time s) = printIndentedWithRGBColor (Just (timeColor)) s
-printPretty (Date s) = printIndentedWithRGBColor (Just (dateColor)) s
-printPretty (String s) = printIndentedWithRGBColor (Just (stringColor)) s
-printPretty (Char s) = printIndentedWithRGBColor (Just (charColor)) s
-printPretty (Float s) = printIndentedWithRGBColor (Just (floatColor)) s
-printPretty (Integer s) = printIndentedWithRGBColor (Just (integerColor)) s
+printPretty (Quote s) = pRGB (quoteColor) s
+printPretty (Time s) = pRGB (timeColor) s
+printPretty (Date s) = pRGB (dateColor) s
+printPretty (String s) = pRGB (stringColor) s
+printPretty (Char s) = pRGB (charColor) s
+printPretty (Float s) = pRGB (floatColor) s
+printPretty (Integer s) = pRGB (integerColor) s
+printPretty x = p $ show x
 -- printPretty (Ratio v1 v2) = printIndentedWithRGBColor (Just (ratioColor))
 -- printPretty (Neg s) = printIndentedWithRGBColor (Just (negColor)) s

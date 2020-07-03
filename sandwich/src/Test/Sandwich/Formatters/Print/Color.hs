@@ -24,7 +24,8 @@ recordNameColor = solarizedRed
 fieldNameColor = solarizedYellow
 constructorNameColor = solarizedViolet
 
-midWhite = sRGB24 0x05 0x05 0x05
+c = 0xc0
+midWhite = sRGB24 c c c :: Colour Float
 
 solarizedBase03 = sRGB24 0x00 0x2b 0x36 :: Colour Float
 solarizedBase02 = sRGB24 0x07 0x36 0x42 :: Colour Float

@@ -31,6 +31,8 @@ verySimple = do
   it "tries shouldBe" (2 `shouldBe` 3)
   it "tries shouldBe with Foo" (Foo 2 "asdf" (Bar 2 "asdf") `shouldBe` Foo 3 "fdsa" (Bar 3 "fdsa"))
   it "tries shouldNotBe" (2 `shouldNotBe` 2)
+  it "is pending" $ pending
+  it "is pending with message" $ pendingWith "Not implemented yet..."
   it "does some logging" $ do
     debug "debug message"
     info "info message"
@@ -134,8 +136,3 @@ sleepThenFail = do
   liftIO $ threadDelay (2 * 10^1)
   -- liftIO $ threadDelay (2 * 10^5)
   2 `shouldBe` 3
-
-pending :: ExampleM context ()
-pending = do
-  -- failTest Pending
-  return ()
