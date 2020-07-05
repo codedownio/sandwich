@@ -41,7 +41,7 @@ printPretty indentFirst (Rec name tuples) = do
     forM_ tuples $ \(name, val) -> do
       pic fieldNameColor name
       p " = "
-      withBumpIndent' (L.length name + L.length " = ") $ do
+      withBumpIndent' (L.length name + L.length (" = " :: String)) $ do
         printPretty False val
         p "\n"
   pic braceColor "}"
@@ -52,7 +52,7 @@ printPretty indentFirst (Con name values) = do
     (x:xs) -> do
       printPretty False x
       p "\n"
-      withBumpIndent' (L.length name + L.length " ") $ do
+      withBumpIndent' (L.length name + L.length (" " :: String)) $ do
         sequence_ (L.intercalate [p "\n"] [[printPretty True v] | v <- xs])
 printPretty indentFirst (List values) = printListWrappedIn ("[", "]") indentFirst values
 printPretty indentFirst (Tuple values) = printListWrappedIn ("(", ")") indentFirst values
