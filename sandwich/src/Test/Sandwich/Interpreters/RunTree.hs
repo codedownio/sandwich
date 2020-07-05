@@ -62,7 +62,7 @@ runTree (Free (Before l f subspec next)) = do
       startTime <- getCurrentTime
       atomically $ writeTVar status (Running startTime)
       eitherResult <- tryAny $ runExampleM f ctx logs
-      let ret = either (\e -> Failure (GotException (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
+      let ret = either (\e -> Failure (GotException Nothing (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
       endTime <- getCurrentTime
       atomically $ writeTVar status (Done startTime endTime ret)
       case eitherResult of
@@ -95,7 +95,7 @@ runTree (Free (After l f subspec next)) = do
     eitherResult <- tryAny $ runExampleM f ctx logs
     endTime <- getCurrentTime
     atomically $ writeTVar status $ Done startTime endTime $
-      either (\e -> Failure (GotException (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
+      either (\e -> Failure (GotException Nothing (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
 runTree (Free (Around l f subspec next)) = do
@@ -119,7 +119,7 @@ runTree (Free (Around l f subspec next)) = do
     eitherResult <- tryAny $ runExampleM (f action) ctx logs
     endTime <- getCurrentTime
     atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
-      Left e -> Failure $ GotException (Just "Exception in around handler") (SomeExceptionWithEq e)
+      Left e -> Failure $ GotException Nothing (Just "Exception in around handler") (SomeExceptionWithEq e)
       Right _ -> Success
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
@@ -147,11 +147,11 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                       putMVar mvar newCtx
                       return $ Right newCtx
                     Right (Left err') -> do -- Alloc ExceptT had some failure
-                      let err = GotException (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
+                      let err = GotException Nothing (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
                       cancelWith newContextAsync err
                       return $ Left err
                     Left err' -> do -- Exception while running alloc
-                      let err = GotException (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
+                      let err = GotException Nothing (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
                       cancelWith newContextAsync err
                       return $ Left err
               )
@@ -159,7 +159,7 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                   finalStatus <- case eitherStatus of
                     Right (LabelValue intro :> ctx) -> do
                       eitherResult <- tryAny $ runExampleM (cleanup intro) ctx logs
-                      return $ either (\e -> Failure (GotException (Just "Exception in cleanup handler") (SomeExceptionWithEq e))) id eitherResult
+                      return $ either (\e -> Failure (GotException Nothing (Just "Exception in cleanup handler") (SomeExceptionWithEq e))) id eitherResult
                     Left e -> return $ Failure e
 
                   endTime <- getCurrentTime
@@ -197,13 +197,13 @@ runTree (Free (IntroduceWith l _cl action subspec next)) = do
 
             endTime <- liftIO getCurrentTime
             liftIO $ atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
-              Left e -> Failure (GotException (Just "Unknown exception") (SomeExceptionWithEq e))
+              Left e -> Failure (GotException Nothing (Just "Unknown exception") (SomeExceptionWithEq e))
               Right _ -> Success
 
       result <- tryAny $ runExampleM wrappedAction ctx logs
       whenLeft result $ \e -> do
         endTime <- liftIO getCurrentTime
-        let ret = GotException (Just "Unknown exception") (SomeExceptionWithEq e)
+        let ret = GotException Nothing (Just "Unknown exception") (SomeExceptionWithEq e)
         atomically $ writeTVar status $ Done startTime endTime (Failure ret)
         cancelWith newContextAsync ret
 
@@ -216,14 +216,14 @@ runTree (Free (It l ex next)) = do
       (tryAny $ wait runTreeContext) >>= \case
         Left e -> do
           endTime <- getCurrentTime
-          atomically $ writeTVar status $ Done endTime endTime $ Failure (GetContextException (SomeExceptionWithEq e))
+          atomically $ writeTVar status $ Done endTime endTime $ Failure (GetContextException Nothing (SomeExceptionWithEq e))
         Right (addPathSegment (PathSegment l False runTreeIndexInParent runTreeNumSiblings) -> ctx) -> do
           startTime <- getCurrentTime
           atomically $ writeTVar status (Running startTime)
           eitherResult <- tryAny $ runExampleM ex ctx logs
           endTime <- getCurrentTime
           atomically $ writeTVar status $ Done startTime endTime $
-            either (Failure . (GotException (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
+            either (Failure . (GotException Nothing (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
   continueWith (RunTreeSingle l toggled status (appendFolder rtc l) logs myAsync) next
 runTree (Free (Describe l subspec next)) = do
   (_, _, _, rtc@RunTreeContext {..}) <- getInfo
@@ -271,7 +271,7 @@ runDescribe isContextManager l subtree next = do
         treeResult <- waitForTree subtree
         endTime <- getCurrentTime
         finalStatus <- case treeResult of
-          Left e -> return $ Failure (GetContextException (SomeExceptionWithEq e))
+          Left e -> return $ Failure (GetContextException Nothing (SomeExceptionWithEq e))
           Right _ -> do
             subTreeResults <- forM subtree (readTVarIO . runTreeStatus)
             return $ case L.length (L.filter (isFailure . (\(Done _ _ r) -> r)) subTreeResults) of
@@ -309,7 +309,7 @@ continueWith tree next = do
 recordAsyncExceptionInStatus :: TVar Status -> SomeAsyncException -> IO Result
 recordAsyncExceptionInStatus status e = do
   endTime <- getCurrentTime
-  let ret = Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq e))
+  let ret = Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e))
   atomically $ modifyTVar status $ \case
     Running startTime -> Done startTime endTime ret
     _ -> Done endTime endTime ret
@@ -326,7 +326,7 @@ waitAndHandleContextExceptionRethrow :: Async b -> TVar Status -> IO b
 waitAndHandleContextExceptionRethrow contextAsync status = do
   (tryAny $ wait contextAsync) >>= \case
     Left e -> do
-      let ret = Failure (GetContextException (SomeExceptionWithEq e))
+      let ret = Failure (GetContextException Nothing (SomeExceptionWithEq e))
       endTime <- getCurrentTime
       atomically $ modifyTVar status $ \case
         Running startTime -> (Done startTime endTime ret) -- TODO: make startTime a Maybe

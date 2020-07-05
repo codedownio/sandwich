@@ -38,7 +38,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   showContextManagers = True
   , showRunTimes = True
   }
-  
+
 instance Formatter TerminalUIFormatter where
   runFormatter = runApp
 
@@ -67,7 +67,7 @@ runApp (TerminalUIFormatter {..}) rts = do
       writeTVar currentFixedTree newFixed
       return newFixed
     writeBChan eventChan (RunTreeUpdated newFixedTree)
-  
+
   let buildVty = V.mkVty V.defaultConfig
   initialVty <- buildVty
   void $ customMain initialVty buildVty (Just eventChan) app initialState

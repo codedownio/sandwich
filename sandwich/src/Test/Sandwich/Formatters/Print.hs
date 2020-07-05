@@ -12,7 +12,8 @@ module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
   ) where
 
-import Control.Concurrent.Async
+import Control.Concurrent
+import Control.Concurrent.Async.Lifted
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
@@ -20,11 +21,15 @@ import Control.Monad.Reader
 import Data.Colour.RGBSpace
 import Data.Colour.SRGB
 import qualified Data.List as L
+import qualified Data.Sequence as Seq
 import Data.String.Interpolate.IsString
 import Graphics.Vty
 import System.Console.ANSI
 import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Formatters.Print.CallStacks
 import Test.Sandwich.Formatters.Print.Color
+import Test.Sandwich.Formatters.Print.FailureReason
+import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.PrintPretty
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
@@ -63,56 +68,47 @@ runApp pf@(PrintFormatter {..}) rts = do
 
 runWithIndentation :: RunTree -> ReaderT (PrintFormatter, Int) IO ()
 runWithIndentation (RunTreeGroup {..}) = do
-  p runTreeLabel
+  pin runTreeLabel
   withBumpIndent $ forM_ runTreeChildren runWithIndentation
 runWithIndentation (RunTreeSingle {..}) = do
+  -- Get settings
+  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
+  includeLogs <- asks (printFormatterIncludeLogs . fst)
+
+  -- currentLogsVar <- liftIO $ newTVarIO mempty
+  -- logReaderAsync <- async $ forever $ do
+  --   logsToHandle <- liftIO $ atomically $ do
+  --     currentLogs <- readTVar currentLogsVar
+  --     newLogs <- readTVar runTreeLogs
+  --     when (newLogs == currentLogs) retry
+
+  --     writeTVar currentLogsVar newLogs
+  --     return $ Seq.drop (L.length currentLogs) newLogs
+  --   withBumpIndent $
+  --     forM logsToHandle printLogEntry
+
   liftIO $ wait runTreeAsync
+  -- liftIO $ wait logReaderAsync
+
+  -- Print the main header
   (liftIO $ readTVarIO runTreeStatus) >>= \case
     NotStarted -> return ()
     Running {} -> return ()
-    Done {statusResult} -> do
-      case statusResult of
-        Success -> pGreenLn runTreeLabel
-        Failure (Pending _ maybeMessage) -> pYellowLn runTreeLabel
-        Failure reason -> do
-          pRedLn runTreeLabel
-          withBumpIndent $ printFailureReason reason
+    Done {statusResult=Success} -> pGreenLn runTreeLabel
+    Done {statusResult=(Failure (Pending maybeCallStack maybeMessage))} -> pYellowLn runTreeLabel
+    Done {statusResult=(Failure reason)} -> do
+      pRedLn runTreeLabel
+      withBumpIndent $ printFailureReason reason
 
--- * Pretty printing failure reason
+  -- Print the callstack, if configured and present
+  when includeCallStacks $ do
+    (liftIO $ readTVarIO runTreeStatus) >>= \case
+      Done {statusResult=(Failure (failureCallStack -> Just cs))} ->
+        withBumpIndent $ printCallStack cs
+      _ -> return ()
 
-printFailureReason (Reason maybeCallStack s) = do
-  printShowBoxPrettyWithTitle "Reason: " (SEB s)
-printFailureReason (ExpectedButGot maybeCallStack seb1 seb2) = do
-  printShowBoxPrettyWithTitle "Expected: " seb1
-  printShowBoxPrettyWithTitle "But got: " seb2
-printFailureReason (DidNotExpectButGot maybeCallStack seb) = do
-  printShowBoxPrettyWithTitle "Did not expect: " seb
-printFailureReason (GotException maybeCallStack e) = do
-  printShowBoxPrettyWithTitle "Got exception: " (SEB e)
-printFailureReason (Pending maybeCallStack maybeMessage) = case maybeMessage of
-  Nothing -> return () -- Just allow the yellow heading to show the pending state
-  Just s -> printShowBoxPrettyWithTitle "Pending reason: " (SEB s)
-printFailureReason (GetContextException e) = do
-  printShowBoxPrettyWithTitle "Got exception: " (SEB e)
-printFailureReason (GotAsyncException maybeMessage e) = case maybeMessage of
-  Nothing -> printShowBoxPrettyWithTitle "Async exception" (SEB e)
-  Just s -> printShowBoxPrettyWithTitle [i|Async exception (#{e}) |] (SEB s)
-
--- * Pretty printing
-
-printShowBoxPrettyWithTitle :: String -> ShowEqBox -> ReaderT (PrintFormatter, Int) IO ()
-printShowBoxPrettyWithTitle title (SEB v) = case P.reify v of
-  Nothing -> do
-    picn midWhite title
-    withBumpIndent $ p $ show v
-  Just x
-    | isSingleLine x -> do
-        pic midWhite title
-        printPretty False x >> p "\n"
-    | otherwise -> do
-        picn midWhite title
-        printPretty True x >> p "\n"
-
-printShowBoxPretty (SEB v) = case P.reify v of
-  Nothing -> p $ show v
-  Just x -> printPretty True x >> p "\n"
+  -- Print the logs, if configured
+  when includeLogs $ do
+    logEntries <- liftIO $ readTVarIO runTreeLogs
+    withBumpIndent $
+      forM_ logEntries printLogEntry

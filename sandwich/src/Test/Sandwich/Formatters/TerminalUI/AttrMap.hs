@@ -30,7 +30,7 @@ mainAttrMap = attrMap V.defAttr [
   , (logPackageAttr, fg solarizedGreen)
   , (logLineAttr, fg solarizedCyan)
   , (logChAttr, fg solarizedOrange)
-  , (logFunctionAttr, fg solarizedBlue)
+  , (logFunctionAttr, fg solarizedMagenta)
 
   -- Progress bar
   , (progressCompleteAttr, bg (V.Color240 235))

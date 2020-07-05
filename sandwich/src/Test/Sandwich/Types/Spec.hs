@@ -68,13 +68,23 @@ data ShowEqBox = forall s. (Show s, Eq s) => SEB s
 instance Show ShowEqBox where show (SEB x) = show x
 instance Eq ShowEqBox where (SEB x1) == (SEB x2) = show x1 == show x2
 
-data FailureReason = Reason (Maybe CallStack) String
-                   | ExpectedButGot (Maybe CallStack) ShowEqBox ShowEqBox
-                   | DidNotExpectButGot (Maybe CallStack) ShowEqBox
-                   | GotException (Maybe String) SomeExceptionWithEq
-                   | Pending (Maybe CallStack) (Maybe String)
-                   | GetContextException SomeExceptionWithEq
-                   | GotAsyncException (Maybe String) SomeAsyncExceptionWithEq
+data FailureReason = Reason { failureCallStack :: Maybe CallStack
+                            , failureReason :: String }
+                   | ExpectedButGot { failureCallStack :: Maybe CallStack
+                                    , failureValue1 :: ShowEqBox
+                                    , failureValue2 :: ShowEqBox }
+                   | DidNotExpectButGot { failureCallStack :: Maybe CallStack
+                                        , failureValue1 :: ShowEqBox }
+                   | GotException { failureCallStack :: Maybe CallStack
+                                  , failureMessage :: Maybe String
+                                  , failureException :: SomeExceptionWithEq }
+                   | Pending { failureCallStack :: Maybe CallStack
+                             , failurePendingMessage :: Maybe String }
+                   | GetContextException { failureCallStack :: Maybe CallStack
+                                         , failureException :: SomeExceptionWithEq }
+                   | GotAsyncException { failureCallStack :: Maybe CallStack
+                                       , failureMessage :: Maybe String
+                                       , failureAsyncException :: SomeAsyncExceptionWithEq }
   deriving (Show, Typeable, Eq)
 
 instance Exception FailureReason

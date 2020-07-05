@@ -49,8 +49,8 @@ beforeExceptionSafety = do
     it "does thing 1" $ return ()
     it "does thing 2" $ return ()
 
-  results `mustBe` (Failure (GotException (Just "Exception in before handler") someUserErrorWrapped)
-                    : L.replicate 2 (Failure (GetContextException someUserErrorWrapped)))
+  results `mustBe` (Failure (GotException Nothing (Just "Exception in before handler") someUserErrorWrapped)
+                    : L.replicate 2 (Failure (GetContextException Nothing someUserErrorWrapped)))
 
 beforeExceptionSafetyNested :: (HasCallStack) => IO ()
 beforeExceptionSafetyNested = do
@@ -61,39 +61,39 @@ beforeExceptionSafetyNested = do
       it "does nested thing 1" $ return ()
       it "does nested thing 2" $ return ()
 
-  results `mustBe` (Failure (GotException (Just "Exception in before handler") someUserErrorWrapped)
-                    : L.replicate 5 (Failure (GetContextException someUserErrorWrapped)))
+  results `mustBe` (Failure (GotException Nothing (Just "Exception in before handler") someUserErrorWrapped)
+                    : L.replicate 5 (Failure (GetContextException Nothing someUserErrorWrapped)))
 
 introduceCleansUpOnTestException :: (HasCallStack) => IO ()
 introduceCleansUpOnTestException = do
-  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (debug "doing cleanup") $ do
+  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
     it "does thing 1" $ throwSomeUserError
 
   msgs `mustBe` [["doing cleanup"], []]
   results `mustBe` [Success
-                   , Failure (GotException (Just "Unknown exception") someUserErrorWrapped)]
+                   , Failure (GotException Nothing (Just "Unknown exception") someUserErrorWrapped)]
 
 introduceDoesNotCleanUpOnAllocateException :: (HasCallStack) => IO ()
 introduceDoesNotCleanUpOnAllocateException = do
-  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (throwSomeUserError >> return FakeDatabase) (debug "doing cleanup") $ do
+  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (throwSomeUserError >> return FakeDatabase) (\_ -> debug "doing cleanup") $ do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException (Just "Exception in allocation handler") someUserErrorWrapped)
-                   , Failure (GetContextException (SomeExceptionWithEq (SomeException (GotException (Just "Exception in allocation handler") someUserErrorWrapped))))]
+  results `mustBe` [Failure (GotException Nothing (Just "Exception in allocation handler") someUserErrorWrapped)
+                   , Failure (GetContextException Nothing (SomeExceptionWithEq (SomeException (GotException Nothing (Just "Exception in allocation handler") someUserErrorWrapped))))]
 
 introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
 introduceFailsOnCleanUpException = do
-  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) throwSomeUserError $ do
+  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> throwSomeUserError) $ do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException (Just "Exception in cleanup handler") someUserErrorWrapped)
+  results `mustBe` [Failure (GotException Nothing (Just "Exception in cleanup handler") someUserErrorWrapped)
                    , Success]
 
 introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
 introduceCleansUpOnCancelDuringTest = do
-  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (debug "doing cleanup") $ do
+  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
     it "does thing 1" $ liftIO $ threadDelay 999999999999999
 
   let [RunTreeGroup {runTreeChildren=[RunTreeSingle {runTreeStatus=status, runTreeAsync=theAsync}]}] = rts
@@ -109,8 +109,8 @@ introduceCleansUpOnCancelDuringTest = do
   let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
   msgs `mustBe` [["doing cleanup"], []]
-  results `mustBe` [Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
-                   , Failure (GotAsyncException Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
+  results `mustBe` [Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
+                   , Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
 
 
 -- * Values
