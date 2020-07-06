@@ -31,6 +31,7 @@ simple = introduceWebdriver wdOptions $ do
     liftIO $ threadDelay 1000000
     sendKeys "jkl" search
     liftIO $ threadDelay 1000000
+    findElem (ByCSS ".does-not-exist")
     expectationFailure "OH NO"
   -- it "does the thing 2" $ withBrowser2 $ do
   --   openPage "http://www.cnn.com"
@@ -89,4 +90,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich testOptions defaultPrintFormatter simple
+main = runSandwich testOptions defaultTerminalUIFormatter simple

@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Sandwich (
   runSandwich
@@ -38,6 +40,9 @@ module Test.Sandwich (
   ) where
 
 import Control.Concurrent.Async
+import qualified Control.Exception as E
+import Control.Monad
+import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
 import System.Posix.Signals
@@ -65,7 +70,9 @@ runSandwich options f spec = do
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
-  wait formatterAsync
+  putStrLn [i|Beginning wait for formatterAsync|]
+  finalResult :: Either E.SomeException () <- E.try $ wait formatterAsync
+  putStrLn [i|Final result: #{finalResult}|]
 
 startSandwichTree :: Options -> TopSpec -> IO [RunTree]
 startSandwichTree options@(Options {..}) spec = do

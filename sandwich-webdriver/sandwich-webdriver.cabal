@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: be7804a2eef1a322faed426e1de6884fb1fcae8038a607e1fba80bc6d2c3f8c6
+-- hash: 222e56539868ae0877c55c90c80dd54cba4beec325400908be8c76ff8e5725a4
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -72,6 +72,7 @@ library
     , sandwich
     , temporary
     , text
+    , time
     , transformers
     , transformers-base
     , unix
@@ -160,6 +161,7 @@ test-suite sandwich-webdriver-test
     , sandwich-webdriver
     , temporary
     , text
+    , time
     , transformers
     , transformers-base
     , unix

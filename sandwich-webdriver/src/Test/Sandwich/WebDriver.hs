@@ -70,6 +70,7 @@ introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver
 
 allocateWebDriver :: (HasBaseContext context, MonadIO m) => WdOptions -> ExampleT context m WdSession
 allocateWebDriver wdOptions = do
+  debug "Beginning allocateWebDriver"
   maybeRunRoot <- getRunRoot
   let runRoot = fromMaybe "/tmp" maybeRunRoot
   liftIO $ allocateWebDriver' runRoot wdOptions
@@ -79,7 +80,10 @@ allocateWebDriver' runRoot wdOptions = do
   startWebDriver wdOptions runRoot
 
 cleanupWebDriver :: (HasBaseContext context, MonadIO m) => WdSession -> ExampleT context m ()
-cleanupWebDriver = liftIO . cleanupWebDriver'
+cleanupWebDriver sess = do
+  debug "Doing cleanupWebDriver"
+  liftIO $ cleanupWebDriver' sess
+  debug "Finished cleanupWebDriver"
 
 cleanupWebDriver' :: WdSession -> IO ()
 cleanupWebDriver' session = do

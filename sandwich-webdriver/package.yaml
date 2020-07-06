@@ -45,6 +45,7 @@ dependencies:
 - sandwich
 - temporary
 - text
+- time
 - transformers
 - transformers-base
 - unix

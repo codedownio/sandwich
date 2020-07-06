@@ -14,6 +14,7 @@ module Test.Sandwich.Formatters.Print (
 
 import Control.Concurrent.Async.Lifted
 import Control.Concurrent.STM
+import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
@@ -60,51 +61,38 @@ runWithIndentation (RunTreeGroup {..}) = do
   pin runTreeLabel
   withBumpIndent $ forM_ runTreeChildren runWithIndentation
 
+  pin [i|FINISHED #{runTreeLabel}|]
   -- Print the logs, if configured
-  liftIO $ wait runTreeAsync
-  when includeLogs $ do
-    logEntries <- liftIO $ readTVarIO runTreeLogs
-    withBumpIndent $
-      forM_ logEntries printLogEntry
+  finally (liftIO $ wait runTreeAsync) $ do
+    when includeLogs $ printLogs runTreeLogs
 runWithIndentation (RunTreeSingle {..}) = do
-  -- Get settings
   includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
   includeLogs <- asks (printFormatterIncludeLogs . fst)
 
-  -- currentLogsVar <- liftIO $ newTVarIO mempty
-  -- logReaderAsync <- async $ forever $ do
-  --   logsToHandle <- liftIO $ atomically $ do
-  --     currentLogs <- readTVar currentLogsVar
-  --     newLogs <- readTVar runTreeLogs
-  --     when (newLogs == currentLogs) retry
-
-  --     writeTVar currentLogsVar newLogs
-  --     return $ Seq.drop (L.length currentLogs) newLogs
-  --   withBumpIndent $
-  --     forM logsToHandle printLogEntry
-
-  liftIO $ wait runTreeAsync
-  -- liftIO $ wait logReaderAsync
-
-  -- Print the main header
-  (liftIO $ readTVarIO runTreeStatus) >>= \case
-    NotStarted -> return ()
-    Running {} -> return ()
-    Done {statusResult=Success} -> pGreenLn runTreeLabel
-    Done {statusResult=(Failure (Pending _ _))} -> pYellowLn runTreeLabel
-    Done {statusResult=(Failure reason)} -> do
-      pRedLn runTreeLabel
-      withBumpIndent $ printFailureReason reason
-
-  -- Print the callstack, if configured and present
-  when includeCallStacks $ do
+  finally (liftIO $ wait runTreeAsync) $ do
+    -- Print the main header
     (liftIO $ readTVarIO runTreeStatus) >>= \case
-      Done {statusResult=(Failure (failureCallStack -> Just cs))} ->
-        withBumpIndent $ printCallStack cs
-      _ -> return ()
+      NotStarted -> return ()
+      Running {} -> return ()
+      Done {statusResult=Success} -> pGreenLn runTreeLabel
+      Done {statusResult=(Failure (Pending _ _))} -> pYellowLn runTreeLabel
+      Done {statusResult=(Failure reason)} -> do
+        pRedLn runTreeLabel
+        withBumpIndent $ printFailureReason reason
 
-  -- Print the logs, if configured
-  when includeLogs $ do
-    logEntries <- liftIO $ readTVarIO runTreeLogs
-    withBumpIndent $
-      forM_ logEntries printLogEntry
+    -- Print the callstack, if configured and present
+    when includeCallStacks $ do
+      (liftIO $ readTVarIO runTreeStatus) >>= \case
+        Done {statusResult=(Failure (failureCallStack -> Just cs))} -> do
+          p "\n"
+          withBumpIndent $ printCallStack cs
+        _ -> return ()
+
+    -- Print the logs, if configured
+    when includeLogs $ printLogs runTreeLogs
+
+
+printLogs runTreeLogs = do
+  logEntries <- liftIO $ readTVarIO runTreeLogs
+  withBumpIndent $
+    forM_ logEntries printLogEntry
