@@ -24,6 +24,7 @@ import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 
@@ -134,15 +135,6 @@ updateFilteredTree pairs s = s
   & appRunTreeFiltered .~ fmap snd pairs
   & appMainList %~ L.listReplace (treeToVector pairs)
                                  (L.listSelected $ s ^. appMainList)
-
--- * Cancelling
-
-cancelRecursively :: RunTreeFixed -> IO ()
-cancelRecursively (RunTreeGroup {..}) = do
-  forM_ runTreeChildren cancelRecursively
-  cancel runTreeAsync
-cancelRecursively (RunTreeSingle {..}) =
-  cancel runTreeAsync
 
 -- * Clearing
 

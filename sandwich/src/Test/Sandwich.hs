@@ -45,6 +45,7 @@ import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Logging
+import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
@@ -58,8 +59,9 @@ runSandwich options f spec = do
   formatterAsync <- async $ runFormatter f rts
 
   let shutdown = do
-        putStrLn "TODO: shut down!"
-        cancel formatterAsync
+        putStrLn "Shutting down..."
+        forM_ rts cancelRecursively
+        -- cancel formatterAsync
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
