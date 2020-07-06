@@ -238,7 +238,7 @@ runTree (Free (Describe l subspec next)) = do
   subtree <- local (const $ rtc { runTreeContext = newContextAsync
                                 , runTreeIndexInParent = 0
                                 , runTreeNumSiblings = countChildren subspec
-                                , runTreeCurrentFolder = appendFolder rtc l }) $ runTree subspec
+                                , runTreeCurrentFolder = appendFolder rtc l }) $ runTreeSequentially subspec
   runDescribe False l subtree next
 runTree (Free (Parallel subspec next)) = do
   (_, _, _, rtc@RunTreeContext {..}) <- getInfo
