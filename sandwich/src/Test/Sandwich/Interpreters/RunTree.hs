@@ -159,7 +159,7 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                   finalStatus <- case eitherStatus of
                     Right (LabelValue intro :> ctx) -> do
                       eitherResult <- tryAny $ runExampleM (cleanup intro) ctx logs
-                      return $ either (\e -> Failure (GotException Nothing (Just "Exception in cleanup handler") (SomeExceptionWithEq e))) id eitherResult
+                      return $ either (Failure . (GotException Nothing (Just "Exception in cleanup handler") . SomeExceptionWithEq)) id eitherResult
                     Left e -> return $ Failure e
 
                   endTime <- getCurrentTime
@@ -167,7 +167,9 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                     Running startTime -> Done startTime endTime finalStatus
                     _ -> Done endTime endTime finalStatus
               )
-              (\_ -> void $ waitForTree subtree)
+              (\_ -> do
+                  void $ waitForTree subtree
+              )
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
 runTree (Free (IntroduceWith l _cl action subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
@@ -366,3 +368,8 @@ runExampleM' ex ctx logs = do
     pathSegmentToName (PathSegment {..}) = nodeToFolderName pathSegmentName pathSegmentNumSiblings pathSegmentIndexInParent
 
 addPathSegment pathSegment ctx = modifyBaseContext ctx (\x@(BaseContext {..}) -> x { baseContextPath = baseContextPath |> pathSegment  })
+
+-- | FOR DEBUGGING ONLY
+logMsg logs msg = do
+  now <- getCurrentTime
+  atomically $ modifyTVar logs (|> LogEntry now (Loc "" "" "" (0, 0) (0, 0)) "asdf" LevelDebug msg)
