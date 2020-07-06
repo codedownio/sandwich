@@ -46,25 +46,35 @@ instance ToBrickWidget FailureReason where
       (widget1, widget2) = case (P.reify x1, P.reify x2) of
         (Just v1, Just v2) -> (toBrickWidget v1, toBrickWidget v2)
         _ -> (str (show x1), str (show x2))
-  toBrickWidget (DidNotExpectButGot _ x) = hBox [
-    border $
-      padAll 1 $
-        (padBottom (Pad 1) (withAttr expectedAttr $ str "Did not expect:"))
-        <=>
-        widget
-    ]
-    where
-      widget = case P.reify x of
-        Just v -> toBrickWidget v
-        _ -> str (show x)
+  toBrickWidget (DidNotExpectButGot _ x) = boxWithTitle "Did not expect:" (reifyWidget x)
   toBrickWidget (Pending _ maybeMessage) = case maybeMessage of
     Nothing -> withAttr pendingAttr $ str "Pending"
     Just msg -> hBox [withAttr pendingAttr $ str "Pending"
                      , str (": " <> msg)]
 
-  toBrickWidget x = strWrap [i|TODO: #{x}|]
+  toBrickWidget x@(Reason _ msg) = boxWithTitle "Failure reason:" (str msg)
+  toBrickWidget x@(GotException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
+    where heading = case maybeMessage of
+            Nothing -> "Got exception: "
+            Just msg -> [i|Got exception (#{msg}):|]
+  toBrickWidget x@(GotAsyncException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
+    where heading = case maybeMessage of
+            Nothing -> "Got async exception: "
+            Just msg -> [i|Got async exception (#{msg}):|]
+  toBrickWidget x@(GetContextException _ e) = boxWithTitle "Get context exception:" (reifyWidget e)
 
 
+boxWithTitle heading inside = hBox [
+  border $
+    padAll 1 $
+      (padBottom (Pad 1) (withAttr expectedAttr $ str heading))
+      <=>
+      inside
+  ]
+
+reifyWidget x = case P.reify x of
+  Just v -> toBrickWidget v
+  _ -> str (show x)
 
 instance ToBrickWidget P.Value where
   toBrickWidget (Integer s) = withAttr integerAttr $ str s
