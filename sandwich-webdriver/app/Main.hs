@@ -1,14 +1,17 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Main where
 
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Maybe
 import Data.Pool
+import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
+import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Types.Options
 import Test.Sandwich.WebDriver
@@ -20,11 +23,19 @@ simple = introduceWebdriver wdOptions $ do
   it "does the thing 1" $ withBrowser1 $ do
     openPage "http://www.google.com"
     setWindowLeftSide
+    search <- findElem (ByCSS [i|input[title="Search"]|])
+    click search
+    sendKeys "asdf" search
     liftIO $ threadDelay 1000000
-  it "does the thing 2" $ withBrowser2 $ do
-    openPage "http://www.cnn.com"
-    setWindowRightSide
+    sendKeys "fdsa" search
     liftIO $ threadDelay 1000000
+    sendKeys "jkl" search
+    liftIO $ threadDelay 1000000
+    expectationFailure "OH NO"
+  -- it "does the thing 2" $ withBrowser2 $ do
+  --   openPage "http://www.cnn.com"
+  --   setWindowRightSide
+  --   liftIO $ threadDelay 1000000
 
 concurrent :: TopSpec
 concurrent = introduceWebdriver wdOptions $ parallel $ do
@@ -78,4 +89,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich testOptions defaultTerminalUIFormatter concurrent
+main = runSandwich testOptions defaultPrintFormatter simple

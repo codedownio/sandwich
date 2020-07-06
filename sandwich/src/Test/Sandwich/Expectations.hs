@@ -1,9 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 -- |
 
 module Test.Sandwich.Expectations where
 
 import Control.Monad.Except
+import Control.Monad.Free.Class
 import qualified Data.Text as T
 import GHC.Stack
 import Test.Sandwich.Types.Spec
@@ -19,8 +21,11 @@ pending = throwError $ Pending (Just callStack) Nothing
 pendingWith :: (HasCallStack, MonadError FailureReason m) => String -> m ()
 pendingWith msg = throwError $ Pending (Just callStack) (Just msg)
 
+xit :: (HasCallStack, Monad m) => String -> ExampleT context m1 () -> SpecFree context m ()
+xit name _ex = it name (throwError $ Pending (Just callStack) Nothing)
+
 -- * Assertions
-  
+
 shouldBe :: (HasCallStack, MonadError FailureReason m, Eq a, Show a) => a -> a -> m ()
 shouldBe x y
   | x == y = return ()

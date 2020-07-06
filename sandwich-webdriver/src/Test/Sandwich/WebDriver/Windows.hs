@@ -9,9 +9,9 @@ module Test.Sandwich.WebDriver.Windows (
 
 import Control.Exception.Safe
 import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Data.Bits as B
 import qualified Data.List as L
-import Data.Maybe
 import Data.String
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
@@ -27,14 +27,14 @@ import Test.WebDriver
 import Test.WebDriver.Class
 
 
-setWindowLeftSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd) => ExampleT context wd ()
+setWindowLeftSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd) => wd ()
 setWindowLeftSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- liftIO $ getScreenResolutionX11 sess
   setWindowPos (x + 0, y + 0)
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
-setWindowRightSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd) => ExampleT context wd ()
+setWindowRightSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd) => wd ()
 setWindowRightSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- liftIO $ getScreenResolutionX11 sess
@@ -42,7 +42,7 @@ setWindowRightSide = do
   setWindowPos pos
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
-setWindowFullScreen :: (HasCallStack, MonadIO wd, HasWebDriver context wd) => ExampleT context wd ()
+setWindowFullScreen :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd) => wd ()
 setWindowFullScreen = do
   sess <- getContext webdriver
   (x, y, width, height) <- liftIO $ getScreenResolutionX11 sess

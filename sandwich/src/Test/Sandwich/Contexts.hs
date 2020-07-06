@@ -9,14 +9,14 @@ import Control.Monad.Reader
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 
-getContext :: (Monad m, HasLabel context l a, HasCallStack) => Label l a -> ExampleT context m a
+getContext :: (Monad m, HasLabel context l a, HasCallStack, MonadReader context m) => Label l a -> m a
 getContext = asks . getLabelValue
 
-getRunRoot :: (Monad m, HasBaseContext context) => ExampleT context m (Maybe FilePath)
+getRunRoot :: (Monad m, HasBaseContext context, MonadReader context m) => m (Maybe FilePath)
 getRunRoot = do
   ctx <- ask
   let BaseContext {..} = getBaseContext ctx
   return baseContextRunRoot
 
-getCurrentFolder :: (HasBaseContext context) => ExampleT context m (Maybe FilePath)
+getCurrentFolder :: (HasBaseContext context, MonadReader context m) => m (Maybe FilePath)
 getCurrentFolder = undefined

@@ -72,7 +72,13 @@ startSandwichTree options@(Options {..}) spec = do
     TestArtifactsFixedDirectory dir -> do
       createDirectoryIfMissing True dir
       return $ Just dir
-    TestArtifactsGeneratedDirectory base f -> do
+    TestArtifactsGeneratedDirectory base' f -> do
+      base <- case isAbsolute base' of
+        True -> return base'
+        False -> do
+          here <- getCurrentDirectory
+          return $ here </> base'
+
       name <- f
       let dir = base </> name
       createDirectoryIfMissing True dir

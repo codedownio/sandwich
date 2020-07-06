@@ -5,12 +5,9 @@
 module Test.Sandwich.Formatters.Print.CallStacks where
 
 import Control.Monad
-import Control.Monad.Logger
-import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.Printing
-import Test.Sandwich.Types.RunTree
 
 
 printCallStack cs = forM_ (getCallStack cs) printCallStackLine

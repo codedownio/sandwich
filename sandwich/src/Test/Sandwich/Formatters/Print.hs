@@ -12,33 +12,22 @@ module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
   ) where
 
-import Control.Concurrent
 import Control.Concurrent.Async.Lifted
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Data.Colour.RGBSpace
-import Data.Colour.SRGB
-import qualified Data.List as L
-import qualified Data.Sequence as Seq
 import Data.String.Interpolate.IsString
-import Graphics.Vty
-import System.Console.ANSI
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Print.CallStacks
-import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.FailureReason
 import Test.Sandwich.Formatters.Print.Logs
-import Test.Sandwich.Formatters.Print.PrintPretty
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
-import Test.Sandwich.Util
-import Text.Show.Pretty as P
 
 instance Formatter PrintFormatter where
   runFormatter = runApp
@@ -54,10 +43,8 @@ runApp pf@(PrintFormatter {..}) rts = do
   putStrLn "\n"
 
   fixedTree <- atomically $ mapM fixRunTree rts
-  let succeeded = countWhere isSuccessItBlock fixedTree
   let failed = countWhere isFailedItBlock fixedTree
   let pending = countWhere isPendingItBlock fixedTree
-  let total = countWhere isItBlock fixedTree
 
   if | failed == 0 -> putStr [i|All tests passed!|]
      | otherwise -> putStr [i|#{failed} failed of #{total}.|]
@@ -68,8 +55,17 @@ runApp pf@(PrintFormatter {..}) rts = do
 
 runWithIndentation :: RunTree -> ReaderT (PrintFormatter, Int) IO ()
 runWithIndentation (RunTreeGroup {..}) = do
+  includeLogs <- asks (printFormatterIncludeLogs . fst)
+
   pin runTreeLabel
   withBumpIndent $ forM_ runTreeChildren runWithIndentation
+
+  -- Print the logs, if configured
+  liftIO $ wait runTreeAsync
+  when includeLogs $ do
+    logEntries <- liftIO $ readTVarIO runTreeLogs
+    withBumpIndent $
+      forM_ logEntries printLogEntry
 runWithIndentation (RunTreeSingle {..}) = do
   -- Get settings
   includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
@@ -95,7 +91,7 @@ runWithIndentation (RunTreeSingle {..}) = do
     NotStarted -> return ()
     Running {} -> return ()
     Done {statusResult=Success} -> pGreenLn runTreeLabel
-    Done {statusResult=(Failure (Pending maybeCallStack maybeMessage))} -> pYellowLn runTreeLabel
+    Done {statusResult=(Failure (Pending _ _))} -> pYellowLn runTreeLabel
     Done {statusResult=(Failure reason)} -> do
       pRedLn runTreeLabel
       withBumpIndent $ printFailureReason reason

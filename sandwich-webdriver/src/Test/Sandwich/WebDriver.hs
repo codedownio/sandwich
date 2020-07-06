@@ -35,6 +35,7 @@ module Test.Sandwich.WebDriver (
   , ExampleWithWebDriver
   , HasWebDriverContext
   , HasWebDriverSessionContext
+  , ContextWithSession
 
   , WdOptions
   , defaultWdOptions

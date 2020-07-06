@@ -12,7 +12,6 @@ import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Types.RunTree
 
 
--- printLogEntry :: LogEntry -> IO ()
 printLogEntry (LogEntry {..}) = do
   pic logTimestampColor (show logEntryTime)
 

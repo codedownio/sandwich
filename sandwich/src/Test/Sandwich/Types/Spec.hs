@@ -93,7 +93,8 @@ instance Eq CallStack where
   c1 == c2 = show c1 == show c2
 
 newtype SomeExceptionWithEq = SomeExceptionWithEq SomeException
-  deriving Show
+instance Show SomeExceptionWithEq where
+  show (SomeExceptionWithEq e) = show e
 instance Eq SomeExceptionWithEq where
   (SomeExceptionWithEq e1) == (SomeExceptionWithEq e2) = show e1 == show e2
 
