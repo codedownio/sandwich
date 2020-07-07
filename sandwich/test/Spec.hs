@@ -21,7 +21,9 @@ import Data.Foldable
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import GHC.Stack
+import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
@@ -42,6 +44,7 @@ main = do
     xs -> do
       putStrLn [i|\n\n#{length xs} test(s) failed\n\n|]
       forM_ xs $ \x -> putStrLn [i|#{x}\n\n|]
+      exitWith (ExitFailure 1)
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
@@ -93,15 +96,21 @@ introduceFailsOnCleanUpException = do
 
 introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
 introduceCleansUpOnCancelDuringTest = do
+  mvar <- newEmptyMVar
+
   rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
-    it "does thing 1" $ liftIO $ threadDelay 999999999999999
+    it "does thing 1" $ do
+      liftIO $ putMVar mvar ()
+      liftIO $ threadDelay 999999999999999
 
   let [RunTreeGroup {runTreeChildren=[RunTreeSingle {runTreeStatus=status, runTreeAsync=theAsync}]}] = rts
 
-  waitUntilRunning status
+  -- Wait until we get into the actual test example, then cancel the top level async
+  takeMVar mvar
   cancel theAsync
 
-  eitherResult :: Either SomeException () <- E.try $ mapM_ (wait . runTreeAsync) rts
+  -- We should get an async exception
+  eitherResult :: Either SomeException (Either [SomeException] ()) <- E.try $ waitForTree rts
   isLeft eitherResult `mustBe` True
 
   fixedTree <- atomically $ mapM fixRunTree rts
@@ -150,18 +159,18 @@ getResultsAndMessages fixedTree = (results, msgs)
 
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-getStatuses :: (HasCallStack) => RunTreeWithStatus a l t -> [a]
-getStatuses (RunTreeGroup {..}) = runTreeStatus : (concatMap getStatuses runTreeChildren)
-getStatuses (RunTreeSingle {..}) = [runTreeStatus]
+getStatuses :: (HasCallStack) => RunTreeWithStatus a l t -> [(String, a)]
+getStatuses (RunTreeGroup {..}) = (runTreeLabel, runTreeStatus) : (concatMap getStatuses runTreeChildren)
+getStatuses (RunTreeSingle {..}) = [(runTreeLabel, runTreeStatus)]
 
 getLogs :: (HasCallStack) => RunTreeWithStatus a l t -> [l]
 getLogs (RunTreeGroup {..}) = runTreeLogs : (concatMap getLogs runTreeChildren)
 getLogs (RunTreeSingle {..}) = [runTreeLogs]
 
-statusToResult :: (HasCallStack) => Status -> Result
-statusToResult NotStarted = error "Expected status to be Done but was NotStarted"
-statusToResult (Running {}) = error "Expected status to be Done but was Running"
-statusToResult (Done _ _ result) = result
+statusToResult :: (HasCallStack) => (String, Status) -> Result
+statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]
+statusToResult (label, Running {}) = error [i|Expected status to be Done but was Running for label '#{label}'|]
+statusToResult (_, Done _ _ result) = result
 
 mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y

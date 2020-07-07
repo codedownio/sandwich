@@ -11,6 +11,7 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.Logger
+import Data.Either
 import qualified Data.List as L
 import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
@@ -20,9 +21,13 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
 
--- | Wait for a tree, catching any synchronous exceptions
-waitForTree :: [RunTree] -> IO (Either SomeException ())
-waitForTree rts = tryAny (mapM_ wait (fmap runTreeAsync rts))
+-- | Wait for a tree, catching any synchronous exceptions and returning them as a list
+waitForTree :: [RunTree] -> IO (Either [SomeException] ())
+waitForTree rts = do
+  results <- mapM (tryAny . wait) (fmap runTreeAsync rts)
+  case lefts results of
+    [] -> return $ Right ()
+    xs -> return $ Left xs
 
 -- | Append a log message outside of ExampleT. Only stored to in-memory logs, not disk.
 -- Only for debugging the interpreter, should not be exposed.

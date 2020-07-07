@@ -24,6 +24,7 @@ module Test.Sandwich.WebDriver (
   , withBrowser1
   , withBrowser2
   , withBrowser
+  , closeAllSessions
 
   , RunMode(..)
 
@@ -54,6 +55,7 @@ import Control.Monad.Trans.Reader
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
+import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Capabilities
@@ -90,13 +92,13 @@ cleanupWebDriver' session = do
   closeAllSessions session
   stopWebDriver session
 
-withBrowser1 :: (HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser1 = withBrowser "browser1"
 
-withBrowser2 :: (HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser2 = withBrowser "browser2"
 
-withBrowser :: (HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser browser (ExampleT readerMonad) = do
   WdSession {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)

@@ -105,12 +105,9 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
 
-    V.EvKey c [] | c `elem` toggleKeys ->
-      case L.listSelectedElement (s ^. appMainList) of
-        Nothing -> continue s
-        Just (i, MainListElem {..}) -> do
-          liftIO $ atomically $ modifyTVar (runTreeToggled node) not
-          continue s
+    V.EvKey c [] | c `elem` toggleKeys -> modifyToggled s not
+    V.EvKey c [] | c == V.KLeft -> modifyToggled s (const False)
+    V.EvKey c [] | c == V.KRight -> modifyToggled s (const True)
 
     V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
@@ -131,6 +128,13 @@ appEvent s x@(VtyEvent e) =
 
     ev -> handleEventLensed s appMainList L.handleListEvent ev >>= continue
 appEvent s _ = continue s
+
+modifyToggled s f = case L.listSelectedElement (s ^. appMainList) of
+  Nothing -> continue s
+  Just (i, MainListElem {..}) -> do
+    liftIO $ atomically $ modifyTVar (runTreeToggled node) f
+    continue s
+
 
 updateFilteredTree :: [(RunTree, RunTreeFixed)] -> AppState -> AppState
 updateFilteredTree pairs s = s

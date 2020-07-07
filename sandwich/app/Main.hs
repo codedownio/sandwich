@@ -125,6 +125,13 @@ introduceFailure = do
         db <- getContext database
         debug [i|Got db: #{db}|]
 
+beforeExceptionSafetyNested :: TopSpec
+beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userError "OH NO") $ do
+  it "does thing 1" $ return ()
+  it "does thing 2" $ return ()
+  describe "nested things" $ do
+    it "does nested thing 1" $ return ()
+    it "does nested thing 2" $ return ()
 
 -- mainFilter :: IO ()
 -- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
@@ -133,7 +140,7 @@ introduceFailure = do
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter introduceFailure
+main = runSandwich options defaultTerminalUIFormatter beforeExceptionSafetyNested
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

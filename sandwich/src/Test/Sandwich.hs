@@ -50,6 +50,7 @@ import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Logging
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
@@ -105,5 +106,5 @@ startSandwichTree options@(Options {..}) spec = do
 runSandwichTree :: Options -> TopSpec -> IO [RunTree]
 runSandwichTree options spec = do
   rts <- startSandwichTree options spec
-  _ <- tryAny $ mapM_ (wait . runTreeAsync) rts
+  _ <- waitForTree rts
   return rts
