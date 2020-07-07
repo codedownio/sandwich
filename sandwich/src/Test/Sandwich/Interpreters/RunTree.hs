@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -28,6 +29,7 @@ import Control.Monad.Trans.State
 import qualified Data.List as L
 import Data.Maybe
 import Data.Sequence as Seq hiding ((:>))
+import Data.String
 import Data.String.Interpolate
 import Data.Time.Clock
 import System.Directory
@@ -56,24 +58,19 @@ runTree :: (HasBaseContext context) => Free (SpecCommand context IO) r -> Reader
 runTree (Free (Before l f subspec next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
-  newContextAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
-      (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- wait runTreeContext
-      startTime <- getCurrentTime
-      atomically $ writeTVar status (Running startTime)
-      eitherResult <- tryAny $ runExampleM f ctx logs
-      let ret = either (\e -> Failure (GotException Nothing (Just "Exception in before handler") (SomeExceptionWithEq e))) (const Success) eitherResult
-      endTime <- getCurrentTime
-      atomically $ writeTVar status (Done startTime endTime ret)
-      case eitherResult of
-        Left e -> throwIO e
-        Right _ -> return ctx
+  newContextAsync <- liftIO $ async $ do
+    (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- wait runTreeContext
+    getCurrentTime >>= atomically . writeTVar status . Running
+    (tryAny $ runExampleM f ctx logs) >>= \case
+      Left e -> throwIO $ GotException Nothing (Just [i|Exception in before '#{l}' handler|]) (SomeExceptionWithEq e)
+      Right _ -> return ctx
 
   subtree <- local (const $ rtc { runTreeContext = newContextAsync
                                 , runTreeCurrentFolder = appendFolder rtc l }) $ runTreeSequentially subspec
 
   myAsync <- liftIO $ liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
+    flip withException (recordExceptionInStatus status) $ unmask $ do
+      _ <- wait newContextAsync
       void $ waitForTree subtree
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
@@ -134,7 +131,7 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     -- On any async exception, record it in our status and throw it to the context async
     -- (to ensure no child ends up waiting on it forever. the child may have already finished waiting on it at this point)
-    flip withException (\e -> recordAsyncExceptionInStatus status e >> cancelWith newContextAsync e) $ unmask $ do
+    flip withException (\e -> recordExceptionInStatus status e >> cancelWith newContextAsync e) $ unmask $ do
       bracket (do
                   (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <-
                     waitAndHandleContextExceptionRethrow runTreeContext status
@@ -180,7 +177,9 @@ runTree (Free (IntroduceWith l _cl action subspec next)) = do
                                       , runTreeCurrentFolder = appendFolder rtc l }) $ runTreeSequentially subspec
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask ->
-    flip withException (\e -> recordAsyncExceptionInStatus status e >> cancelWith newContextAsync e) $ unmask $ do
+    flip withException (\e -> do
+                           recordExceptionInStatus status e
+                           cancelWith newContextAsync e) $ unmask $ do
       (addPathSegment (PathSegment l False runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndHandleContextExceptionRethrow runTreeContext status
       startTime <- liftIO getCurrentTime
 
@@ -191,11 +190,12 @@ runTree (Free (IntroduceWith l _cl action subspec next)) = do
                   contents <- tryReadMVar mvar
                   when (isNothing contents) $
                     -- The action failed to produce a value; cancel newContextAsync with an exception
-                    cancelWith newContextAsync $ Reason Nothing "Action in introduceWith failed to produce a value"
+                    cancelWith newContextAsync $ Reason Nothing [i|Action in introduceWith '#{l}' failed to produce a value|]
 
-            eitherResult <- tryAny $ flip finally cleanup $ action $ \x -> do
-              liftIO $ putMVar mvar (LabelValue x :> ctx)
-              void $ waitForTree subtree
+            eitherResult <- tryAny $ flip finally cleanup $
+              action $ \x -> do
+                liftIO $ putMVar mvar (LabelValue x :> ctx)
+                void $ waitForTree subtree
 
             endTime <- liftIO getCurrentTime
             liftIO $ atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
@@ -214,7 +214,7 @@ runTree (Free (It l ex next)) = do
   (status, logs, toggled, rtc@RunTreeContext {..}) <- getInfo
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
-    flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
+    flip withException (recordExceptionInStatus status) $ unmask $ do
       (tryAny $ wait runTreeContext) >>= \case
         Left e -> do
           endTime <- getCurrentTime
@@ -266,7 +266,7 @@ runDescribe isContextManager l subtree next = do
 
   tree <- RunTreeGroup l toggled status (appendFolder rtc l) isContextManager subtree logs <$> do
     liftIO $ asyncWithUnmask $ \unmask -> do
-      flip withException (recordAsyncExceptionInStatus status) $ unmask $ do
+      flip withException (recordExceptionInStatus status) $ unmask $ do
         _ctx <- waitAndHandleContextExceptionRethrow runTreeContext status
         startTime <- getCurrentTime
         atomically $ writeTVar status (Running startTime)
@@ -275,8 +275,14 @@ runDescribe isContextManager l subtree next = do
         finalStatus <- case treeResult of
           Left e -> return $ Failure (GetContextException Nothing (SomeExceptionWithEq e))
           Right _ -> do
-            subTreeResults <- forM subtree (readTVarIO . runTreeStatus)
-            return $ case L.length (L.filter (isFailure . (\(Done _ _ r) -> r)) subTreeResults) of
+            subTreeResults <- forM subtree $ \t -> do
+              (runTreeLabel t, ) <$> (readTVarIO $ runTreeStatus t)
+
+            -- Check that the tree is actually done running
+            let notDoneResults = L.filter (not . isDone . snd) subTreeResults
+            unless (L.null notDoneResults) $ throwIO $ userError [i|Some tree nodes were not done: #{fmap fst notDoneResults}|]
+
+            return $ case L.length (L.filter (isFailure . (\(_, Done _ _ r) -> r)) subTreeResults) of
               0 -> Success
               1 -> Failure (Reason Nothing [i|1 child failed|])
               n -> Failure (Reason Nothing [i|#{n} children failed|])
@@ -308,14 +314,17 @@ continueWith tree next = do
   rest <- local (\rtc@(RunTreeContext {..}) -> rtc { runTreeIndexInParent = runTreeIndexInParent + 1}) $ runTree next
   return (tree : rest)
 
-recordAsyncExceptionInStatus :: TVar Status -> SomeAsyncException -> IO Result
-recordAsyncExceptionInStatus status e = do
+recordExceptionInStatus :: TVar Status -> SomeException -> IO ()
+recordExceptionInStatus status e = do
   endTime <- getCurrentTime
-  let ret = Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e))
+  let ret = case fromException e of
+        Just (e' :: SomeAsyncException) -> Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e'))
+        _ -> case fromException e of
+          Just (e' :: FailureReason) -> Failure e'
+          _ -> Failure (GotException Nothing Nothing (SomeExceptionWithEq e))
   atomically $ modifyTVar status $ \case
     Running startTime -> Done startTime endTime ret
     _ -> Done endTime endTime ret
-  return ret
 
 getInfo = do
   status <- liftIO $ newTVarIO NotStarted
@@ -331,9 +340,9 @@ waitAndHandleContextExceptionRethrow contextAsync status = do
       let ret = Failure (GetContextException Nothing (SomeExceptionWithEq e))
       endTime <- getCurrentTime
       atomically $ modifyTVar status $ \case
-        Running startTime -> (Done startTime endTime ret) -- TODO: make startTime a Maybe
-        _ -> (Done endTime endTime ret) -- TODO: make startTime a Maybe
-      throwIO e
+        Running startTime -> (Done startTime endTime ret)
+        _ -> (Done endTime endTime ret)
+      throwIO $ GetContextException Nothing (SomeExceptionWithEq e)
     Right ctx -> return ctx
 
 runExampleM :: HasBaseContext r => ExampleM r () -> r -> TVar (Seq LogEntry) -> IO Result

@@ -7,6 +7,7 @@
 module Main where
 
 import Control.Concurrent
+import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
@@ -116,6 +117,15 @@ medium = do
   after "after" (debug "doing after") $ do
     it "has a thing after it" $ sleepThenSucceed
 
+introduceFailure :: TopSpec
+introduceFailure = do
+  introduceWith "Database around" database (\action -> liftIO $ throwIO $ userError "Failed to get DB") $ do
+    introduce "Database" database (debug "making DB" >> (return $ Database "outer")) (const $ return ()) $ do
+      it "uses the DB 1" $ do
+        db <- getContext database
+        debug [i|Got db: #{db}|]
+
+
 -- mainFilter :: IO ()
 -- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
@@ -123,7 +133,7 @@ medium = do
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultPrintFormatter verySimple
+main = runSandwich options defaultTerminalUIFormatter introduceFailure
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

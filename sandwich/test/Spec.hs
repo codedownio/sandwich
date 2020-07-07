@@ -45,24 +45,24 @@ main = do
 
 beforeExceptionSafety :: (HasCallStack) => IO ()
 beforeExceptionSafety = do
-  results <- runAndGetResults $ before "before" throwSomeUserError $ do
+  results <- runAndGetResults $ before "before label" throwSomeUserError $ do
     it "does thing 1" $ return ()
     it "does thing 2" $ return ()
 
-  results `mustBe` (Failure (GotException Nothing (Just "Exception in before handler") someUserErrorWrapped)
-                    : L.replicate 2 (Failure (GetContextException Nothing someUserErrorWrapped)))
+  results `mustBe` (Failure (GotException Nothing (Just "Exception in before 'before label' handler") someUserErrorWrapped)
+                    : L.replicate 2 (Failure (GetContextException Nothing (SomeExceptionWithEq (toException $ GotException Nothing (Just "Exception in before 'before label' handler") someUserErrorWrapped)))))
 
 beforeExceptionSafetyNested :: (HasCallStack) => IO ()
 beforeExceptionSafetyNested = do
-  results <- runAndGetResults $ before "before" throwSomeUserError $ do
+  results <- runAndGetResults $ before "before label" throwSomeUserError $ do
     it "does thing 1" $ return ()
     it "does thing 2" $ return ()
     describe "nested things" $ do
       it "does nested thing 1" $ return ()
       it "does nested thing 2" $ return ()
 
-  results `mustBe` (Failure (GotException Nothing (Just "Exception in before handler") someUserErrorWrapped)
-                    : L.replicate 5 (Failure (GetContextException Nothing someUserErrorWrapped)))
+  results `mustBe` (Failure (GotException Nothing (Just "Exception in before 'before label' handler") someUserErrorWrapped)
+                    : L.replicate 5 (Failure (GetContextException Nothing (SomeExceptionWithEq (toException $ GotException Nothing (Just "Exception in before 'before label' handler") someUserErrorWrapped)))))
 
 introduceCleansUpOnTestException :: (HasCallStack) => IO ()
 introduceCleansUpOnTestException = do
