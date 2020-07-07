@@ -41,6 +41,7 @@ module Test.Sandwich (
 
 import Control.Concurrent.Async
 import qualified Control.Exception as E
+import Control.Exception.Safe
 import Control.Monad
 import Data.String.Interpolate.IsString
 import System.Directory
@@ -104,5 +105,5 @@ startSandwichTree options@(Options {..}) spec = do
 runSandwichTree :: Options -> TopSpec -> IO [RunTree]
 runSandwichTree options spec = do
   rts <- startSandwichTree options spec
-  mapM_ (wait . runTreeAsync) rts
+  _ <- tryAny $ mapM_ (wait . runTreeAsync) rts
   return rts
