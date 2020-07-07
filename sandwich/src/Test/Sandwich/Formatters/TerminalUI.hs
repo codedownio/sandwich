@@ -6,6 +6,8 @@
 
 module Test.Sandwich.Formatters.TerminalUI (
   defaultTerminalUIFormatter
+  , showContextManagers
+  , showRunTimes
   ) where
 
 import Brick
