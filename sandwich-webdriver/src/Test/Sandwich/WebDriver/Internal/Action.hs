@@ -3,14 +3,17 @@
 
 module Test.Sandwich.WebDriver.Internal.Action where
 
-import Control.Concurrent.MVar
+import Control.Concurrent.MVar.Lifted
 import qualified Control.Exception.Lifted as EL
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger
+import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import GHC.Stack
+import Test.Sandwich.Logging
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
@@ -54,20 +57,20 @@ executeWithBrowser :: (HasCallStack) => Browser -> WdSession -> W.WD a -> W.WD a
 executeWithBrowser browser session action = do
   liftIO $ runActionWithBrowser browser action session
 
-closeSession :: (HasCallStack) => Browser -> WdSession -> IO ()
+closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Browser -> WdSession -> m ()
 closeSession browser (WdSession {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
     whenJust (M.lookup browser sessionMap) $ \sess ->
-      W.runWD sess W.closeSession
+      liftIO $ W.runWD sess W.closeSession
     return $ M.delete browser sessionMap
 
-closeAllSessionsExcept :: (HasCallStack) => [Browser] -> WdSession -> IO ()
+closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Browser] -> WdSession -> m ()
 closeAllSessionsExcept toKeep (WdSession {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
     forM_ (M.toList sessionMap) $ \(name, sess) -> unless (name `elem` toKeep) $
-      catch (W.runWD sess W.closeSession)
-            (\(e :: SomeException) -> putStrLn [i|Failed to destroy session '#{name}': '#{e}'|])
+      catch (liftIO $ W.runWD sess W.closeSession)
+            (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
     return $ M.fromList [(b, s) | (b, s) <- M.toList sessionMap, b `elem` toKeep]
 
-closeAllSessions :: (HasCallStack) => WdSession -> IO ()
+closeAllSessions :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => WdSession -> m ()
 closeAllSessions = closeAllSessionsExcept []

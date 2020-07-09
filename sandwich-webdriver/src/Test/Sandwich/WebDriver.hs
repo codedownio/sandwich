@@ -47,9 +47,11 @@ module Test.Sandwich.WebDriver (
   ) where
 
 import Control.Concurrent
+import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Data.IORef
@@ -67,30 +69,32 @@ import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 
 
-introduceWebdriver :: (HasBaseContext context, MonadIO m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
+introduceWebdriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
-allocateWebDriver :: (HasBaseContext context, MonadIO m) => WdOptions -> ExampleT context m WdSession
+allocateWebDriver :: (HasBaseContext context, MonadIO m, MonadBaseControl IO m) => WdOptions -> ExampleT context m WdSession
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
   maybeRunRoot <- getRunRoot
   let runRoot = fromMaybe "/tmp" maybeRunRoot
-  liftIO $ allocateWebDriver' runRoot wdOptions
+  startWebDriver wdOptions runRoot
 
 allocateWebDriver' :: FilePath -> WdOptions -> IO WdSession
 allocateWebDriver' runRoot wdOptions = do
-  startWebDriver wdOptions runRoot
+  runNoLoggingT $ startWebDriver wdOptions runRoot
 
-cleanupWebDriver :: (HasBaseContext context, MonadIO m) => WdSession -> ExampleT context m ()
+cleanupWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m) => WdSession -> ExampleT context m ()
 cleanupWebDriver sess = do
   debug "Doing cleanupWebDriver"
-  liftIO $ cleanupWebDriver' sess
+  closeAllSessions sess
+  stopWebDriver sess
   debug "Finished cleanupWebDriver"
 
 cleanupWebDriver' :: WdSession -> IO ()
-cleanupWebDriver' session = do
-  closeAllSessions session
-  stopWebDriver session
+cleanupWebDriver' sess = do
+  runNoLoggingT $ do
+    closeAllSessions sess
+    stopWebDriver sess
 
 withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
 withBrowser1 = withBrowser "browser1"
