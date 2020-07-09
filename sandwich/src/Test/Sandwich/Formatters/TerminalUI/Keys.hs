@@ -8,6 +8,11 @@ import qualified Graphics.Vty as V
 toggleShowRunTimesKey = V.KChar 't'
 toggleShowContextManagersKey = V.KChar 'm'
 
+nextKey = V.KChar 'n'
+previousKey = V.KChar 'p'
+nextFailureKey = V.KChar 'N'
+previousFailureKey = V.KChar 'P'
+
 cancelSelectedKey = V.KChar 'c'
 cancelAllKey = V.KChar 'C'
 clearResultsKey = V.KChar 'k'
@@ -23,3 +28,7 @@ showKey (V.KChar c) = [c]
 showKey V.KEnter = "Enter"
 
 showKeys = L.intercalate "/" . fmap showKey
+
+unKChar :: V.Key -> Char
+unKChar (V.KChar c) = c
+unKChar _ = '?'

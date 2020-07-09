@@ -63,6 +63,10 @@ data RunTreeContext context = RunTreeContext {
   , runTreeNumSiblings :: Int
   }
 
+isFailureStatus :: Status -> Bool
+isFailureStatus (Done _ _ stat) = isFailure stat
+isFailureStatus _ = False
+
 fixRunTree :: RunTree -> STM RunTreeFixed
 fixRunTree (RunTreeSingle {..}) = do
   status <- readTVar runTreeStatus

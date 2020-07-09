@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2fa0c73204443deae40870c9055294062ac3c8e9e12b8b8671cd057a0140a30d
+-- hash: 293e86edfaea85176b066c72e4b129724ef77135de9133946240f24f3c91803d
 
 name:           sandwich
 version:        0.1.0.0
@@ -30,8 +30,12 @@ library
       Test.Sandwich
       Test.Sandwich.Contexts
       Test.Sandwich.Expectations
-      Test.Sandwich.Formatters.Common.Count
+      Test.Sandwich.Logging
       Test.Sandwich.Formatters.Print
+      Test.Sandwich.Formatters.TerminalUI
+      Test.Sandwich.Internal
+  other-modules:
+      Test.Sandwich.Formatters.Common.Count
       Test.Sandwich.Formatters.Print.CallStacks
       Test.Sandwich.Formatters.Print.Color
       Test.Sandwich.Formatters.Print.FailureReason
@@ -40,7 +44,6 @@ library
       Test.Sandwich.Formatters.Print.PrintPretty
       Test.Sandwich.Formatters.Print.Types
       Test.Sandwich.Formatters.Print.Util
-      Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
@@ -56,7 +59,6 @@ library
       Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Interpreters.RunTree.Util
-      Test.Sandwich.Logging
       Test.Sandwich.Shutdown
       Test.Sandwich.Types.Formatter
       Test.Sandwich.Types.Options
@@ -64,7 +66,6 @@ library
       Test.Sandwich.Types.Spec
       Test.Sandwich.Types.Util
       Test.Sandwich.Util
-  other-modules:
       Paths_sandwich
   hs-source-dirs:
       src

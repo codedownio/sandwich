@@ -7,13 +7,11 @@ module Main where
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Maybe
--- import Data.Pool
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.Types.Options
 import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver

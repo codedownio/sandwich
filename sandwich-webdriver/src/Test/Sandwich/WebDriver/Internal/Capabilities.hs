@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP, QuasiQuotes #-}
 -- |
 
 module Test.Sandwich.WebDriver.Internal.Capabilities (
@@ -12,6 +11,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
 import Test.WebDriver
 
+loggingPrefs :: A.Value
 loggingPrefs = A.object [("browser", "ALL")
                         , ("client", "WARNING")
                         , ("driver", "WARNING")

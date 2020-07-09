@@ -27,6 +27,7 @@ dependencies:
 - convertible
 - data-default
 - directory
+- exceptions
 - filepath
 - http-client
 - http-conduit

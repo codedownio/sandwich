@@ -25,13 +25,22 @@ module Test.Sandwich (
   , TestArtifactsDirectory(..)
 
   , BaseContext
+  , HasBaseContext
 
   , Result(..)
   , FailureReason(..)
+  , SomeExceptionWithEq(..)
+
+  , SpecFree
+  , SpecWith
+
+  , ExampleT
+  , ExampleM
 
   , Label(..)
-
-  , Spec, SpecWith, SpecFree, HasBaseContext, HasLabel, LabelValue(..), (:>)(..), ExampleM, ExampleT(..) -- Used in sandwich-webdriver
+  , LabelValue(..)
+  , HasLabel
+  , (:>)
 
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
@@ -41,7 +50,6 @@ module Test.Sandwich (
 
 import Control.Concurrent.Async
 import qualified Control.Exception as E
-import Control.Exception.Safe
 import Control.Monad
 import Data.String.Interpolate.IsString
 import System.Directory

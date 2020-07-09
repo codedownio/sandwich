@@ -61,7 +61,6 @@ runWithIndentation (RunTreeGroup {..}) = do
   pin runTreeLabel
   withBumpIndent $ forM_ runTreeChildren runWithIndentation
 
-  pin [i|FINISHED #{runTreeLabel}|]
   -- Print the logs, if configured
   finally (liftIO $ wait runTreeAsync) $ do
     when includeLogs $ printLogs runTreeLogs

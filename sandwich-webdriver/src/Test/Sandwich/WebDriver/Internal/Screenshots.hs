@@ -12,14 +12,12 @@ import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import GHC.Stack
 import Network.HTTP.Client
-import System.Directory
 import System.FilePath
 import Test.Sandwich.WebDriver.Internal.Types
-import Test.Sandwich.WebDriver.Internal.Util
 import Test.WebDriver
 
 saveScreenshots :: (HasCallStack) => T.Text -> WdSession -> FilePath -> IO ()
-saveScreenshots screenshotName sessionWithLabels@(WdSession {..}) resultsDir = do
+saveScreenshots screenshotName (WdSession {..}) resultsDir = do
   -- For every session, and for every window, try to get a screenshot for the results dir
   sessionMap <- readMVar wdSessionMap
   forM_ (M.toList sessionMap) $ \(browser, sess) -> runWD sess $

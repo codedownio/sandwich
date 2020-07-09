@@ -115,6 +115,7 @@ stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) 
 
 -- * Util
 
+seleniumOutFileName, seleniumErrFileName :: FilePath
 seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 

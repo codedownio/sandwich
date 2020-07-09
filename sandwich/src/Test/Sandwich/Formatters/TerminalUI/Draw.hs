@@ -112,8 +112,10 @@ topBox app = vBox [hBox [columnPadding $ hLimitPercent 33 settingsColumn
   where
     columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
 
-    settingsColumn = keybindingBox [keyIndicator "n/↑" "Next"
-                                   , keyIndicator "p/↓" "Previous"
+    settingsColumn = keybindingBox [keyIndicator (unKChar nextKey : "/↑") "Next"
+                                   , keyIndicator (unKChar previousKey : "/↓") "Previous"
+                                   , keyIndicator (unKChar nextFailureKey : "/↑") "Next failure"
+                                   , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
                                    , keyIndicatorHasSelected (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"

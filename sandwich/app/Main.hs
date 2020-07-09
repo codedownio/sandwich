@@ -14,7 +14,6 @@ import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.Types.Options
 
 data Database = Database String
   deriving Show

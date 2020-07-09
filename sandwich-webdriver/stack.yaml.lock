@@ -10,11 +10,11 @@ packages:
     git: https://github.com/codedownio/hs-webdriver
     pantry-tree:
       size: 2934
-      sha256: 94104badd5973a0ddbb9588fc1cb05923eb5202291b0ef08613c6b2329bcf1ce
-    commit: 8bc94c291838d6d4152138cf4ab94d1db6f8da7e
+      sha256: ed9af2f807e88ba033a28f02de751ada83bf7a24309b6259d8cbba084edfc526
+    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
   original:
     git: https://github.com/codedownio/hs-webdriver
-    commit: 8bc94c291838d6d4152138cf4ab94d1db6f8da7e
+    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
 snapshots:
 - completed:
     size: 531674

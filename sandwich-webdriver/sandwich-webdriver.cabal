@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7da11a700e6cd6f78d2561fcebb92fba46abef62f7ed15cf17154f5f066bda16
+-- hash: 8a10d7e9b6eb86fe05af0124354f78285f0c07abe22b9a6408762394c5e09156
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -54,6 +54,7 @@ library
     , convertible
     , data-default
     , directory
+    , exceptions
     , filepath
     , http-client
     , http-conduit
@@ -96,6 +97,7 @@ executable sandwich-webdriver-exe
     , convertible
     , data-default
     , directory
+    , exceptions
     , filepath
     , http-client
     , http-conduit
@@ -140,6 +142,7 @@ test-suite sandwich-webdriver-test
     , convertible
     , data-default
     , directory
+    , exceptions
     , filepath
     , http-client
     , http-conduit

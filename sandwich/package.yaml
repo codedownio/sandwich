@@ -53,6 +53,14 @@ dependencies:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Test.Sandwich
+    - Test.Sandwich.Contexts
+    - Test.Sandwich.Expectations
+    - Test.Sandwich.Logging
+    - Test.Sandwich.Formatters.Print
+    - Test.Sandwich.Formatters.TerminalUI
+    - Test.Sandwich.Internal
 
 executables:
   sandwich-exe:

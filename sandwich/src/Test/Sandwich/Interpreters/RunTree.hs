@@ -4,7 +4,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE QuasiQuotes #-}
 -- |
 
@@ -29,7 +28,6 @@ import Control.Monad.Trans.State
 import qualified Data.List as L
 import Data.Maybe
 import Data.Sequence as Seq hiding ((:>))
-import Data.String
 import Data.String.Interpolate
 import Data.Time.Clock
 import System.Directory
@@ -137,7 +135,8 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
   mvar <- liftIO newEmptyMVar
   newContextAsync <- liftIO $ async $ readMVar mvar
 
-  subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync }) $ runTreeSequentially subspec
+  subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync
+                                      , runTreeCurrentFolder = appendFolder rtc l }) $ runTreeSequentially subspec
 
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     -- On any async exception, record it in our status and throw it to the context async
@@ -147,8 +146,7 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                   (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndWrapContextException runTreeContext
                   startTime <- getCurrentTime
                   atomically $ writeTVar status (Running startTime)
-                  eitherResult <- tryAny $ runExampleM' alloc ctx logs
-                  case eitherResult of
+                  (tryAny $ runExampleM' alloc ctx logs) >>= \case
                     Right (Right x) -> do
                       let newCtx = LabelValue x :> ctx -- TODO: modify base context here to prepend path segment?
                       putMVar mvar newCtx
