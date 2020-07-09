@@ -34,6 +34,7 @@ module Test.Sandwich.WebDriver (
   , headlessChromeCapabilities
 
   , WdSession
+  , getDisplayNumber
 
   , ExampleWithWebDriver
   , HasWebDriverContext
@@ -49,6 +50,7 @@ module Test.Sandwich.WebDriver (
   ) where
 
 import Control.Concurrent
+import Control.Exception.Safe as ES
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -62,6 +64,7 @@ import qualified Data.Map as M
 import Data.Maybe
 import GHC.Stack
 import Test.Sandwich
+import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
@@ -119,7 +122,15 @@ withBrowser browser (ExampleT readerMonad) = do
 
   ref <- liftIO $ newIORef sess
 
-  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ (liftIO . W.runWD sess)) readerMonad)
+  let runAction action = do
+        W.runWD sess $ do
+          -- After the action, grab the updated session and save it before we return
+          -- TODO: why is this necessary?
+          ES.finally action $ do
+            sess' <- W.getSession
+            liftIO $ modifyMVar_ wdSessionMap $ return . M.insert browser sess'
+
+  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ (liftIO . runAction)) readerMonad)
 
 getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
 getBrowsers = do
