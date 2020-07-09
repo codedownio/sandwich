@@ -32,7 +32,7 @@ xit name _ex = it name (throwError $ Pending (Just callStack) Nothing)
 shouldBe :: (HasCallStack, MonadError FailureReason m, Eq a, Show a) => a -> a -> m ()
 shouldBe x y
   | x == y = return ()
-  | otherwise = throwError (ExpectedButGot (Just callStack) (SEB x) (SEB y))
+  | otherwise = throwError (ExpectedButGot (Just callStack) (SEB y) (SEB x))
 
 shouldNotBe :: (HasCallStack, MonadError FailureReason m, Eq a, Show a) => a -> a -> m ()
 shouldNotBe x y
