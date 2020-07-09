@@ -40,6 +40,11 @@ verySimple = do
   it "tries shouldNotBe" (2 `shouldNotBe` 2)
   it "is pending" $ pending
   it "is pending with message" $ pendingWith "Not implemented yet..."
+  it "throws an exception" $ do
+    2 `shouldBe` 2
+    throwIO $ userError "Want a stacktrace here"
+    -- 3 `shouldBe` 4
+    3 `shouldBe` 3
   it "does some logging" $ do
     debug "debug message"
     info "info message"
@@ -140,7 +145,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter beforeExceptionSafetyNested
+main = runSandwich options defaultPrintFormatter verySimple
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

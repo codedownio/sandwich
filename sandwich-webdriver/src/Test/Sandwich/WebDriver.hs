@@ -25,6 +25,8 @@ module Test.Sandwich.WebDriver (
   , withBrowser2
   , withBrowser
   , closeAllSessions
+  , getBrowsers
+  , Browser
 
   , RunMode(..)
 
@@ -50,6 +52,7 @@ import Control.Concurrent
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Control.Monad.Trans
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
@@ -117,6 +120,11 @@ withBrowser browser (ExampleT readerMonad) = do
   ref <- liftIO $ newIORef sess
 
   ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ (liftIO . W.runWD sess)) readerMonad)
+
+getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
+getBrowsers = do
+  WdSession {..} <- getContext webdriver
+  M.keys <$> liftIO (readMVar wdSessionMap)
 
 type ContextWithSession context = LabelValue "webdriverSession" (IORef W.WDSession) :> context
 

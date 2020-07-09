@@ -13,6 +13,7 @@ module Test.Sandwich.Formatters.TerminalUI (
 import Brick
 import Brick.BChan
 import qualified Brick.Widgets.List as L
+import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
@@ -70,6 +71,7 @@ runApp (TerminalUIFormatter {..}) rts = do
       writeTVar currentFixedTree newFixed
       return newFixed
     writeBChan eventChan (RunTreeUpdated newFixedTree)
+    threadDelay 100000 -- Sleep 100ms
 
   let buildVty = V.mkVty V.defaultConfig
   initialVty <- buildVty
