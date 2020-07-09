@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import System.IO
 import System.Process
 import Test.Sandwich
+import Test.Sandwich.Internal
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
@@ -93,6 +94,10 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbXauthority :: FilePath
                                , xvfbDimensions :: (Int, Int)
                                , xvfbProcess :: ProcessHandle }
+
+getDisplayNumber :: WdSession -> Maybe Int
+getDisplayNumber (WdSession {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
+getDisplayNumber _ = Nothing
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]
