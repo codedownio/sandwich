@@ -34,8 +34,8 @@ import Test.Sandwich.Types.Spec
 drawUI :: AppState -> [Widget ()]
 drawUI app = [ui]
   where
-    ui = joinBorders $ vBox [
-      vLimitPercent 10 (topBox app)
+    ui = vBox [
+      topBox app
       , borderWithCounts app
       , mainList app
       , bottomProgressBarColored app
@@ -104,11 +104,9 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
     logLevelWidget LevelError = withAttr infoAttr $ str "(ERROR)"
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
-topBox app = vBox [hBox [columnPadding $ hLimitPercent 33 settingsColumn
-                        , vBorder
-                        , columnPadding $ hLimitPercent 33 actionsColumn
-                        , vBorder
-                        , columnPadding $ hLimitPercent 33 otherActionsColumn]]
+topBox app = hBox [columnPadding $ hLimitPercent 33 settingsColumn
+                  , columnPadding $ hLimitPercent 33 actionsColumn
+                  , columnPadding $ hLimitPercent 33 otherActionsColumn]
   where
     columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
 
