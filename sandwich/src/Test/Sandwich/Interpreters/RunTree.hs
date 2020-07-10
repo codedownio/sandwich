@@ -367,8 +367,6 @@ runExampleM' ex ctx logs exceptionMessage = do
         createDirectoryIfMissing True dir
         return $ Just dir
 
-    pathSegmentToName (PathSegment {..}) = nodeToFolderName pathSegmentName pathSegmentNumSiblings pathSegmentIndexInParent
-
 wrapInFailureReasonIfNecessary :: Maybe String -> SomeException -> IO (Either FailureReason a)
 wrapInFailureReasonIfNecessary exceptionMessage e = return $ Left $ case fromException e of
   Just (x :: FailureReason) -> x
