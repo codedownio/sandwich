@@ -137,7 +137,7 @@ withBrowser browser (ExampleT readerMonad) = do
             sess' <- W.getSession
             liftIO $ modifyMVar_ wdSessionMap $ return . M.insert browser sess'
 
-  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapExceptT $ mapLoggingT $ (liftIO . runAction)) readerMonad)
+  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT $ (liftIO . runAction)) readerMonad)
 
 getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
 getBrowsers = do

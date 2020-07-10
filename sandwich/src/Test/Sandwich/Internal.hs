@@ -10,6 +10,17 @@ module Test.Sandwich.Internal (
   , (:>)(..)
   , ExampleM
   , ExampleT(..)
+
+  -- For tests
+  , RunTreeWithStatus(..)
+  , RunTreeFixed
+  , Status(..)
+  , fixRunTree
+  , waitForTree
+  , SomeAsyncExceptionWithEq(..)
+  , logEntryStr
   ) where
 
+import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec

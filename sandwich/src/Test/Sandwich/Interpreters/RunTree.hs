@@ -65,9 +65,9 @@ runTree (Free (Before l f subspec next)) = do
   newContextAsync <- liftIO $ async $ do
     (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- wait runTreeContext
     getCurrentTime >>= atomically . writeTVar status . Running
-    (tryAny $ runExampleM f ctx logs) >>= \case
-      Left e -> throwIO $ GotException Nothing (Just [i|Exception in before '#{l}' handler|]) (SomeExceptionWithEq e)
-      Right _ -> do
+    (runExampleM f ctx logs (Just [i|Exception in before '#{l}' handler|])) >>= \case
+      Failure e  -> throwIO e
+      Success -> do
         markDone status Success
         return ctx
 
@@ -98,10 +98,9 @@ runTree (Free (After l f subspec next)) = do
     (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- wait runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-    eitherResult <- tryAny $ runExampleM f ctx logs
+    result <- runExampleM f ctx logs (Just [i|Exception in after '#{l}' handler|])
     endTime <- getCurrentTime
-    atomically $ writeTVar status $ Done startTime endTime $
-      either (\e -> Failure (GotException Nothing (Just "Exception in after handler") (SomeExceptionWithEq e))) id eitherResult
+    atomically $ writeTVar status $ Done startTime endTime result
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
 runTree (Free (Around l f subspec next)) = do
@@ -122,11 +121,9 @@ runTree (Free (Around l f subspec next)) = do
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
     let action = putMVar mvar () >> void (waitForTree subtree)
-    eitherResult <- tryAny $ runExampleM (f action) ctx logs
+    result <- runExampleM (f action) ctx logs (Just [i|Exception in around '#{l}' handler|])
     endTime <- getCurrentTime
-    atomically $ writeTVar status $ Done startTime endTime $ case eitherResult of
-      Left e -> Failure $ GotException Nothing (Just "Exception in around handler") (SomeExceptionWithEq e)
-      Right _ -> Success
+    atomically $ writeTVar status $ Done startTime endTime result
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
 runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
@@ -146,25 +143,18 @@ runTree (Free (Introduce l _cl alloc cleanup subspec next)) = do
                   (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndWrapContextException runTreeContext
                   startTime <- getCurrentTime
                   atomically $ writeTVar status (Running startTime)
-                  (tryAny $ runExampleM' alloc ctx logs) >>= \case
-                    Right (Right x) -> do
+                  (runExampleM' alloc ctx logs (Just [i|Exception in allocation '#{l}' handler|])) >>= \case
+                    Right x -> do
                       let newCtx = LabelValue x :> ctx -- TODO: modify base context here to prepend path segment?
                       putMVar mvar newCtx
                       return $ Right newCtx
-                    Right (Left err') -> do -- Alloc ExceptT had some failure
-                      let err = GotException Nothing (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
-                      cancelWith newContextAsync err
-                      return $ Left err
-                    Left err' -> do -- Exception while running alloc
-                      let err = GotException Nothing (Just "Exception in allocation handler") (SomeExceptionWithEq $ SomeException err')
+                    Left err -> do
                       cancelWith newContextAsync err
                       return $ Left err
               )
               (\eitherStatus -> do
                   finalStatus <- case eitherStatus of
-                    Right (LabelValue intro :> ctx) -> do
-                      eitherResult <- tryAny $ runExampleM (cleanup intro) ctx logs
-                      return $ either (Failure . (GotException Nothing (Just "Exception in cleanup handler") . SomeExceptionWithEq)) id eitherResult
+                    Right (LabelValue intro :> ctx) -> runExampleM (cleanup intro) ctx logs (Just [i|Exception in cleanup '#{l}' handler|])
                     Left e -> return $ Failure e
 
                   endTime <- getCurrentTime
@@ -208,12 +198,12 @@ runTree (Free (IntroduceWith l _cl action subspec next)) = do
               Left e -> Failure (GotException Nothing (Just "Unknown exception") (SomeExceptionWithEq e))
               Right _ -> Success
 
-      result <- tryAny $ runExampleM wrappedAction ctx logs
-      whenLeft result $ \e -> do
-        endTime <- liftIO getCurrentTime
-        let ret = GotException Nothing (Just "Unknown exception") (SomeExceptionWithEq e)
-        atomically $ writeTVar status $ Done startTime endTime (Failure ret)
-        cancelWith newContextAsync ret
+      runExampleM wrappedAction ctx logs (Just [i|Exception in introduceWith '#{l}'|]) >>= \case
+        Success -> return ()
+        Failure e -> do
+          endTime <- liftIO getCurrentTime
+          atomically $ writeTVar status $ Done startTime endTime (Failure e)
+          cancelWith newContextAsync e
 
   continueWith (RunTreeGroup l toggled status (appendFolder rtc l) True subtree logs myAsync) next
 runTree (Free (It l ex next)) = do
@@ -228,10 +218,9 @@ runTree (Free (It l ex next)) = do
         Right (addPathSegment (PathSegment l False runTreeIndexInParent runTreeNumSiblings) -> ctx) -> do
           startTime <- getCurrentTime
           atomically $ writeTVar status (Running startTime)
-          eitherResult <- tryAny $ runExampleM ex ctx logs
+          result <- runExampleM ex ctx logs Nothing
           endTime <- getCurrentTime
-          atomically $ writeTVar status $ Done startTime endTime $
-            either (Failure . (GotException Nothing (Just "Unknown exception") . SomeExceptionWithEq)) id eitherResult
+          atomically $ writeTVar status $ Done startTime endTime result
   continueWith (RunTreeSingle l toggled status (appendFolder rtc l) logs myAsync) next
 runTree (Free (Describe l subspec next)) = do
   (_, _, _, rtc@RunTreeContext {..}) <- getInfo
@@ -349,22 +338,22 @@ waitAndWrapContextException contextAsync = do
     Left e -> throwIO $ GetContextException Nothing (SomeExceptionWithEq e)
     Right ctx -> return ctx
 
-runExampleM :: HasBaseContext r => ExampleM r () -> r -> TVar (Seq LogEntry) -> IO Result
-runExampleM ex ctx logs = runExampleM' ex ctx logs >>= \case
+runExampleM :: HasBaseContext r => ExampleM r () -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
+runExampleM ex ctx logs exceptionMessage = runExampleM' ex ctx logs exceptionMessage >>= \case
   Left err -> return $ Failure err
   Right () -> return Success
 
-runExampleM' :: HasBaseContext r => ExampleM r a -> r -> TVar (Seq LogEntry) -> IO (Either FailureReason a)
-runExampleM' ex ctx logs = do
+runExampleM' :: HasBaseContext r => ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
+runExampleM' ex ctx logs exceptionMessage = do
   maybeTestDirectory <- getTestDirectory ctx
   let options = baseContextOptions $ getBaseContext ctx
 
-  withLogFn maybeTestDirectory options $ \logFn ->
-    (runLoggingT (runExceptT $ runReaderT (unExampleT ex) ctx) logFn) >>= \case
-      Left err -> return $ Left err
-      Right x -> return $ Right x
+  handleAny (wrapInFailureReasonIfNecessary exceptionMessage) $
+    withLogFn maybeTestDirectory options $ \logFn ->
+      (Right <$> (runLoggingT (runReaderT (unExampleT ex) ctx) logFn))
 
   where
+    withLogFn :: Maybe FilePath -> Options -> (LogFn -> IO a) -> IO a
     withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
     withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
       hSetBuffering h LineBuffering
@@ -379,6 +368,11 @@ runExampleM' ex ctx logs = do
         return $ Just dir
 
     pathSegmentToName (PathSegment {..}) = nodeToFolderName pathSegmentName pathSegmentNumSiblings pathSegmentIndexInParent
+
+wrapInFailureReasonIfNecessary :: Maybe String -> SomeException -> IO (Either FailureReason a)
+wrapInFailureReasonIfNecessary exceptionMessage e = return $ Left $ case fromException e of
+  Just (x :: FailureReason) -> x
+  _ -> GotException Nothing exceptionMessage (SomeExceptionWithEq e)
 
 addPathSegment pathSegment ctx = modifyBaseContext ctx (\x@(BaseContext {..}) -> x { baseContextPath = baseContextPath |> pathSegment  })
 

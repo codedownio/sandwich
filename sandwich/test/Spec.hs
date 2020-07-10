@@ -23,9 +23,7 @@ import Data.String.Interpolate.IsString
 import GHC.Stack
 import System.Exit
 import Test.Sandwich
-import Test.Sandwich.Interpreters.RunTree.Util
-import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Types.Spec
+import Test.Sandwich.Internal
 
 
 main :: (HasCallStack) => IO ()
@@ -74,7 +72,7 @@ introduceCleansUpOnTestException = do
 
   msgs `mustBe` [["doing cleanup"], []]
   results `mustBe` [Success
-                   , Failure (GotException Nothing (Just "Unknown exception") someUserErrorWrapped)]
+                   , Failure (GotException Nothing Nothing someUserErrorWrapped)]
 
 introduceDoesNotCleanUpOnAllocateException :: (HasCallStack) => IO ()
 introduceDoesNotCleanUpOnAllocateException = do
@@ -82,8 +80,8 @@ introduceDoesNotCleanUpOnAllocateException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException Nothing (Just "Exception in allocation handler") someUserErrorWrapped)
-                   , Failure (GetContextException Nothing (SomeExceptionWithEq (SomeException (GotException Nothing (Just "Exception in allocation handler") someUserErrorWrapped))))]
+  results `mustBe` [Failure (GotException Nothing (Just "Exception in allocation 'introduce' handler") someUserErrorWrapped)
+                   , Failure (GetContextException Nothing (SomeExceptionWithEq (SomeException (GotException Nothing (Just "Exception in allocation 'introduce' handler") someUserErrorWrapped))))]
 
 introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
 introduceFailsOnCleanUpException = do
@@ -91,7 +89,7 @@ introduceFailsOnCleanUpException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException Nothing (Just "Exception in cleanup handler") someUserErrorWrapped)
+  results `mustBe` [Failure (GotException Nothing (Just "Exception in cleanup 'introduce' handler") someUserErrorWrapped)
                    , Success]
 
 introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()

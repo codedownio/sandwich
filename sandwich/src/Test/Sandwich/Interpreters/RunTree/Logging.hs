@@ -3,6 +3,7 @@
 module Test.Sandwich.Interpreters.RunTree.Logging (
   logToMemory
   , logToMemoryAndFile
+  , LogFn
   ) where
 
 import Control.Concurrent.STM
@@ -14,6 +15,7 @@ import Data.Time.Clock
 import System.IO
 import Test.Sandwich.Types.RunTree
 
+type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 
 logToMemory :: Maybe LogLevel -> TVar (Seq LogEntry) -> Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 logToMemory Nothing _ _ _ _ _ = return ()
@@ -31,7 +33,7 @@ logToMemoryAndFile maybeMemLogLevel maybeSavedLogLevel logs h loc logSrc logLeve
     _ -> return ()
 
   case maybeSavedLogLevel of
-    Just x | x <= logLevel -> 
+    Just x | x <= logLevel ->
       BS8.hPutStr h $ defaultLogStrBS loc logSrc logLevel logStr
     _ -> return ()
 

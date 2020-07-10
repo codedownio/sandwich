@@ -162,7 +162,7 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
       xvfbSession@(XvfbSession {..}) <- liftIO $ do
         recoverAll policy $ \_ ->
           readFile path >>= \contents -> case readMay contents of -- hGetContents readHandle
-            Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'.|]
+            Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'. Path was '#{path}'|]
             Just x -> return $ XvfbSession { xvfbDisplayNum = x
                                            , xvfbXauthority = runRoot </> ".Xauthority"
                                            , xvfbDimensions = (w, h)

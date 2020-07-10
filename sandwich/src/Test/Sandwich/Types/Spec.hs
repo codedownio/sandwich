@@ -34,24 +34,23 @@ import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
 import Test.Sandwich.Types.Options
-import Test.Sandwich.Types.Util
 
 -- * ExampleM monad
 
-newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (ExceptT FailureReason (LoggingT m)) a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadError FailureReason, MonadLogger, MonadThrow, MonadCatch, MonadMask)
+newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (LoggingT m) a }
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadLogger, MonadThrow, MonadCatch, MonadMask)
 type ExampleM context = ExampleT context IO
 
 instance (MonadBase b m) => MonadBase b (ExampleT context m) where
   liftBase = liftBaseDefault
 
 instance MonadTrans (ExampleT context) where
-  lift x = ExampleT $ ReaderT (\_ -> ExceptT $ liftM Right (LoggingT (\_ -> x)))
+  lift x = ExampleT $ ReaderT (\_ -> (LoggingT (\_ -> x)))
 
 instance MonadTransControl (ExampleT context) where
-  type StT (ExampleT context) a = StT LoggingT (StT (ExceptT FailureReason) (StT (ReaderT context) a))
-  liftWith = defaultLiftWith3 ExampleT unExampleT
-  restoreT = defaultRestoreT3 ExampleT
+  type StT (ExampleT context) a = StT LoggingT (StT (ReaderT context) a)
+  liftWith = defaultLiftWith2 ExampleT unExampleT
+  restoreT = defaultRestoreT2 ExampleT
 
 instance (MonadBaseControl b m) => MonadBaseControl b (ExampleT context m) where
   type StM (ExampleT context m) a = ComposeSt (ExampleT context) m a
