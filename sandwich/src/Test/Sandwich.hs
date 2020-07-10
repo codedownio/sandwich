@@ -16,6 +16,7 @@ module Test.Sandwich (
   , after
   , afterEach
   , around
+  , aroundEach
   , parallel
 
   , TopSpec
