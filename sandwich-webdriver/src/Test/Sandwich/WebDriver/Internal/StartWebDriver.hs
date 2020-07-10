@@ -120,9 +120,9 @@ seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 
 getWebdriverCreateProcess :: Constraints m => WdOptions -> FilePath -> PortNumber -> m (Either T.Text (CreateProcess, Maybe XvfbSession))
-getWebdriverCreateProcess (WdOptions {toolsRoot, runMode}) runRoot port = runExceptT $ do
-  chromeDriverPath <- ExceptT $ downloadChromeDriverIfNecessary toolsRoot
-  seleniumPath <- ExceptT $ downloadSeleniumIfNecessary toolsRoot
+getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeDriverToUse}) runRoot port = runExceptT $ do
+  seleniumPath <- ExceptT $ obtainSelenium toolsRoot seleniumToUse
+  chromeDriverPath <- ExceptT $ obtainChromeDriver toolsRoot chromeDriverToUse
 
   case runMode of
     Normal -> return ((proc "java" [

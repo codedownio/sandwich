@@ -42,9 +42,15 @@ module Test.Sandwich.WebDriver (
   , ContextWithSession
 
   , WdOptions
+  , SeleniumToUse(..)
+  , ChromeDriverToUse(..)
+  , obtainSelenium
+  , obtainChromeDriver
   , defaultWdOptions
   , runMode
   , saveSeleniumMessageHistory
+  , seleniumToUse
+  , chromeDriverToUse
   , WhenToSave(..)
   , capabilities
   ) where
@@ -66,6 +72,7 @@ import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.Action
+import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types

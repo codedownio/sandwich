@@ -23,6 +23,10 @@ module Test.Sandwich (
   , defaultOptions
   , optionsTestArtifactsDirectory
   , TestArtifactsDirectory(..)
+  , optionsSavedLogLevel
+  , optionsMemoryLogLevel
+  , optionsFilterTree
+  , TreeFilter(..)
 
   , BaseContext
   , HasBaseContext
@@ -57,6 +61,7 @@ import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
+import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Logging
@@ -85,7 +90,11 @@ runSandwich options f spec = do
   putStrLn [i|Final result: #{finalResult}|]
 
 startSandwichTree :: Options -> TopSpec -> IO [RunTree]
-startSandwichTree options@(Options {..}) spec = do
+startSandwichTree options@(Options {..}) spec' = do
+  let spec = case optionsFilterTree of
+        Nothing -> spec'
+        Just (TreeFilter match) -> filterTree match spec'
+
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
     TestArtifactsFixedDirectory dir -> do

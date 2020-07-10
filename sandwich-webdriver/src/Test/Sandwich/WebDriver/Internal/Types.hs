@@ -60,9 +60,37 @@ data WdOptions = WdOptions {
   , saveLogSettings :: SaveLogSettings
   -- ^ When to save a record of Selenium requests and responses
 
+  , seleniumToUse :: SeleniumToUse
+  -- ^ Which Selenium server JAR file to use
+
+  , chromeDriverToUse :: ChromeDriverToUse
+  -- ^ Which chromedriver executable to use
+
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.)
   }
+
+-- | How to obtain the Selenium server JAR file
+data SeleniumToUse =
+  DownloadSeleniumFrom String
+  -- ^ Download selenium from the given URL to the 'toolsRoot'
+  | DownloadSeleniumDefault
+  -- ^ Download selenium from a default location to the 'toolsRoot'
+  | UseSeleniumAt FilePath
+  -- ^ Use the JAR file at the given path
+
+data ChromeDriverToUse =
+  DownloadChromeDriverFrom String
+  -- ^ Download chromedriver from the given URL to the 'toolsRoot'
+  | DownloadChromeDriverVersion ChromeDriverVersion
+  -- ^ Download the given chromedriver version to the 'toolsRoot'
+  | DownloadChromeDriverAutodetect
+  -- ^ Autodetect chromedriver to use based on the Chrome version and download it to the 'toolsRoot'
+  | UseChromeDriverAt FilePath
+  -- ^ Use the chromedriver at the given path
+
+newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int)
+newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int)
 
 data XvfbConfig = XvfbConfig {
   xvfbResolution :: Maybe (Int, Int)
@@ -73,7 +101,7 @@ instance Default XvfbConfig where
   def = XvfbConfig Nothing
 
 defaultWdOptions :: FilePath -> WdOptions
-defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty Normal
+defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty DownloadSeleniumDefault DownloadChromeDriverAutodetect Normal
 
 type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text, W.LogEntry -> Bool)
 

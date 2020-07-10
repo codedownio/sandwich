@@ -2,7 +2,9 @@
 {-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, Rank2Types #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries (
-  downloadSeleniumIfNecessary
+  obtainSelenium
+  , obtainChromeDriver
+  , downloadSeleniumIfNecessary
   , downloadChromeDriverIfNecessary
   ) where
 
@@ -19,9 +21,59 @@ import System.FilePath
 import System.Process
 import Test.Sandwich.Logging
 import Test.Sandwich.WebDriver.Internal.Binaries.Util
+import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m)
+
+-- * Obtaining binaries
+
+  -- TODO: remove curl dependencies here
+
+obtainSelenium :: (MonadIO m, MonadLogger m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
+obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
+  let seleniumPath = [i|#{toolsDir}/selenium-server-standalone.jar|]
+  liftIO $ createDirectoryIfMissing True (takeDirectory seleniumPath)
+  unlessM (liftIO $ doesFileExist seleniumPath) $
+    void $ liftIO $ readCreateProcess (shell [i|curl #{url} -o #{seleniumPath}|]) ""
+  return $ Right seleniumPath
+obtainSelenium toolsDir DownloadSeleniumDefault = do
+  let seleniumPath = [i|#{toolsDir}/selenium-server-standalone-3.141.59.jar|]
+  liftIO $ createDirectoryIfMissing True (takeDirectory seleniumPath)
+  unlessM (liftIO $ doesFileExist seleniumPath) $
+    void $ liftIO $ readCreateProcess (shell [i|curl https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar -o #{seleniumPath}|]) ""
+  return $ Right seleniumPath
+obtainSelenium _ (UseSeleniumAt path) =
+  (liftIO $ doesFileExist path) >>= \case
+    False -> return $ Left [i|Path '#{path}' didn't exist|]
+    True -> return $ Right path
+
+obtainChromeDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
+obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
+  let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
+  liftIO $ createDirectoryIfMissing True (takeDirectory path)
+  unlessM (liftIO $ doesFileExist path) $
+    void $ liftIO $ readCreateProcess (shell [i|curl #{url} -o #{path}|]) ""
+  return $ Right path
+obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = runExceptT $ do
+  let path = getChromeDriverPath toolsDir chromeDriverVersion
+  (liftIO $ doesFileExist path) >>= \case
+    True -> return path
+    False -> do
+      let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
+      ExceptT $ downloadAndUnzipToPath downloadPath path
+      return path
+obtainChromeDriver toolsDir DownloadChromeDriverAutodetect = runExceptT $ do
+  version <- ExceptT $ liftIO getChromeDriverVersion
+  ExceptT $ obtainChromeDriver toolsDir (DownloadChromeDriverVersion version)
+obtainChromeDriver _ (UseChromeDriverAt path) =
+  (liftIO $ doesFileExist path) >>= \case
+    False -> return $ Left [i|Path '#{path}' didn't exist|]
+    True -> return $ Right path
+
+
+-- * Lower level helpers
+
 
 downloadSeleniumIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
 downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
@@ -35,23 +87,34 @@ downloadSelenium seleniumPath = void $ do
   liftIO $ createDirectoryIfMissing True (takeDirectory seleniumPath)
   liftIO $ readCreateProcess (shell [i|curl https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar -o #{seleniumPath}|]) ""
 
-downloadChromeDriverIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
-downloadChromeDriverIfNecessary toolsDir = runExceptT $ do
-  chromeVersion <- ExceptT $ liftIO detectChromeVersion
-  chromeDriverVersion@(w, x, y, z) <- ExceptT $ liftIO $ getChromeDriverVersion chromeVersion
-  let downloadPath = getChromeDriverDownloadPath chromeDriverVersion detectPlatform
+downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
+  let chromeDriverPath = getChromeDriverPath toolsDir chromeDriverVersion
 
-  let executableName = case detectPlatform of
-        Windows -> "chromedriver.exe"
-        _ -> "chromedriver"
-  let chromeDriverPath = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{executableName}|]
-  (liftIO $ doesFileExist chromeDriverPath) >>= flip unless (ExceptT $ downloadAndUnzipToPath downloadPath chromeDriverPath)
+  unlessM (liftIO $ doesFileExist chromeDriverPath) $ do
+    let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
+    ExceptT $ downloadAndUnzipToPath downloadPath chromeDriverPath
 
   return chromeDriverPath
 
-downloadAndUnzipToPath :: Constraints m => T.Text -> FilePath -> m (Either T.Text ())
+downloadChromeDriverIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary toolsDir = runExceptT $ do
+  chromeDriverVersion <- ExceptT $ liftIO getChromeDriverVersion
+  ExceptT $ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion
+
+getChromeDriverPath :: FilePath -> ChromeDriverVersion -> FilePath
+getChromeDriverPath toolsDir (ChromeDriverVersion (w, x, y, z)) = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{chromeDriverExecutable}|]
+
+chromeDriverExecutable = case detectPlatform of
+  Windows -> "chromedriver.exe"
+  _ -> "chromedriver"
+
+downloadAndUnzipToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
   liftIO $ void $ readCreateProcess (shell [i|wget -nc -O - #{downloadPath} | gunzip - > #{localPath}|]) ""
   liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
+
+unlessM :: Monad m => m Bool -> m () -> m ()
+unlessM b s = b >>= (\t -> unless t s)

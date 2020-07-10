@@ -21,6 +21,8 @@ data TestArtifactsDirectory =
       }
   -- ^ Create a new test artifacts directory under '' test artifacts directory at the given path.
 
+newtype TreeFilter = TreeFilter String
+
 data Options = Options {
   optionsTestArtifactsDirectory :: TestArtifactsDirectory
   -- ^ Where to save test artifacts (logs, screenshots, failure reports, etc.).
@@ -28,6 +30,8 @@ data Options = Options {
   -- ^ Minimum test log level to save (has no effect if 'optionsTestArtifactsDirectory' is 'TestArtifactsNone').
   , optionsMemoryLogLevel :: Maybe LogLevel
   -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
+  , optionsFilterTree :: Maybe TreeFilter
+  -- ^ Filter to apply to the text tree before running.
   }
 
 defaultOptions :: Options
@@ -35,4 +39,5 @@ defaultOptions = Options {
   optionsTestArtifactsDirectory = TestArtifactsNone
   , optionsSavedLogLevel = Just LevelDebug
   , optionsMemoryLogLevel = Just LevelDebug
+  , optionsFilterTree = Nothing
   }
