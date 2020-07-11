@@ -55,7 +55,6 @@ module Test.Sandwich.WebDriver (
   , capabilities
 
   , hoistExample -- experimental
-  , hoistExample' -- experimental
   ) where
 
 import Control.Concurrent
@@ -135,13 +134,8 @@ withBrowser browser (ExampleT readerMonad) = do
 
   ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
-hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) W.WD a
-hoistExample (ExampleT r) = ExampleT $ transformBaseMonad $ transformContext r
-  where transformBaseMonad = mapReaderT (mapLoggingT liftIO)
-        transformContext = withReaderT (\(_ :> ctx) -> ctx)
-
-hoistExample' :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
-hoistExample' (ExampleT r) = ExampleT $ transformContext r
+hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
+hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
 getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
