@@ -52,11 +52,6 @@ runTreeMain baseContext spec = do
     , runTreeCurrentFolder = baseContextRunRoot baseContext
     }
 
-markDone status ret = do
-  endTime <- getCurrentTime
-  atomically $ modifyTVar status $ \case
-    Running startTime -> Done startTime endTime ret
-    _ -> Done endTime endTime ret
 
 runTree :: (HasBaseContext context) => Free (SpecCommand context IO) r -> ReaderT (RunTreeContext context) IO [RunTree]
 runTree (Free (Before l f subspec next)) = do
@@ -68,7 +63,10 @@ runTree (Free (Before l f subspec next)) = do
     (runExampleM f ctx logs (Just [i|Exception in before '#{l}' handler|])) >>= \case
       Failure e  -> throwIO e
       Success -> do
-        markDone status Success
+        endTime <- getCurrentTime
+        atomically $ modifyTVar status $ \case
+          Running startTime -> Done startTime endTime Success
+          _ -> Done endTime endTime Success
         return ctx
 
   subtree <- local (const $ rtc { runTreeContext = newContextAsync
