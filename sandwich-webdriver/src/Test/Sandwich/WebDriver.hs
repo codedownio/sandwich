@@ -53,18 +53,17 @@ module Test.Sandwich.WebDriver (
   , chromeDriverToUse
   , WhenToSave(..)
   , capabilities
+
+  , hoistExample -- experimental
+  , hoistExample' -- experimental
   ) where
 
 import Control.Concurrent
 import Control.Exception.Safe as ES
-import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Reader
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
@@ -79,6 +78,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Config as W
+import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
 
 
@@ -109,13 +109,13 @@ cleanupWebDriver' sess = do
     closeAllSessions sess
     stopWebDriver sess
 
-withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser1 = withBrowser "browser1"
 
-withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser2 = withBrowser "browser2"
 
-withBrowser :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) W.WD a -> ExampleT context m a
+withBrowser :: forall m a context. (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser browser (ExampleT readerMonad) = do
   WdSession {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
@@ -129,15 +129,20 @@ withBrowser browser (ExampleT readerMonad) = do
 
   ref <- liftIO $ newIORef sess
 
-  let runAction action = do
-        W.runWD sess $ do
-          -- After the action, grab the updated session and save it before we return
-          -- TODO: why is this necessary?
-          ES.finally action $ do
-            sess' <- W.getSession
-            liftIO $ modifyMVar_ wdSessionMap $ return . M.insert browser sess'
+  -- Not used for now, but previous libraries have use a finally to grab the final session on exception.
+  -- We could do the same here, but it's not clear that it's needed.
+  let f :: m a -> m a = id
 
-  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT $ (liftIO . runAction)) readerMonad)
+  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
+
+hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) W.WD a
+hoistExample (ExampleT r) = ExampleT $ transformBaseMonad $ transformContext r
+  where transformBaseMonad = mapReaderT (mapLoggingT liftIO)
+        transformContext = withReaderT (\(_ :> ctx) -> ctx)
+
+hoistExample' :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
+hoistExample' (ExampleT r) = ExampleT $ transformContext r
+  where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
 getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
 getBrowsers = do
@@ -154,15 +159,13 @@ instance (MonadIO m, HasLabel context "webdriverSession" (IORef W.WDSession)) =>
     sessVar <- getContext webdriverSession
     liftIO $ writeIORef sessVar sess
 
-instance W.WDSessionState m => W.WDSessionState (LoggingT m) where
-  getSession = lift W.getSession
-  putSession = lift . W.putSession
-
-instance W.WebDriver wd => W.WebDriver (LoggingT wd) where
-  doCommand rm t a = lift (W.doCommand rm t a)
-
-instance (W.WDSessionState (ExampleT context wd), W.WebDriver wd) => W.WebDriver (ExampleT context wd) where
-  doCommand rm t a = lift (W.doCommand rm t a)
+-- Implementation copied from that of the WD monad implementation
+instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" (IORef W.WDSession), MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
+  doCommand method path args = WI.mkRequest method path args
+    >>= WI.sendHTTPRequest
+    >>= either throwIO return
+    >>= WI.getJSONResult
+    >>= either throwIO return
 
 type HasWebDriverContext context = HasLabel context "webdriver" WdSession
 type HasWebDriverSessionContext context = HasLabel context "webdriverSession" (IORef W.WDSession)
