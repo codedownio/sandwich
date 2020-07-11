@@ -109,15 +109,15 @@ runTree (Free (Around l f subspec next)) = do
   -- Use mvar to control when subspec is allowed to run
   mvar :: MVar () <- liftIO newEmptyMVar
   newContextAsync <- liftIO $ async $ do
-    ctx <- wait runTreeContext
+    (addPathSegment (PathSegment l False runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndWrapContextException runTreeContext
     void $ readMVar mvar
-    return (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) ctx)
+    return ctx
 
   subtree <- withReaderT (const $ rtc { runTreeContext = newContextAsync
                                       , runTreeCurrentFolder = appendFolder rtc l }) $ runTreeSequentially subspec
 
   myAsync <- liftIO $ async $ do
-    (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- wait runTreeContext
+    (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndWrapContextException runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
     let action = putMVar mvar () >> void (waitForTree subtree)
