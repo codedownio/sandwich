@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8d08d9bb65f0a63008842b6f27f9680fe425d9e7f9e678c7fcd06f655976b273
+-- hash: 0ea862ad14e8460b4c0dc236f35aaf18f3992ab7777a2463ca41708c27f57fd2
 
 name:           sandwich
 version:        0.1.0.0
@@ -142,10 +142,61 @@ executable sandwich-exe
     , vty
   default-language: Haskell2010
 
-test-suite sandwich-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
+executable sandwich-test
+  main-is: Main.hs
   other-modules:
+      Around
+      Before
+      Describe
+      Introduce
+      TestUtil
+      Paths_sandwich
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      QuickCheck
+    , ansi-terminal
+    , async
+    , base >=4.7 && <5
+    , brick
+    , bytestring
+    , colour
+    , containers
+    , directory
+    , filepath
+    , free
+    , interpolate
+    , lifted-async
+    , microlens
+    , microlens-th
+    , monad-control
+    , monad-logger
+    , mtl
+    , pretty-show
+    , process
+    , random
+    , safe-exceptions
+    , sandwich
+    , stm
+    , text
+    , time
+    , transformers
+    , transformers-base
+    , unix
+    , vector
+    , vty
+  default-language: Haskell2010
+
+test-suite sandwich-test-suite
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Around
+      Before
+      Describe
+      Introduce
+      TestUtil
       Paths_sandwich
   hs-source-dirs:
       test
