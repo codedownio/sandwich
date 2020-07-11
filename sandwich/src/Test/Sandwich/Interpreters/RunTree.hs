@@ -22,7 +22,6 @@ import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.Except
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.State
 import qualified Data.List as L
@@ -38,7 +37,6 @@ import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
-import Test.Sandwich.Util
 
 
 runTreeMain :: BaseContext -> Free (SpecCommand BaseContext IO) () -> IO [RunTree]
@@ -118,7 +116,12 @@ runTree (Free (Around l f subspec next)) = do
     (addPathSegment (PathSegment l True runTreeIndexInParent runTreeNumSiblings) -> ctx) <- waitAndWrapContextException runTreeContext
     startTime <- getCurrentTime
     atomically $ writeTVar status (Running startTime)
-    let action = putMVar mvar () >> void (waitForTree subtree)
+    let action = do
+          liftIO $ putMVar mvar ()
+          (liftIO (waitForTree subtree)) >>= \case
+            Left es -> return $ Failure $ Reason Nothing "Subtree had exceptions"
+            Right () -> return Success
+
     result <- runExampleM (f action) ctx logs (Just [i|Exception in around '#{l}' handler|])
     endTime <- getCurrentTime
     atomically $ writeTVar status $ Done startTime endTime result

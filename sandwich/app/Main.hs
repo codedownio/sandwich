@@ -79,7 +79,7 @@ medium = do
     it "sequential 2" sleepThenSucceed
     it "sequential 3" sleepThenSucceed
 
-  around "some around" (\action -> debug "around1" >> liftIO action >> debug "around2") $ do
+  around "some around" (\action -> debug "around1" >> action >> debug "around2") $ do
     it "does 1" sleepThenSucceed -- pending
     it "does 2" sleepThenSucceed -- pending
 
@@ -144,7 +144,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultPrintFormatter verySimple
+main = runSandwich options defaultTerminalUIFormatter verySimple -- defaultPrintFormatter
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
