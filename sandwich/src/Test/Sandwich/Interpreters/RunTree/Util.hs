@@ -9,6 +9,7 @@ module Test.Sandwich.Interpreters.RunTree.Util where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception.Safe
+import Control.Monad
 import Control.Monad.Free
 import Control.Monad.Logger
 import Data.Either
@@ -22,12 +23,16 @@ import Test.Sandwich.Types.Spec
 import Text.Printf
 
 -- | Wait for a tree, catching any synchronous exceptions and returning them as a list
-waitForTree :: [RunTree] -> IO (Either [SomeException] ())
-waitForTree rts = do
-  results <- mapM (tryAny . wait) (fmap runTreeAsync rts)
-  case lefts results of
-    [] -> return $ Right ()
-    xs -> return $ Left xs
+-- waitForTree :: [RunTree context] -> IO (Either [SomeException] ())
+-- waitForTree rts = undefined
+  -- results <- mapM (tryAny . wait) (fmap runTreeAsync rts)
+  -- case lefts results of
+  --   [] -> return $ Right ()
+  --   xs -> return $ Left xs
+-- waitForTree :: [RunTree] -> IO [Result]
+-- waitForTree rts = do
+--   void $ mapM (wait . runTreeAsync) rts
+--   mapM (readTVarIO . runTreeStatus) rts
 
 -- | Append a log message outside of ExampleT. Only stored to in-memory logs, not disk.
 -- Only for debugging the interpreter, should not be exposed.
@@ -50,7 +55,7 @@ getImmediateChildren (Pure ()) = [Pure ()]
 countChildren :: Free (SpecCommand context m) () -> Int
 countChildren = L.length . getImmediateChildren
 
-appendFolder :: RunTreeContext context -> String -> Maybe FilePath
+appendFolder :: RunTreeContext -> String -> Maybe FilePath
 appendFolder (RunTreeContext {runTreeCurrentFolder=Nothing}) _ = Nothing
 appendFolder (RunTreeContext {runTreeCurrentFolder=(Just f), ..}) l = Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
 

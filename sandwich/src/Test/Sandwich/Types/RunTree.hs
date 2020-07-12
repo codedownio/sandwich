@@ -1,4 +1,7 @@
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -23,26 +26,39 @@ data Status = NotStarted
             | Done { statusStartTime :: UTCTime
                    , statusEndTime :: UTCTime
                    , statusResult :: Result }
-  deriving (Show, Eq)
+            deriving (Show, Eq)
+data RunNodeCommon s l t = RunNodeCommon {
+  runTreeLabel :: String
+  , runTreeToggled :: t
+  , runTreeStatus :: s
+  , runTreeFolder :: Maybe FilePath
+  , runTreeVisibilityLevel :: Int
+  , runTreeLogs :: l
+  } deriving Show
 
-data RunTreeWithStatus s l t =
-  RunTreeGroup { runTreeLabel :: String
-               , runTreeToggled :: t
-               , runTreeStatus :: s
-               , runTreeFolder :: Maybe FilePath
-               , runTreeIsContextManager :: Bool
-               , runTreeChildren :: [RunTreeWithStatus s l t]
-               , runTreeLogs :: l
-               , runTreeAsync :: Async ()
-               }
-  | RunTreeSingle { runTreeLabel :: String
-                  , runTreeToggled :: t
-                  , runTreeStatus :: s
-                  , runTreeFolder :: Maybe FilePath
-                  , runTreeLogs :: l
-                  , runTreeAsync :: Async ()
-                  }
-  deriving (Functor, Eq)
+data RunNodeWithStatus context s l t where
+  RunNodeBefore :: { runNodeCommon :: RunNodeCommon s l t
+                   , runNodeChildren :: [RunNodeWithStatus context s l t]
+                   , runNodeBefore :: ExampleT context m () } -> RunNodeWithStatus context s l t
+  RunNodeAfter :: { runNodeCommon :: RunNodeCommon s l t
+                  , runNodeChildren :: [RunNodeWithStatus context s l t]
+                  , runNodeAfter :: ExampleT context m () } -> RunNodeWithStatus context s l t
+  RunNodeIntroduce :: { runNodeCommon :: RunNodeCommon s l t
+                      , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+                      , runNodeAlloc :: ExampleT context m intro
+                      , runNodeCleanup :: intro -> ExampleT context m () } -> RunNodeWithStatus context s l t
+  RunNodeIntroduceWith :: { runNodeCommon :: RunNodeCommon s l t
+                          , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+                          , runNodeIntroduceAction :: ActionWith intro -> ExampleT context m () } -> RunNodeWithStatus context s l t
+  RunNodeAround :: { runNodeCommon :: RunNodeCommon s l t
+                   , runNodeChildren :: [RunNodeWithStatus context s l t]
+                   , runNodeActionWith :: ExampleT context m Result -> ExampleT context m () } -> RunNodeWithStatus context s l t
+  RunNodeDescribe :: { runNodeCommon :: RunNodeCommon s l t
+                     , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
+  RunNodeParallel :: { runNodeCommon :: RunNodeCommon s l t
+                     , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
+  RunNodeIt :: { runNodeCommon :: RunNodeCommon s l t
+               , runNodeExample :: ExampleT context m () } -> RunNodeWithStatus context s l t
 
 type Var = TVar
 data LogEntry = LogEntry { logEntryTime :: UTCTime
@@ -51,13 +67,14 @@ data LogEntry = LogEntry { logEntryTime :: UTCTime
                          , logEntryLevel :: LogLevel
                          , logEntryStr :: LogStr
                          } deriving (Show, Eq)
-type RunTree = RunTreeWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
-type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
+
+type RunNode context = RunNodeWithStatus context Status (Seq LogEntry) Bool
+-- type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
+-- type RunTreeFixed = RunTreeWithStatus Status (Seq LogEntry) Bool
 
 -- | Context passed around through the evaluation of a RunTree
-data RunTreeContext context = RunTreeContext {
-  runTreeContext :: Async context
-  , runTreeOptions :: Options
+data RunTreeContext = RunTreeContext {
+  runTreeOptions :: Options
   , runTreeCurrentFolder :: Maybe FilePath
   , runTreeIndexInParent :: Int
   , runTreeNumSiblings :: Int
@@ -67,32 +84,21 @@ isFailureStatus :: Status -> Bool
 isFailureStatus (Done _ _ stat) = isFailure stat
 isFailureStatus _ = False
 
-fixRunTree :: RunTree -> STM RunTreeFixed
-fixRunTree (RunTreeSingle {..}) = do
-  status <- readTVar runTreeStatus
-  logs <- readTVar runTreeLogs
-  toggled <- readTVar runTreeToggled
+-- fixRunTree :: RunTree -> STM RunTreeFixed
+-- fixRunTree (RunTreeNode {..}) = do
+--   status <- readTVar runTreeStatus
+--   logs <- readTVar runTreeLogs
+--   toggled <- readTVar runTreeToggled
 
-  return $ RunTreeSingle {
-    runTreeStatus=status
-    , runTreeLogs=logs
-    , runTreeToggled=toggled
-    , ..
-    }
-fixRunTree (RunTreeGroup {..}) = do
-  status <- readTVar runTreeStatus
-  logs <- readTVar runTreeLogs
-  toggled <- readTVar runTreeToggled
+--   children <- forM runTreeChildren fixRunTree
 
-  children <- forM runTreeChildren fixRunTree
-
-  return $ RunTreeGroup {
-    runTreeStatus = status
-    , runTreeLogs = logs
-    , runTreeToggled = toggled
-    , runTreeChildren = children
-    , ..
-    }
+--   return $ RunTreeNode {
+--     runTreeStatus = status
+--     , runTreeLogs = logs
+--     , runTreeToggled = toggled
+--     , runTreeChildren = children
+--     , ..
+--     }
 
 getCallStackFromStatus :: Status -> Maybe CallStack
 getCallStackFromStatus NotStarted {} = Nothing
