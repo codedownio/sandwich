@@ -151,16 +151,17 @@ runInAsync node action = do
 
 -- | Run a list of children sequentially, cancelling everything on async exception TODO
 runNodesSequentially :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
-runNodesSequentially children ctx = do
+runNodesSequentially children ctx =
   flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
     forM (L.filter (shouldRunChild ctx) children) $ \child ->
       startTree child ctx >>= wait
 
 -- | Run a list of children sequentially, cancelling everything on async exception TODO
 runNodesConcurrently :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
-runNodesConcurrently children ctx = do
-  mapM wait =<< sequence [startTree child ctx
-                         | child <- L.filter (shouldRunChild ctx) children]
+runNodesConcurrently children ctx =
+  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
+    mapM wait =<< sequence [startTree child ctx
+                           | child <- L.filter (shouldRunChild ctx) children]
 
 markAllChildrenWithStatus :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithStatus children baseContext status = do
