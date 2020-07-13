@@ -20,6 +20,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Reader
+import Data.Either
 import Data.IORef
 import qualified Data.List as L
 import Data.Sequence hiding ((:>))
@@ -108,11 +109,13 @@ startTree node@(RunNodeAround {..}) ctx' = do
             runNodeActionWith $ do
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
               liftIO $ writeIORef didRunWrappedAction (Right results)
-              return Success
+              return $ case L.filter isFailure results of
+                [] -> Success
+                (L.length -> n) -> Failure $ Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|]
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]
-            Right results -> return Success
+            Right results -> return Success -- TODO: should we fail ourself if our children failed? We do so for the wrapped action
     runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
 startTree node@(RunNodeDescribe {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
