@@ -101,5 +101,4 @@ bottomProgressBarColoredWidth app width = hBox [getCharForChunk chunk | chunk <-
     testsPerChar :: Rational = fromIntegral width / fromIntegral (length statuses)
 
     getStatuses :: (HasCallStack) => RunNodeWithStatus context a l t -> [a]
-    getStatuses (RunNodeIt {..}) = [runTreeStatus runNodeCommon]
-    getStatuses node = (runTreeStatus $ runNodeCommon node) : (concatMap getStatuses (runNodeChildren node))
+    getStatuses = extractValues (runTreeStatus . runNodeCommon)

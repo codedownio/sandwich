@@ -30,6 +30,7 @@ import Control.Monad.Reader
 import Control.Monad.Trans.Control
 import Data.Functor.Classes
 import Data.Sequence hiding ((:>))
+import qualified Data.Set as S
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
@@ -129,7 +130,8 @@ data PathSegment = PathSegment {
 
 data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
-                               , baseContextOptions :: Options }
+                               , baseContextOptions :: Options
+                               , baseContextOnlyRunIds :: Maybe (S.Set Int) }
 
 class HasBaseContext a where
   getBaseContext :: a -> BaseContext

@@ -120,16 +120,13 @@ startSandwichTree options@(Options {..}) spec' = do
         baseContextPath = mempty
         , baseContextOptions = options
         , baseContextRunRoot = runRoot
+        , baseContextOnlyRunIds = Nothing
         }
 
   runTree <- atomically $ specToRunTreeVariable baseContext spec
 
   unless optionsDryRun $ do
-    let stc = StartTreeContext {
-          startTreeOnlyRunIds = Nothing
-          }
-
-    void $ async $ void $ runNodesSequentially runTree baseContext stc
+    void $ async $ void $ runNodesSequentially runTree baseContext
 
   return runTree
 

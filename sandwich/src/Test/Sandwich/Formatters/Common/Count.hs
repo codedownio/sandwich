@@ -7,13 +7,14 @@ module Test.Sandwich.Formatters.Common.Count where
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-countWhere :: forall context s l t. (RunNodeWithStatus context s l t -> Bool) -> [RunNodeWithStatus context s l t] -> Int
+countWhere :: (forall context. RunNodeWithStatus context s l t -> Bool) -> [RunNodeWithStatus context s l t] -> Int
 countWhere p rts = sum $ fmap (countWhere' p) rts
   where
-    countWhere' :: (RunNodeWithStatus context s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
-    countWhere' predicate rt@(RunNodeIt {..}) = if predicate rt then 1 else 0
-    countWhere' p rt =
-      (if p rt then 1 else 0) + countWhere p (runNodeChildren rt)
+    countWhere' :: (forall context. RunNodeWithStatus context s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
+    countWhere' p rt@(RunNodeIt {..}) = if p rt then 1 else 0
+    countWhere' p rt@(RunNodeIntroduce {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented
+    countWhere' p rt@(RunNodeIntroduceWith {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented
+    countWhere' p rt = (if p rt then 1 else 0) + countWhere p (runNodeChildren rt)
 
 isItBlock (RunNodeIt {}) = True
 isItBlock _ = False

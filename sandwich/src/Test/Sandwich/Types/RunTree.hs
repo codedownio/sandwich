@@ -42,7 +42,6 @@ data RunNodeWithStatus context s l t where
                   , runNodeChildren :: [RunNodeWithStatus context s l t]
                   , runNodeAfter :: ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeIntroduce :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                      , runNodeIntroduceLabel :: Label lab intro
                       , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
                       , runNodeAlloc :: ExampleT context IO intro
                       , runNodeCleanup :: intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
@@ -61,6 +60,12 @@ data RunNodeWithStatus context s l t where
 
 type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
 type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
+
+extractValues :: (forall context. RunNodeWithStatus context s l t -> a) -> RunNodeWithStatus context s l t -> [a]
+extractValues f node@(RunNodeIt {}) = [f node]
+extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
+extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
+extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
 
 -- * RunNodeCommon
 
@@ -102,8 +107,7 @@ isFailureStatus (Done _ _ stat) = isFailure stat
 isFailureStatus _ = False
 
 getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
-getCommons (RunNodeIt {..}) = [runNodeCommon]
-getCommons node = (runNodeCommon node) : (concatMap getCommons (runNodeChildren node))
+getCommons = extractValues runNodeCommon
 
 fixRunTree :: RunNode context -> STM (RunNodeFixed context)
 fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do

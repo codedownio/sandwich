@@ -81,16 +81,10 @@ getResultsAndMessages fixedTree = (results, msgs)
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
 getStatuses :: (HasCallStack) => RunNodeWithStatus context s l t -> [(String, s)]
-getStatuses (RunNodeIt {..}) = [(runTreeLabel runNodeCommon, runTreeStatus runNodeCommon)]
-getStatuses node@(RunNodeIntroduce {..}) = (runTreeLabel $ runNodeCommon, runTreeStatus $ runNodeCommon) : (concatMap getStatuses runNodeChildrenAugmented)
-getStatuses node@(RunNodeIntroduceWith {..}) = (runTreeLabel $ runNodeCommon, runTreeStatus $ runNodeCommon) : (concatMap getStatuses runNodeChildrenAugmented)
-getStatuses node = (runTreeLabel $ runNodeCommon node, runTreeStatus $ runNodeCommon node) : (concatMap getStatuses (runNodeChildren node))
+getStatuses = extractValues $ \node -> (runTreeLabel $ runNodeCommon node, runTreeStatus $ runNodeCommon node)
 
 getLogs :: (HasCallStack) => RunNodeWithStatus context s l t -> [l]
-getLogs (RunNodeIt {..}) = [runTreeLogs runNodeCommon]
-getLogs (RunNodeIntroduce {..}) = (runTreeLogs runNodeCommon) : (concatMap getLogs runNodeChildrenAugmented)
-getLogs (RunNodeIntroduceWith {..}) = (runTreeLogs runNodeCommon) : (concatMap getLogs runNodeChildrenAugmented)
-getLogs node = (runTreeLogs $ runNodeCommon node) : (concatMap getLogs (runNodeChildren node))
+getLogs = extractValues $ \node -> runTreeLogs $ runNodeCommon node
 
 statusToResult :: (HasCallStack) => (String, Status) -> Result
 statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]
