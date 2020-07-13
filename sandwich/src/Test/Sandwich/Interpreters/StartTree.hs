@@ -47,7 +47,7 @@ startTree node@(RunNodeBefore {..}) ctx' = do
   runInAsync node $ do
     (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|])) >>= \case
       result@(Failure fr) -> do
-        markAllChildrenWithStatus runNodeChildren ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException fr))
+        markAllChildrenWithResult runNodeChildren ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException fr))
         return result
       Success -> do
         ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
@@ -64,17 +64,20 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node $ do
-    bracket (runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
+    bracket (do
+                let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
+                flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
+                  runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
             (\case
                 Left failureReason -> return $ Failure failureReason
-                Right intro -> do
+                Right intro ->
                   (runExampleM' (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])) >>= \case
-                    Left failureReason -> return $ Failure failureReason
+                    Left failureReason -> return $ Failure failureReason -- TODO: return this somehow, bracket drops it
                     Right () -> return Success
             )
             (\case
                 Left failureReason -> do
-                  markAllChildrenWithStatus runNodeChildrenAugmented ctx (Failure failureReason)
+                  markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
                   -- TODO: add note about failure in allocation
                   -- TODO: make sure cleanup failures can find their way to the status (bracket swallows this return value)
                   return $ Failure failureReason
@@ -89,7 +92,8 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left ())
   runInAsync node $ do
     let wrappedAction = do
-          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithStatus runNodeChildrenAugmented ctx (Failure $ Reason Nothing [i|introduceWith #{runTreeLabel} handler threw exception|])) $ do
+          let failureResult e = Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
+          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
             runNodeIntroduceAction $ \intro -> do
               results <- runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
               writeIORef didRunWrappedAction (Right results)
@@ -105,7 +109,8 @@ startTree node@(RunNodeAround {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left ())
   runInAsync node $ do
     let wrappedAction = do
-          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithStatus runNodeChildren ctx (Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|])) $ do
+          let failureResult e = Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|]
+          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
             runNodeActionWith $ do
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
               liftIO $ writeIORef didRunWrappedAction (Right results)
@@ -166,13 +171,11 @@ runNodesConcurrently children ctx =
     mapM wait =<< sequence [startTree child ctx
                            | child <- L.filter (shouldRunChild ctx) children]
 
-markAllChildrenWithStatus :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
-markAllChildrenWithStatus children baseContext status = do
+markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
+markAllChildrenWithResult children baseContext status = do
   now <- liftIO getCurrentTime
-  forM_ children $ \child -> do
-    case shouldRunChild baseContext child of
-      True -> liftIO $ atomically $ writeTVar (runTreeStatus $ runNodeCommon child) (Done now now status)
-      False -> return ()
+  forM_ (L.filter (shouldRunChild' baseContext) $ concatMap getCommons children) $ \child ->
+    liftIO $ atomically $ writeTVar (runTreeStatus child) (Done now now status)
 
 cancelAllChildrenWith :: [RunNode context] -> SomeAsyncException -> IO ()
 cancelAllChildrenWith children e = do
@@ -186,9 +189,12 @@ cancelAllChildrenWith children e = do
       _ -> return ()
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
-shouldRunChild ctx node = case baseContextOnlyRunIds $ getBaseContext ctx of
+shouldRunChild ctx node = shouldRunChild' ctx (runNodeCommon node)
+
+shouldRunChild' :: (HasBaseContext ctx) => ctx -> RunNodeCommonWithStatus s l t -> Bool
+shouldRunChild' ctx common = case baseContextOnlyRunIds $ getBaseContext ctx of
   Nothing -> True
-  Just ids -> (runTreeId $ runNodeCommon node) `S.member` ids
+  Just ids -> (runTreeId common) `S.member` ids
 
 -- * Running examples
 
