@@ -1,6 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
 -- |
@@ -17,10 +17,12 @@ import Brick.Widgets.List
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Foldable
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import qualified Data.Set as S
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
@@ -31,6 +33,7 @@ import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
@@ -51,8 +54,8 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
 instance Formatter TerminalUIFormatter where
   runFormatter = runApp
 
-runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> IO ()
-runApp (TerminalUIFormatter {..}) rts = do
+runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
+runApp (TerminalUIFormatter {..}) rts baseContext = do
   rtsFixed <- atomically $ mapM fixRunTree rts
   let initialState = updateFilteredTree (zip (filterRunTree showContextManagers rts) (filterRunTree showContextManagers rtsFixed)) $
         AppState {
@@ -60,6 +63,7 @@ runApp (TerminalUIFormatter {..}) rts = do
           , _appRunTree = rtsFixed
           , _appRunTreeFiltered = []
           , _appMainList = list () mempty 1
+          , _appBaseContext = baseContext
 
           , _appShowContextManagers = showContextManagers
           , _appShowRunTimes = showRunTimes
@@ -68,7 +72,7 @@ runApp (TerminalUIFormatter {..}) rts = do
   eventChan <- newBChan 10
 
   currentFixedTree <- newTVarIO rtsFixed
-  async $ forever $ do
+  eventAsync <- async $ forever $ do
     newFixedTree <- atomically $ do
       currentFixed <- readTVar currentFixedTree
       newFixed <- mapM fixRunTree rts
@@ -80,7 +84,8 @@ runApp (TerminalUIFormatter {..}) rts = do
 
   let buildVty = V.mkVty V.defaultConfig
   initialVty <- buildVty
-  void $ customMain initialVty buildVty (Just eventChan) app initialState
+  flip onException (cancel eventAsync) $
+    void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ()
 app = App {
@@ -138,8 +143,32 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c == V.KRight -> modifyToggled s (const True)
 
     V.EvKey c [] | c == cancelAllKey -> do
-      liftIO $ mapM_ cancelRecursively (s ^. appRunTree)
+      liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       continue s
+    V.EvKey c [] | c == cancelSelectedKey -> do
+      case listSelectedElement (s ^. appMainList) of
+        Just (_, MainListElem {..}) -> liftIO $ do
+          (readTVarIO $ runTreeStatus node) >>= \case
+            Running {..} -> cancel statusAsync
+            _ -> return ()
+        Nothing -> return ()
+      continue s
+    V.EvKey c [] | c == runAllKey -> do
+      case all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree) of
+        True -> do
+          liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
+          void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
+        False -> return ()
+      continue s
+    V.EvKey c [] | c == runSelectedKey -> case listSelectedElement (s ^. appMainList) of
+      Nothing -> continue s
+      Just (_, MainListElem {..}) -> case status of
+        Running {} -> continue s
+        _ -> do
+          -- Start a run filtering the IDs to only this node's ancestors
+          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just $ S.fromList $ toList $ runTreeAncestors node }
+          void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
+          continue s
     V.EvKey c [] | c == clearResultsKey -> do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
       continue s
@@ -171,13 +200,9 @@ updateFilteredTree pairs s = s
 
 -- * Clearing
 
--- clearRecursively :: RunTree -> IO ()
--- clearRecursively (RunTreeGroup {..}) = do
---   forM_ runTreeChildren clearRecursively
---   atomically $ writeTVar runTreeStatus NotStarted
---   atomically $ writeTVar runTreeLogs mempty
--- clearRecursively (RunTreeSingle {..}) = do
---   atomically $ writeTVar runTreeStatus NotStarted
---   atomically $ writeTVar runTreeLogs mempty
-
-clearRecursively = undefined
+clearRecursively :: RunNode context -> IO ()
+clearRecursively = mapM_ clearCommon . getCommons
+  where
+    clearCommon (RunNodeCommonWithStatus {..}) = atomically $ do
+      writeTVar runTreeStatus NotStarted
+      writeTVar runTreeLogs mempty

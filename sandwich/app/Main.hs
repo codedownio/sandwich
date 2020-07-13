@@ -8,6 +8,7 @@ module Main where
 
 import Control.Concurrent
 import Control.Exception.Safe
+import Control.Monad
 import Control.Monad.IO.Class
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
@@ -49,6 +50,15 @@ verySimple = do
     info "info message"
     warn "warn message"
     logError "error message"
+
+cancelling :: TopSpec
+cancelling = do
+  before "succeeds" (debug "before called") $ do
+    it "sleeps forever" $ do
+      forever $ liftIO $ threadDelay 1
+    it "succeeds after 1 second" $ do
+      liftIO $ threadDelay 1000000
+      return ()
 
 simple :: TopSpec
 simple = do
@@ -144,7 +154,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter medium -- defaultPrintFormatter
+main = runSandwich options defaultTerminalUIFormatter cancelling -- defaultPrintFormatter
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

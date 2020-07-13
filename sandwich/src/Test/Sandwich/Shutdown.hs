@@ -1,18 +1,15 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
 
 module Test.Sandwich.Shutdown where
 
 import Control.Concurrent.Async
-import Control.Monad
+import Control.Concurrent.STM
 import Test.Sandwich.Types.RunTree
 
 
--- cancelRecursively :: RunTreeWithStatus s l t -> IO ()
--- cancelRecursively (RunTreeGroup {..}) = do
---   forM_ runTreeChildren cancelRecursively
---   cancel runTreeAsync
--- cancelRecursively (RunTreeSingle {..}) =
---   cancel runTreeAsync
-
-cancelRecursively = undefined
+cancelNode :: RunNode context -> IO ()
+cancelNode node = readTVarIO (runTreeStatus $ runNodeCommon node) >>= \case
+  Running {..} -> cancel statusAsync
+  _ -> return ()

@@ -204,3 +204,7 @@ getCallStackFromResult (Failure (GotAsyncException {})) = Nothing
 isDone :: Status -> Bool
 isDone (Done {}) = True
 isDone _ = False
+
+isRunning :: Status -> Bool
+isRunning (Running {}) = True
+isRunning _ = False

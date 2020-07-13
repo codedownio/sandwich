@@ -57,7 +57,6 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
-import Control.Monad.Trans.Reader
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
@@ -79,12 +78,12 @@ import Test.Sandwich.Types.Spec
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
   rts <- startSandwichTree options spec
-
-  formatterAsync <- async $ runFormatter f rts
+  baseContext <- baseContextFromOptions options
+  formatterAsync <- async $ runFormatter f rts baseContext
 
   let shutdown = do
         putStrLn "Shutting down..."
-        forM_ rts cancelRecursively
+        forM_ rts cancelNode
         -- cancel formatterAsync
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
@@ -99,6 +98,23 @@ startSandwichTree options@(Options {..}) spec' = do
         Nothing -> spec'
         Just (TreeFilter match) -> filterTree match spec'
 
+  baseContext <- baseContextFromOptions options
+
+  runTree <- atomically $ specToRunTreeVariable baseContext spec
+
+  unless optionsDryRun $ do
+    void $ async $ void $ runNodesSequentially runTree baseContext
+
+  return runTree
+
+runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
+runSandwichTree options spec = do
+  rts <- startSandwichTree options spec
+  _ <- mapM_ waitForTree rts
+  return rts
+
+baseContextFromOptions :: Options -> IO BaseContext
+baseContextFromOptions options@(Options {..}) = do
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
     TestArtifactsFixedDirectory dir -> do
@@ -116,22 +132,9 @@ startSandwichTree options@(Options {..}) spec' = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
-  let baseContext = BaseContext {
-        baseContextPath = mempty
-        , baseContextOptions = options
-        , baseContextRunRoot = runRoot
-        , baseContextOnlyRunIds = Nothing
-        }
-
-  runTree <- atomically $ specToRunTreeVariable baseContext spec
-
-  unless optionsDryRun $ do
-    void $ async $ void $ runNodesSequentially runTree baseContext
-
-  return runTree
-
-runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-runSandwichTree options spec = do
-  rts <- startSandwichTree options spec
-  _ <- mapM_ waitForTree rts
-  return rts
+  return $ BaseContext {
+    baseContextPath = mempty
+    , baseContextOptions = options
+    , baseContextRunRoot = runRoot
+    , baseContextOnlyRunIds = Nothing
+    }

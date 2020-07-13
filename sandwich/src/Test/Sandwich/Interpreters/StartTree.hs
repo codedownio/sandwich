@@ -138,12 +138,13 @@ runInAsync node action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
-  myAsync <- liftIO $ async $ do
-    readMVar mvar
-    result <- action
-    endTime <- liftIO getCurrentTime
-    liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
-    return result
+  myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
+    flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
+      readMVar mvar
+      result <- action
+      endTime <- liftIO getCurrentTime
+      liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
+      return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync
   liftIO $ putMVar mvar ()
   return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
@@ -151,8 +152,9 @@ runInAsync node action = do
 -- | Run a list of children sequentially, cancelling everything on async exception TODO
 runNodesSequentially :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
 runNodesSequentially children ctx = do
-  forM (L.filter (shouldRunChild ctx) children) $ \child ->
-    startTree child ctx >>= wait
+  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
+    forM (L.filter (shouldRunChild ctx) children) $ \child ->
+      startTree child ctx >>= wait
 
 -- | Run a list of children sequentially, cancelling everything on async exception TODO
 runNodesConcurrently :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
@@ -162,11 +164,22 @@ runNodesConcurrently children ctx = do
 
 markAllChildrenWithStatus :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithStatus children baseContext status = do
-  now <- liftIO $ getCurrentTime
+  now <- liftIO getCurrentTime
   forM_ children $ \child -> do
     case shouldRunChild baseContext child of
       True -> liftIO $ atomically $ writeTVar (runTreeStatus $ runNodeCommon child) (Done now now status)
       False -> return ()
+
+cancelAllChildrenWith :: [RunNode context] -> SomeAsyncException -> IO ()
+cancelAllChildrenWith children e = do
+  forM_ children $ \node ->
+    readTVarIO (runTreeStatus $ runNodeCommon node) >>= \case
+      Running {..} -> cancelWith statusAsync e
+      NotStarted -> do
+        now <- getCurrentTime
+        let reason = GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e)
+        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now (Failure reason))
+      _ -> return ()
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
 shouldRunChild ctx node = case baseContextOnlyRunIds $ getBaseContext ctx of
@@ -208,10 +221,10 @@ runExampleM' ex ctx logs exceptionMessage = do
         createDirectoryIfMissing True dir
         return $ Just dir
 
-wrapInFailureReasonIfNecessary :: Maybe String -> SomeException -> IO (Either FailureReason a)
-wrapInFailureReasonIfNecessary exceptionMessage e = return $ Left $ case fromException e of
-  Just (x :: FailureReason) -> x
-  _ -> GotException Nothing exceptionMessage (SomeExceptionWithEq e)
+    wrapInFailureReasonIfNecessary :: Maybe String -> SomeException -> IO (Either FailureReason a)
+    wrapInFailureReasonIfNecessary msg e = return $ Left $ case fromException e of
+      Just (x :: FailureReason) -> x
+      _ -> GotException Nothing msg (SomeExceptionWithEq e)
 
 recordExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()
 recordExceptionInStatus status e = do

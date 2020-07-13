@@ -104,9 +104,9 @@ mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. ap
     logLevelWidget LevelError = withAttr infoAttr $ str "(ERROR)"
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
-topBox app = hBox [columnPadding $ hLimitPercent 33 settingsColumn
-                  , columnPadding $ hLimitPercent 33 actionsColumn
-                  , columnPadding $ hLimitPercent 33 otherActionsColumn]
+topBox app = hBox [columnPadding settingsColumn
+                  , columnPadding actionsColumn
+                  , columnPadding otherActionsColumn]
   where
     columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
 
@@ -116,10 +116,11 @@ topBox app = hBox [columnPadding $ hLimitPercent 33 settingsColumn
                                    , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
                                    , keyIndicatorHasSelected (showKeys toggleKeys) "Toggle selected"]
 
-    actionsColumn = keybindingBox [keyIndicator (showKey cancelAllKey) "Cancel all"
-                                  , keyIndicatorHasSelected (showKey cancelSelectedKey) "Cancel selected"
-                                  , keyIndicator (showKey clearResultsKey) "Clear results"
-                                  , keyIndicator (showKey runAgainKey) "Run again"
+    actionsColumn = keybindingBox [keyIndicatorSomeTestsNotDone (showKey cancelAllKey) "Cancel all"
+                                  , keyIndicatorSelectedTestRunning (showKey cancelSelectedKey) "Cancel selected"
+                                  , keyIndicatorNoTestsRunning (showKey runAllKey) "Run all"
+                                  , keyIndicatorSelectedTestDone (showKey runSelectedKey) "Run selected"
+                                  , keyIndicatorAllTestsDone (showKey clearResultsKey) "Clear results"
                                   , keyIndicatorHasSelectedAndFolder (showKey openSelectedFolderInFileExplorer) "Open in file explorer"
                                   ]
 
@@ -136,9 +137,20 @@ topBox app = hBox [columnPadding $ hLimitPercent 33 settingsColumn
 
     keyIndicatorHasSelected = keyIndicatorContextual (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
 
+    keyIndicatorSelectedTestDone = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
+      Nothing -> False
+      Just (_, MainListElem {..}) -> isDone status
+    keyIndicatorSelectedTestRunning = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
+      Nothing -> False
+      Just (_, MainListElem {..}) -> isRunning status
+
     keyIndicatorHasSelectedAndFolder = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
       Just (_, MainListElem {folderPath=(Just _)}) -> True
       _ -> False
+
+    keyIndicatorNoTestsRunning = keyIndicatorContextual $ \s -> all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+    keyIndicatorAllTestsDone = keyIndicatorContextual $ \s -> all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+    keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
     keyIndicatorContextual p key msg = case p app of
       True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]

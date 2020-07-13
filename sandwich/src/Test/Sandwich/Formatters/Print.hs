@@ -33,8 +33,8 @@ import Test.Sandwich.Types.Spec
 instance Formatter PrintFormatter where
   runFormatter = runApp
 
-runApp :: PrintFormatter -> [RunNode BaseContext] -> IO ()
-runApp pf@(PrintFormatter {..}) rts = do
+runApp :: PrintFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
+runApp pf@(PrintFormatter {..}) rts bc = do
   let total = countWhere isItBlock rts
 
   putStrLn "\n"

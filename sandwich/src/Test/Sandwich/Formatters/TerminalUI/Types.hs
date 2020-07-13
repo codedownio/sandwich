@@ -29,6 +29,7 @@ data AppState = AppState {
   , _appRunTree :: [RunNodeFixed BaseContext]
   , _appRunTreeFiltered :: [RunNodeFixed BaseContext]
   , _appMainList :: L.List () MainListElem
+  , _appBaseContext :: BaseContext
 
   , _appShowContextManagers :: Bool
   , _appShowRunTimes :: Bool
