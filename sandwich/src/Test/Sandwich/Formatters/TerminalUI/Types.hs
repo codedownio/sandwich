@@ -7,9 +7,10 @@ import qualified Brick.Widgets.List as L
 import Data.Sequence
 import Lens.Micro.TH
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 
-data AppEvent = RunTreeUpdated [RunTreeFixed]
+data AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
 
 data MainListElem = MainListElem {
   label :: String
@@ -18,14 +19,15 @@ data MainListElem = MainListElem {
   , status :: Status
   , logs :: Seq LogEntry
   , isContextManager :: Bool
+  , visibilityLevel :: Int
   , folderPath :: Maybe FilePath
-  , node :: RunTree
+  , node :: RunNodeCommon
   }
 
 data AppState = AppState {
-  _appRunTreeBase :: [RunTree]
-  , _appRunTree :: [RunTreeFixed]
-  , _appRunTreeFiltered :: [RunTreeFixed]
+  _appRunTreeBase :: [RunNode BaseContext]
+  , _appRunTree :: [RunNodeFixed BaseContext]
+  , _appRunTreeFiltered :: [RunNodeFixed BaseContext]
   , _appMainList :: L.List () MainListElem
 
   , _appShowContextManagers :: Bool

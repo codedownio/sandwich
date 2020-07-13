@@ -144,7 +144,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter verySimple -- defaultPrintFormatter
+main = runSandwich options defaultTerminalUIFormatter simple -- defaultPrintFormatter
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
@@ -155,11 +155,11 @@ main = runSandwich options defaultTerminalUIFormatter verySimple -- defaultPrint
 
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
-  liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^5)
+  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^5)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
-  liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^5)
+  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^5)
   2 `shouldBe` 3

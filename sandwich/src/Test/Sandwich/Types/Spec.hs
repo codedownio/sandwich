@@ -127,7 +127,7 @@ data PathSegment = PathSegment {
   , pathSegmentNumSiblings :: Int
   }
 
-data BaseContext = BaseContext { baseContextPath :: Seq PathSegment
+data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
                                , baseContextOptions :: Options }
 

@@ -80,13 +80,17 @@ getResultsAndMessages fixedTree = (results, msgs)
 
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-getStatuses :: (HasCallStack) => RunTreeWithStatus a l t -> [(String, a)]
-getStatuses (RunTreeGroup {..}) = (runTreeLabel, runTreeStatus) : (concatMap getStatuses runTreeChildren)
-getStatuses (RunTreeSingle {..}) = [(runTreeLabel, runTreeStatus)]
+getStatuses :: (HasCallStack) => RunNodeWithStatus context s l t -> [(String, s)]
+getStatuses (RunNodeIt {..}) = [(runTreeLabel runNodeCommon, runTreeStatus runNodeCommon)]
+getStatuses node@(RunNodeIntroduce {..}) = (runTreeLabel $ runNodeCommon, runTreeStatus $ runNodeCommon) : (concatMap getStatuses runNodeChildrenAugmented)
+getStatuses node@(RunNodeIntroduceWith {..}) = (runTreeLabel $ runNodeCommon, runTreeStatus $ runNodeCommon) : (concatMap getStatuses runNodeChildrenAugmented)
+getStatuses node = (runTreeLabel $ runNodeCommon node, runTreeStatus $ runNodeCommon node) : (concatMap getStatuses (runNodeChildren node))
 
-getLogs :: (HasCallStack) => RunTreeWithStatus a l t -> [l]
-getLogs (RunTreeGroup {..}) = runTreeLogs : (concatMap getLogs runTreeChildren)
-getLogs (RunTreeSingle {..}) = [runTreeLogs]
+getLogs :: (HasCallStack) => RunNodeWithStatus context s l t -> [l]
+getLogs (RunNodeIt {..}) = [runTreeLogs runNodeCommon]
+getLogs (RunNodeIntroduce {..}) = (runTreeLogs runNodeCommon) : (concatMap getLogs runNodeChildrenAugmented)
+getLogs (RunNodeIntroduceWith {..}) = (runTreeLogs runNodeCommon) : (concatMap getLogs runNodeChildrenAugmented)
+getLogs node = (runTreeLogs $ runNodeCommon node) : (concatMap getLogs (runNodeChildren node))
 
 statusToResult :: (HasCallStack) => (String, Status) -> Result
 statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]
@@ -103,13 +107,13 @@ waitUntilRunning status = atomically $ do
     Running {} -> return ()
     _ -> retry
 
-printFixedRunTree :: RunTreeFixed -> IO ()
-printFixedRunTree = printFixedRunTree' 0
-  where
-    printFixedRunTree' :: Int -> RunTreeFixed -> IO ()
-    printFixedRunTree' indent (RunTreeGroup {..}) = do
-      putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
-      forM_ runTreeChildren (printFixedRunTree' (indent + 1))
-      where indentation = L.replicate (indent * 4) ' '
-    printFixedRunTree' indent (RunTreeSingle {..}) = putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
-      where indentation = L.replicate (indent * 4) ' '
+-- printFixedRunTree :: RunNodeFixed -> IO ()
+-- printFixedRunTree = printFixedRunTree' 0
+--   where
+--     printFixedRunTree' :: Int -> RunNodeFixed -> IO ()
+--     printFixedRunTree' indent (RunTreeGroup {..}) = do
+--       putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
+--       forM_ runTreeChildren (printFixedRunTree' (indent + 1))
+--       where indentation = L.replicate (indent * 4) ' '
+--     printFixedRunTree' indent (RunTreeSingle {..}) = putStrLn [i|#{indentation}#{runTreeLabel} [#{statusResult runTreeStatus}]|]
+--       where indentation = L.replicate (indent * 4) ' '

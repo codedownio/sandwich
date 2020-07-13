@@ -51,7 +51,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
 instance Formatter TerminalUIFormatter where
   runFormatter = runApp
 
-runApp :: TerminalUIFormatter -> [RunTree] -> IO ()
+runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> IO ()
 runApp (TerminalUIFormatter {..}) rts = do
   rtsFixed <- atomically $ mapM fixRunTree rts
   let initialState = updateFilteredTree (zip (filterRunTree showContextManagers rts) (filterRunTree showContextManagers rtsFixed)) $
@@ -72,7 +72,7 @@ runApp (TerminalUIFormatter {..}) rts = do
     newFixedTree <- atomically $ do
       currentFixed <- readTVar currentFixedTree
       newFixed <- mapM fixRunTree rts
-      when (newFixed == currentFixed) retry
+      when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
       writeTVar currentFixedTree newFixed
       return newFixed
     writeBChan eventChan (RunTreeUpdated newFixedTree)
@@ -164,18 +164,20 @@ modifyToggled s f = case listSelectedElement (s ^. appMainList) of
     continue s
 
 
-updateFilteredTree :: [(RunTree, RunTreeFixed)] -> AppState -> AppState
+updateFilteredTree :: [(RunNode BaseContext, RunNodeFixed BaseContext)] -> AppState -> AppState
 updateFilteredTree pairs s = s
   & appRunTreeFiltered .~ fmap snd pairs
   & appMainList %~ listReplace (treeToVector pairs) (listSelected $ s ^. appMainList)
 
 -- * Clearing
 
-clearRecursively :: RunTree -> IO ()
-clearRecursively (RunTreeGroup {..}) = do
-  forM_ runTreeChildren clearRecursively
-  atomically $ writeTVar runTreeStatus NotStarted
-  atomically $ writeTVar runTreeLogs mempty
-clearRecursively (RunTreeSingle {..}) = do
-  atomically $ writeTVar runTreeStatus NotStarted
-  atomically $ writeTVar runTreeLogs mempty
+-- clearRecursively :: RunTree -> IO ()
+-- clearRecursively (RunTreeGroup {..}) = do
+--   forM_ runTreeChildren clearRecursively
+--   atomically $ writeTVar runTreeStatus NotStarted
+--   atomically $ writeTVar runTreeLogs mempty
+-- clearRecursively (RunTreeSingle {..}) = do
+--   atomically $ writeTVar runTreeStatus NotStarted
+--   atomically $ writeTVar runTreeLogs mempty
+
+clearRecursively = undefined

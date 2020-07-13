@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
@@ -21,7 +22,7 @@ class ToBrickWidget a where
 
 instance ToBrickWidget Status where
   toBrickWidget (NotStarted {}) = strWrap "Not started"
-  toBrickWidget (Running startTime) = strWrap [i|Started at #{startTime}|]
+  toBrickWidget (Running {statusStartTime}) = strWrap [i|Started at #{statusStartTime}|]
   toBrickWidget (Done startTime endTime Success) = strWrap [i|Succeeded in #{formatNominalDiffTime (diffUTCTime endTime startTime)}|]
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
 

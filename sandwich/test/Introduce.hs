@@ -77,20 +77,21 @@ introduceCleansUpOnCancelDuringTest = do
       liftIO $ putMVar mvar ()
       liftIO $ threadDelay 999999999999999
 
-  let [RunTreeGroup {runTreeChildren=[RunTreeSingle {runTreeStatus=status, runTreeAsync=theAsync}]}] = rts
+  let [RunNodeIntroduce {runNodeChildrenAugmented=[RunNodeIt {}]}] = rts
 
-  -- Wait until we get into the actual test example, then cancel the top level async
-  takeMVar mvar
-  cancel theAsync
+  undefined
+  -- -- Wait until we get into the actual test example, then cancel the top level async
+  -- takeMVar mvar
+  -- cancel theAsync
 
-  -- We should get an async exception
-  eitherResult :: Either SomeException (Either [SomeException] ()) <- E.try $ waitForTree rts
-  isLeft eitherResult `mustBe` True
+  -- -- We should get an async exception
+  -- eitherResult :: Either SomeException (Either [SomeException] ()) <- E.try $ waitForTree rts
+  -- isLeft eitherResult `mustBe` True
 
-  fixedTree <- atomically $ mapM fixRunTree rts
-  let results = fmap statusToResult $ concatMap getStatuses fixedTree
-  let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
+  -- fixedTree <- atomically $ mapM fixRunTree rts
+  -- let results = fmap statusToResult $ concatMap getStatuses fixedTree
+  -- let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-  msgs `mustBe` [["doing cleanup"], []]
-  results `mustBe` [Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
-                   , Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
+  -- msgs `mustBe` [["doing cleanup"], []]
+  -- results `mustBe` [Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
+  --                  , Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]

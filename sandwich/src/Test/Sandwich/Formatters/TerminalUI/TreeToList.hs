@@ -9,33 +9,24 @@ import qualified Data.Vector as Vec
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.RunTree
 
-treeToVector :: [(RunTree, RunTreeFixed)] -> Vec.Vector MainListElem
+treeToVector :: [(RunNode context, RunNodeFixed context)] -> Vec.Vector MainListElem
 treeToVector = runTreesToList' 0
 
-runTreesToList' :: Int -> [(RunTree, RunTreeFixed)] -> Vec.Vector MainListElem
+runTreesToList' :: Int -> [(RunNode context, RunNodeFixed context)] -> Vec.Vector MainListElem
 runTreesToList' indent rts = mconcat $ fmap (runTreeToList' indent) rts
 
-runTreeToList' :: Int -> (RunTree, RunTreeFixed) -> Vec.Vector MainListElem
-runTreeToList' indent (node, fixedNode@(RunTreeGroup {})) = elem `Vec.cons` (runTreesToList' (indent + 1)
-                                                                            (zip (runTreeChildren node) (runTreeChildren fixedNode)))
+runTreeToList' :: Int -> (RunNode context, RunNodeFixed context) -> Vec.Vector MainListElem
+runTreeToList' indent (node, fixedNode) = case fixedNode of
+  RunNodeIt {} -> Vec.singleton elem
+  _ -> elem `Vec.cons` (runTreesToList' (indent + 1) (zip (runNodeChildren node) (runNodeChildren fixedNode)))
   where elem = MainListElem {
-          label = runTreeLabel fixedNode
+          label = runTreeLabel $ runNodeCommon fixedNode
           , depth = indent
-          , toggled = runTreeToggled fixedNode
-          , status = runTreeStatus fixedNode
-          , logs = runTreeLogs fixedNode
-          , isContextManager = runTreeIsContextManager fixedNode
-          , folderPath = runTreeFolder fixedNode
-          , node = node
-          }
-runTreeToList' indent (node, (RunTreeSingle {..})) = Vec.singleton elem
-  where elem = MainListElem {
-          label = runTreeLabel
-          , depth = indent
-          , toggled = runTreeToggled
-          , status = runTreeStatus
-          , logs = runTreeLogs
-          , isContextManager = False
-          , folderPath = runTreeFolder
-          , node = node
+          , toggled = runTreeToggled $ runNodeCommon fixedNode
+          , status = runTreeStatus $ runNodeCommon fixedNode
+          , logs = runTreeLogs $ runNodeCommon fixedNode
+          , isContextManager = False -- TODO
+          , visibilityLevel = runTreeVisibilityLevel $ runNodeCommon fixedNode
+          , folderPath = runTreeFolder $ runNodeCommon fixedNode
+          , node = runNodeCommon node
           }

@@ -19,12 +19,4 @@ getRunRoot :: (Monad m, HasBaseContext context, MonadReader context m) => m (May
 getRunRoot = asks (baseContextRunRoot . getBaseContext)
 
 getCurrentFolder :: (HasBaseContext context, MonadReader context m, MonadIO m) => m (Maybe FilePath)
-getCurrentFolder = do
-  ctx <- ask
-  let BaseContext {..} = getBaseContext ctx
-  case baseContextRunRoot of
-    Nothing -> return Nothing
-    Just base -> do
-      let dir = foldl (</>) base (fmap pathSegmentToName baseContextPath)
-      liftIO $ createDirectoryIfMissing True dir
-      return $ Just dir
+getCurrentFolder = asks (baseContextPath . getBaseContext)

@@ -49,9 +49,9 @@ specToRunTree'  (Free (Before l f subspec next)) = do
 specToRunTree'  (Free (After l f subspec next)) = do
   common <- getCommon l 100
   continueWith next =<< RunNodeAfter <$> pure common <*> recurse l common subspec <*> pure f
-specToRunTree'  (Free (Introduce l _cl alloc cleanup subspec next)) = do
+specToRunTree'  (Free (Introduce l cl alloc cleanup subspec next)) = do
   common <- getCommon l 100
-  continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l common subspec <*> pure alloc <*> pure cleanup
+  continueWith next =<< RunNodeIntroduce <$> pure common <*> pure cl <*> recurse l common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith l _cl action subspec next)) = do
   common <- getCommon l 100
   continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l common subspec <*> pure action

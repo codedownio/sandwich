@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RankNTypes #-}
@@ -22,35 +23,41 @@ import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
-            | Running { statusStartTime :: UTCTime }
+            | Running { statusStartTime :: UTCTime
+                      , statusAsync :: Async Result }
             | Done { statusStartTime :: UTCTime
                    , statusEndTime :: UTCTime
                    , statusResult :: Result }
             deriving (Show, Eq)
 
+instance Show (Async Result) where
+  show _ = "AsyncResult"
+
+
 data RunNodeWithStatus context s l t where
   RunNodeBefore :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                    , runNodeChildren :: [RunNodeWithStatus context s l t]
-                   , runNodeBefore :: ExampleT context m () } -> RunNodeWithStatus context s l t
+                   , runNodeBefore :: ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeAfter :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                   , runNodeChildren :: [RunNodeWithStatus context s l t]
-                  , runNodeAfter :: ExampleT context m () } -> RunNodeWithStatus context s l t
+                  , runNodeAfter :: ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeIntroduce :: { runNodeCommon :: RunNodeCommonWithStatus s l t
+                      , runNodeIntroduceLabel :: Label lab intro
                       , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
-                      , runNodeAlloc :: ExampleT context m intro
-                      , runNodeCleanup :: intro -> ExampleT context m () } -> RunNodeWithStatus context s l t
+                      , runNodeAlloc :: ExampleT context IO intro
+                      , runNodeCleanup :: intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeIntroduceWith :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                           , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
-                          , runNodeIntroduceAction :: ActionWith intro -> ExampleT context m () } -> RunNodeWithStatus context s l t
+                          , runNodeIntroduceAction :: ActionWith intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeAround :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                    , runNodeChildren :: [RunNodeWithStatus context s l t]
-                   , runNodeActionWith :: ExampleT context m Result -> ExampleT context m () } -> RunNodeWithStatus context s l t
+                   , runNodeActionWith :: ExampleT context IO Result -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeDescribe :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                      , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
   RunNodeParallel :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                      , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
   RunNodeIt :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-               , runNodeExample :: ExampleT context m () } -> RunNodeWithStatus context s l t
+               , runNodeExample :: ExampleT context IO () } -> RunNodeWithStatus context s l t
 
 type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
 type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
@@ -66,7 +73,7 @@ data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
   , runTreeLogs :: l
-  } deriving Show
+  } deriving (Show, Eq)
 
 type RunNodeCommonFixed = RunNodeCommonWithStatus Status (Seq LogEntry) Bool
 type RunNodeCommon = RunNodeCommonWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
@@ -93,6 +100,10 @@ data RunTreeContext = RunTreeContext {
 isFailureStatus :: Status -> Bool
 isFailureStatus (Done _ _ stat) = isFailure stat
 isFailureStatus _ = False
+
+getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
+getCommons (RunNodeIt {..}) = [runNodeCommon]
+getCommons node = (runNodeCommon node) : (concatMap getCommons (runNodeChildren node))
 
 fixRunTree :: RunNode context -> STM (RunNodeFixed context)
 fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do

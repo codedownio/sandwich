@@ -23,7 +23,8 @@ import Test.Sandwich.Types.Spec
 import Text.Printf
 
 -- | Wait for a tree, catching any synchronous exceptions and returning them as a list
--- waitForTree :: [RunTree context] -> IO (Either [SomeException] ())
+waitForTree :: RunNode context -> IO Result
+waitForTree = undefined
 -- waitForTree rts = undefined
   -- results <- mapM (tryAny . wait) (fmap runTreeAsync rts)
   -- case lefts results of

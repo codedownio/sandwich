@@ -54,8 +54,10 @@ module Test.Sandwich (
   ) where
 
 import Control.Concurrent.Async
+import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
+import Control.Monad.Trans.Reader
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
@@ -65,6 +67,7 @@ import Test.Sandwich.Expectations
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
@@ -90,7 +93,7 @@ runSandwich options f spec = do
   finalResult :: Either E.SomeException () <- E.try $ wait formatterAsync
   putStrLn [i|Final result: #{finalResult}|]
 
-startSandwichTree :: Options -> TopSpec -> IO [RunTree]
+startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 startSandwichTree options@(Options {..}) spec' = do
   let spec = case optionsFilterTree of
         Nothing -> spec'
@@ -119,10 +122,19 @@ startSandwichTree options@(Options {..}) spec' = do
         , baseContextRunRoot = runRoot
         }
 
-  runTreeMain baseContext spec
+  runTree <- atomically $ specToRunTreeVariable baseContext spec
 
-runSandwichTree :: Options -> TopSpec -> IO [RunTree]
+  unless optionsDryRun $ do
+    let stc = StartTreeContext {
+          startTreeOnlyRunIds = Nothing
+          }
+
+    void $ async $ void $ runNodesSequentially runTree baseContext stc
+
+  return runTree
+
+runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 runSandwichTree options spec = do
   rts <- startSandwichTree options spec
-  _ <- waitForTree rts
+  _ <- mapM_ waitForTree rts
   return rts

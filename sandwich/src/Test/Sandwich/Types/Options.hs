@@ -32,6 +32,8 @@ data Options = Options {
   -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
   , optionsFilterTree :: Maybe TreeFilter
   -- ^ Filter to apply to the text tree before running.
+  , optionsDryRun :: Bool
+  -- ^ Whether to skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI.
   }
 
 defaultOptions :: Options
@@ -40,4 +42,5 @@ defaultOptions = Options {
   , optionsSavedLogLevel = Just LevelDebug
   , optionsMemoryLogLevel = Just LevelDebug
   , optionsFilterTree = Nothing
+  , optionsDryRun = False
   }

@@ -33,7 +33,7 @@ import Test.Sandwich.Types.Spec
 instance Formatter PrintFormatter where
   runFormatter = runApp
 
-runApp :: PrintFormatter -> [RunTree] -> IO ()
+runApp :: PrintFormatter -> [RunNode BaseContext] -> IO ()
 runApp pf@(PrintFormatter {..}) rts = do
   let total = countWhere isItBlock rts
 
@@ -54,41 +54,43 @@ runApp pf@(PrintFormatter {..}) rts = do
     _ -> putStrLn [i| (#{pending} pending)|]
 
 
-runWithIndentation :: RunTree -> ReaderT (PrintFormatter, Int) IO ()
-runWithIndentation (RunTreeGroup {..}) = do
-  includeLogs <- asks (printFormatterIncludeLogs . fst)
-
-  pin runTreeLabel
-  withBumpIndent $ forM_ runTreeChildren runWithIndentation
-
-  -- Print the logs, if configured
-  finally (liftIO $ wait runTreeAsync) $ do
-    when includeLogs $ printLogs runTreeLogs
-runWithIndentation (RunTreeSingle {..}) = do
+runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int) IO ()
+runWithIndentation (RunNodeIt {..}) = do
   includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
   includeLogs <- asks (printFormatterIncludeLogs . fst)
 
-  finally (liftIO $ wait runTreeAsync) $ do
-    -- Print the main header
-    (liftIO $ readTVarIO runTreeStatus) >>= \case
-      NotStarted -> return ()
-      Running {} -> return ()
-      Done {statusResult=Success} -> pGreenLn runTreeLabel
-      Done {statusResult=(Failure (Pending _ _))} -> pYellowLn runTreeLabel
-      Done {statusResult=(Failure reason)} -> do
-        pRedLn runTreeLabel
-        withBumpIndent $ printFailureReason reason
+  undefined
+  -- finally (liftIO $ wait runTreeAsync) $ do
+  --   -- Print the main header
+  --   (liftIO $ readTVarIO runTreeStatus) >>= \case
+  --     NotStarted -> return ()
+  --     Running {} -> return ()
+  --     Done {statusResult=Success} -> pGreenLn runTreeLabel
+  --     Done {statusResult=(Failure (Pending _ _))} -> pYellowLn runTreeLabel
+  --     Done {statusResult=(Failure reason)} -> do
+  --       pRedLn runTreeLabel
+  --       withBumpIndent $ printFailureReason reason
 
-    -- Print the callstack, if configured and present
-    when includeCallStacks $ do
-      (liftIO $ readTVarIO runTreeStatus) >>= \case
-        Done {statusResult=(Failure (failureCallStack -> Just cs))} -> do
-          p "\n"
-          withBumpIndent $ printCallStack cs
-        _ -> return ()
+  --   -- Print the callstack, if configured and present
+  --   when includeCallStacks $ do
+  --     (liftIO $ readTVarIO runTreeStatus) >>= \case
+  --       Done {statusResult=(Failure (failureCallStack -> Just cs))} -> do
+  --         p "\n"
+  --         withBumpIndent $ printCallStack cs
+  --       _ -> return ()
 
-    -- Print the logs, if configured
-    when includeLogs $ printLogs runTreeLogs
+  --   -- Print the logs, if configured
+  --   when includeLogs $ printLogs runTreeLogs
+runWithIndentation node = do
+  includeLogs <- asks (printFormatterIncludeLogs . fst)
+
+  undefined
+  -- pin runTreeLabel
+  -- withBumpIndent $ forM_ runTreeChildren runWithIndentation
+
+  -- -- Print the logs, if configured
+  -- finally (liftIO $ wait runTreeAsync) $ do
+  --   when includeLogs $ printLogs runTreeLogs
 
 
 printLogs runTreeLogs = do

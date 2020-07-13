@@ -12,8 +12,9 @@ module Test.Sandwich.Internal (
   , ExampleT(..)
 
   -- For tests
-  , RunTreeWithStatus(..)
-  , RunTreeFixed
+  , RunNodeWithStatus(..)
+  , RunNodeFixed
+  , RunNodeCommonWithStatus(..)
   , Status(..)
   , fixRunTree
   , waitForTree

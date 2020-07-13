@@ -7,33 +7,33 @@ module Test.Sandwich.Formatters.Common.Count where
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-countWhere :: forall s l t. (RunTreeWithStatus s l t -> Bool) -> [RunTreeWithStatus s l t] -> Int
+countWhere :: forall context s l t. (RunNodeWithStatus context s l t -> Bool) -> [RunNodeWithStatus context s l t] -> Int
 countWhere p rts = sum $ fmap (countWhere' p) rts
   where
-    countWhere' :: (RunTreeWithStatus s l t -> Bool) -> RunTreeWithStatus s l t -> Int
-    countWhere' p rt@(RunTreeGroup {..}) =
-      (if p rt then 1 else 0) + countWhere p runTreeChildren
-    countWhere' picate rt@(RunTreeSingle {..}) = if picate rt then 1 else 0
+    countWhere' :: (RunNodeWithStatus context s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
+    countWhere' predicate rt@(RunNodeIt {..}) = if predicate rt then 1 else 0
+    countWhere' p rt =
+      (if p rt then 1 else 0) + countWhere p (runNodeChildren rt)
 
-isItBlock (RunTreeSingle {}) = True
+isItBlock (RunNodeIt {}) = True
 isItBlock _ = False
 
-isRunningItBlock (RunTreeSingle {runTreeStatus=(Running {})}) = True
+isRunningItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Running {})})}) = True
 isRunningItBlock _ = False
 
-isSuccessItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=Success})}) = True
+isSuccessItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=Success})})}) = True
 isSuccessItBlock _ = False
 
-isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})}) = True
-isPendingItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = False
+isPendingItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})}) = True
+isPendingItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})}) = False
 isPendingItBlock _ = False
 
-isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})}) = False
-isFailedItBlock (RunTreeSingle {runTreeStatus=(Done {statusResult=(Failure {})})}) = True
+isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})}) = False
+isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})}) = True
 isFailedItBlock _ = False
 
-isDoneItBlock (RunTreeSingle {runTreeStatus=(Done {})}) = True
+isDoneItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {})})}) = True
 isDoneItBlock _ = False
 
-isNotStartedItBlock (RunTreeSingle {runTreeStatus=(NotStarted {})}) = True
+isNotStartedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(NotStarted {})})}) = True
 isNotStartedItBlock _ = False
