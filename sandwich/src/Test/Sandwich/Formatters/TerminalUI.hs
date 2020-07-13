@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -33,11 +34,13 @@ import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
 
 
 data TerminalUIFormatter = TerminalUIFormatter {
@@ -104,8 +107,11 @@ appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
 
 appEvent s x@(VtyEvent e) =
   case e of
-    V.EvKey V.KEsc [] -> halt s
-    V.EvKey c [] | c == exitKey-> halt s
+    V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
+      -- Cancel everything and wait for cleanups
+      liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
+      _ <- tryAny $ forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
+      halt s
 
     V.EvKey c [] | c == toggleShowContextManagersKey -> do
       let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTreeBase)
@@ -145,45 +151,31 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       continue s
-    V.EvKey c [] | c == cancelSelectedKey -> do
-      case listSelectedElement (s ^. appMainList) of
-        Just (_, MainListElem {..}) -> liftIO $ do
-          (readTVarIO $ runTreeStatus node) >>= \case
-            Running {..} -> cancel statusAsync
-            _ -> return ()
-        Nothing -> return ()
-      continue s
-    V.EvKey c [] | c == runAllKey -> do
-      case all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree) of
-        True -> do
-          liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
-          void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
-        False -> return ()
-      continue s
-    V.EvKey c [] | c == runSelectedKey -> case listSelectedElement (s ^. appMainList) of
-      Nothing -> continue s
-      Just (_, MainListElem {..}) -> case status of
-        Running {} -> continue s
+    V.EvKey c [] | c == cancelSelectedKey -> withContinueS $ do
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> liftIO $
+        (readTVarIO $ runTreeStatus node) >>= \case
+          Running {..} -> cancel statusAsync
+          _ -> return ()
+    V.EvKey c [] | c == runAllKey -> withContinueS $ do
+      when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
+        mapM_ clearRecursively (s ^. appRunTreeBase)
+        void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
+    V.EvKey c [] | c == runSelectedKey -> withContinueS $
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
+        Running {} -> return ()
         _ -> do
           -- Start a run filtering the IDs to only this node's ancestors
           let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just $ S.fromList $ toList $ runTreeAncestors node }
           void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
-          continue s
-    V.EvKey c [] | c == clearResultsKey -> do
+    V.EvKey c [] | c == clearResultsKey -> withContinueS $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
-      continue s
-    V.EvKey c [] | c == openSelectedFolderInFileExplorer -> do
-      case listSelectedElement (s ^. appMainList) of
-        Just (_i, MainListElem {folderPath=(Just path)}) ->
-          liftIO $ openFileExplorerFolderPortable path
-        _ -> return () -- Shouldn't happen
-      continue s
-
-    -- V.EvKey (V.KChar c) [] | c == runAgainKey -> do
-    --   liftIO $
-    --   continue s
+    V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS $ do
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {folderPath}) ->
+        whenJust folderPath $ liftIO . openFileExplorerFolderPortable
 
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
+
+  where withContinueS action = action >> continue s
 appEvent s _ = continue s
 
 modifyToggled s f = case listSelectedElement (s ^. appMainList) of

@@ -116,7 +116,7 @@ topBox app = hBox [columnPadding settingsColumn
                                    , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
                                    , keyIndicatorHasSelected (showKeys toggleKeys) "Toggle selected"]
 
-    actionsColumn = keybindingBox [keyIndicatorSomeTestsNotDone (showKey cancelAllKey) "Cancel all"
+    actionsColumn = keybindingBox [keyIndicatorSomeTestRunning (showKey cancelAllKey) "Cancel all"
                                   , keyIndicatorSelectedTestRunning (showKey cancelSelectedKey) "Cancel selected"
                                   , keyIndicatorNoTestsRunning (showKey runAllKey) "Run all"
                                   , keyIndicatorSelectedTestDone (showKey runSelectedKey) "Run selected"
@@ -148,9 +148,10 @@ topBox app = hBox [columnPadding settingsColumn
       Just (_, MainListElem {folderPath=(Just _)}) -> True
       _ -> False
 
+    keyIndicatorSomeTestRunning = keyIndicatorContextual $ \s -> any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
     keyIndicatorNoTestsRunning = keyIndicatorContextual $ \s -> all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
     keyIndicatorAllTestsDone = keyIndicatorContextual $ \s -> all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-    keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+    -- keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
     keyIndicatorContextual p key msg = case p app of
       True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]

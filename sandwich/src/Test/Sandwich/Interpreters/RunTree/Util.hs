@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiWayIf #-}
@@ -6,13 +8,9 @@
 
 module Test.Sandwich.Interpreters.RunTree.Util where
 
-import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Control.Exception.Safe
-import Control.Monad
 import Control.Monad.Free
 import Control.Monad.Logger
-import Data.Either
 import qualified Data.List as L
 import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
@@ -24,16 +22,11 @@ import Text.Printf
 
 -- | Wait for a tree, catching any synchronous exceptions and returning them as a list
 waitForTree :: RunNode context -> IO Result
-waitForTree = undefined
--- waitForTree rts = undefined
-  -- results <- mapM (tryAny . wait) (fmap runTreeAsync rts)
-  -- case lefts results of
-  --   [] -> return $ Right ()
-  --   xs -> return $ Left xs
--- waitForTree :: [RunTree] -> IO [Result]
--- waitForTree rts = do
---   void $ mapM (wait . runTreeAsync) rts
---   mapM (readTVarIO . runTreeStatus) rts
+waitForTree node = atomically $
+  readTVar (runTreeStatus $ runNodeCommon node) >>= \case
+    Done {statusResult} -> return statusResult
+    NotStarted {} -> retry
+    Running {} -> retry
 
 -- | Append a log message outside of ExampleT. Only stored to in-memory logs, not disk.
 -- Only for debugging the interpreter, should not be exposed.
