@@ -14,17 +14,11 @@ module Introduce where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import qualified Control.Exception as E
 import Control.Exception.Safe
 import Control.Monad.IO.Class
-import Control.Monad.Logger
 import Control.Monad.Trans.Writer
-import Data.Either
 import Data.Foldable
-import qualified Data.List as L
-import Data.String.Interpolate.IsString
 import GHC.Stack
-import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Internal
 
@@ -56,8 +50,8 @@ introduceDoesNotCleanUpOnAllocateException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException Nothing (Just "Exception in allocation 'introduce' handler") someUserErrorWrapped)
-                   , Failure (GetContextException Nothing (SomeExceptionWithEq (SomeException (GotException Nothing (Just "Exception in allocation 'introduce' handler") someUserErrorWrapped))))]
+  results `mustBe` [Failure (GotException Nothing (Just "Failure in introduce 'introduce' allocation handler") someUserErrorWrapped)
+                   , Failure (GetContextException Nothing (SomeExceptionWithEq (SomeException (GotException Nothing (Just "Failure in introduce 'introduce' allocation handler") someUserErrorWrapped))))]
 
 introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
 introduceFailsOnCleanUpException = do
@@ -65,7 +59,7 @@ introduceFailsOnCleanUpException = do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
-  results `mustBe` [Failure (GotException Nothing (Just "Exception in cleanup 'introduce' handler") someUserErrorWrapped)
+  results `mustBe` [Failure (GotException Nothing (Just "Failure in introduce 'introduce' cleanup handler") someUserErrorWrapped)
                    , Success]
 
 introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
@@ -77,21 +71,19 @@ introduceCleansUpOnCancelDuringTest = do
       liftIO $ putMVar mvar ()
       liftIO $ threadDelay 999999999999999
 
-  let [RunNodeIntroduce {runNodeChildrenAugmented=[RunNodeIt {}]}] = rts
+  let [topNode@(RunNodeIntroduce {runNodeChildrenAugmented=[RunNodeIt {}]})] = rts
 
-  undefined
-  -- -- Wait until we get into the actual test example, then cancel the top level async
-  -- takeMVar mvar
-  -- cancel theAsync
+  -- Wait until we get into the actual test example, then cancel the top level async
+  takeMVar mvar
+  cancelNode topNode
 
-  -- -- We should get an async exception
-  -- eitherResult :: Either SomeException (Either [SomeException] ()) <- E.try $ waitForTree rts
-  -- isLeft eitherResult `mustBe` True
+  -- Waiting for the tree should not throw an exception
+  _ <- mapM waitForTree rts
 
-  -- fixedTree <- atomically $ mapM fixRunTree rts
-  -- let results = fmap statusToResult $ concatMap getStatuses fixedTree
-  -- let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
+  fixedTree <- atomically $ mapM fixRunTree rts
+  let results = fmap statusToResult $ concatMap getStatuses fixedTree
+  let msgs = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-  -- msgs `mustBe` [["doing cleanup"], []]
-  -- results `mustBe` [Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
-  --                  , Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]
+  msgs `mustBe` [["doing cleanup"], []]
+  results `mustBe` [Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))
+                   , Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq $ SomeAsyncException AsyncCancelled))]

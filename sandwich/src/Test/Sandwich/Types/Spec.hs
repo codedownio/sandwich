@@ -194,7 +194,7 @@ data SpecCommand context m next where
                    , next :: next } -> SpecCommand context m next
 
   Around :: { label :: String
-            , actionWith :: ExampleT context m Result -> ExampleT context m ()
+            , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
             , subspec :: SpecFree context m ()
             , next :: next } -> SpecCommand context m next
 
@@ -289,7 +289,7 @@ afterEach l f (Free (IntroduceWith li cl action subspec next)) = Free (Introduce
 
 aroundEach :: (Monad m) =>
   String
-  -> (ExampleT context m Result -> ExampleT context m ())
+  -> (ExampleT context m [Result] -> ExampleT context m ())
   -> SpecFree context m ()
   -> SpecFree context m ()
 aroundEach l f (Free x@(Before {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
@@ -302,7 +302,7 @@ aroundEach _ _ (Pure x) = Pure x
 aroundEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
 aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
 
-unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m Result -> ExampleT context m ()) -> ExampleT (introduce :> context) m Result -> ExampleT (introduce :> context) m ()
+unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do
   i :> c <- ask
   ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i :>) action)

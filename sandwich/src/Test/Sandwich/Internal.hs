@@ -16,6 +16,7 @@ module Test.Sandwich.Internal (
   , RunNodeFixed
   , RunNodeCommonWithStatus(..)
   , extractValues
+  , cancelNode
   , Status(..)
   , fixRunTree
   , waitForTree
@@ -24,5 +25,6 @@ module Test.Sandwich.Internal (
   ) where
 
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec

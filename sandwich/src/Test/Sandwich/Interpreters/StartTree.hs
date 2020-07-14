@@ -50,42 +50,37 @@ startTree node@(RunNodeBefore {..}) ctx' = do
         markAllChildrenWithResult runNodeChildren ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException fr))
         return result
       Success -> do
-        ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
-          0 -> return Success
-          n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
+        void $ runNodesSequentially runNodeChildren ctx
+        return Success
 startTree node@(RunNodeAfter {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node $ do
-    _ <- runNodesSequentially runNodeChildren ctx
-    -- TODO: should we actually fail this if any children fail? Maybe not -- make before consistent
-    runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])
+    result <- liftIO $ newIORef Success
+    finally (void $ runNodesSequentially runNodeChildren ctx)
+            ((runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])) >>= writeIORef result)
+    liftIO $ readIORef result
 startTree node@(RunNodeIntroduce {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node $ do
+    result <- liftIO $ newIORef Success
     bracket (do
                 let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
                 flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
                   runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
             (\case
-                Left failureReason -> return $ Failure failureReason
+                Left failureReason -> writeIORef result (Failure failureReason)
                 Right intro ->
-                  (runExampleM' (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])) >>= \case
-                    Left failureReason -> return $ Failure failureReason -- TODO: return this somehow, bracket drops it
-                    Right () -> return Success
+                  (runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])) >>= writeIORef result
             )
             (\case
                 Left failureReason -> do
-                  markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
                   -- TODO: add note about failure in allocation
-                  -- TODO: make sure cleanup failures can find their way to the status (bracket swallows this return value)
-                  return $ Failure failureReason
-                Right intro -> do
-                  ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)) >>= \case
-                    0 -> return Success
-                    n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
+                  markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
+                Right intro -> void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
             )
+    readIORef result
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
@@ -100,8 +95,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]
-            Right results -> return Success
-
+            Right _ -> return Success
     runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
 startTree node@(RunNodeAround {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
@@ -114,13 +108,11 @@ startTree node@(RunNodeAround {..}) ctx' = do
             runNodeActionWith $ do
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
               liftIO $ writeIORef didRunWrappedAction (Right results)
-              return $ case L.filter isFailure results of
-                [] -> Success
-                (L.length -> n) -> Failure $ Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|]
+              return results
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]
-            Right results -> return Success -- TODO: should we fail ourself if our children failed? We do so for the wrapped action
+            Right _ -> return Success
     runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
 startTree node@(RunNodeDescribe {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon

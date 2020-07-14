@@ -50,7 +50,7 @@ data RunNodeWithStatus context s l t where
                           , runNodeIntroduceAction :: ActionWith intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeAround :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                    , runNodeChildren :: [RunNodeWithStatus context s l t]
-                   , runNodeActionWith :: ExampleT context IO Result -> ExampleT context IO () } -> RunNodeWithStatus context s l t
+                   , runNodeActionWith :: ExampleT context IO [Result] -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeDescribe :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                      , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
   RunNodeParallel :: { runNodeCommon :: RunNodeCommonWithStatus s l t

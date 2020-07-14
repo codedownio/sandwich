@@ -60,6 +60,15 @@ cancelling = do
       liftIO $ threadDelay 1000000
       return ()
 
+cancellingIntroduce :: TopSpec
+cancellingIntroduce = do
+  introduce "alloc sleeps forever" database ((forever $ liftIO $ threadDelay 1000000) >> return (Database "foo")) (const $ return ()) $ do
+    it "sleeps forever" $ do
+      forever $ liftIO $ threadDelay 1
+    it "succeeds after 1 second" $ do
+      liftIO $ threadDelay 1000000
+      return ()
+
 simple :: TopSpec
 simple = do
   it "does the thing 1" sleepThenSucceed
@@ -154,7 +163,8 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options defaultTerminalUIFormatter cancelling -- defaultPrintFormatter
+-- main = runSandwich options defaultPrintFormatter cancellingIntroduce
+main = runSandwich options defaultTerminalUIFormatter cancellingIntroduce
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
