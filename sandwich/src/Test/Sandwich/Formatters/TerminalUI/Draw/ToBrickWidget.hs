@@ -75,16 +75,16 @@ boxWithTitle heading inside = hBox [
 
 reifyWidget x = case P.reify x of
   Just v -> toBrickWidget v
-  _ -> str (show x)
+  _ -> strWrap (show x)
 
 instance ToBrickWidget P.Value where
-  toBrickWidget (Integer s) = withAttr integerAttr $ str s
-  toBrickWidget (Float s) = withAttr floatAttr $ str s
-  toBrickWidget (Char s) = withAttr charAttr $ str s
-  toBrickWidget (String s) = withAttr stringAttr $ str s
-  toBrickWidget (Date s) = withAttr dateAttr $ str s
-  toBrickWidget (Time s) = withAttr timeAttr $ str s
-  toBrickWidget (Quote s) = withAttr quoteAttr $ str s
+  toBrickWidget (Integer s) = withAttr integerAttr $ strWrap s
+  toBrickWidget (Float s) = withAttr floatAttr $ strWrap s
+  toBrickWidget (Char s) = withAttr charAttr $ strWrap s
+  toBrickWidget (String s) = withAttr stringAttr $ strWrap s
+  toBrickWidget (Date s) = withAttr dateAttr $ strWrap s
+  toBrickWidget (Time s) = withAttr timeAttr $ strWrap s
+  toBrickWidget (Quote s) = withAttr quoteAttr $ strWrap s
   toBrickWidget (Ratio v1 v2) = hBox [toBrickWidget v1, withAttr slashAttr $ str "/", toBrickWidget v2]
   toBrickWidget (Neg v) = hBox [withAttr negAttr $ str "-"
                                , toBrickWidget v]
