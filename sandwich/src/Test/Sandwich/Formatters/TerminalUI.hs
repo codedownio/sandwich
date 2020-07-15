@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -164,10 +165,14 @@ appEvent s x@(VtyEvent e) =
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
         Running {} -> return ()
         _ -> do
-          -- Start a run filtering the IDs to only this node's ancestors
+          -- Get the set of IDs for only this node's ancestors and children
           let ancestorIds = S.fromList $ toList $ runTreeAncestors node
           let childIds = S.fromList $ extractValues' (runTreeId . runNodeCommon) runNode
-          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just $ ancestorIds <> childIds }
+          let allIds = ancestorIds <> childIds
+          -- Clear the status of all affected nodes
+          liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` allIds)) (s ^. appRunTreeBase)
+          -- Start a run for all affected nodes
+          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
           void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
     V.EvKey c [] | c == clearResultsKey -> withContinueS $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
@@ -196,7 +201,11 @@ updateFilteredTree pairs s = s
 
 clearRecursively :: RunNode context -> IO ()
 clearRecursively = mapM_ clearCommon . getCommons
-  where
-    clearCommon (RunNodeCommonWithStatus {..}) = atomically $ do
-      writeTVar runTreeStatus NotStarted
-      writeTVar runTreeLogs mempty
+
+clearRecursivelyWhere :: (RunNodeCommon -> Bool) -> RunNode context -> IO ()
+clearRecursivelyWhere f = mapM_ clearCommon . filter f . getCommons
+
+clearCommon :: RunNodeCommon -> IO ()
+clearCommon (RunNodeCommonWithStatus {..}) = atomically $ do
+  writeTVar runTreeStatus NotStarted
+  writeTVar runTreeLogs mempty
