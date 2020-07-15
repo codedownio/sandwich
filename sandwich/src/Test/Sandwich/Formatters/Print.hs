@@ -89,6 +89,7 @@ runWithIndentation node@(RunNodeIt {..}) = do
   -- Print the logs, if configured
   when includeLogs $ printLogs runTreeLogs
 runWithIndentation node = do
+  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
   includeLogs <- asks (printFormatterIncludeLogs . fst)
 
   let RunNodeCommonWithStatus {..} = runNodeCommon node
@@ -98,9 +99,23 @@ runWithIndentation node = do
     RunNodeIntroduceWith {..} -> withBumpIndent $ forM_ runNodeChildrenAugmented runWithIndentation
     _ -> withBumpIndent $ forM_ (runNodeChildren node) runWithIndentation
 
+  result <- liftIO $ waitForTree node
+
+  -- Print the failure reason
+  case result of
+    Failure r -> withBumpIndent $ printFailureReason r
+    Success -> return ()
+
+  -- Print the callstack, if configured and present
+  when includeCallStacks $ do
+    case result of
+      Failure (failureCallStack -> Just cs) -> do
+        p "\n"
+        withBumpIndent $ printCallStack cs
+      _ -> return ()
+
   -- Print the logs, if configured
-  finally (liftIO $ void $ waitForTree node) $ do
-    when includeLogs $ printLogs runTreeLogs
+  when includeLogs $ printLogs runTreeLogs
 
 
 printLogs runTreeLogs = do
