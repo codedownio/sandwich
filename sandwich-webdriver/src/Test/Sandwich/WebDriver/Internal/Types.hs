@@ -95,10 +95,13 @@ newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int)
 data XvfbConfig = XvfbConfig {
   xvfbResolution :: Maybe (Int, Int)
   -- ^ Resolution for the virtual screen. Defaults to (1920, 1080)
+
+  , xvfbStartFluxbox :: Bool
+  -- ^ Whether to start fluxbox window manager to go with the Xvfb session. fluxbox must be on the path
   }
 
 instance Default XvfbConfig where
-  def = XvfbConfig Nothing
+  def = XvfbConfig Nothing False
 
 defaultWdOptions :: FilePath -> WdOptions
 defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty DownloadSeleniumDefault DownloadChromeDriverAutodetect Normal
@@ -121,7 +124,8 @@ instance Exception InvalidLogsException
 data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbXauthority :: FilePath
                                , xvfbDimensions :: (Int, Int)
-                               , xvfbProcess :: ProcessHandle }
+                               , xvfbProcess :: ProcessHandle
+                               , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
 getDisplayNumber :: WdSession -> Maybe Int
 getDisplayNumber (WdSession {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum

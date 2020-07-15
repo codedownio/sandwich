@@ -28,6 +28,7 @@ import System.FilePath
 import System.IO
 import System.IO.Temp
 import System.Process
+import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Ports
 import Test.Sandwich.WebDriver.Internal.Types
@@ -111,6 +112,9 @@ stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) 
   liftIO $ hClose herr
 
   whenJust maybeXvfbSession $ \(XvfbSession {..}) -> do
+    whenJust xvfbFluxboxProcess $ \p ->
+      liftIO (interruptProcessGroupOf p >> waitForProcess p)
+
     liftIO (interruptProcessGroupOf xvfbProcess >> waitForProcess xvfbProcess)
 
 -- * Util
@@ -142,7 +146,7 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
                  , Nothing)
 
 #ifdef linux_HOST_OS
-    RunInXvfb (XvfbConfig {xvfbResolution}) -> do
+    RunInXvfb (XvfbConfig {xvfbResolution, ..}) -> do
       let (w, h) = fromMaybe (1920, 1080) xvfbResolution
       liftIO $ createDirectoryIfMissing True runRoot
 
@@ -159,14 +163,23 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
       (serverNum, p) <- liftIO $ recoverAll policy $ \_ -> createXvfbSession runRoot w h fd -- writeFd
 
       -- When a displayfd filepath is provided, try to obtain the X11 screen
-      xvfbSession@(XvfbSession {..}) <- liftIO $ do
+      displayNum <- liftIO $ do
         recoverAll policy $ \_ ->
           readFile path >>= \contents -> case readMay contents of -- hGetContents readHandle
             Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'. Path was '#{path}'|]
-            Just x -> return $ XvfbSession { xvfbDisplayNum = x
-                                           , xvfbXauthority = runRoot </> ".Xauthority"
-                                           , xvfbDimensions = (w, h)
-                                           , xvfbProcess = p }
+            Just x -> return x
+
+      fluxboxProcess <- case xvfbStartFluxbox of
+        False -> return Nothing
+        True -> Just <$> startFluxBoxOnDisplay runRoot displayNum
+
+      let xvfbSession@(XvfbSession {..}) = XvfbSession {
+            xvfbDisplayNum = displayNum
+            , xvfbXauthority = runRoot </> ".Xauthority"
+            , xvfbDimensions = (w, h)
+            , xvfbProcess = p
+            , xvfbFluxboxProcess = fluxboxProcess
+            }
 
       -- TODO: allow verbose logging to be controlled with an option:
       env' <- liftIO getEnvironment
@@ -212,3 +225,24 @@ findFreeServerNum = findFreeServerNum' 99
       doesPathExist [i|/tmp/.X11-unix/X#{candidate}|] >>= \case
         True -> findFreeServerNum' (candidate + 1)
         False -> return candidate
+
+
+startFluxBoxOnDisplay :: Constraints m => FilePath -> Int -> m ProcessHandle
+startFluxBoxOnDisplay runRoot x = do
+  logPath <- liftIO $ writeTempFile runRoot "fluxbox.log" ""
+
+  debug [i|Starting fluxbox on logPath '#{logPath}'|]
+
+  let args = ["-display", ":" <> show x
+             , "-log", logPath]
+
+  (_, _, _, p) <- liftIO $ createProcess $ (proc "fluxbox" args) {
+    cwd = Just runRoot
+    , create_group = True
+    , std_out = CreatePipe
+    , std_err = CreatePipe
+    }
+
+  -- TODO: confirm fluxbox started successfully
+
+  return p
