@@ -69,6 +69,11 @@ cancellingIntroduce = do
       liftIO $ threadDelay 1000000
       return ()
 
+manyRows :: TopSpec
+manyRows = do
+  forM_ [0..100] $ \n ->
+    it [i|does the thing #{n}|] (2 `shouldBe` 2)
+
 simple :: TopSpec
 simple = do
   it "does the thing 1" sleepThenSucceed
@@ -164,7 +169,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 
 main :: IO ()
 -- main = runSandwich options defaultPrintFormatter cancellingIntroduce
-main = runSandwich options defaultTerminalUIFormatter cancellingIntroduce
+main = runSandwich options defaultTerminalUIFormatter manyRows
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

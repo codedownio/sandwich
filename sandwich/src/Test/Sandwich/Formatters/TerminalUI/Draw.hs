@@ -21,30 +21,30 @@ import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import Lens.Micro
 import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
-import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-drawUI :: AppState -> [Widget ()]
+drawUI :: AppState -> [Widget ClickableName]
 drawUI app = [ui]
   where
     ui = vBox [
       topBox app
       , borderWithCounts app
       , mainList app
-      , bottomProgressBarColored app
+      , clickable ColorBar $ bottomProgressBarColored app
       ]
 
-mainList app = hCenter $ padAll 1 $ L.renderList listDrawElement True (app ^. appMainList)
+mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (app ^. appMainList)
   where
-    listDrawElement :: Bool -> MainListElem -> Widget ()
-    listDrawElement isSelected x@(MainListElem {..}) = padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
+    -- listDrawElement :: Bool -> MainListElem -> Widget ClickableName
+    listDrawElement i isSelected x@(MainListElem {..}) = clickable (ListRow i) $ padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
       Just $ renderLine isSelected x
       , do
           guard toggled

@@ -1,6 +1,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -13,7 +15,7 @@ module Test.Sandwich.Formatters.TerminalUI (
   , showRunTimes
   ) where
 
-import Brick
+import Brick as B
 import Brick.BChan
 import Brick.Widgets.List
 import Control.Concurrent
@@ -25,6 +27,7 @@ import Control.Monad.IO.Class
 import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Set as S
+import Data.String.Interpolate.IsString
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
@@ -66,7 +69,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
           , _appRunTreeFiltered = []
-          , _appMainList = list () mempty 1
+          , _appMainList = list MainList mempty 1
           , _appBaseContext = baseContext
 
           , _appShowContextManagers = showContextManagers
@@ -86,12 +89,17 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
     writeBChan eventChan (RunTreeUpdated newFixedTree)
     threadDelay 100000 -- Sleep 100ms
 
-  let buildVty = V.mkVty V.defaultConfig
+  let buildVty = do
+        v <- V.mkVty V.defaultConfig
+        let output = V.outputIface v
+        when (V.supportsMode output V.Mouse) $
+          liftIO $ V.setMode output V.Mouse True
+        return v
   initialVty <- buildVty
   flip onException (cancel eventAsync) $
     void $ customMain initialVty buildVty (Just eventChan) app initialState
 
-app :: App AppState AppEvent ()
+app :: App AppState AppEvent ClickableName
 app = App {
   appDraw = drawUI
   , appChooseCursor = showFirstCursor
@@ -100,12 +108,21 @@ app = App {
   , appAttrMap = const mainAttrMap
   }
 
-appEvent :: AppState -> BrickEvent () AppEvent -> EventM () (Next AppState)
+appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName (Next AppState)
 appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
   & appRunTree .~ newTree
   & updateFilteredTree (zip (filterRunTree (s ^. appShowContextManagers) (s ^. appRunTreeBase))
                             (filterRunTree (s ^. appShowContextManagers) newTree))
 
+appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
+  lookupExtent ColorBar >>= \case
+    Nothing -> continue s
+    Just (Extent {extentSize=(w, _), extentUpperLeft=(B.Location (l, _))}) -> do
+      let percent :: Double = (fromIntegral (x - l)) / (fromIntegral w)
+      let index = round $ percent * (fromIntegral $ length $ s ^. (appMainList . listElementsL))
+      continue (s & appMainList %~ (listMoveTo index))
+appEvent s (MouseDown (ListRow i) _ _ _) =
+  continue (s & appMainList %~ (listMoveTo i))
 appEvent s x@(VtyEvent e) =
   case e of
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do

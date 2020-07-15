@@ -30,11 +30,14 @@ data MainListElem = MainListElem {
 
 data SomeRunNode = forall context s l t. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context s l t }
 
+data ClickableName = ColorBar | ListRow Int | MainList
+  deriving (Show, Ord, Eq)
+
 data AppState = AppState {
   _appRunTreeBase :: [RunNode BaseContext]
   , _appRunTree :: [RunNodeFixed BaseContext]
   , _appRunTreeFiltered :: [RunNodeFixed BaseContext]
-  , _appMainList :: L.List () MainListElem
+  , _appMainList :: L.List ClickableName MainListElem
   , _appBaseContext :: BaseContext
 
   , _appShowContextManagers :: Bool
