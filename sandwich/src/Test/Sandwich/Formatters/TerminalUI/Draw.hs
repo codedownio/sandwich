@@ -25,7 +25,7 @@ import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
-import Test.Sandwich.Formatters.TerminalUI.Keys
+import Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -102,59 +102,6 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     logLevelWidget LevelWarn = withAttr infoAttr $ str "(WARN)"
     logLevelWidget LevelError = withAttr infoAttr $ str "(ERROR)"
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
-
-topBox app = hBox [columnPadding settingsColumn
-                  , columnPadding actionsColumn
-                  , columnPadding otherActionsColumn]
-  where
-    columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
-
-    settingsColumn = keybindingBox [keyIndicator (unKChar nextKey : "/↑") "Next"
-                                   , keyIndicator (unKChar previousKey : "/↓") "Previous"
-                                   , keyIndicator (unKChar nextFailureKey : "/↑") "Next failure"
-                                   , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
-                                   , keyIndicatorHasSelected (showKeys toggleKeys) "Toggle selected"]
-
-    actionsColumn = keybindingBox [keyIndicatorSomeTestRunning (showKey cancelAllKey) "Cancel all"
-                                  , keyIndicatorSelectedTestRunning (showKey cancelSelectedKey) "Cancel selected"
-                                  , keyIndicatorNoTestsRunning (showKey runAllKey) "Run all"
-                                  , keyIndicatorSelectedTestDone (showKey runSelectedKey) "Run selected"
-                                  , keyIndicatorAllTestsDone (showKey clearResultsKey) "Clear results"
-                                  , keyIndicatorHasSelectedAndFolder (showKey openSelectedFolderInFileExplorer) "Open in file explorer"
-                                  ]
-
-    otherActionsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
-                                       , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
-                                       , keyIndicator "q" "Exit"]
-
-    keybindingBox = vBox
-
-    toggleIndicator True key onMsg _ = keyIndicator key onMsg
-    toggleIndicator False key _ offMsg = keyIndicator key offMsg
-
-    keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
-
-    keyIndicatorHasSelected = keyIndicatorContextual (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
-
-    keyIndicatorSelectedTestDone = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
-      Nothing -> False
-      Just (_, MainListElem {..}) -> isDone status
-    keyIndicatorSelectedTestRunning = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
-      Nothing -> False
-      Just (_, MainListElem {..}) -> isRunning status
-
-    keyIndicatorHasSelectedAndFolder = keyIndicatorContextual $ \s -> case L.listSelectedElement (s ^. appMainList) of
-      Just (_, MainListElem {folderPath=(Just _)}) -> True
-      _ -> False
-
-    keyIndicatorSomeTestRunning = keyIndicatorContextual $ \s -> any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-    keyIndicatorNoTestsRunning = keyIndicatorContextual $ \s -> all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-    keyIndicatorAllTestsDone = keyIndicatorContextual $ \s -> all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-    -- keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-
-    keyIndicatorContextual p key msg = case p app of
-      True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
-      False -> hBox [str "[", withAttr disabledHotkeyAttr $ str key, str "] ", withAttr disabledHotkeyMessageAttr $ str msg]
 
 
 borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])
