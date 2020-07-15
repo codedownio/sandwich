@@ -1,6 +1,6 @@
 
 # Sandwich
 
-[![Sandwich Status](https://github.com/thomasjm/sandwich/workflows/sandwich/badge.svg)](https://github.com/thomasjm/sandwich/actions)
+![sandwich](https://github.com/thomasjm/sandwich/workflows/sandwich/badge.svg)
 
-[![Sandwich Status](https://github.com/thomasjm/sandwich/workflows/sandwich-webdriver/badge.svg)](https://github.com/thomasjm/sandwich/actions)
+![sandwich-webdriver](https://github.com/thomasjm/sandwich/workflows/sandwich-webdriver/badge.svg)
