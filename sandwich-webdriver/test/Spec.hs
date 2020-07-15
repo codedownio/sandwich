@@ -2,8 +2,6 @@
 import Test.Sandwich
 import Data.Time.Clock
 import Test.Sandwich.Formatters.Print
-import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.Types.Options
 
 data Foo = Foo { fooInt :: Int, fooString :: String, fooBar :: Bar } deriving (Show, Eq)
 data Bar = Bar { barInt :: Int, barString :: String } deriving (Show, Eq)
