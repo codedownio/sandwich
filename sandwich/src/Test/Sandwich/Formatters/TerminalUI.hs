@@ -110,7 +110,7 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
-      _ <- tryAny $ forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
+      _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
       halt s
 
     V.EvKey c [] | c == toggleShowContextManagersKey -> do

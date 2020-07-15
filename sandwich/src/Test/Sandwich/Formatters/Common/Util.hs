@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- |
 
 module Test.Sandwich.Formatters.Common.Util (
@@ -24,3 +25,9 @@ ps = secondsToNominalDiffTime 0.000000000001
 
 roundFixed :: Fixed E12 -> String
 roundFixed f = printf "%.1f" ((realToFrac f) :: Double)
+
+
+#if !MIN_VERSION_time(1,9,1)
+nominalDiffTimeToSeconds = undefined
+secondsToNominalDiffTime = undefined
+#endif

@@ -205,9 +205,9 @@ data SpecCommand context m next where
   Parallel :: { subspec :: SpecFree context m ()
               , next :: next } -> SpecCommand context m next
 
-  It :: (HasCallStack) => { label :: String
-                          , example :: ExampleT context m ()
-                          , next :: next } -> SpecCommand context m next
+  It :: { label :: String
+        , example :: ExampleT context m ()
+        , next :: next } -> SpecCommand context m next
 
 deriving instance Functor (SpecCommand context m)
 deriving instance Foldable (SpecCommand context m)

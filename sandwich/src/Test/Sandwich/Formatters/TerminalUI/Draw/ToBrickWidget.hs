@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 -- |
@@ -11,8 +12,8 @@ import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import GHC.Stack
-import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.Common.Util
+import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Show.Pretty as P
@@ -82,9 +83,11 @@ instance ToBrickWidget P.Value where
   toBrickWidget (Float s) = withAttr floatAttr $ strWrap s
   toBrickWidget (Char s) = withAttr charAttr $ strWrap s
   toBrickWidget (String s) = withAttr stringAttr $ strWrap s
+#if MIN_VERSION_pretty_show(1,10,0)
   toBrickWidget (Date s) = withAttr dateAttr $ strWrap s
   toBrickWidget (Time s) = withAttr timeAttr $ strWrap s
   toBrickWidget (Quote s) = withAttr quoteAttr $ strWrap s
+#endif
   toBrickWidget (Ratio v1 v2) = hBox [toBrickWidget v1, withAttr slashAttr $ str "/", toBrickWidget v2]
   toBrickWidget (Neg v) = hBox [withAttr negAttr $ str "-"
                                , toBrickWidget v]

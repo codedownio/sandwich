@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ViewPatterns #-}
 -- |
 
@@ -14,9 +15,11 @@ import Test.Sandwich.Formatters.Print.Util
 import Text.Show.Pretty as P
 
 
+#if MIN_VERSION_pretty_show(1,10,0)
 printPretty (getPrintFn -> f) (Quote s) = f quoteColor s
 printPretty (getPrintFn -> f) (Time s) = f timeColor s
 printPretty (getPrintFn -> f) (Date s) = f dateColor s
+#endif
 printPretty (getPrintFn -> f) (String s) = f stringColor s
 printPretty (getPrintFn -> f) (Char s) = f charColor s
 printPretty (getPrintFn -> f) (Float s) = f floatColor s

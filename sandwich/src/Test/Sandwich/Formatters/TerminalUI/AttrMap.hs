@@ -15,12 +15,11 @@ mainAttrMap = attrMap V.defAttr [
   -- (listAttr, V.white `on` V.blue)
    -- (listSelectedAttr, V.blue `on` V.white)
   -- (listSelectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
-
-  (selectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
+  -- (selectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
 
   -- Statuses
   -- , (notStartedAttr, fg V.)
-  , (runningAttr, fg V.blue), (pendingAttr, fg V.yellow), (successAttr, fg V.green), (failureAttr, fg V.red)
+  (runningAttr, fg V.blue), (pendingAttr, fg V.yellow), (successAttr, fg V.green), (failureAttr, fg V.red)
 
   -- Logging
   , (debugAttr, fg V.blue), (infoAttr, fg V.yellow), (warnAttr, fg V.red), (errorAttr, fg V.red), (otherAttr, V.defAttr)
@@ -66,8 +65,8 @@ mainAttrMap = attrMap V.defAttr [
   , (constructorNameAttr, fg solarizedViolet)
   ]
 
-selectedAttr :: AttrName
-selectedAttr = "list_line_selected"
+-- selectedAttr :: AttrName
+-- selectedAttr = "list_line_selected"
 
 runningAttr :: AttrName
 runningAttr = "running"
@@ -169,4 +168,5 @@ brightGray = grayAt 80
 midWhite = grayAt 140
 brightWhite = grayAt 200
 
-grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
+grayAt level = V.rgbColor level level level
+-- grayAt level = V.Color240 $ V.rgbColorToColor240 level level level
