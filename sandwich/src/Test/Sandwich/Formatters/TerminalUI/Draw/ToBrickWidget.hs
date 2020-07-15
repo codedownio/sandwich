@@ -12,7 +12,7 @@ import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
-import Test.Sandwich.Formatters.TerminalUI.Util
+import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Show.Pretty as P

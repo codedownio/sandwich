@@ -18,7 +18,9 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.String.Interpolate.IsString
+import Data.Time.Clock
 import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.Print.CallStacks
 import Test.Sandwich.Formatters.Print.FailureReason
 import Test.Sandwich.Formatters.Print.Logs
@@ -37,6 +39,8 @@ runApp :: PrintFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp pf@(PrintFormatter {..}) rts bc = do
   let total = countWhere isItBlock rts
 
+  startTime <- getCurrentTime
+
   putStrLn "\n"
   putStrLn [i|Beginning suite of #{total} tests\n|]
 
@@ -47,8 +51,11 @@ runApp pf@(PrintFormatter {..}) rts bc = do
   let failed = countWhere isFailedItBlock fixedTree
   let pending = countWhere isPendingItBlock fixedTree
 
-  if | failed == 0 -> putStr [i|All tests passed!|]
-     | otherwise -> putStr [i|#{failed} failed of #{total}.|]
+  endTime <- getCurrentTime
+  let timeDiff = formatNominalDiffTime $ diffUTCTime endTime startTime
+
+  if | failed == 0 -> putStr [i|All tests passed in #{timeDiff}.|]
+     | otherwise -> putStr [i|#{failed} failed of #{total} in #{timeDiff}.|]
   case pending of
     0 -> putStrLn ""
     _ -> putStrLn [i| (#{pending} pending)|]

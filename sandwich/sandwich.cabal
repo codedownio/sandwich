@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a600ed1eee3bacc0b348370ec456936053f5bc3467670cdd0077dee126115c10
+-- hash: 2d6cd5e5ba101fcbc2f794cc0d1778fc1ba8da94831141c2be89d46842edac14
 
 name:           sandwich
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       Test.Sandwich.Internal
   other-modules:
       Test.Sandwich.Formatters.Common.Count
+      Test.Sandwich.Formatters.Common.Util
       Test.Sandwich.Formatters.Print.CallStacks
       Test.Sandwich.Formatters.Print.Color
       Test.Sandwich.Formatters.Print.FailureReason
@@ -53,7 +54,6 @@ library
       Test.Sandwich.Formatters.TerminalUI.Keys
       Test.Sandwich.Formatters.TerminalUI.TreeToList
       Test.Sandwich.Formatters.TerminalUI.Types
-      Test.Sandwich.Formatters.TerminalUI.Util
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.RunTree

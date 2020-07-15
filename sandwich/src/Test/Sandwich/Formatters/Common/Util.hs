@@ -1,6 +1,6 @@
 -- |
 
-module Test.Sandwich.Formatters.TerminalUI.Util (
+module Test.Sandwich.Formatters.Common.Util (
   formatNominalDiffTime
   ) where
 
@@ -21,7 +21,6 @@ ms = secondsToNominalDiffTime 0.001
 us = secondsToNominalDiffTime 0.000001
 ns = secondsToNominalDiffTime 0.000000001
 ps = secondsToNominalDiffTime 0.000000000001
-
 
 roundFixed :: Fixed E12 -> String
 roundFixed f = printf "%.1f" ((realToFrac f) :: Double)
