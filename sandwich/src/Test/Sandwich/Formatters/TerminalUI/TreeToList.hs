@@ -42,4 +42,5 @@ makeElem indent fixedNode node = MainListElem {
   , visibilityLevel = runTreeVisibilityLevel $ runNodeCommon fixedNode
   , folderPath = runTreeFolder $ runNodeCommon fixedNode
   , node = runNodeCommon node
+  , runNode = SomeRunNode node
   }

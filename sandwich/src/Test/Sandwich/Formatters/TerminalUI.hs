@@ -165,7 +165,9 @@ appEvent s x@(VtyEvent e) =
         Running {} -> return ()
         _ -> do
           -- Start a run filtering the IDs to only this node's ancestors
-          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just $ S.fromList $ toList $ runTreeAncestors node }
+          let ancestorIds = S.fromList $ toList $ runTreeAncestors node
+          let childIds = S.fromList $ extractValues' (runTreeId . runNodeCommon) runNode
+          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just $ ancestorIds <> childIds }
           void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
     V.EvKey c [] | c == clearResultsKey -> withContinueS $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)

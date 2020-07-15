@@ -1,4 +1,7 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ExistentialQuantification #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI.Types where
@@ -22,7 +25,10 @@ data MainListElem = MainListElem {
   , visibilityLevel :: Int
   , folderPath :: Maybe FilePath
   , node :: RunNodeCommon
+  , runNode :: SomeRunNode
   }
+
+data SomeRunNode = forall context s l t. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context s l t }
 
 data AppState = AppState {
   _appRunTreeBase :: [RunNode BaseContext]
@@ -36,3 +42,10 @@ data AppState = AppState {
   }
 
 makeLenses ''AppState
+
+
+extractValues' :: (forall context s l t. RunNodeWithStatus context s l t -> a) -> SomeRunNode -> [a]
+extractValues' f (SomeRunNode n@(RunNodeIt {})) = [f n]
+extractValues' f (SomeRunNode n@(RunNodeIntroduce {runNodeChildrenAugmented})) = (f n) : (concatMap (extractValues f) runNodeChildrenAugmented)
+extractValues' f (SomeRunNode n@(RunNodeIntroduceWith {runNodeChildrenAugmented})) = (f n) : (concatMap (extractValues f) runNodeChildrenAugmented)
+extractValues' f (SomeRunNode n) = (f n) : (concatMap (extractValues f) (runNodeChildren n))
