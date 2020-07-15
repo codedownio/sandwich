@@ -43,7 +43,6 @@ drawUI app = [ui]
 
 mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (app ^. appMainList)
   where
-    -- listDrawElement :: Bool -> MainListElem -> Widget ClickableName
     listDrawElement i isSelected x@(MainListElem {..}) = clickable (ListRow i) $ padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
       Just $ renderLine isSelected x
       , do
