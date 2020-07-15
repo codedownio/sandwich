@@ -30,6 +30,11 @@ module Test.Sandwich.WebDriver (
 
   , RunMode(..)
 
+  , XvfbConfig
+  , defaultXvfbConfig
+  , xvfbResolution
+  , xvfbStartFluxbox
+
   , chromeCapabilities
   , headlessChromeCapabilities
 

@@ -100,8 +100,8 @@ data XvfbConfig = XvfbConfig {
   -- ^ Whether to start fluxbox window manager to go with the Xvfb session. fluxbox must be on the path
   }
 
-instance Default XvfbConfig where
-  def = XvfbConfig Nothing False
+defaultXvfbConfig = XvfbConfig Nothing False
+
 
 defaultWdOptions :: FilePath -> WdOptions
 defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty DownloadSeleniumDefault DownloadChromeDriverAutodetect Normal
