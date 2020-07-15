@@ -4,13 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 66d9d422f4423bbaba3c7eea8b708cc0f536c9076bdebabd3b301d2f77fad121
+-- hash: 6c7703b99916e0543998d5ecda40940232dc2384f249544ac7cf011165fca1e0
 
-name:           sandwich-webdriver
+name:           sandwich-quickcheck
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-webdriver#readme>
-homepage:       https://github.com/githubuser/sandwich-webdriver#readme
-bug-reports:    https://github.com/githubuser/sandwich-webdriver/issues
+description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-quickcheck#readme>
+homepage:       https://github.com/githubuser/sandwich-quickcheck#readme
+bug-reports:    https://github.com/githubuser/sandwich-quickcheck/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2020 Author name here
@@ -23,29 +23,18 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/sandwich-webdriver
+  location: https://github.com/githubuser/sandwich-quickcheck
 
 library
   exposed-modules:
-      Test.Sandwich.WebDriver
-      Test.Sandwich.WebDriver.Internal.Action
-      Test.Sandwich.WebDriver.Internal.Binaries
-      Test.Sandwich.WebDriver.Internal.Binaries.Util
-      Test.Sandwich.WebDriver.Internal.Capabilities
-      Test.Sandwich.WebDriver.Internal.Exceptions
-      Test.Sandwich.WebDriver.Internal.Ports
-      Test.Sandwich.WebDriver.Internal.Screenshots
-      Test.Sandwich.WebDriver.Internal.StartWebDriver
-      Test.Sandwich.WebDriver.Internal.Types
-      Test.Sandwich.WebDriver.Internal.Util
-      Test.Sandwich.WebDriver.Windows
+      Test.Sandwich.QuickCheck
   other-modules:
-      Paths_sandwich_webdriver
+      Paths_sandwich_quickcheck
   hs-source-dirs:
       src
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   build-depends:
-      X11
+      QuickCheck
     , aeson
     , async
     , base >=4.7 && <5
@@ -76,19 +65,18 @@ library
     , transformers-base
     , unix
     , unordered-containers
-    , webdriver
   default-language: Haskell2010
 
-executable sandwich-webdriver-exe
+executable sandwich-quickcheck-exe
   main-is: Main.hs
   other-modules:
-      Paths_sandwich_webdriver
+      Paths_sandwich_quickcheck
   hs-source-dirs:
       app
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      X11
+      QuickCheck
     , aeson
     , async
     , base >=4.7 && <5
@@ -112,7 +100,7 @@ executable sandwich-webdriver-exe
     , safe
     , safe-exceptions
     , sandwich
-    , sandwich-webdriver
+    , sandwich-quickcheck
     , temporary
     , text
     , time
@@ -120,20 +108,19 @@ executable sandwich-webdriver-exe
     , transformers-base
     , unix
     , unordered-containers
-    , webdriver
   default-language: Haskell2010
 
-test-suite sandwich-webdriver-test
+test-suite sandwich-quickcheck-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_sandwich_webdriver
+      Paths_sandwich_quickcheck
   hs-source-dirs:
       test
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      X11
+      QuickCheck
     , aeson
     , async
     , base >=4.7 && <5
@@ -157,7 +144,7 @@ test-suite sandwich-webdriver-test
     , safe
     , safe-exceptions
     , sandwich
-    , sandwich-webdriver
+    , sandwich-quickcheck
     , temporary
     , text
     , time
@@ -165,5 +152,4 @@ test-suite sandwich-webdriver-test
     , transformers-base
     , unix
     , unordered-containers
-    , webdriver
   default-language: Haskell2010

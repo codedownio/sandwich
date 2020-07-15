@@ -1,0 +1,8 @@
+
+resolver: lts-16.2
+
+packages:
+- .
+- ../sandwich
+
+extra-deps: []
