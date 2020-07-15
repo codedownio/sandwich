@@ -62,7 +62,7 @@ module Test.Sandwich.WebDriver (
   , hoistExample -- experimental
   ) where
 
-import Control.Concurrent
+import Control.Concurrent.MVar.Lifted
 import Control.Exception.Safe as ES
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -71,6 +71,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
+import Data.String.Interpolate.IsString
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Internal
@@ -113,22 +114,23 @@ cleanupWebDriver' sess = do
     closeAllSessions sess
     stopWebDriver sess
 
-withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser1 = withBrowser "browser1"
 
-withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser2 = withBrowser "browser2"
 
-withBrowser :: forall m a context. (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m) => Browser -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withBrowser :: forall m a context. (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => Browser -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser browser (ExampleT readerMonad) = do
   WdSession {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
-  sess <- liftIO $ modifyMVar wdSessionMap $ \sessionMap -> case M.lookup browser sessionMap of
+  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup browser sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
-      sess'' <- W.mkSession wdConfig
+      debug [i|Creating session for browser '#{browser}'|]
+      sess'' <- liftIO $ W.mkSession wdConfig
       let sess' = sess'' { W.wdSessHistUpdate = W.unlimitedHistory }
-      sess <- W.runWD sess' $ W.createSession $ W.wdCapabilities wdConfig
+      sess <- liftIO $ W.runWD sess' $ W.createSession $ W.wdCapabilities wdConfig
       return (M.insert browser sess sessionMap, sess)
 
   ref <- liftIO $ newIORef sess

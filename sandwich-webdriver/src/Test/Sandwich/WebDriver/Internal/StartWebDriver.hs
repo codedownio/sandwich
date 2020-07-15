@@ -52,14 +52,15 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   -- Set up config
   port <- liftIO findFreePortOrException
   let capabilities = case runMode of
-        RunHeadless -> capabilities' { W.browser = browser'}
-          where browser' = case W.browser capabilities of
+        RunHeadless -> capabilities' { W.browser = browser' }
+          where browser' = case W.browser capabilities' of
                   x@(W.Chrome {..}) -> x { W.chromeOptions = "--headless":chromeOptions }
                   x -> error [i|Headless mode not yet supported for browser '#{x}'|]
         _ -> capabilities'
   let wdConfig = (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities })
 
   -- Get the CreateProcess
+  debug [i|Preparing to create the Selenium process|]
   liftIO $ createDirectoryIfMissing True toolsRoot
   (wdCreateProcess, maybeXvfbSession) <- getWebdriverCreateProcess wdOptions runRoot port >>= \case
     Left err -> error [i|Failed to create webdriver process: '#{err}'|]
@@ -72,6 +73,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   herr <- liftIO $ openFile (logsDir </> seleniumErrFileName) AppendMode
 
   -- Start the process and wait for it to be ready
+  debug [i|Starting the Selenium process|]
   (_, _, _, p) <- liftIO $ createProcess $ wdCreateProcess {
     std_in = Inherit
     , std_out = UseHandle hout
@@ -84,8 +86,8 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   -- As a result, we poll both files
   let readyMessage = "Selenium Server is up and running"
   -- Retry every 60ms, for up to 60s before admitting defeat
-  let retryPolicy = constantDelay 60000 <> limitRetries 1000
-  success <- retrying retryPolicy (\_retryStatus result -> return (not result)) $ const $
+  let policy = constantDelay 60000 <> limitRetries 1000
+  success <- retrying policy (\_retryStatus result -> return (not result)) $ const $
     (liftIO $ T.readFile (logsDir </> seleniumErrFileName)) >>= \case
       t | readyMessage `T.isInfixOf` t -> return True
       _ -> (liftIO $ T.readFile (logsDir </> seleniumOutFileName)) >>= \case
@@ -128,24 +130,7 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
   seleniumPath <- ExceptT $ obtainSelenium toolsRoot seleniumToUse
   chromeDriverPath <- ExceptT $ obtainChromeDriver toolsRoot chromeDriverToUse
 
-  case runMode of
-    Normal -> return ((proc "java" [
-                         [i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
-                         , "-jar", seleniumPath
-                         , "-port", show port
-                         ]) { cwd = Just runRoot }
-                         , Nothing)
-
-    RunHeadless ->
-      -- Headless mode is controlled in the capabilities
-      return ((proc "java" [
-                 [i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
-                 , "-jar", seleniumPath
-                 , "-port", show port
-                 ]) { cwd = Just runRoot }
-                 , Nothing)
-
-#ifdef linux_HOST_OS
+  (javaEnv, xvfbSession) <- case runMode of
     RunInXvfb (XvfbConfig {xvfbResolution, ..}) -> do
       let (w, h) = fromMaybe (1920, 1080) xvfbResolution
       liftIO $ createDirectoryIfMissing True runRoot
@@ -169,9 +154,7 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
             Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'. Path was '#{path}'|]
             Just x -> return x
 
-      fluxboxProcess <- case xvfbStartFluxbox of
-        False -> return Nothing
-        True -> Just <$> startFluxBoxOnDisplay runRoot displayNum
+      fluxboxProcess <- if xvfbStartFluxbox then Just <$> (startFluxBoxOnDisplay runRoot displayNum) else return Nothing
 
       let xvfbSession@(XvfbSession {..}) = XvfbSession {
             xvfbDisplayNum = displayNum
@@ -185,11 +168,14 @@ getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeD
       env' <- liftIO getEnvironment
       let env = L.nubBy (\x y -> fst x == fst y) $ [("DISPLAY", ":" <> show serverNum)
                                                    , ("XAUTHORITY", xvfbXauthority)] <> env'
-      return ((proc "java" [[i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
-                           , [i|-Dwebdriver.chrome.logfile=#{runRoot </> "chromedriver.log"}|]
-                           , [i|-Dwebdriver.chrome.verboseLogging=true|]
-                           , "-jar", seleniumPath
-                           , "-port", show port]) { env = Just env }, Just xvfbSession)
+      return (Just env, Just xvfbSession)
+    _ -> return (Nothing, Nothing)
+
+  return ((proc "java" [[i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
+                       , [i|-Dwebdriver.chrome.logfile=#{runRoot </> "chromedriver.log"}|]
+                       , [i|-Dwebdriver.chrome.verboseLogging=true|]
+                       , "-jar", seleniumPath
+                       , "-port", show port]) { env = javaEnv }, xvfbSession)
 
 
 createXvfbSession runRoot w h fd = do
@@ -207,12 +193,6 @@ createXvfbSession runRoot w h fd = do
                                                            , std_err = CreatePipe }
 
   return (serverNum, p)
-
-
-#else
-    RunInXvfb (XvfbConfig { xvfbResolution }) -> error [i|RunInXvfb can only be used on Linux.|]
-#endif
-
 
 
 -- * Util
