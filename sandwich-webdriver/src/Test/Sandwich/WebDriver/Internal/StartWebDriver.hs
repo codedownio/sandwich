@@ -51,12 +51,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
 
   -- Set up config
   port <- liftIO findFreePortOrException
-  let capabilities = case runMode of
-        RunHeadless -> capabilities' { W.browser = browser' }
-          where browser' = case W.browser capabilities' of
-                  x@(W.Chrome {..}) -> x { W.chromeOptions = "--headless":chromeOptions }
-                  x -> error [i|Headless mode not yet supported for browser '#{x}'|]
-        _ -> capabilities'
+  let capabilities = capabilities' { W.browser = configureBrowser (W.browser capabilities') runMode }
   let wdConfig = (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities })
 
   -- Get the CreateProcess
@@ -226,3 +221,10 @@ startFluxBoxOnDisplay runRoot x = do
   -- TODO: confirm fluxbox started successfully
 
   return p
+
+configureBrowser browser@(W.Chrome {..}) (RunHeadless (HeadlessConfig {..})) =
+  browser { W.chromeOptions = "--headless":resolution:chromeOptions }
+  where resolution = [i|--window-size=#{w},#{h}|]
+        (w, h) = fromMaybe (1920, 1080) headlessResolution
+configureBrowser browser (RunHeadless {}) = error [i|Headless mode not yet supported for browser '#{browser}'|]
+configureBrowser browser _ = browser

@@ -35,6 +35,10 @@ module Test.Sandwich.WebDriver (
   , xvfbResolution
   , xvfbStartFluxbox
 
+  , HeadlessConfig
+  , defaultHeadlessConfig
+  , headlessResolution
+
   , chromeCapabilities
   , headlessChromeCapabilities
 

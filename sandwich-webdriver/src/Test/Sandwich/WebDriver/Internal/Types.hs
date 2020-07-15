@@ -12,7 +12,6 @@ import qualified Data.Text as T
 import System.IO
 import System.Process
 import Test.Sandwich
-import Test.Sandwich.Internal
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
@@ -41,7 +40,7 @@ data WhenToSave = Always | OnException | Never deriving (Show, Eq)
 -- In addition, Xvfb mode allows videos to be recorded of tests.
 data RunMode = Normal
              -- ^ Normal Selenium behavior; will pop up a web browser.
-             | RunHeadless
+             | RunHeadless HeadlessConfig
              -- ^ Run with a headless browser. Supports screenshots but videos will be black.
              | RunInXvfb XvfbConfig
              -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in their own X11 display.
@@ -91,6 +90,13 @@ data ChromeDriverToUse =
 
 newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int)
 newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int)
+
+data HeadlessConfig = HeadlessConfig {
+  headlessResolution :: Maybe (Int, Int)
+  -- ^ Resolution for the headless browser. Defaults to (1920, 1080)
+  }
+
+defaultHeadlessConfig = HeadlessConfig Nothing
 
 data XvfbConfig = XvfbConfig {
   xvfbResolution :: Maybe (Int, Int)
