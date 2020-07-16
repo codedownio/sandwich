@@ -39,8 +39,7 @@ topBox app = hBox [columnPadding settingsColumn
 
     otherActionsColumn = keybindingBox [keyIndicator (showKey cycleVisibilityThresholdKey) "Cycle visibility threshold"
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
-                                       , keyIndicator (unKChar openAllKey : '/' : [unKChar closeAllKey]) "Open/close all"
-                                       , keyIndicator "Ctrl+#" "Make top # nodes open"
+                                       , keyIndicator "Meta + [0-9]" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]
 
 columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)

@@ -28,6 +28,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
+import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.String.Interpolate.IsString
 import qualified Data.Vector as Vec
@@ -112,7 +113,12 @@ appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
     Just (Extent {extentSize=(w, _), extentUpperLeft=(B.Location (l, _))}) -> do
       let percent :: Double = (fromIntegral (x - l)) / (fromIntegral w)
       let index = round $ percent * (fromIntegral $ length $ s ^. (appMainList . listElementsL))
-      continue (s & appMainList %~ (listMoveTo index))
+      -- Open all ancestors
+      case (s ^. (appMainList . listElementsL)) Vec.!? index of
+        Nothing -> continue s
+        Just (MainListElem {..}) -> do
+          liftIO $ openIndices (s ^. appRunTreeBase) (runTreeAncestors node)
+          continue (s & appMainList %~ (listMoveTo index))
 appEvent s (MouseDown (ListRow i) _ _ _) =
   continue (s & appMainList %~ (listMoveTo i))
 appEvent s x@(VtyEvent e) =
@@ -182,17 +188,15 @@ appEvent s x@(VtyEvent e) =
       --   & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
-    V.EvKey c [] | c == openAllKey -> withContinueS $
-      forM_ (listElements (s ^. appMainList)) $ \(MainListElem {..}) ->
-        liftIO $ atomically $ modifyTVar (runTreeOpen node) (const True)
-    V.EvKey c [] | c == closeAllKey -> withContinueS $
-      forM_ (listElements (s ^. appMainList)) $ \(MainListElem {..}) ->
-        liftIO $ atomically $ modifyTVar (runTreeOpen node) (const False)
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
       halt s
+    V.EvKey c@(V.KChar ch) [V.MMeta] | c `elem` (fmap V.KChar ['0'..'9']) -> do
+      let num :: Int = read [ch]
+      liftIO $ openToDepth (s ^. (appMainList . listElementsL)) num
+      continue s
 
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
 
@@ -210,6 +214,18 @@ modifyOpen s f = case listSelectedElement (s ^. appMainList) of
   Just (i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeOpen node) f
     continue s
+
+openIndices :: [RunNode context] -> Seq.Seq Int -> IO ()
+openIndices nodes openSet =
+  atomically $ forM_ (concatMap getCommons nodes) $ \node ->
+    when ((runTreeId node) `elem` (toList openSet)) $
+      modifyTVar (runTreeOpen node) (const True)
+
+openToDepth :: (Foldable t) => t MainListElem -> Int -> IO ()
+openToDepth elems thresh =
+  atomically $ forM_ elems $ \(MainListElem {..}) ->
+    if | (depth < thresh) -> modifyTVar (runTreeOpen node) (const True)
+       | otherwise -> modifyTVar (runTreeOpen node) (const False)
 
 updateFilteredTree :: [(RunNode BaseContext, RunNodeFixed BaseContext)] -> AppState -> AppState
 updateFilteredTree pairs s = s

@@ -121,13 +121,6 @@ isPending _ = False
 
 -- * Base context
 
-data PathSegment = PathSegment {
-  pathSegmentName :: String
-  , pathSegmentIsContextManager :: Bool
-  , pathSegmentIndexInParent :: Int
-  , pathSegmentNumSiblings :: Int
-  }
-
 data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
                                , baseContextOptions :: Options

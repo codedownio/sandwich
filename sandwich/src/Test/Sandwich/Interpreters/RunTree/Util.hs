@@ -53,9 +53,6 @@ appendFolder :: RunTreeContext -> String -> Maybe FilePath
 appendFolder (RunTreeContext {runTreeCurrentFolder=Nothing}) _ = Nothing
 appendFolder (RunTreeContext {runTreeCurrentFolder=(Just f), ..}) l = Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
 
-pathSegmentToName :: PathSegment -> String
-pathSegmentToName (PathSegment {..}) = nodeToFolderName pathSegmentName pathSegmentNumSiblings pathSegmentIndexInParent
-
 nodeToFolderName :: String -> Int -> Int -> String
 nodeToFolderName name numSiblings indexInParent = padding <> fixupName name
   where

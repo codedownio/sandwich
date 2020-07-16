@@ -25,8 +25,6 @@ openSelectedFolderInFileExplorer = V.KChar 'o'
 -- Column 3
 cycleVisibilityThresholdKey = V.KChar 'v'
 toggleShowRunTimesKey = V.KChar 't'
-openAllKey = V.KChar 'F'
-closeAllKey = V.KChar 'f'
 exitKey = V.KChar 'q'
 
 
