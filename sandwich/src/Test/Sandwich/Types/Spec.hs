@@ -29,12 +29,9 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
 import Data.Functor.Classes
-import Data.Sequence hiding ((:>))
-import qualified Data.Set as S
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
-import Test.Sandwich.Types.Options
 
 -- * ExampleM monad
 
@@ -119,24 +116,7 @@ isPending :: Result -> Bool
 isPending (Failure (Pending {})) = True
 isPending _ = False
 
--- * Base context
-
-data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
-                               , baseContextRunRoot :: Maybe FilePath
-                               , baseContextOptions :: Options
-                               , baseContextOnlyRunIds :: Maybe (S.Set Int) }
-
-class HasBaseContext a where
-  getBaseContext :: a -> BaseContext
-  modifyBaseContext :: a -> (BaseContext -> BaseContext) -> a
-
-instance HasBaseContext BaseContext where
-  getBaseContext = id
-  modifyBaseContext x f = f x
-
-instance HasBaseContext context => HasBaseContext (intro :> context) where
-  getBaseContext (_ :> ctx) = getBaseContext ctx
-  modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
+-- * Label stuff
 
 data Label (l :: Symbol) a = Label
 
@@ -215,8 +195,6 @@ type SpecWithM context m = SpecFree context m ()
 
 type SpecFree context m a = Free (SpecCommand context m) a
 type SpecFreeM context m = Free (SpecCommand context m)
-
-type TopSpec = Spec BaseContext
 
 makeFree_ ''SpecCommand
 

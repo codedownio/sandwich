@@ -19,6 +19,7 @@ import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.Spec
 
 type Chunk a = [(Rational, a)]

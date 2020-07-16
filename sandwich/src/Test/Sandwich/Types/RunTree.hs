@@ -16,10 +16,10 @@ module Test.Sandwich.Types.RunTree where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Logger
-import Data.Sequence
+import Data.Sequence hiding ((:>))
+import qualified Data.Set as S
 import Data.Time.Clock
 import GHC.Stack
-import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
@@ -61,12 +61,6 @@ data RunNodeWithStatus context s l t where
 type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
 type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
 
-extractValues :: (forall context. RunNodeWithStatus context s l t -> a) -> RunNodeWithStatus context s l t -> [a]
-extractValues f node@(RunNodeIt {}) = [f node]
-extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
-extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
-extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
-
 -- * RunNodeCommon
 
 data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
@@ -96,120 +90,71 @@ data LogEntry = LogEntry { logEntryTime :: UTCTime
 
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {
-  runTreeOptions :: Options
-  , runTreeCurrentFolder :: Maybe FilePath
+  runTreeCurrentFolder :: Maybe FilePath
   , runTreeCurrentAncestors :: Seq Int
   , runTreeIndexInParent :: Int
   , runTreeNumSiblings :: Int
   }
 
-isFailureStatus :: Status -> Bool
-isFailureStatus (Done _ _ stat) = isFailure stat
-isFailureStatus _ = False
+-- * Base context
 
-getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
-getCommons = extractValues runNodeCommon
+data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
+                               , baseContextRunRoot :: Maybe FilePath
+                               , baseContextOptions :: Options
+                               , baseContextOnlyRunIds :: Maybe (S.Set Int) }
 
-fixRunTree :: RunNode context -> STM (RunNodeFixed context)
-fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
-  status <- readTVar runTreeStatus
-  logs <- readTVar runTreeLogs
-  toggled <- readTVar runTreeToggled
-  open <- readTVar runTreeOpen
+class HasBaseContext a where
+  getBaseContext :: a -> BaseContext
+  modifyBaseContext :: a -> (BaseContext -> BaseContext) -> a
 
-  let common' = RunNodeCommonWithStatus {
-        runTreeStatus = status
-        , runTreeLogs = logs
-        , runTreeToggled = toggled
-        , runTreeOpen = open
-        , ..
-        }
+instance HasBaseContext BaseContext where
+  getBaseContext = id
+  modifyBaseContext x f = f x
 
-  case node of
-    RunNodeBefore {..} -> do
-      children <- mapM fixRunTree runNodeChildren
-      return $ RunNodeBefore { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeAfter {..} -> do
-      children <- mapM fixRunTree runNodeChildren
-      return $ RunNodeAfter { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeIntroduce {..} -> do
-      children <- mapM fixRunTree runNodeChildrenAugmented
-      return $ RunNodeIntroduce { runNodeCommon=common', runNodeChildrenAugmented=children, .. }
-    RunNodeIntroduceWith {..} -> do
-      children <- mapM fixRunTree runNodeChildrenAugmented
-      return $ RunNodeIntroduceWith { runNodeCommon=common', runNodeChildrenAugmented=children, .. }
-    RunNodeAround {..} -> do
-      children <- mapM fixRunTree runNodeChildren
-      return $ RunNodeAround { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeDescribe {..} -> do
-      children <- mapM fixRunTree runNodeChildren
-      return $ RunNodeDescribe { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeParallel {..} -> do
-      children <- mapM fixRunTree runNodeChildren
-      return $ RunNodeParallel { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeIt {..} -> do
-      return $ RunNodeIt { runNodeCommon=common', .. }
+instance HasBaseContext context => HasBaseContext (intro :> context) where
+  getBaseContext (_ :> ctx) = getBaseContext ctx
+  modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
 
-unFixRunTree :: RunNodeFixed context -> STM (RunNode context)
-unFixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
-  status <- newTVar runTreeStatus
-  logs <- newTVar runTreeLogs
-  toggled <- newTVar runTreeToggled
-  open <- newTVar runTreeOpen
+type TopSpec = Spec BaseContext
 
-  let common' = RunNodeCommonWithStatus {
-        runTreeStatus = status
-        , runTreeLogs = logs
-        , runTreeToggled = toggled
-        , runTreeOpen = open
-        , ..
-        }
+-- * Formatter
 
-  case node of
-    RunNodeBefore {..} -> do
-      children <- mapM unFixRunTree runNodeChildren
-      return $ RunNodeBefore { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeAfter {..} -> do
-      children <- mapM unFixRunTree runNodeChildren
-      return $ RunNodeAfter { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeIntroduce {..} -> do
-      children <- mapM unFixRunTree runNodeChildrenAugmented
-      return $ RunNodeIntroduce { runNodeCommon=common', runNodeChildrenAugmented=children, .. }
-    RunNodeIntroduceWith {..} -> do
-      children <- mapM unFixRunTree runNodeChildrenAugmented
-      return $ RunNodeIntroduceWith { runNodeCommon=common', runNodeChildrenAugmented=children, .. }
-    RunNodeAround {..} -> do
-      children <- mapM unFixRunTree runNodeChildren
-      return $ RunNodeAround { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeDescribe {..} -> do
-      children <- mapM unFixRunTree runNodeChildren
-      return $ RunNodeDescribe { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeParallel {..} -> do
-      children <- mapM unFixRunTree runNodeChildren
-      return $ RunNodeParallel { runNodeCommon=common', runNodeChildren=children, .. }
-    RunNodeIt {..} -> do
-      return $ RunNodeIt { runNodeCommon=common', .. }
+class Formatter f where
+  runFormatter :: f -> [RunNode BaseContext] -> BaseContext -> IO ()
 
+data SomeFormatter = forall f. (Formatter f) => SomeFormatter f
 
-getCallStackFromStatus :: Status -> Maybe CallStack
-getCallStackFromStatus NotStarted {} = Nothing
-getCallStackFromStatus Running {} = Nothing
-getCallStackFromStatus Done {statusResult} = getCallStackFromResult statusResult
+-- * Options
 
-getCallStackFromResult :: Result -> Maybe CallStack
-getCallStackFromResult (Success {}) = Nothing
-getCallStackFromResult (Failure (Reason x _)) = x
-getCallStackFromResult (Failure (ExpectedButGot x _ _)) = x
-getCallStackFromResult (Failure (DidNotExpectButGot x _)) = x
-getCallStackFromResult (Failure (Pending x _)) = x
-getCallStackFromResult (Failure (GotException {})) = Nothing
-getCallStackFromResult (Failure (GetContextException {})) = Nothing
-getCallStackFromResult (Failure (GotAsyncException {})) = Nothing
+-- | Control whether test artifacts are stored to a directory.
+data TestArtifactsDirectory =
+  TestArtifactsNone
+  -- ^ Do not create a test artifacts directory.
+  | TestArtifactsFixedDirectory {
+      testRootFixed :: FilePath
+      }
+  -- ^ Use the test artifacts directory at the given path, creating it if necessary.
+  | TestArtifactsGeneratedDirectory {
+      runsRoot :: FilePath
+      -- ^ The root folder under which test run directories will be created.
+      , getTestRunDirectoryName :: IO FilePath
+      -- ^ Action to generate the new directory name.
+      }
+  -- ^ Create a new test artifacts directory under '' test artifacts directory at the given path.
 
-isDone :: Status -> Bool
-isDone (Done {}) = True
-isDone _ = False
+newtype TreeFilter = TreeFilter String
 
-isRunning :: Status -> Bool
-isRunning (Running {}) = True
-isRunning _ = False
+data Options = Options {
+  optionsTestArtifactsDirectory :: TestArtifactsDirectory
+  -- ^ Where to save test artifacts (logs, screenshots, failure reports, etc.).
+  , optionsSavedLogLevel :: Maybe LogLevel
+  -- ^ Minimum test log level to save (has no effect if 'optionsTestArtifactsDirectory' is 'TestArtifactsNone').
+  , optionsMemoryLogLevel :: Maybe LogLevel
+  -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
+  , optionsFilterTree :: Maybe TreeFilter
+  -- ^ Filter to apply to the text tree before running.
+  , optionsDryRun :: Bool
+  -- ^ Whether to skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI.
+  , optionsFormatters :: [SomeFormatter]
+  -- ^ Which formatters to use to output the results of the tests.
+  }

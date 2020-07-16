@@ -19,6 +19,7 @@ import Control.Monad.Trans.RWS
 import Data.Functor.Identity
 import Data.Sequence
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
@@ -32,8 +33,7 @@ specToRunTreeVariable bc spec = mapM unFixRunTree $ specToRunTree bc spec
 specToRunTreeM :: (Monad m) => BaseContext -> Free (SpecCommand BaseContext IO) () -> m [RunNodeFixed BaseContext]
 specToRunTreeM baseContext spec = do
   let context = RunTreeContext {
-        runTreeOptions = baseContextOptions baseContext
-        , runTreeIndexInParent = 0
+        runTreeIndexInParent = 0
         , runTreeNumSiblings = countChildren spec
         , runTreeCurrentAncestors = mempty
         , runTreeCurrentFolder = baseContextRunRoot baseContext

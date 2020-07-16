@@ -7,9 +7,7 @@ module Test.Sandwich.Contexts where
 
 import Control.Monad.Reader
 import GHC.Stack
-import System.Directory
-import System.FilePath
-import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 getContext :: (Monad m, HasLabel context l a, HasCallStack, MonadReader context m) => Label l a -> m a

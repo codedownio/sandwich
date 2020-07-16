@@ -15,6 +15,7 @@ import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 
 

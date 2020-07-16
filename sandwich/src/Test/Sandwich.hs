@@ -23,11 +23,13 @@ module Test.Sandwich (
   , TopSpec
 
   , defaultOptions
+  , Options
   , optionsTestArtifactsDirectory
   , TestArtifactsDirectory(..)
   , optionsSavedLogLevel
   , optionsMemoryLogLevel
   , optionsFilterTree
+  , optionsFormatters
   , TreeFilter(..)
 
   , BaseContext
@@ -48,6 +50,8 @@ module Test.Sandwich (
   , HasLabel
   , (:>)
 
+  , SomeFormatter(..)
+
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
@@ -58,29 +62,30 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
+import Control.Monad.Logger
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
+import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Shutdown
-import Test.Sandwich.Types.Formatter
-import Test.Sandwich.Types.Options
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
-runSandwich options f spec = do
+runSandwich :: Options -> TopSpec -> IO ()
+runSandwich options spec = do
   baseContext <- baseContextFromOptions options
   rts <- startSandwichTree' baseContext options spec
-  formatterAsync <- async $ runFormatter f rts baseContext
+
+  formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ runFormatter f rts baseContext
 
   let shutdown = do
         putStrLn "Shutting down..."
@@ -90,8 +95,8 @@ runSandwich options f spec = do
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
   putStrLn [i|Beginning wait for formatterAsync|]
-  finalResult :: Either E.SomeException () <- E.try $ wait formatterAsync
-  putStrLn [i|Final result: #{finalResult}|]
+  finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
+  putStrLn [i|Final result: #{finalResults}|]
 
 startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 startSandwichTree options spec = do
@@ -142,3 +147,13 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextRunRoot = runRoot
     , baseContextOnlyRunIds = Nothing
     }
+
+defaultOptions :: Options
+defaultOptions = Options {
+  optionsTestArtifactsDirectory = TestArtifactsNone
+  , optionsSavedLogLevel = Just LevelDebug
+  , optionsMemoryLogLevel = Just LevelDebug
+  , optionsFilterTree = Nothing
+  , optionsDryRun = False
+  , optionsFormatters = [SomeFormatter defaultPrintFormatter]
+  }

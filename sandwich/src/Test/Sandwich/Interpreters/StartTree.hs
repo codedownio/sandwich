@@ -31,7 +31,7 @@ import System.Directory
 import System.FilePath
 import System.IO
 import Test.Sandwich.Interpreters.RunTree.Logging
-import Test.Sandwich.Types.Options
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 

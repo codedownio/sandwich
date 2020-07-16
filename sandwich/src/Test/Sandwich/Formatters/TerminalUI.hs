@@ -25,12 +25,10 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
-import Data.String.Interpolate.IsString
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
@@ -43,10 +41,9 @@ import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
+import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
-import Test.Sandwich.Types.Formatter
 import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 

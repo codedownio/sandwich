@@ -25,6 +25,7 @@ module Test.Sandwich.Internal (
   ) where
 
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec

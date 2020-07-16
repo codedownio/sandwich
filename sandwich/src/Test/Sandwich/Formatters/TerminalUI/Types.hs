@@ -10,8 +10,8 @@ import qualified Brick.Widgets.List as L
 import Control.Monad.Logger
 import Data.Sequence
 import Lens.Micro.TH
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Types.Spec
 
 
 data TerminalUIFormatter = TerminalUIFormatter {

@@ -31,7 +31,7 @@ import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Interpreters.RunTree.Util
-import Test.Sandwich.Types.Formatter
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
