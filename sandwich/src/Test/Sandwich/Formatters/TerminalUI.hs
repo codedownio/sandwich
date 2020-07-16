@@ -49,19 +49,6 @@ import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 
-data TerminalUIFormatter = TerminalUIFormatter {
-  terminalUIVisibilityThreshold :: Int
-  , terminalUIShowRunTimes :: Bool
-  , terminalUILogLevel :: LogLevel
-  }
-
-defaultTerminalUIFormatter :: TerminalUIFormatter
-defaultTerminalUIFormatter = TerminalUIFormatter {
-  terminalUIVisibilityThreshold = 0
-  , terminalUIShowRunTimes = True
-  , terminalUILogLevel = LevelDebug
-  }
-
 instance Formatter TerminalUIFormatter where
   runFormatter = runApp
 
@@ -77,6 +64,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
           , _appBaseContext = baseContext
 
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
+          , _appLogLevel = terminalUILogLevel
           , _appShowRunTimes = terminalUIShowRunTimes
         }
 
@@ -222,7 +210,6 @@ modifyOpen s f = case listSelectedElement (s ^. appMainList) of
   Just (i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeOpen node) f
     continue s
-
 
 updateFilteredTree :: [(RunNode BaseContext, RunNodeFixed BaseContext)] -> AppState -> AppState
 updateFilteredTree pairs s = s

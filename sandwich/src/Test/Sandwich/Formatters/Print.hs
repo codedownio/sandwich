@@ -11,10 +11,9 @@
 module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
   , printFormatterUseColor
-  , printFormatterIncludeLogs
+  , printFormatterLogLevel
   , printFormatterIncludeCallStacks
   , printFormatterIndentSize
-  , printFormatterLogLevel
   ) where
 
 import Control.Concurrent.STM
@@ -68,7 +67,6 @@ runApp pf@(PrintFormatter {..}) rts bc = do
 runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int) IO ()
 runWithIndentation node@(RunNodeIt {..}) = do
   includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
-  includeLogs <- asks (printFormatterIncludeLogs . fst)
 
   let RunNodeCommonWithStatus {..} = runNodeCommon
 
@@ -91,10 +89,9 @@ runWithIndentation node@(RunNodeIt {..}) = do
       _ -> return ()
 
   -- Print the logs, if configured
-  when includeLogs $ printLogs runTreeLogs
+  printLogs runTreeLogs
 runWithIndentation node = do
   includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
-  includeLogs <- asks (printFormatterIncludeLogs . fst)
 
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   pin runTreeLabel
@@ -119,10 +116,15 @@ runWithIndentation node = do
       _ -> return ()
 
   -- Print the logs, if configured
-  when includeLogs $ printLogs runTreeLogs
+  printLogs runTreeLogs
 
 
+printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int) m, Foldable t) => TVar (t LogEntry) -> m ()
 printLogs runTreeLogs = do
-  logEntries <- liftIO $ readTVarIO runTreeLogs
-  withBumpIndent $
-    forM_ logEntries printLogEntry
+  (asks (printFormatterLogLevel . fst)) >>= \case
+    Nothing -> return ()
+    Just logLevel -> do
+      logEntries <- liftIO $ readTVarIO runTreeLogs
+      withBumpIndent $
+        forM_ logEntries $ \entry ->
+          when (logEntryLevel entry >= logLevel) $ printLogEntry entry

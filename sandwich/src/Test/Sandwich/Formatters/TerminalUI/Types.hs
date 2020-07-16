@@ -7,10 +7,25 @@
 module Test.Sandwich.Formatters.TerminalUI.Types where
 
 import qualified Brick.Widgets.List as L
+import Control.Monad.Logger
 import Data.Sequence
 import Lens.Micro.TH
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+
+
+data TerminalUIFormatter = TerminalUIFormatter {
+  terminalUIVisibilityThreshold :: Int
+  , terminalUIShowRunTimes :: Bool
+  , terminalUILogLevel :: Maybe LogLevel
+  }
+
+defaultTerminalUIFormatter :: TerminalUIFormatter
+defaultTerminalUIFormatter = TerminalUIFormatter {
+  terminalUIVisibilityThreshold = 0
+  , terminalUIShowRunTimes = True
+  , terminalUILogLevel = Just LevelWarn
+  }
 
 
 data AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
@@ -42,6 +57,7 @@ data AppState = AppState {
   , _appBaseContext :: BaseContext
 
   , _appVisibilityThreshold :: Int
+  , _appLogLevel :: Maybe LogLevel
   , _appShowRunTimes :: Bool
   }
 

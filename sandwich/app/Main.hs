@@ -10,6 +10,7 @@ import Control.Concurrent
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger (LogLevel(..))
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
@@ -169,7 +170,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 
 main :: IO ()
 -- main = runSandwich options defaultPrintFormatter cancellingIntroduce
-main = runSandwich options defaultTerminalUIFormatter manyRows
+main = runSandwich options (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn)}) verySimple
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
@@ -180,13 +181,13 @@ main = runSandwich options defaultTerminalUIFormatter manyRows
 
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
-  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^1)
   -- liftIO $ threadDelay (2 * 10^5)
-  liftIO $ threadDelay (1 * 10^6)
+  -- liftIO $ threadDelay (1 * 10^6)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
-  -- liftIO $ threadDelay (2 * 10^1)
+  liftIO $ threadDelay (2 * 10^1)
   -- liftIO $ threadDelay (2 * 10^5)
-  liftIO $ threadDelay (1 * 10^6)
+  -- liftIO $ threadDelay (1 * 10^6)
   2 `shouldBe` 3

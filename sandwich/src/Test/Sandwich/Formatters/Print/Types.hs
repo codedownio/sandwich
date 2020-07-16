@@ -6,17 +6,15 @@ import Control.Monad.Logger
 
 data PrintFormatter = PrintFormatter {
   printFormatterUseColor :: Bool
-  , printFormatterIncludeLogs :: Bool
+  , printFormatterLogLevel :: Maybe LogLevel
   , printFormatterIncludeCallStacks :: Bool
   , printFormatterIndentSize :: Int
-  , printFormatterLogLevel :: LogLevel
   }
 
 defaultPrintFormatter :: PrintFormatter
 defaultPrintFormatter = PrintFormatter {
   printFormatterUseColor = True
-  , printFormatterIncludeLogs = True
+  , printFormatterLogLevel = Just LevelWarn
   , printFormatterIncludeCallStacks = True
   , printFormatterIndentSize = 4
-  , printFormatterLogLevel = LevelWarn
   }

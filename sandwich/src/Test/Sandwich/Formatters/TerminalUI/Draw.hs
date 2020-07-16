@@ -69,7 +69,11 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ toBrickWidget cs
       , do
           guard (not $ Seq.null logs)
-          return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox (toList $ fmap logEntryWidget logs)
+          case app ^. appLogLevel of
+            Nothing -> Nothing
+            Just logLevel ->
+              return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox $
+                toList $ fmap logEntryWidget $ Seq.filter (\x -> logEntryLevel x >= logLevel) logs
       ]
 
     getResultTitle (NotStarted {}) = str "Not started"
