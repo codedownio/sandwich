@@ -86,6 +86,7 @@ getCommon l visibilityLevel = do
     , runTreeId = ident
     , runTreeAncestors = runTreeCurrentAncestors |> ident
     , runTreeToggled = False
+    , runTreeOpen = True
     , runTreeStatus = NotStarted
     , runTreeFolder = appendFolder rtc l
     , runTreeVisibilityLevel = visibilityLevel

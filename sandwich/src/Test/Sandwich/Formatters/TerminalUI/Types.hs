@@ -19,6 +19,7 @@ data MainListElem = MainListElem {
   label :: String
   , depth :: Int
   , toggled :: Bool
+  , open :: Bool
   , status :: Status
   , logs :: Seq LogEntry
   , isContextManager :: Bool
@@ -40,7 +41,7 @@ data AppState = AppState {
   , _appMainList :: L.List ClickableName MainListElem
   , _appBaseContext :: BaseContext
 
-  , _appShowContextManagers :: Bool
+  , _appVisibilityThreshold :: Int
   , _appShowRunTimes :: Bool
   }
 

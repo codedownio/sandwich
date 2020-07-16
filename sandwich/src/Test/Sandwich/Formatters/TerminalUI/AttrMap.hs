@@ -37,6 +37,7 @@ mainAttrMap = attrMap V.defAttr [
 
   -- Main list
   , (toggleMarkerAttr, fg midGray)
+  , (openMarkerAttr, fg midGray)
 
   -- Hotkey stuff
   , (hotkeyAttr, fg V.blue)
@@ -85,6 +86,9 @@ failureAttr = "failure"
 
 toggleMarkerAttr :: AttrName
 toggleMarkerAttr = "toggleMarker"
+
+openMarkerAttr :: AttrName
+openMarkerAttr = "openMarker"
 
 hotkeyAttr, disabledHotkeyAttr, hotkeyMessageAttr, disabledHotkeyMessageAttr :: AttrName
 hotkeyAttr = "hotkey"

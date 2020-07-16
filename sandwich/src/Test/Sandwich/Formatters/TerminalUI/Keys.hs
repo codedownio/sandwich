@@ -5,24 +5,33 @@ module Test.Sandwich.Formatters.TerminalUI.Keys where
 import qualified Data.List as L
 import qualified Graphics.Vty as V
 
-toggleShowRunTimesKey = V.KChar 't'
-toggleShowContextManagersKey = V.KChar 'm'
-
+-- Column 1
 nextKey = V.KChar 'n'
 previousKey = V.KChar 'p'
 nextFailureKey = V.KChar 'N'
 previousFailureKey = V.KChar 'P'
+closeNodeKey = V.KLeft
+openNodeKey = V.KRight
+toggleKeys = [V.KEnter, V.KChar '\t']
 
-cancelSelectedKey = V.KChar 'c'
+-- Column 2
 cancelAllKey = V.KChar 'C'
-clearResultsKey = V.KChar 'k'
-runSelectedKey = V.KChar 'r'
+cancelSelectedKey = V.KChar 'c'
 runAllKey = V.KChar 'R'
+runSelectedKey = V.KChar 'r'
+clearResultsKey = V.KChar 'k'
 openSelectedFolderInFileExplorer = V.KChar 'o'
 
+-- Column 3
+cycleVisibilityThresholdKey = V.KChar 'v'
+toggleShowRunTimesKey = V.KChar 't'
+openAllKey = V.KChar 'F'
+closeAllKey = V.KChar 'f'
 exitKey = V.KChar 'q'
 
-toggleKeys = [V.KEnter, V.KChar '\t']
+
+
+-- Other
 
 showKey (V.KChar '\t') = "Tab"
 showKey (V.KChar c) = [c]
@@ -32,4 +41,6 @@ showKeys = L.intercalate "/" . fmap showKey
 
 unKChar :: V.Key -> Char
 unKChar (V.KChar c) = c
+unKChar V.KLeft = '←'
+unKChar V.KRight = '→'
 unKChar _ = '?'

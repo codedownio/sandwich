@@ -74,6 +74,7 @@ data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
   , runTreeId :: Int
   , runTreeAncestors :: Seq Int
   , runTreeToggled :: t
+  , runTreeOpen :: t
   , runTreeStatus :: s
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
@@ -114,11 +115,13 @@ fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
   status <- readTVar runTreeStatus
   logs <- readTVar runTreeLogs
   toggled <- readTVar runTreeToggled
+  open <- readTVar runTreeOpen
 
   let common' = RunNodeCommonWithStatus {
         runTreeStatus = status
         , runTreeLogs = logs
         , runTreeToggled = toggled
+        , runTreeOpen = open
         , ..
         }
 
@@ -152,11 +155,13 @@ unFixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
   status <- newTVar runTreeStatus
   logs <- newTVar runTreeLogs
   toggled <- newTVar runTreeToggled
+  open <- newTVar runTreeOpen
 
   let common' = RunNodeCommonWithStatus {
         runTreeStatus = status
         , runTreeLogs = logs
         , runTreeToggled = toggled
+        , runTreeOpen = open
         , ..
         }
 

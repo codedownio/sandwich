@@ -25,17 +25,21 @@ runTreesToList' indent rts = mconcat $ fmap (runTreeToList' indent) rts
 runTreeToList' :: Int -> (RunNode context, RunNodeFixed context) -> Vec.Vector MainListElem
 runTreeToList' indent (node@(RunNodeIt {}), fixedNode@(RunNodeIt {})) =
   Vec.singleton (makeElem indent fixedNode node)
-runTreeToList' indent (node@(RunNodeIntroduce {runNodeChildrenAugmented=childrenVariable}), fixedNode@(RunNodeIntroduce {runNodeChildrenAugmented=childrenFixed})) =
-  (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip childrenVariable (unsafeCoerce childrenFixed)))
-runTreeToList' indent (node@(RunNodeIntroduceWith {runNodeChildrenAugmented=childrenVariable}), fixedNode@(RunNodeIntroduceWith {runNodeChildrenAugmented=childrenFixed})) =
-  (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip childrenVariable (unsafeCoerce childrenFixed)))
-runTreeToList' indent (node, fixedNode) =
-  (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip (runNodeChildren node) (runNodeChildren fixedNode)))
+runTreeToList' indent (node@(RunNodeIntroduce {runNodeChildrenAugmented=childrenVariable}), fixedNode@(RunNodeIntroduce {runNodeChildrenAugmented=childrenFixed}))
+  | runTreeOpen $ runNodeCommon fixedNode = (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip childrenVariable (unsafeCoerce childrenFixed)))
+  | otherwise = Vec.singleton $ makeElem indent fixedNode node
+runTreeToList' indent (node@(RunNodeIntroduceWith {runNodeChildrenAugmented=childrenVariable}), fixedNode@(RunNodeIntroduceWith {runNodeChildrenAugmented=childrenFixed}))
+  | runTreeOpen $ runNodeCommon fixedNode = (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip childrenVariable (unsafeCoerce childrenFixed)))
+  | otherwise = Vec.singleton (makeElem indent fixedNode node)
+runTreeToList' indent (node, fixedNode)
+  | runTreeOpen $ runNodeCommon fixedNode = (makeElem indent fixedNode node) `Vec.cons` (runTreesToList' (indent + 1) (zip (runNodeChildren node) (runNodeChildren fixedNode)))
+  | otherwise = Vec.singleton (makeElem indent fixedNode node)
 
 makeElem indent fixedNode node = MainListElem {
   label = runTreeLabel $ runNodeCommon fixedNode
   , depth = indent
   , toggled = runTreeToggled $ runNodeCommon fixedNode
+  , open = runTreeOpen $ runNodeCommon fixedNode
   , status = runTreeStatus $ runNodeCommon fixedNode
   , logs = runTreeLogs $ runNodeCommon fixedNode
   , isContextManager = False -- TODO

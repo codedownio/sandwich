@@ -53,8 +53,9 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
       ]
 
     renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
-      Just $ withAttr toggleMarkerAttr $ str (if toggled then "[-] " else "[+] ")
-      , Just $ padRight Max $ withAttr (chooseAttr status) (str label)
+      Just $ withAttr openMarkerAttr $ str (if open then "[-] " else "[+] ")
+      , Just $ withAttr (chooseAttr status) (str label)
+      , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ show statusStartTime
           Done {..} -> Just $ str $ formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)

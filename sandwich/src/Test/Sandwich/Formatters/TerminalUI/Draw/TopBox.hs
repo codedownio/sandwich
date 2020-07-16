@@ -26,6 +26,7 @@ topBox app = hBox [columnPadding settingsColumn
                                    , keyIndicator (unKChar previousKey : "/↓") "Previous"
                                    , keyIndicator (unKChar nextFailureKey : "/↑") "Next failure"
                                    , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
+                                   , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Open/close nodes"
                                    , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicatorSomeTestRunning app (showKey cancelAllKey) "Cancel all"
@@ -36,8 +37,10 @@ topBox app = hBox [columnPadding settingsColumn
                                   , keyIndicatorHasSelectedAndFolder app (showKey openSelectedFolderInFileExplorer) "Open in file explorer"
                                   ]
 
-    otherActionsColumn = keybindingBox [toggleIndicator (app ^. appShowContextManagers) (showKey toggleShowContextManagersKey) "Hide context managers" "Show context managers"
+    otherActionsColumn = keybindingBox [keyIndicator (showKey cycleVisibilityThresholdKey) "Cycle visibility threshold"
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                       , keyIndicator (unKChar openAllKey : '/' : [unKChar closeAllKey]) "Open/close all"
+                                       , keyIndicator "Ctrl+#" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]
 
 columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)

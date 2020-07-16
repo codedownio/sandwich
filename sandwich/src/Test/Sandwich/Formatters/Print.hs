@@ -10,10 +10,14 @@
 
 module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
+  , printFormatterUseColor
+  , printFormatterIncludeLogs
+  , printFormatterIncludeCallStacks
+  , printFormatterIndentSize
+  , printFormatterLogLevel
   ) where
 
 import Control.Concurrent.STM
-import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader

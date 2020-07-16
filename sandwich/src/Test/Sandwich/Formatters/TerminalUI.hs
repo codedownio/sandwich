@@ -11,8 +11,9 @@
 
 module Test.Sandwich.Formatters.TerminalUI (
   defaultTerminalUIFormatter
-  , showContextManagers
-  , showRunTimes
+  , terminalUIVisibilityThreshold
+  , terminalUIShowRunTimes
+  , terminalUILogLevel
   ) where
 
 import Brick as B
@@ -24,6 +25,7 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Set as S
@@ -48,14 +50,16 @@ import Test.Sandwich.Util
 
 
 data TerminalUIFormatter = TerminalUIFormatter {
-  showContextManagers :: Bool
-  , showRunTimes :: Bool
+  terminalUIVisibilityThreshold :: Int
+  , terminalUIShowRunTimes :: Bool
+  , terminalUILogLevel :: LogLevel
   }
 
 defaultTerminalUIFormatter :: TerminalUIFormatter
 defaultTerminalUIFormatter = TerminalUIFormatter {
-  showContextManagers = True
-  , showRunTimes = True
+  terminalUIVisibilityThreshold = 0
+  , terminalUIShowRunTimes = True
+  , terminalUILogLevel = LevelDebug
   }
 
 instance Formatter TerminalUIFormatter where
@@ -64,7 +68,7 @@ instance Formatter TerminalUIFormatter where
 runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp (TerminalUIFormatter {..}) rts baseContext = do
   rtsFixed <- atomically $ mapM fixRunTree rts
-  let initialState = updateFilteredTree (zip (filterRunTree showContextManagers rts) (filterRunTree showContextManagers rtsFixed)) $
+  let initialState = updateFilteredTree (zip (filterRunTree terminalUIVisibilityThreshold rts) (filterRunTree terminalUIVisibilityThreshold rtsFixed)) $
         AppState {
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
@@ -72,8 +76,8 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
           , _appMainList = list MainList mempty 1
           , _appBaseContext = baseContext
 
-          , _appShowContextManagers = showContextManagers
-          , _appShowRunTimes = showRunTimes
+          , _appVisibilityThreshold = terminalUIVisibilityThreshold
+          , _appShowRunTimes = terminalUIShowRunTimes
         }
 
   eventChan <- newBChan 10
@@ -111,8 +115,8 @@ app = App {
 appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName (Next AppState)
 appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
   & appRunTree .~ newTree
-  & updateFilteredTree (zip (filterRunTree (s ^. appShowContextManagers) (s ^. appRunTreeBase))
-                            (filterRunTree (s ^. appShowContextManagers) newTree))
+  & updateFilteredTree (zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
+                            (filterRunTree (s ^. appVisibilityThreshold) newTree))
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
@@ -125,23 +129,7 @@ appEvent s (MouseDown (ListRow i) _ _ _) =
   continue (s & appMainList %~ (listMoveTo i))
 appEvent s x@(VtyEvent e) =
   case e of
-    V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
-      -- Cancel everything and wait for cleanups
-      liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
-      _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
-      halt s
-
-    V.EvKey c [] | c == toggleShowContextManagersKey -> do
-      let runTreeFiltered = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTreeBase)
-      let runTreeFilteredFixed = filterRunTree (not $ s ^. appShowContextManagers) (s ^. appRunTree)
-      continue $ s
-        & appShowContextManagers %~ not
-        & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
-
-    V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
-      & appShowRunTimes %~ not
-
-    -- Navigation
+    -- Column 1
     V.EvKey c [] | c == nextKey -> continue (s & appMainList %~ (listMoveBy 1))
     V.EvKey c [] | c == previousKey -> continue (s & appMainList %~ (listMoveBy (-1)))
     V.EvKey c [] | c == nextFailureKey -> do
@@ -160,12 +148,11 @@ appEvent s x@(VtyEvent e) =
       case L.find (isFailureStatus . status . snd) listToSearch of
         Nothing -> continue s
         Just (i', _) -> continue (s & appMainList %~ (listMoveTo i'))
-
-
+    V.EvKey c [] | c == closeNodeKey -> modifyOpen s (const False)
+    V.EvKey c [] | c == openNodeKey -> modifyOpen s (const True)
     V.EvKey c [] | c `elem` toggleKeys -> modifyToggled s not
-    V.EvKey c [] | c == V.KLeft -> modifyToggled s (const False)
-    V.EvKey c [] | c == V.KRight -> modifyToggled s (const True)
 
+    -- Column 2
     V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       continue s
@@ -197,6 +184,28 @@ appEvent s x@(VtyEvent e) =
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {folderPath}) ->
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
 
+    -- Column 3
+    V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
+      undefined
+      -- let runTreeFiltered = filterRunTree (not $ s ^. appVisibilityThreshold) (s ^. appRunTreeBase)
+      -- let runTreeFilteredFixed = filterRunTree (not $ s ^. appVisibilityThreshold) (s ^. appRunTree)
+      -- continue $ s
+      --   & appVisibilityThreshold %~ not
+      --   & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
+    V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
+      & appShowRunTimes %~ not
+    V.EvKey c [] | c == openAllKey -> withContinueS $
+      forM_ (listElements (s ^. appMainList)) $ \(MainListElem {..}) ->
+        liftIO $ atomically $ modifyTVar (runTreeOpen node) (const True)
+    V.EvKey c [] | c == closeAllKey -> withContinueS $
+      forM_ (listElements (s ^. appMainList)) $ \(MainListElem {..}) ->
+        liftIO $ atomically $ modifyTVar (runTreeOpen node) (const False)
+    V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
+      -- Cancel everything and wait for cleanups
+      liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
+      _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
+      halt s
+
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
 
   where withContinueS action = action >> continue s
@@ -206,6 +215,12 @@ modifyToggled s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
   Just (i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeToggled node) f
+    continue s
+
+modifyOpen s f = case listSelectedElement (s ^. appMainList) of
+  Nothing -> continue s
+  Just (i, MainListElem {..}) -> do
+    liftIO $ atomically $ modifyTVar (runTreeOpen node) f
     continue s
 
 
