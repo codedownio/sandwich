@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -77,8 +78,8 @@ import Test.Sandwich.Types.Spec
 
 runSandwich :: (Formatter f) => Options -> f -> TopSpec -> IO ()
 runSandwich options f spec = do
-  rts <- startSandwichTree options spec
   baseContext <- baseContextFromOptions options
+  rts <- startSandwichTree' baseContext options spec
   formatterAsync <- async $ runFormatter f rts baseContext
 
   let shutdown = do
@@ -93,12 +94,15 @@ runSandwich options f spec = do
   putStrLn [i|Final result: #{finalResult}|]
 
 startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-startSandwichTree options@(Options {..}) spec' = do
+startSandwichTree options spec = do
+  baseContext <- baseContextFromOptions options
+  startSandwichTree' baseContext options spec
+
+startSandwichTree' :: BaseContext -> Options -> TopSpec -> IO [RunNode BaseContext]
+startSandwichTree' baseContext (Options {..}) spec' = do
   let spec = case optionsFilterTree of
         Nothing -> spec'
         Just (TreeFilter match) -> filterTree match spec'
-
-  baseContext <- baseContextFromOptions options
 
   runTree <- atomically $ specToRunTreeVariable baseContext spec
 
