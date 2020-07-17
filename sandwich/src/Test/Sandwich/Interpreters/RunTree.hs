@@ -65,7 +65,7 @@ specToRunTree'  (Free (Parallel subspec next)) = do
   common <- getCommon "Parallel" 100
   continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" common subspec
 specToRunTree'  (Free (It l example next)) =
-  continueWith next =<< RunNodeIt <$> getCommon l 100 <*> pure example
+  continueWith next =<< RunNodeIt <$> getCommon l 0 <*> pure example
 specToRunTree'  (Pure _) = return []
 
 

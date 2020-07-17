@@ -10,6 +10,7 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.TopBox (
 
 import Brick
 import qualified Brick.Widgets.List as L
+import qualified Data.List as L
 import Data.Maybe
 import Lens.Micro
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
@@ -38,10 +39,15 @@ topBox app = hBox [columnPadding settingsColumn
                                   , keyIndicatorHasSelectedAndFolder app (showKey openSelectedFolderInFileExplorer) "Open in file explorer"
                                   ]
 
-    otherActionsColumn = keybindingBox [keyIndicator (showKey cycleVisibilityThresholdKey) "Cycle visibility threshold"
+    otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
                                        , keyIndicator "Meta + [0-9]" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]
+
+visibilityThresholdWidget app = hBox $
+  [str "Change visibility threshold ("]
+  <> L.intersperse (str ", ") [withAttr (if x == app ^. appVisibilityThreshold then visibilityThresholdSelectedAttr else visibilityThresholdNotSelectedAttr) $ str $ show x | x <- (app ^. appVisibilityThresholdSteps)]
+  <> [(str ")")]
 
 columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
 
@@ -50,7 +56,9 @@ keybindingBox = vBox
 toggleIndicator True key onMsg _ = keyIndicator key onMsg
 toggleIndicator False key _ offMsg = keyIndicator key offMsg
 
-keyIndicator key msg = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
+keyIndicator key msg = keyIndicator' key (withAttr hotkeyMessageAttr $ str msg)
+
+keyIndicator' key label = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", label]
 
 keyIndicatorHasSelected app = keyIndicatorContextual app (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
 

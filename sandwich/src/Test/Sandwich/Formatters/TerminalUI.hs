@@ -29,6 +29,7 @@ import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
+import Data.Time
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
@@ -52,6 +53,7 @@ instance Formatter TerminalUIFormatter where
 
 runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp (TerminalUIFormatter {..}) rts baseContext = do
+  startTime <- getCurrentTime
   rtsFixed <- atomically $ mapM fixRunTree rts
   let initialState = updateFilteredTree (zip (filterRunTree terminalUIVisibilityThreshold rts) (filterRunTree terminalUIVisibilityThreshold rtsFixed)) $
         AppState {
@@ -61,7 +63,12 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
           , _appMainList = list MainList mempty 1
           , _appBaseContext = baseContext
 
+          , _appStartTime = startTime
+          , _appTimeSinceStart = 0
+
+          , _appVisibilityThresholdSteps = L.sort $ L.nub $ fmap runTreeVisibilityLevel $ concatMap getCommons rts
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
+
           , _appLogLevel = terminalUILogLevel
           , _appShowRunTimes = terminalUIShowRunTimes
         }
@@ -99,10 +106,13 @@ app = App {
   }
 
 appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName (Next AppState)
-appEvent s (AppEvent (RunTreeUpdated newTree)) = continue $ s
-  & appRunTree .~ newTree
-  & updateFilteredTree (zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
-                            (filterRunTree (s ^. appVisibilityThreshold) newTree))
+appEvent s (AppEvent (RunTreeUpdated newTree)) = do
+  now <- liftIO getCurrentTime
+  continue $ s
+    & appRunTree .~ newTree
+    & updateFilteredTree (zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
+                              (filterRunTree (s ^. appVisibilityThreshold) newTree))
+    & appTimeSinceStart .~ (diffUTCTime now (s ^. appStartTime))
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
@@ -177,12 +187,16 @@ appEvent s x@(VtyEvent e) =
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
-      undefined
-      -- let runTreeFiltered = filterRunTree (not $ s ^. appVisibilityThreshold) (s ^. appRunTreeBase)
-      -- let runTreeFilteredFixed = filterRunTree (not $ s ^. appVisibilityThreshold) (s ^. appRunTree)
-      -- continue $ s
-      --   & appVisibilityThreshold %~ not
-      --   & updateFilteredTree (zip runTreeFiltered runTreeFilteredFixed)
+      let currentIndex = L.elemIndex (s ^. appVisibilityThreshold) (s ^. appVisibilityThresholdSteps)
+      case currentIndex of
+        Nothing -> continue s -- Should never happen
+        Just index -> do
+          let newIndex = (index + 1) `mod` (length (s ^. appVisibilityThresholdSteps))
+          let newVisibilityThreshold = (s ^. appVisibilityThresholdSteps) !! newIndex
+          continue $ s
+            & appVisibilityThreshold .~ newVisibilityThreshold
+            & updateFilteredTree (zip (filterRunTree newVisibilityThreshold (s ^. appRunTreeBase))
+                                      (filterRunTree newVisibilityThreshold (s ^. appRunTree)))
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do

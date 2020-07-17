@@ -9,6 +9,7 @@ module Test.Sandwich.Formatters.TerminalUI.Types where
 import qualified Brick.Widgets.List as L
 import Control.Monad.Logger
 import Data.Sequence
+import Data.Time
 import Lens.Micro.TH
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
@@ -16,13 +17,25 @@ import Test.Sandwich.Types.RunTree
 
 data TerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold :: Int
+  -- * The initial visibility threshold to use when the formatter starts. Can be changed interactively.
+  , terminalUIInitialFolding :: InitialFolding
+  -- * The initial folding settings to use when the formatter starts. Can be changed interactively.
   , terminalUIShowRunTimes :: Bool
+  -- * Whether to show or hide run times. Can be changed interactively.
   , terminalUILogLevel :: Maybe LogLevel
+  -- * Log level for test log displays. Can be changed interactively.
   }
+
+data InitialFolding =
+  InitialFoldingAllOpen
+  | InitialFoldingAllClosed
+  | InitialFoldingTopNOpen Int
+  deriving (Show, Eq)
 
 defaultTerminalUIFormatter :: TerminalUIFormatter
 defaultTerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold = 0
+  , terminalUIInitialFolding = InitialFoldingAllOpen
   , terminalUIShowRunTimes = True
   , terminalUILogLevel = Just LevelWarn
   }
@@ -56,7 +69,12 @@ data AppState = AppState {
   , _appMainList :: L.List ClickableName MainListElem
   , _appBaseContext :: BaseContext
 
+  , _appStartTime :: UTCTime
+  , _appTimeSinceStart :: NominalDiffTime
+
+  , _appVisibilityThresholdSteps :: [Int]
   , _appVisibilityThreshold :: Int
+
   , _appLogLevel :: Maybe LogLevel
   , _appShowRunTimes :: Bool
   }

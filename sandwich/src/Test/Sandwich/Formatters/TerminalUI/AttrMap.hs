@@ -17,9 +17,17 @@ mainAttrMap = attrMap V.defAttr [
   -- (listSelectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
   -- (selectedAttr, bg (V.Color240 $ V.rgbColorToColor240 0 1 0))
 
+  -- Top bar
+  (visibilityThresholdNotSelectedAttr, fg midGray)
+  , (visibilityThresholdSelectedAttr, fg solarizedBase2)
+
   -- Statuses
   -- , (notStartedAttr, fg V.)
-  (runningAttr, fg V.blue), (pendingAttr, fg V.yellow), (successAttr, fg V.green), (failureAttr, fg V.red)
+  , (runningAttr, fg V.blue)
+  , (pendingAttr, fg V.yellow)
+  , (successAttr, fg V.green)
+  , (failureAttr, fg V.red)
+  , (totalAttr, fg solarizedCyan)
 
   -- Logging
   , (debugAttr, fg V.blue), (infoAttr, fg V.yellow), (warnAttr, fg V.red), (errorAttr, fg V.red), (otherAttr, V.defAttr)
@@ -53,7 +61,7 @@ mainAttrMap = attrMap V.defAttr [
   , (charAttr, fg solarizedCyan)
   , (stringAttr, fg solarizedYellow)
   , (dateAttr, fg solarizedBase2)
-  , (timeAttr, fg solarizedBase3)
+  , (timeAttr, fg solarizedBase1)
   , (quoteAttr, fg solarizedBase1)
   , (slashAttr, fg solarizedViolet)
   , (negAttr, fg solarizedViolet)
@@ -69,6 +77,12 @@ mainAttrMap = attrMap V.defAttr [
 -- selectedAttr :: AttrName
 -- selectedAttr = "list_line_selected"
 
+visibilityThresholdNotSelectedAttr :: AttrName
+visibilityThresholdNotSelectedAttr = "visibility_threshold_not_selected"
+
+visibilityThresholdSelectedAttr :: AttrName
+visibilityThresholdSelectedAttr = "visibility_threshold_selected"
+
 runningAttr :: AttrName
 runningAttr = "running"
 
@@ -77,6 +91,9 @@ notStartedAttr = "not_started"
 
 pendingAttr :: AttrName
 pendingAttr = "pending"
+
+totalAttr :: AttrName
+totalAttr = "total"
 
 successAttr :: AttrName
 successAttr = "success"

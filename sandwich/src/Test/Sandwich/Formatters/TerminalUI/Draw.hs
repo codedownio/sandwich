@@ -110,7 +110,10 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
 
-borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of #{totalNumTests}|]])
+borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of |]
+                                                                                                          , withAttr totalAttr $ str $ show totalNumTests
+                                                                                                          , str [i| in |]
+                                                                                                          , withAttr timeAttr $ str $ formatNominalDiffTime (app ^. appTimeSinceStart)])
   where
     countWidgets =
       (if totalSucceededTests > 0 then [[withAttr successAttr $ str $ show totalSucceededTests, str " succeeded"]] else mempty)
