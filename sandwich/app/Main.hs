@@ -169,11 +169,11 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 -- mainPretty = putStrLn $ prettyShow topSpec
 
 main :: IO ()
-main = runSandwich options verySimple
+main = runSandwich options medium
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-      , optionsFormatters = [SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn)})]
+      , optionsFormatters = [SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})]
       -- , optionsFormatters = [SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})]
       }
 

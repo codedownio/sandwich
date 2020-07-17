@@ -14,6 +14,8 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIVisibilityThreshold
   , terminalUIShowRunTimes
   , terminalUILogLevel
+  , terminalUIInitialFolding
+  , InitialFolding(..)
   ) where
 
 import Brick as B
@@ -55,8 +57,13 @@ instance Formatter TerminalUIFormatter where
 runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp (TerminalUIFormatter {..}) rts baseContext = do
   startTime <- getCurrentTime
+
+  let filteredTree = filterRunTree terminalUIVisibilityThreshold rts
+  liftIO $ setInitialFolding terminalUIInitialFolding filteredTree
+
   rtsFixed <- atomically $ mapM fixRunTree rts
-  let initialState = updateFilteredTree (zip (filterRunTree terminalUIVisibilityThreshold rts) (filterRunTree terminalUIVisibilityThreshold rtsFixed)) $
+  let filteredFixedTree = filterRunTree terminalUIVisibilityThreshold rtsFixed
+  let initialState = updateFilteredTree (zip filteredTree filteredFixedTree) $
         AppState {
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
@@ -244,6 +251,16 @@ openToDepth elems thresh =
   atomically $ forM_ elems $ \(MainListElem {..}) ->
     if | (depth < thresh) -> modifyTVar (runTreeOpen node) (const True)
        | otherwise -> modifyTVar (runTreeOpen node) (const False)
+
+setInitialFolding :: InitialFolding -> [RunNode BaseContext] -> IO ()
+setInitialFolding InitialFoldingAllOpen rts = return ()
+setInitialFolding InitialFoldingAllClosed rts =
+  atomically $ forM_ (concatMap getCommons rts) $ \(RunNodeCommonWithStatus {..}) ->
+    modifyTVar runTreeOpen (const False)
+setInitialFolding (InitialFoldingTopNOpen n) rts =
+  atomically $ forM_ (concatMap getCommons rts) $ \(RunNodeCommonWithStatus {..}) ->
+    when (Seq.length runTreeAncestors > n) $
+      modifyTVar runTreeOpen (const False)
 
 updateFilteredTree :: [(RunNode BaseContext, RunNodeFixed BaseContext)] -> AppState -> AppState
 updateFilteredTree pairs s = s
