@@ -19,6 +19,7 @@ import qualified Data.Sequence as Seq
 import Data.String.Interpolate
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
+import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
@@ -59,7 +60,19 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ show statusStartTime
-          Done {..} -> Just $ str $ formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
+          Done {..} -> Just $ raw $ V.string attr $ formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
+            where totalElapsed = realToFrac (max (app ^. appTimeSinceStart) (diffUTCTime statusEndTime (app ^. appStartTime)))
+                  duration = realToFrac (diffUTCTime statusEndTime statusStartTime)
+                  intensity :: Double = logBase (totalElapsed + 1) (duration + 1)
+                  minGray :: Int = 50
+                  maxGray :: Int = 255
+                  level :: Int = min maxGray $ max minGray $ round (fromIntegral minGray + (intensity * (fromIntegral (maxGray - minGray))))
+                  attr = V.Attr {
+                    V.attrStyle = V.Default
+                    , V.attrForeColor = V.SetTo (grayAt level)
+                    , V.attrBackColor = V.Default
+                    , V.attrURL = V.Default
+                    }
           _ -> Nothing
       ]
 
