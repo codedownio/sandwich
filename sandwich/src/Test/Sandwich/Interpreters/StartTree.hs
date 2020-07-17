@@ -147,14 +147,18 @@ runInAsync node ctx action = do
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
 
-      -- Create error symlink when configured to
-      whenFailure result $ \_ -> do
+      whenFailure result $ \reason -> do
+        -- Create error symlink when configured to
         let (BaseContext {..}) = getBaseContext ctx
         whenJust baseContextErrorSymlinksDir $ \errorsDir ->
           whenJust baseContextPath $ \dir -> do
             errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
             let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
             liftIO $ createDirectoryLink dir (errorsDir </> symlinkName)
+
+        -- Write failure info
+        whenJust baseContextPath $ \dir -> do
+          writeFile (dir </> "failure.txt") (show reason)
 
       return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync
