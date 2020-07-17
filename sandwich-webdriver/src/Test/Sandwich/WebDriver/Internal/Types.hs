@@ -131,6 +131,8 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbXauthority :: FilePath
                                , xvfbDimensions :: (Int, Int)
                                , xvfbProcess :: ProcessHandle
+                               , xvfbOut :: Handle
+                               , xvfbErr :: Handle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
 getDisplayNumber :: WdSession -> Maybe Int

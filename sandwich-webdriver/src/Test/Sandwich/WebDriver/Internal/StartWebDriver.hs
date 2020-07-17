@@ -1,5 +1,15 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, TypeOperators, LambdaCase, DataKinds, UndecidableInstances, MultiParamTypeClasses, RecordWildCards, OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
@@ -8,8 +18,10 @@ module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
 import Control.Retry
@@ -40,7 +52,7 @@ import System.Posix.IO as Posix
 import System.Posix.Types
 #endif
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
 
 
 -- | Spin up a Selenium WebDriver and create a WdSession
@@ -54,6 +66,10 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   let capabilities = capabilities' { W.browser = configureBrowser (W.browser capabilities') runMode }
   let wdConfig = (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities })
 
+  -- Directory to long everything for this webdriver
+  let webDriverRoot = runRoot </> (T.unpack webdriverName)
+  liftIO $ createDirectoryIfMissing True webDriverRoot
+
   -- Get the CreateProcess
   debug [i|Preparing to create the Selenium process|]
   liftIO $ createDirectoryIfMissing True toolsRoot
@@ -62,10 +78,10 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
     Right x -> return x
 
   -- Open output handles
-  let logsDir = runRoot </> (T.unpack webdriverName)
-  liftIO $ createDirectoryIfMissing True logsDir
-  hout <- liftIO $ openFile (logsDir </> seleniumOutFileName) AppendMode
-  herr <- liftIO $ openFile (logsDir </> seleniumErrFileName) AppendMode
+  let seleniumOutPath = webDriverRoot </> seleniumOutFileName
+  hout <- liftIO $ openFile seleniumOutPath AppendMode
+  let seleniumErrPath = webDriverRoot </> seleniumErrFileName
+  herr <- liftIO $ openFile seleniumErrPath AppendMode
 
   -- Start the process and wait for it to be ready
   debug [i|Starting the Selenium process|]
@@ -83,9 +99,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   -- Retry every 60ms, for up to 60s before admitting defeat
   let policy = constantDelay 60000 <> limitRetries 1000
   success <- retrying policy (\_retryStatus result -> return (not result)) $ const $
-    (liftIO $ T.readFile (logsDir </> seleniumErrFileName)) >>= \case
+    (liftIO $ T.readFile seleniumErrPath) >>= \case
       t | readyMessage `T.isInfixOf` t -> return True
-      _ -> (liftIO $ T.readFile (logsDir </> seleniumOutFileName)) >>= \case
+      _ -> (liftIO $ T.readFile seleniumOutPath) >>= \case
         t | readyMessage `T.isInfixOf` t -> return True
         _ -> return False
   unless success $ liftIO $ do
@@ -94,7 +110,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
 
   -- Make the WdSession
   WdSession <$> pure (T.unpack webdriverName)
-            <*> pure (hout, herr, p, logsDir </> seleniumOutFileName, logsDir </> seleniumErrFileName, maybeXvfbSession)
+            <*> pure (hout, herr, p, seleniumOutPath, seleniumErrPath, maybeXvfbSession)
             <*> pure wdOptions
             <*> liftIO (newMVar mempty)
             <*> liftIO (newMVar 0)
@@ -121,73 +137,79 @@ seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 
 getWebdriverCreateProcess :: Constraints m => WdOptions -> FilePath -> PortNumber -> m (Either T.Text (CreateProcess, Maybe XvfbSession))
-getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeDriverToUse}) runRoot port = runExceptT $ do
+getWebdriverCreateProcess (WdOptions {toolsRoot, runMode, seleniumToUse, chromeDriverToUse}) webdriverRoot port = runExceptT $ do
   seleniumPath <- ExceptT $ obtainSelenium toolsRoot seleniumToUse
   chromeDriverPath <- ExceptT $ obtainChromeDriver toolsRoot chromeDriverToUse
 
   (javaEnv, xvfbSession) <- case runMode of
     RunInXvfb (XvfbConfig {xvfbResolution, ..}) -> do
       let (w, h) = fromMaybe (1920, 1080) xvfbResolution
-      liftIO $ createDirectoryIfMissing True runRoot
+      liftIO $ createDirectoryIfMissing True webdriverRoot
 
       -- TODO: forgo temporary file and just use createPipeFd
       -- (readFd, writeFd) <- liftIO Posix.createPipe
       -- readHandle <- liftIO $ fdToHandle readFd
 
-      tmpDir <- liftIO getCanonicalTemporaryDirectory
-      (path, tmpHandle) <- liftIO $ openTempFile tmpDir "x11_server_num"
-      Fd fd <- liftIO $ handleToFd tmpHandle
+      xvfbOut <- liftIO $ openFile (webdriverRoot </> "xvfb_out.log") AppendMode
+      xvfbErr <- liftIO $ openFile (webdriverRoot </> "xvfb_err.log") AppendMode
 
       let policy = constantDelay 10000 <> limitRetries 1000
+      (serverNum :: Int, p, authFile, displayNum) <- lift $ recoverAll policy $ \_ -> do
+        withTempFile webdriverRoot "x11_server_num" $ \path tmpHandle -> do
+          fd <- liftIO $ handleToFd tmpHandle
+          (serverNum, p, authFile) <- createXvfbSession webdriverRoot w h fd xvfbOut xvfbErr -- writeFd
 
-      (serverNum, p) <- liftIO $ recoverAll policy $ \_ -> createXvfbSession runRoot w h fd -- writeFd
+          debug [i|Trying to determine display number for auth file '#{authFile}', using '#{path}'|]
 
-      -- When a displayfd filepath is provided, try to obtain the X11 screen
-      displayNum <- liftIO $ do
-        recoverAll policy $ \_ ->
-          readFile path >>= \contents -> case readMay contents of -- hGetContents readHandle
-            Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'. Path was '#{path}'|]
-            Just x -> return x
+          displayNum <- liftIO $
+            readFile path >>= \contents -> case readMay contents of -- hGetContents readHandle
+              Nothing -> throwIO $ userError [i|Couldn't determine X11 screen to use. Got data: '#{contents}'. Path was '#{path}'|]
+              Just (x :: Int) -> return x
 
-      fluxboxProcess <- if xvfbStartFluxbox then Just <$> (startFluxBoxOnDisplay runRoot displayNum) else return Nothing
+          return (serverNum, p, authFile, displayNum)
 
-      let xvfbSession@(XvfbSession {..}) = XvfbSession {
+      fluxboxProcess <- if xvfbStartFluxbox then Just <$> (startFluxBoxOnDisplay webdriverRoot displayNum) else return Nothing
+
+      let xvfbSession = XvfbSession {
             xvfbDisplayNum = displayNum
-            , xvfbXauthority = runRoot </> ".Xauthority"
+            , xvfbXauthority = authFile
             , xvfbDimensions = (w, h)
             , xvfbProcess = p
+            , xvfbOut = xvfbOut
+            , xvfbErr = xvfbErr
             , xvfbFluxboxProcess = fluxboxProcess
             }
 
       -- TODO: allow verbose logging to be controlled with an option:
       env' <- liftIO getEnvironment
       let env = L.nubBy (\x y -> fst x == fst y) $ [("DISPLAY", ":" <> show serverNum)
-                                                   , ("XAUTHORITY", xvfbXauthority)] <> env'
+                                                   , ("XAUTHORITY", xvfbXauthority xvfbSession)] <> env'
       return (Just env, Just xvfbSession)
     _ -> return (Nothing, Nothing)
 
   return ((proc "java" [[i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
-                       , [i|-Dwebdriver.chrome.logfile=#{runRoot </> "chromedriver.log"}|]
+                       , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
                        , [i|-Dwebdriver.chrome.verboseLogging=true|]
                        , "-jar", seleniumPath
                        , "-port", show port]) { env = javaEnv }, xvfbSession)
 
 
-createXvfbSession runRoot w h fd = do
+createXvfbSession :: Constraints m => FilePath -> Int -> Int -> Fd -> Handle -> Handle -> m (Int, ProcessHandle, FilePath)
+createXvfbSession webdriverRoot w h (Fd fd) xvfbOut xvfbErr = do
   serverNum <- liftIO findFreeServerNum
 
   -- Start the Xvfb session
-  authFile <- writeTempFile runRoot ".Xauthority" ""
+  authFile <- liftIO $ writeTempFile webdriverRoot ".Xauthority" ""
   (_, _, _, p) <- liftIO $ createProcess $ (proc "Xvfb" [":" <> show serverNum
                                                         , "-screen", "0", [i|#{w}x#{h}x24|]
                                                         , "-displayfd", [i|#{fd}|]
                                                         , "-auth", authFile
-                                                        ]) { cwd = Just runRoot
+                                                        ]) { cwd = Just webdriverRoot
                                                            , create_group = True
-                                                           , std_out = CreatePipe
-                                                           , std_err = CreatePipe }
+                                                           , std_out = UseHandle xvfbOut
+                                                           , std_err = UseHandle xvfbErr }
 
-  return (serverNum, p)
+  return (serverNum, p, authFile)
 
 
 -- * Util
@@ -203,8 +225,8 @@ findFreeServerNum = findFreeServerNum' 99
 
 
 startFluxBoxOnDisplay :: Constraints m => FilePath -> Int -> m ProcessHandle
-startFluxBoxOnDisplay runRoot x = do
-  logPath <- liftIO $ writeTempFile runRoot "fluxbox.log" ""
+startFluxBoxOnDisplay webdriverRoot x = do
+  logPath <- liftIO $ writeTempFile webdriverRoot "fluxbox.log" ""
 
   debug [i|Starting fluxbox on logPath '#{logPath}'|]
 
@@ -212,7 +234,7 @@ startFluxBoxOnDisplay runRoot x = do
              , "-log", logPath]
 
   (_, _, _, p) <- liftIO $ createProcess $ (proc "fluxbox" args) {
-    cwd = Just runRoot
+    cwd = Just webdriverRoot
     , create_group = True
     , std_out = CreatePipe
     , std_err = CreatePipe
