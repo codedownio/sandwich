@@ -152,9 +152,15 @@ runInAsync node ctx action = do
         let (BaseContext {..}) = getBaseContext ctx
         whenJust baseContextErrorSymlinksDir $ \errorsDir ->
           whenJust baseContextPath $ \dir -> do
-            errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
-            let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
-            liftIO $ createDirectoryLink dir (errorsDir </> symlinkName)
+            whenJust baseContextRunRoot $ \runRoot -> do
+              -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
+              -- introduce ".." components, so we have to do it ourselves
+              let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
+              let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
+
+              errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
+              let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
+              liftIO $ createDirectoryLink relativePath (errorsDir </> symlinkName)
 
         -- Write failure info
         whenJust baseContextPath $ \dir -> do
