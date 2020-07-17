@@ -92,10 +92,10 @@ import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
 
 
-introduceWebdriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
+introduceWebdriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
-allocateWebDriver :: (HasBaseContext context, MonadIO m, MonadBaseControl IO m) => WdOptions -> ExampleT context m WdSession
+allocateWebDriver :: (HasBaseContext context, MonadIO m, MonadBaseControl IO m, MonadMask m) => WdOptions -> ExampleT context m WdSession
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
   maybeRunRoot <- getRunRoot
@@ -106,7 +106,7 @@ allocateWebDriver' :: FilePath -> WdOptions -> IO WdSession
 allocateWebDriver' runRoot wdOptions = do
   runNoLoggingT $ startWebDriver wdOptions runRoot
 
-cleanupWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m) => WdSession -> ExampleT context m ()
+cleanupWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdSession -> ExampleT context m ()
 cleanupWebDriver sess = do
   debug "Doing cleanupWebDriver"
   closeAllSessions sess
