@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 78bc116a1e8b38dfe911ec0ca1db4f14eb51356507094652656d1079bb9432a6
+-- hash: b622c29cf2336bba9ee3bc5f4215af92d80c32267a3bcbf0aed4d5b34a30f834
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
     , slack-progressbar
     , stm
     , text
+    , time
   default-language: Haskell2010
 
 executable sandwich-slack-exe
@@ -56,6 +57,7 @@ executable sandwich-slack-exe
     , slack-progressbar
     , stm
     , text
+    , time
   default-language: Haskell2010
 
 test-suite sandwich-slack-test
@@ -74,4 +76,5 @@ test-suite sandwich-slack-test
     , slack-progressbar
     , stm
     , text
+    , time
   default-language: Haskell2010

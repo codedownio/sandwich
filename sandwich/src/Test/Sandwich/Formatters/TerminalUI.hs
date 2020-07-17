@@ -25,6 +25,7 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
 import qualified Data.Sequence as Seq
@@ -206,6 +207,10 @@ appEvent s x@(VtyEvent e) =
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
       halt s
+    V.EvKey c [] | c == debugKey -> continue (s & appLogLevel .~ Just LevelDebug)
+    V.EvKey c [] | c == infoKey -> continue (s & appLogLevel .~ Just LevelInfo)
+    V.EvKey c [] | c == warnKey -> continue (s & appLogLevel .~ Just LevelWarn)
+    V.EvKey c [] | c == errorKey -> continue (s & appLogLevel .~ Just LevelError)
     V.EvKey c@(V.KChar ch) [V.MMeta] | c `elem` (fmap V.KChar ['0'..'9']) -> do
       let num :: Int = read [ch]
       liftIO $ openToDepth (s ^. (appMainList . listElementsL)) num

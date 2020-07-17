@@ -26,6 +26,10 @@ openTestRootKey = V.KChar 'O'
 -- Column 3
 cycleVisibilityThresholdKey = V.KChar 'v'
 toggleShowRunTimesKey = V.KChar 't'
+debugKey = V.KChar 'd'
+infoKey = V.KChar 'i'
+warnKey = V.KChar 'w'
+errorKey = V.KChar 'e'
 exitKey = V.KChar 'q'
 
 
