@@ -129,7 +129,13 @@ baseContextFromOptions :: Options -> IO BaseContext
 baseContextFromOptions options@(Options {..}) = do
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
-    TestArtifactsFixedDirectory dir -> do
+    TestArtifactsFixedDirectory dir' -> do
+      dir <- case isAbsolute dir' of
+        True -> return dir'
+        False -> do
+          here <- getCurrentDirectory
+          return $ here </> dir'
+
       createDirectoryIfMissing True dir
       return $ Just dir
     TestArtifactsGeneratedDirectory base' f -> do
