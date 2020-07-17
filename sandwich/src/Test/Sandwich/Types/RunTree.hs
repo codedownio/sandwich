@@ -14,12 +14,12 @@
 module Test.Sandwich.Types.RunTree where
 
 import Control.Concurrent.Async
+import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import Control.Monad.Logger
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import Data.Time.Clock
-import GHC.Stack
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
@@ -100,6 +100,8 @@ data RunTreeContext = RunTreeContext {
 
 data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
+                               , baseContextErrorSymlinksDir :: Maybe FilePath
+                               , baseContextErrorCounter :: MVar Int
                                , baseContextOptions :: Options
                                , baseContextOnlyRunIds :: Maybe (S.Set Int) }
 

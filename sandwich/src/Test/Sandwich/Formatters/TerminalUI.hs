@@ -184,6 +184,8 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {folderPath}) ->
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
+    V.EvKey c [] | c == openTestRootKey -> withContinueS $
+      whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do

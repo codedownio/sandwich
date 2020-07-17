@@ -107,15 +107,6 @@ data Location = Location {
 , locationColumn :: Int
 } deriving (Eq, Show, Read)
 
-isFailure :: Result -> Bool
-isFailure (Failure (Pending {})) = False
-isFailure (Failure {}) = True
-isFailure _ = False
-
-isPending :: Result -> Bool
-isPending (Failure (Pending {})) = True
-isPending _ = False
-
 -- * Label stuff
 
 data Label (l :: Symbol) a = Label

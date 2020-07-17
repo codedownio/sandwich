@@ -18,10 +18,6 @@ extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : 
 extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
 
-isFailureStatus :: Status -> Bool
-isFailureStatus (Done _ _ stat) = isFailure stat
-isFailureStatus _ = False
-
 getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
 getCommons = extractValues runNodeCommon
 
@@ -128,3 +124,21 @@ isDone _ = False
 isRunning :: Status -> Bool
 isRunning (Running {}) = True
 isRunning _ = False
+
+isFailureStatus :: Status -> Bool
+isFailureStatus (Done _ _ stat) = isFailure stat
+isFailureStatus _ = False
+
+isFailure :: Result -> Bool
+isFailure (Failure (Pending {})) = False
+isFailure (Failure {}) = True
+isFailure _ = False
+
+isPending :: Result -> Bool
+isPending (Failure (Pending {})) = True
+isPending _ = False
+
+whenFailure :: (Monad m) => Result -> (FailureReason -> m ()) -> m ()
+whenFailure (Failure (Pending {})) _ = return ()
+whenFailure (Failure reason) action = action reason
+whenFailure _ _ = return ()

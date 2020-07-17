@@ -18,6 +18,7 @@ import Control.Monad.Free
 import Control.Monad.Trans.RWS
 import Data.Functor.Identity
 import Data.Sequence
+import System.FilePath
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
@@ -36,7 +37,7 @@ specToRunTreeM baseContext spec = do
         runTreeIndexInParent = 0
         , runTreeNumSiblings = countChildren spec
         , runTreeCurrentAncestors = mempty
-        , runTreeCurrentFolder = baseContextRunRoot baseContext
+        , runTreeCurrentFolder = (</> "results") <$> baseContextRunRoot baseContext
         }
   (ret, _, _) <- runRWST (specToRunTree' spec) context 0
   return ret

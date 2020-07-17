@@ -31,9 +31,11 @@ import System.Directory
 import System.FilePath
 import System.IO
 import Test.Sandwich.Interpreters.RunTree.Logging
+import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
 
 
 baseContextFromCommon :: RunNodeCommonWithStatus s l t -> BaseContext -> BaseContext
@@ -44,7 +46,7 @@ startTree :: (MonadIO m, HasBaseContext context) => RunNode context -> context -
 startTree node@(RunNodeBefore {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|])) >>= \case
       result@(Failure fr) -> do
         markAllChildrenWithResult runNodeChildren ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException fr))
@@ -55,7 +57,7 @@ startTree node@(RunNodeBefore {..}) ctx' = do
 startTree node@(RunNodeAfter {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     result <- liftIO $ newIORef Success
     finally (void $ runNodesSequentially runNodeChildren ctx)
             ((runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])) >>= writeIORef result)
@@ -63,7 +65,7 @@ startTree node@(RunNodeAfter {..}) ctx' = do
 startTree node@(RunNodeIntroduce {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     result <- liftIO $ newIORef Success
     bracket (do
                 let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
@@ -85,7 +87,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   didRunWrappedAction <- liftIO $ newIORef (Left ())
-  runInAsync node $ do
+  runInAsync node ctx $ do
     let wrappedAction = do
           let failureResult e = Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
@@ -101,7 +103,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   didRunWrappedAction <- liftIO $ newIORef (Left ())
-  runInAsync node $ do
+  runInAsync node ctx $ do
     let wrappedAction = do
           let failureResult e = Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
@@ -116,25 +118,25 @@ startTree node@(RunNodeAround {..}) ctx' = do
     runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
 startTree node@(RunNodeDescribe {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
       0 -> return Success
       n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
 startTree node@(RunNodeParallel {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeChildren ctx) >>= \case
       0 -> return Success
       n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
 startTree node@(RunNodeIt {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  runInAsync node $ do
+  runInAsync node ctx $ do
     runExampleM runNodeExample ctx (runTreeLogs runNodeCommon) Nothing
 
 -- * Util
 
-runInAsync :: MonadIO m => RunNode context -> IO Result -> m (Async Result)
-runInAsync node action = do
+runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context -> IO Result -> m (Async Result)
+runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
@@ -144,6 +146,16 @@ runInAsync node action = do
       result <- action
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
+
+      -- Create error symlink when configured to
+      whenFailure result $ \_ -> do
+        let (BaseContext {..}) = getBaseContext ctx
+        whenJust baseContextErrorSymlinksDir $ \errorsDir ->
+          whenJust baseContextPath $ \dir -> do
+            errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
+            let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
+            liftIO $ createDirectoryLink dir (errorsDir </> symlinkName)
+
       return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync
   liftIO $ putMVar mvar ()

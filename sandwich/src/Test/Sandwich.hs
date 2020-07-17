@@ -59,6 +59,7 @@ module Test.Sandwich (
   ) where
 
 import Control.Concurrent.Async
+import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
@@ -78,6 +79,7 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
 
 
 runSandwich :: Options -> TopSpec -> IO ()
@@ -141,10 +143,15 @@ baseContextFromOptions options@(Options {..}) = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
+  errorCounter <- newMVar 0
+  let errorSymlinksDir = (</> "errors") <$> runRoot
+  whenJust errorSymlinksDir $ createDirectoryIfMissing True
   return $ BaseContext {
     baseContextPath = mempty
     , baseContextOptions = options
     , baseContextRunRoot = runRoot
+    , baseContextErrorSymlinksDir = errorSymlinksDir
+    , baseContextErrorCounter = errorCounter
     , baseContextOnlyRunIds = Nothing
     }
 
