@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 70d89709c81719a1789c22389e9278ca381f77cd13f8e53e14bca49290474266
+-- hash: 78bc116a1e8b38dfe911ec0ca1db4f14eb51356507094652656d1079bb9432a6
 
 name:           sandwich-slack
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-slack#readme>
-homepage:       https://github.com/githubuser/sandwich-slack#readme
-bug-reports:    https://github.com/githubuser/sandwich-slack/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
+description:    Please see the README on GitHub at <https://github.com/thomasjm/sandwich-slack#readme>
+homepage:       https://github.com/thomasjm/sandwich-slack#readme
+bug-reports:    https://github.com/thomasjm/sandwich-slack/issues
+author:         Tom McLaughlin
+maintainer:     tom@codedown.io
+copyright:      2020 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -23,17 +23,22 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/sandwich-slack
+  location: https://github.com/thomasjm/sandwich-slack
 
 library
   exposed-modules:
-      Lib
+      Test.Sandwich.Formatters.Slack
   other-modules:
       Paths_sandwich_slack
   hs-source-dirs:
       src
   build-depends:
       base >=4.7 && <5
+    , interpolate
+    , sandwich
+    , slack-progressbar
+    , stm
+    , text
   default-language: Haskell2010
 
 executable sandwich-slack-exe
@@ -45,7 +50,12 @@ executable sandwich-slack-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , interpolate
+    , sandwich
     , sandwich-slack
+    , slack-progressbar
+    , stm
+    , text
   default-language: Haskell2010
 
 test-suite sandwich-slack-test
@@ -58,5 +68,10 @@ test-suite sandwich-slack-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , interpolate
+    , sandwich
     , sandwich-slack
+    , slack-progressbar
+    , stm
+    , text
   default-language: Haskell2010

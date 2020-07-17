@@ -51,6 +51,7 @@ module Test.Sandwich (
   , (:>)
 
   , SomeFormatter(..)
+  , Formatter(..)
 
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations

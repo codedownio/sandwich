@@ -61,6 +61,7 @@ library:
     - Test.Sandwich.Formatters.Print
     - Test.Sandwich.Formatters.TerminalUI
     - Test.Sandwich.Internal
+    - Test.Sandwich.Internal.Formatters
 
 executables:
   sandwich-exe:

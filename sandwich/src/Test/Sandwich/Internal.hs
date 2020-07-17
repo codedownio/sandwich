@@ -14,8 +14,10 @@ module Test.Sandwich.Internal (
   -- For tests
   , RunNodeWithStatus(..)
   , RunNodeFixed
+  , RunNode
   , RunNodeCommonWithStatus(..)
   , extractValues
+  , getCommons
   , cancelNode
   , Status(..)
   , fixRunTree
