@@ -62,8 +62,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
   liftIO $ setInitialFolding terminalUIInitialFolding filteredTree
 
   rtsFixed <- atomically $ mapM fixRunTree rts
-  let filteredFixedTree = filterRunTree terminalUIVisibilityThreshold rtsFixed
-  let initialState = updateFilteredTree (zip filteredTree filteredFixedTree) $
+  let initialState = updateFilteredTree $
         AppState {
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
@@ -118,22 +117,22 @@ appEvent s (AppEvent (RunTreeUpdated newTree)) = do
   now <- liftIO getCurrentTime
   continue $ s
     & appRunTree .~ newTree
-    & updateFilteredTree (zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
-                              (filterRunTree (s ^. appVisibilityThreshold) newTree))
     & appTimeSinceStart .~ (diffUTCTime now (s ^. appStartTime))
+    & updateFilteredTree
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
     Nothing -> continue s
     Just (Extent {extentSize=(w, _), extentUpperLeft=(B.Location (l, _))}) -> do
       let percent :: Double = (fromIntegral (x - l)) / (fromIntegral w)
-      let index = round $ percent * (fromIntegral $ length $ s ^. (appMainList . listElementsL))
-      -- Open all ancestors
-      case (s ^. (appMainList . listElementsL)) Vec.!? index of
-        Nothing -> continue s
-        Just (MainListElem {..}) -> do
-          liftIO $ openIndices (s ^. appRunTreeBase) (runTreeAncestors node)
-          continue (s & appMainList %~ (listMoveTo index))
+      let allCommons = concatMap getCommons $ s ^. appRunTreeFiltered
+      let index = max 0 $ min (length allCommons - 1) $ round $ percent * (fromIntegral $ (length allCommons - 1))
+      -- A subsequent RunTreeUpdated will pick up the new open nodes
+      liftIO $ openIndices (s ^. appRunTreeBase) (runTreeAncestors $ allCommons !! index)
+      continue $ s
+        & appMainList %~ (listMoveTo index)
+        & updateFilteredTree
+
 appEvent s (MouseDown (ListRow i) _ _ _) =
   continue (s & appMainList %~ (listMoveTo i))
 appEvent s x@(VtyEvent e) =
@@ -205,8 +204,7 @@ appEvent s x@(VtyEvent e) =
           let newVisibilityThreshold = (s ^. appVisibilityThresholdSteps) !! newIndex
           continue $ s
             & appVisibilityThreshold .~ newVisibilityThreshold
-            & updateFilteredTree (zip (filterRunTree newVisibilityThreshold (s ^. appRunTreeBase))
-                                      (filterRunTree newVisibilityThreshold (s ^. appRunTree)))
+            & updateFilteredTree
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
@@ -262,10 +260,12 @@ setInitialFolding (InitialFoldingTopNOpen n) rts =
     when (Seq.length runTreeAncestors > n) $
       modifyTVar runTreeOpen (const False)
 
-updateFilteredTree :: [(RunNode BaseContext, RunNodeFixed BaseContext)] -> AppState -> AppState
-updateFilteredTree pairs s = s
+updateFilteredTree :: AppState -> AppState
+updateFilteredTree s = s
   & appRunTreeFiltered .~ fmap snd pairs
   & appMainList %~ listReplace (treeToVector pairs) (listSelected $ s ^. appMainList)
+  where pairs = zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
+                    (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTree))
 
 -- * Clearing
 
