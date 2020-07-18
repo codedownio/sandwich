@@ -12,7 +12,7 @@ module Test.Sandwich.Formatters.Slack (
 
 import Control.Concurrent
 import Control.Concurrent.STM
-import Control.Exception
+import Control.Exception.Safe
 import Control.Monad
 import Data.Function
 import Data.Maybe
@@ -57,9 +57,10 @@ runApp pf@(SlackFormatter {..}) rts bc = do
 
     now <- getCurrentTime
     let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
-    updateProgressBar slackFormatterSlackConfig pb pbi' >>= \case
+    tryAny (updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
       Left err -> return () -- TODO: notify somehow?
-      Right () -> return ()
+      Right (Left err) -> return ()
+      Right (Right ()) -> return ()
 
     if | all (isDone . runTreeStatus . runNodeCommon) newFixedTree -> return ()
        | otherwise -> do

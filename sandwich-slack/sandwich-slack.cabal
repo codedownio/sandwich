@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b622c29cf2336bba9ee3bc5f4215af92d80c32267a3bcbf0aed4d5b34a30f834
+-- hash: 4d139c7fbd69e8a9c6346aafa640aaee5a29088e92cb6c461e436d29dc42d919
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
   build-depends:
       base >=4.7 && <5
     , interpolate
+    , safe-exceptions
     , sandwich
     , slack-progressbar
     , stm
@@ -52,6 +53,7 @@ executable sandwich-slack-exe
   build-depends:
       base >=4.7 && <5
     , interpolate
+    , safe-exceptions
     , sandwich
     , sandwich-slack
     , slack-progressbar
@@ -71,6 +73,7 @@ test-suite sandwich-slack-test
   build-depends:
       base >=4.7 && <5
     , interpolate
+    , safe-exceptions
     , sandwich
     , sandwich-slack
     , slack-progressbar
