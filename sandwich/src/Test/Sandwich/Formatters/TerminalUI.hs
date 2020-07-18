@@ -30,18 +30,19 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
+import Data.Maybe
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.Time
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
 import Lens.Micro
+import Safe
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
-import Test.Sandwich.Formatters.TerminalUI.TreeToList
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
@@ -58,15 +59,14 @@ runApp :: TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp (TerminalUIFormatter {..}) rts baseContext = do
   startTime <- getCurrentTime
 
-  let filteredTree = filterRunTree terminalUIVisibilityThreshold rts
-  liftIO $ setInitialFolding terminalUIInitialFolding filteredTree
+  liftIO $ setInitialFolding terminalUIInitialFolding rts
 
   rtsFixed <- atomically $ mapM fixRunTree rts
+
   let initialState = updateFilteredTree $
         AppState {
           _appRunTreeBase = rts
           , _appRunTree = rtsFixed
-          , _appRunTreeFiltered = []
           , _appMainList = list MainList mempty 1
           , _appBaseContext = baseContext
 
@@ -125,7 +125,7 @@ appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
     Nothing -> continue s
     Just (Extent {extentSize=(w, _), extentUpperLeft=(B.Location (l, _))}) -> do
       let percent :: Double = (fromIntegral (x - l)) / (fromIntegral w)
-      let allCommons = concatMap getCommons $ s ^. appRunTreeFiltered
+      let allCommons = concatMap getCommons $ s ^. appRunTree
       let index = max 0 $ min (length allCommons - 1) $ round $ percent * (fromIntegral $ (length allCommons - 1))
       -- A subsequent RunTreeUpdated will pick up the new open nodes
       liftIO $ openIndices (s ^. appRunTreeBase) (runTreeAncestors $ allCommons !! index)
@@ -179,13 +179,15 @@ appEvent s x@(VtyEvent e) =
         _ -> do
           -- Get the set of IDs for only this node's ancestors and children
           let ancestorIds = S.fromList $ toList $ runTreeAncestors node
-          let childIds = S.fromList $ extractValues' (runTreeId . runNodeCommon) runNode
-          let allIds = ancestorIds <> childIds
-          -- Clear the status of all affected nodes
-          liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` allIds)) (s ^. appRunTreeBase)
-          -- Start a run for all affected nodes
-          let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
-          void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
+          case findRunNodeChildrenById ident (s ^. appRunTree) of
+            Nothing -> return ()
+            Just childIds -> do
+              let allIds = ancestorIds <> childIds
+              -- Clear the status of all affected nodes
+              liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` allIds)) (s ^. appRunTreeBase)
+              -- Start a run for all affected nodes
+              let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
+              void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
     V.EvKey c [] | c == clearResultsKey -> withContinueS $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
     V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS $ do
@@ -262,11 +264,9 @@ setInitialFolding (InitialFoldingTopNOpen n) rts =
 
 updateFilteredTree :: AppState -> AppState
 updateFilteredTree s = s
-  & appRunTreeFiltered .~ fmap snd pairs
-  & appMainList %~ listReplace (treeToVector pairs) (listSelected $ s ^. appMainList)
-  where pairs = zip (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTreeBase))
-                    (filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTree))
-
+  & appMainList %~ listReplace elems (listSelected $ s ^. appMainList)
+  where filteredTree = filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTree)
+        elems :: Vec.Vector MainListElem = Vec.fromList $ concatMap treeToList (zip filteredTree (s ^. appRunTreeBase))
 -- * Clearing
 
 clearRecursively :: RunNode context -> IO ()
@@ -279,3 +279,13 @@ clearCommon :: RunNodeCommon -> IO ()
 clearCommon (RunNodeCommonWithStatus {..}) = atomically $ do
   writeTVar runTreeStatus NotStarted
   writeTVar runTreeLogs mempty
+
+findRunNodeChildrenById :: Int -> [RunNodeFixed context] -> Maybe (S.Set Int)
+findRunNodeChildrenById ident rts = headMay $ mapMaybe (findRunNodeChildrenById' ident) rts
+
+findRunNodeChildrenById' :: Int -> RunNodeFixed context -> Maybe (S.Set Int)
+findRunNodeChildrenById' ident node | ident == runTreeId (runNodeCommon node) = Just $ S.fromList $ extractValues (runTreeId . runNodeCommon) node
+findRunNodeChildrenById' ident (RunNodeIt {}) = Nothing
+findRunNodeChildrenById' ident (RunNodeIntroduce {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
+findRunNodeChildrenById' ident (RunNodeIntroduceWith {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
+findRunNodeChildrenById' ident node = findRunNodeChildrenById ident (runNodeChildren node)

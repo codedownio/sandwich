@@ -41,6 +41,7 @@ dependencies:
 - pretty-show
 - process
 - random
+- safe
 - safe-exceptions
 - stm
 - text

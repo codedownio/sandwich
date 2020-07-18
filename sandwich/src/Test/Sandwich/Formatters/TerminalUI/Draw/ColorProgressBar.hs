@@ -18,8 +18,8 @@ import Lens.Micro
 import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Types
-import Test.Sandwich.Types.RunTree
 import Test.Sandwich.RunTree
+import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 type Chunk a = [(Rational, a)]
@@ -94,7 +94,7 @@ bottomProgressBarColored app = Widget Greedy Fixed $ do
 
 bottomProgressBarColoredWidth app width = hBox [getCharForChunk chunk | chunk <- chunks]
   where
-    statuses = concatMap getStatuses (app ^. appRunTreeFiltered)
+    statuses = concatMap getStatuses (app ^. appRunTree)
     statusesWithAmounts = [(testsPerChar, x) | x <- statuses]
 
     chunks = splitIntoChunks 1 statusesWithAmounts

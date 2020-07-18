@@ -89,6 +89,7 @@ getCommon l visibilityLevel = do
     , runTreeToggled = False
     , runTreeOpen = True
     , runTreeStatus = NotStarted
+    , runTreeVisible = True
     , runTreeFolder = appendFolder rtc l
     , runTreeVisibilityLevel = visibilityLevel
     , runTreeLogs = mempty

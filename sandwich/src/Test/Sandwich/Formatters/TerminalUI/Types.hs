@@ -50,11 +50,10 @@ data MainListElem = MainListElem {
   , open :: Bool
   , status :: Status
   , logs :: Seq LogEntry
-  , isContextManager :: Bool
   , visibilityLevel :: Int
   , folderPath :: Maybe FilePath
   , node :: RunNodeCommon
-  , runNode :: SomeRunNode
+  , ident :: Int
   }
 
 data SomeRunNode = forall context s l t. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context s l t }
@@ -65,7 +64,6 @@ data ClickableName = ColorBar | ListRow Int | MainList
 data AppState = AppState {
   _appRunTreeBase :: [RunNode BaseContext]
   , _appRunTree :: [RunNodeFixed BaseContext]
-  , _appRunTreeFiltered :: [RunNodeFixed BaseContext]
   , _appMainList :: L.List ClickableName MainListElem
   , _appBaseContext :: BaseContext
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fe80570de19c5374f14736a8fb3569ac2ac7e59ab974bb297a393c021a565eff
+-- hash: 65d786a0bbc57f15be790a78235a686e8763e56e56a9a540f1fd6d9f0070e4d0
 
 name:           sandwich
 version:        0.1.0.0
@@ -54,7 +54,6 @@ library
       Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
       Test.Sandwich.Formatters.TerminalUI.Filter
       Test.Sandwich.Formatters.TerminalUI.Keys
-      Test.Sandwich.Formatters.TerminalUI.TreeToList
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.PrettyShow
@@ -92,6 +91,7 @@ library
     , pretty-show
     , process
     , random
+    , safe
     , safe-exceptions
     , stm
     , text
@@ -132,6 +132,7 @@ executable sandwich-exe
     , pretty-show
     , process
     , random
+    , safe
     , safe-exceptions
     , sandwich
     , stm
@@ -178,6 +179,7 @@ executable sandwich-test
     , pretty-show
     , process
     , random
+    , safe
     , safe-exceptions
     , sandwich
     , stm
@@ -225,6 +227,7 @@ test-suite sandwich-test-suite
     , pretty-show
     , process
     , random
+    , safe
     , safe-exceptions
     , sandwich
     , stm

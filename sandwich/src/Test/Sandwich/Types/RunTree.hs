@@ -70,6 +70,7 @@ data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
   , runTreeToggled :: t
   , runTreeOpen :: t
   , runTreeStatus :: s
+  , runTreeVisible :: Bool
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
   , runTreeLogs :: l
