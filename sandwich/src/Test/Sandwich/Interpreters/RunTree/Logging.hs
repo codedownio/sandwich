@@ -38,7 +38,4 @@ logToMemoryAndFile maybeMemLogLevel maybeSavedLogLevel logs h loc logSrc logLeve
     _ -> return ()
 
 defaultLogStrBS :: Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
-defaultLogStrBS a b c d =
-    toBS $ defaultLogStr a b c d
-  where
-    toBS = fromLogStr
+defaultLogStrBS a b c d = fromLogStr $ defaultLogStr a b c d

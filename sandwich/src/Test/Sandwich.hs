@@ -71,6 +71,7 @@ import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
+import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree

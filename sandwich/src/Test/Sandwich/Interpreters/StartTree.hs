@@ -20,7 +20,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Reader
-import Data.Either
 import Data.IORef
 import qualified Data.List as L
 import Data.Sequence hiding ((:>))
