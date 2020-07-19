@@ -28,6 +28,9 @@ roundFixed f = printf "%.1f" ((realToFrac f) :: Double)
 
 
 #if !MIN_VERSION_time(1,9,1)
-nominalDiffTimeToSeconds = undefined
-secondsToNominalDiffTime = undefined
+secondsToNominalDiffTime :: Pico -> NominalDiffTime
+secondsToNominalDiffTime = realToFrac
+
+nominalDiffTimeToSeconds :: NominalDiffTime -> Pico
+nominalDiffTimeToSeconds = realToFrac
 #endif
