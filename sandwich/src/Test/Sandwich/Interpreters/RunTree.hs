@@ -60,7 +60,7 @@ specToRunTree'  (Free (Around l actionWith subspec next)) = do
   common <- getCommon l 100
   continueWith next =<< RunNodeAround <$> pure common <*> recurse l common subspec <*> pure actionWith
 specToRunTree'  (Free (Describe l subspec next)) = do
-  common <- getCommon l 100
+  common <- getCommon l 50
   continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l common subspec
 specToRunTree'  (Free (Parallel subspec next)) = do
   common <- getCommon "Parallel" 100

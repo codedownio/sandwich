@@ -15,7 +15,7 @@ import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 
-filterRunTree :: Int -> [RunNodeWithStatus context s l Bool] -> [RunNodeWithStatus context s l Bool]
+filterRunTree :: Int -> [RunNodeFixed context] -> [RunNodeFixed context]
 filterRunTree visibilityThreshold rtsFixed = rtsFixed
   & fmap (mapCommon (hideIfThresholdAbove visibilityThreshold))
   & fmap hideClosed
@@ -32,10 +32,12 @@ mapCommon f node = node { runNodeCommon = f (runNodeCommon node)
                         , runNodeChildren = fmap (mapCommon f) (runNodeChildren node) }
 
 
-hideIfThresholdAbove :: Int -> RunNodeCommonWithStatus s l t -> RunNodeCommonWithStatus s l t
+hideIfThresholdAbove :: Int -> RunNodeCommonFixed -> RunNodeCommonFixed
 hideIfThresholdAbove visibilityThreshold node@(RunNodeCommonWithStatus {..}) =
   if | runTreeVisibilityLevel <= visibilityThreshold -> node { runTreeVisible = True }
-     | otherwise -> node { runTreeVisible = False }
+     | otherwise -> node { runTreeVisible = False
+                         , runTreeOpen = True -- Must be open so children have a chance to be seen
+                         }
 
 markClosed :: RunNodeCommonWithStatus s l Bool -> RunNodeCommonWithStatus s l Bool
 markClosed node@(RunNodeCommonWithStatus {..}) = node { runTreeVisible = False }

@@ -34,7 +34,7 @@ data InitialFolding =
 
 defaultTerminalUIFormatter :: TerminalUIFormatter
 defaultTerminalUIFormatter = TerminalUIFormatter {
-  terminalUIVisibilityThreshold = 0
+  terminalUIVisibilityThreshold = 50
   , terminalUIInitialFolding = InitialFoldingAllOpen
   , terminalUIShowRunTimes = True
   , terminalUILogLevel = Just LevelWarn
