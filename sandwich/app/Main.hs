@@ -108,7 +108,7 @@ medium = do
     it "does 1" sleepThenSucceed -- pending
     it "does 2" sleepThenSucceed -- pending
 
-  introduceWith "Database around" database (\action -> liftIO $ action (Database "foo")) $ do
+  introduceWith "Database around" database (\action -> void $ action (Database "foo")) $ do
     it "uses the DB" $ do
       db <- getContext database
       debug [i|Got db: #{db}|]

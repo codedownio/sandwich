@@ -153,7 +153,7 @@ data SpecCommand context m next where
 
   IntroduceWith :: { label :: String
                    , contextLabel :: Label l intro
-                   , introduceAction :: ActionWith intro -> ExampleT context m ()
+                   , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
                    , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
                    , next :: next } -> SpecCommand context m next
 

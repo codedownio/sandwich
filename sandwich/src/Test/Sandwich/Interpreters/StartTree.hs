@@ -91,8 +91,9 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
           let failureResult e = Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
             runNodeIntroduceAction $ \intro -> do
-              results <- runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
-              writeIORef didRunWrappedAction (Right results)
+              results <- liftIO $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
+              liftIO $ writeIORef didRunWrappedAction (Right results)
+              return results
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]

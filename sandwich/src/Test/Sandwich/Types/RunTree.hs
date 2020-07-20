@@ -47,7 +47,7 @@ data RunNodeWithStatus context s l t where
                       , runNodeCleanup :: intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeIntroduceWith :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                           , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
-                          , runNodeIntroduceAction :: ActionWith intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
+                          , runNodeIntroduceAction :: (intro -> ExampleT context IO [Result]) -> ExampleT context IO () } -> RunNodeWithStatus context s l t
   RunNodeAround :: { runNodeCommon :: RunNodeCommonWithStatus s l t
                    , runNodeChildren :: [RunNodeWithStatus context s l t]
                    , runNodeActionWith :: ExampleT context IO [Result] -> ExampleT context IO () } -> RunNodeWithStatus context s l t
