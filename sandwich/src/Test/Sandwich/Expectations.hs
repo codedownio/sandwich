@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -6,6 +7,7 @@
 module Test.Sandwich.Expectations where
 
 import Control.Exception.Safe
+import Control.Monad.IO.Class
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
@@ -55,3 +57,10 @@ t `textShouldContain` txt = ((T.unpack t) :: String) `shouldContain` (T.unpack t
 -- | Asserts that the given text does not contain a substring.
 textShouldNotContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
 t `textShouldNotContain` txt = ((T.unpack t) :: String) `shouldNotContain` (T.unpack txt)
+
+shouldThrow :: (HasCallStack, MonadThrow m, MonadIO m, Exception e) => IO a -> (e -> Bool) -> m ()
+shouldThrow action f = do
+  liftIO (try action) >>= \case
+    Right _ -> expectationFailure [i|Expected exception to be thrown.|]
+    Left e | f e -> return ()
+    Left e -> expectationFailure [i|Predicate failed on expected exception: '#{e}'|]
