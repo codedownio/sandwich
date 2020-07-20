@@ -5,8 +5,10 @@
 
 module Test.Sandwich.Formatters.LogSaver (
   defaultLogSaverFormatter
-  , logSaverFilename
+  , logSaverPath
   , logSaverLogLevel
+
+  , LogPath(..)
   ) where
 
 import Control.Concurrent.STM
@@ -15,20 +17,28 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS8
+import System.FilePath
 import System.IO
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Util
 
 data LogSaverFormatter = LogSaverFormatter {
-  logSaverFilename :: FilePath
+  logSaverPath :: LogPath
   -- ^ Path under runRoot where logs will be saved. Should be a relative path.
   , logSaverLogLevel :: LogLevel
   -- ^ Minimum log level to save.
   }
 
+data LogPath =
+  LogPathRelativeToRunRoot FilePath
+  -- ^ Interpret the path as relative to the test's run root. (If there is no run root, the logs won't be saved.)
+  | LogPathAbsolute FilePath
+  -- ^ Interpret the path as an absolute path.
+
 defaultLogSaverFormatter :: LogSaverFormatter
 defaultLogSaverFormatter = LogSaverFormatter {
-  logSaverFilename = "logs.txt"
+  logSaverPath = LogPathRelativeToRunRoot "logs.txt"
   , logSaverLogLevel = LevelWarn
   }
 
@@ -37,8 +47,15 @@ instance Formatter LogSaverFormatter where
 
 runApp :: LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
 runApp lsf@(LogSaverFormatter {..}) rts bc = do
-  withFile logSaverFilename AppendMode $ \h ->
-    runReaderT (mapM_ run rts) (lsf, h)
+  let maybePath = case logSaverPath of
+        LogPathAbsolute p -> Just p
+        LogPathRelativeToRunRoot p -> case baseContextRunRoot bc of
+          Nothing -> Nothing
+          Just rr -> Just (rr </> p)
+
+  whenJust maybePath $ \path ->
+    withFile path AppendMode $ \h ->
+      runReaderT (mapM_ run rts) (lsf, h)
 
 run :: RunNode context -> ReaderT (LogSaverFormatter, Handle) IO ()
 run node@(RunNodeIt {..}) = do
