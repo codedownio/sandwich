@@ -57,6 +57,11 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr openMarkerAttr $ str (if open then "[-] " else "[+] ")
       , Just $ withAttr (chooseAttr status) (str label)
+      , if not (app ^. appShowVisibilityThresholds) then Nothing else
+          Just $ hBox [str " ["
+                      , withAttr visibilityThresholdIndicatorMutedAttr $ str "V="
+                      , withAttr visibilityThresholdIndicatorAttr $ str $ show visibilityLevel
+                      , str "]"]
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ show statusStartTime

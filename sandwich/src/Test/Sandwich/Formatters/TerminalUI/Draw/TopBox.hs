@@ -42,6 +42,7 @@ topBox app = hBox [columnPadding settingsColumn
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                       , toggleIndicator (app ^. appShowVisibilityThresholds) (showKey toggleVisibilityThresholdsKey) "Hide visibility thresholds" "Show visibility thresholds"
                                        , keyIndicator (L.intersperse '/' (fmap unKChar [debugKey, infoKey, warnKey, errorKey])) "Set log level"
                                        , keyIndicator "Meta + [0-9]" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]

@@ -13,6 +13,7 @@ module Test.Sandwich.Formatters.TerminalUI (
   defaultTerminalUIFormatter
   , terminalUIVisibilityThreshold
   , terminalUIShowRunTimes
+  , terminalUIShowVisibilityThresholds
   , terminalUILogLevel
   , terminalUIInitialFolding
   , InitialFolding(..)
@@ -78,6 +79,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
 
           , _appLogLevel = terminalUILogLevel
           , _appShowRunTimes = terminalUIShowRunTimes
+          , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
         }
 
   eventChan <- newBChan 10
@@ -209,6 +211,8 @@ appEvent s x@(VtyEvent e) =
             & updateFilteredTree
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
+    V.EvKey c [] | c == toggleVisibilityThresholdsKey -> continue $ s
+      & appShowVisibilityThresholds %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)

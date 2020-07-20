@@ -46,6 +46,8 @@ mainAttrMap = attrMap V.defAttr [
   -- Main list
   , (toggleMarkerAttr, fg midGray)
   , (openMarkerAttr, fg midGray)
+  , (visibilityThresholdIndicatorMutedAttr, fg $ grayAt 50)
+  , (visibilityThresholdIndicatorAttr, fg $ grayAt 150)
 
   -- Hotkey stuff
   , (hotkeyAttr, fg V.blue)
@@ -106,6 +108,12 @@ toggleMarkerAttr = "toggleMarker"
 
 openMarkerAttr :: AttrName
 openMarkerAttr = "openMarker"
+
+visibilityThresholdIndicatorAttr :: AttrName
+visibilityThresholdIndicatorAttr = "visibilityThresholdIndicator"
+
+visibilityThresholdIndicatorMutedAttr :: AttrName
+visibilityThresholdIndicatorMutedAttr = "visibilityThresholdMutedIndicator"
 
 hotkeyAttr, disabledHotkeyAttr, hotkeyMessageAttr, disabledHotkeyMessageAttr :: AttrName
 hotkeyAttr = "hotkey"
