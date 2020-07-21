@@ -24,11 +24,9 @@ topBox app = hBox [columnPadding settingsColumn
                   , columnPadding actionsColumn
                   , columnPadding otherActionsColumn]
   where
-    settingsColumn = keybindingBox [keyIndicator (unKChar nextKey : "/↑") "Next"
-                                   , keyIndicator (unKChar previousKey : "/↓") "Previous"
-                                   , keyIndicator (unKChar nextFailureKey : "/↑") "Next failure"
-                                   , keyIndicator (unKChar previousFailureKey : "/↑") "Previous failure"
-                                   , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Open/close nodes"
+    settingsColumn = keybindingBox [keyIndicator (L.intersperse '/' [unKChar nextKey, unKChar previousKey, '↑', '↓']) "Navigate"
+                                   , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
+                                   , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold nodes"
                                    , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicatorSomeTestRunning app (showKey cancelAllKey) "Cancel all"
