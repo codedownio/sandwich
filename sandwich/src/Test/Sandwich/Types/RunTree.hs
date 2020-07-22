@@ -122,6 +122,7 @@ type TopSpec = Spec BaseContext IO
 class Formatter f where
   runFormatter :: f -> [RunNode BaseContext] -> BaseContext -> IO ()
 
+-- | An existential wrapper around 'Formatter's
 data SomeFormatter = forall f. (Formatter f) => SomeFormatter f
 
 -- * Options
@@ -144,6 +145,7 @@ data TestArtifactsDirectory =
 
 newtype TreeFilter = TreeFilter String
 
+-- | All the options controlling a test run.
 data Options = Options {
   optionsTestArtifactsDirectory :: TestArtifactsDirectory
   -- ^ Where to save test artifacts (logs, screenshots, failure reports, etc.).

@@ -133,9 +133,15 @@ infixr :>
 
 type ActionWith a = a -> IO ()
 
+-- | Options for an individual test node.
 data NodeOptions = NodeOptions {
   nodeOptionsVisibilityThreshold :: Int
+  -- ^ The visibility threshold of the node. See the main docs for an explanation of this.
   }
+
+-- | Reasonable default node options.
+defaultNodeOptions :: NodeOptions
+defaultNodeOptions = NodeOptions 100
 
 data SpecCommand context m next where
   Before' :: { nodeOptions :: NodeOptions
@@ -231,27 +237,41 @@ after ::
   -> SpecFree context m ()
 after = after' (NodeOptions 100)
 
+-- | Introduce a new value and make it available to the child spec tree.
 introduce ::
   String
+  -- ^ String label for this node
   -> Label l intro
+  -- ^ 'Label' under which to introduce the value
   -> ExampleT context m intro
+  -- ^ Action to produce the new value (of type 'intro')
   -> (intro -> ExampleT context m ())
+  -- ^ Action to clean up the new value
   -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 introduce = introduce' (NodeOptions 100)
 
+-- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
 introduceWith ::
   String
+  -- ^ String label for this node
   -> Label l intro
+  -- ^ 'Label' under which to introduce the value
   -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 introduceWith = introduceWith' (NodeOptions 100)
 
+-- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
 around ::
   String
   -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 around = around' (NodeOptions 100)
 
@@ -280,33 +300,146 @@ it ::
   -> Free (SpecCommand context m) ()
 it = it' (NodeOptions 0)
 
+-- | Same as 'before', but applied individually to every 'it' node.
 beforeEach ::
   String
+  -- ^ String label for this context manager
   -> (ExampleT context m ())
+  -- ^ Action to perform
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 beforeEach = beforeEach' (NodeOptions 100)
 
+-- | Same as 'after', but applied individually to every 'it' node.
 afterEach ::
   String
+  -- ^ String label for this context manager
   -> (ExampleT context m ())
+  -- ^ Action to perform
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 afterEach = afterEach' (NodeOptions 100)
 
+-- | Same as 'around', but applied individually to every 'it' node.
 aroundEach :: (Monad m) =>
   String
+  -- ^ String label for this context manager
   -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 aroundEach = aroundEach' (NodeOptions 100)
+
+
+-- * Primed versions
+
+
+-- | Perform an action before a given spec tree.
+before' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Perform an action after a given spec tree.
+after' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Introduce a new value and make it available to the child spec tree.
+introduce' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this node
+  -> Label l intro
+  -- ^ 'Label' under which to introduce the value
+  -> ExampleT context m intro
+  -- ^ Action to produce the new value (of type 'intro')
+  -> (intro -> ExampleT context m ())
+  -- ^ Action to clean up the new value
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
+introduceWith' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this node
+  -> Label l intro
+  -- ^ 'Label' under which to introduce the value
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -- ^ Callback to receive the new value and the child tree.
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
+around' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Make a group of tests.
+describe' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ Label for this group
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Run a group of tests in parallel.
+parallel' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- | Define a single test example.
+it' ::
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for the example.
+  -> ExampleT context m ()
+  -- ^ The test example
+  -> Free (SpecCommand context m) ()
 
 -- | Perform an action before each example in a given spec tree.
 beforeEach' ::
   NodeOptions
+  -- ^ Custom options for this node
   -> String
+  -- ^ String label for this context manager
   -> (ExampleT context m ())
+  -- ^ Action to perform
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 beforeEach' no l f (Free x@(Before' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
 beforeEach' no l f (Free x@(After' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
@@ -323,9 +456,13 @@ beforeEach' _ _ _ (Pure x) = Pure x
 -- | Perform an action after each example in a given spec tree.
 afterEach' ::
   NodeOptions
+  -- ^ Custom options for this node
   -> String
+  -- ^ Label for this context manager
   -> (ExampleT context m ())
+  -- ^ Action to perform
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 afterEach' no l f (Free x@(Before' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
 afterEach' no l f (Free x@(After' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
@@ -341,9 +478,13 @@ afterEach' _ _ _ (Pure x) = Pure x
 
 aroundEach' :: (Monad m) =>
   NodeOptions
+  -- ^ Custom options for this node
   -> String
+  -- ^ String label for this context manager
   -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
   -> SpecFree context m ()
+  -- ^ Child spec tree
   -> SpecFree context m ()
 aroundEach' no l f (Free x@(Before' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
 aroundEach' no l f (Free x@(After' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })

@@ -4,7 +4,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 -- |
 
-module Test.Sandwich.Expectations where
+module Test.Sandwich.Expectations (
+  module Test.Sandwich.Expectations
+
+  -- * Result types
+  , Result(..)
+  , FailureReason(..)
+  , SomeExceptionWithEq(..)
+  ) where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Class

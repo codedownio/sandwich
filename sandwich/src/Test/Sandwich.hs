@@ -5,8 +5,13 @@
 
 module Test.Sandwich (
 
+  -- * Running tests
+  runSandwich
+  , runSandwichTree
+  , startSandwichTree
+
   -- * Basic nodes
-  it
+  , it
   , describe
   , parallel
 
@@ -20,48 +25,27 @@ module Test.Sandwich (
   , around
   , aroundEach
 
-  -- * Running tests
-  , runSandwich
-  , runSandwichTree
-  , startSandwichTree
+  -- * The example monad
+  , ExampleT
+  , ExampleM
 
+  -- * Spec types
+  , Spec
+  , SpecFree
   , TopSpec
-
-  , defaultOptions
-  , Options
-  , optionsTestArtifactsDirectory
-  , TestArtifactsDirectory(..)
-  , optionsSavedLogLevel
-  , optionsMemoryLogLevel
-  , optionsFilterTree
-  , optionsFormatters
-  , TreeFilter(..)
 
   , BaseContext
   , HasBaseContext
-
-  , Result(..)
-  , FailureReason(..)
-  , SomeExceptionWithEq(..)
-
-  , Spec
-  , SpecFree
-
-  , ExampleT
-  , ExampleM
 
   , Label(..)
   , LabelValue(..)
   , HasLabel
   , (:>)
 
-  , SomeFormatter(..)
-  , Formatter(..)
-
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
-
+  , module Test.Sandwich.Options
   ) where
 
 import Control.Concurrent.Async
@@ -69,20 +53,18 @@ import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
-import Control.Monad.Logger
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
-import Test.Sandwich.Formatters.LogSaver
-import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
+import Test.Sandwich.Options
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -167,13 +149,3 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextErrorCounter = errorCounter
     , baseContextOnlyRunIds = Nothing
     }
-
-defaultOptions :: Options
-defaultOptions = Options {
-  optionsTestArtifactsDirectory = TestArtifactsNone
-  , optionsSavedLogLevel = Just LevelDebug
-  , optionsMemoryLogLevel = Just LevelDebug
-  , optionsFilterTree = Nothing
-  , optionsDryRun = False
-  , optionsFormatters = [SomeFormatter defaultPrintFormatter]
-  }
