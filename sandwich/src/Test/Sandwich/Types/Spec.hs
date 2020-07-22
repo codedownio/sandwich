@@ -133,71 +133,77 @@ infixr :>
 
 type ActionWith a = a -> IO ()
 
+data NodeOptions = NodeOptions {
+  nodeOptionsVisibilityThreshold :: Int
+  }
+
 data SpecCommand context m next where
-  Before :: { label :: String
+  Before' :: { nodeOptions :: NodeOptions
+             , label :: String
+             , action :: ExampleT context m ()
+             , subspec :: SpecFree context m ()
+             , next :: next } -> SpecCommand context m next
+
+  After' :: { nodeOptions :: NodeOptions
+            , label :: String
             , action :: ExampleT context m ()
             , subspec :: SpecFree context m ()
             , next :: next } -> SpecCommand context m next
 
-  After :: { label :: String
-           , action :: ExampleT context m ()
-           , subspec :: SpecFree context m ()
-           , next :: next } -> SpecCommand context m next
+  Introduce' :: { nodeOptions :: NodeOptions
+                , label :: String
+                , contextLabel :: Label l intro
+                , allocate :: ExampleT context m intro
+                , cleanup :: intro -> ExampleT context m ()
+                , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+                , next :: next } -> SpecCommand context m next
 
-  Introduce :: { label :: String
-               , contextLabel :: Label l intro
-               , allocate :: ExampleT context m intro
-               , cleanup :: intro -> ExampleT context m ()
-               , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+  IntroduceWith' :: { nodeOptions :: NodeOptions
+                    , label :: String
+                    , contextLabel :: Label l intro
+                    , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
+                    , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+                    , next :: next } -> SpecCommand context m next
+
+  Around' :: { nodeOptions :: NodeOptions
+             , label :: String
+             , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
+             , subspec :: SpecFree context m ()
+             , next :: next } -> SpecCommand context m next
+
+  Describe' :: { nodeOptions :: NodeOptions
+               , label :: String
+               , subspec :: SpecFree context m ()
                , next :: next } -> SpecCommand context m next
 
-  IntroduceWith :: { label :: String
-                   , contextLabel :: Label l intro
-                   , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
-                   , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
-                   , next :: next } -> SpecCommand context m next
+  Parallel' :: { nodeOptions :: NodeOptions
+               , subspec :: SpecFree context m ()
+               , next :: next } -> SpecCommand context m next
 
-  Around :: { label :: String
-            , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
-            , subspec :: SpecFree context m ()
-            , next :: next } -> SpecCommand context m next
-
-  Describe :: { label :: String
-              , subspec :: SpecFree context m ()
-              , next :: next } -> SpecCommand context m next
-
-  Parallel :: { subspec :: SpecFree context m ()
-              , next :: next } -> SpecCommand context m next
-
-  It :: { label :: String
-        , example :: ExampleT context m ()
-        , next :: next } -> SpecCommand context m next
+  It' :: { nodeOptions :: NodeOptions
+         , label :: String
+         , example :: ExampleT context m ()
+         , next :: next } -> SpecCommand context m next
 
 deriving instance Functor (SpecCommand context m)
 deriving instance Foldable (SpecCommand context m)
 deriving instance Traversable (SpecCommand context m)
 
 
-type SpecM context m = SpecFree context m ()
-type Spec context = SpecFree context IO ()
-
-type SpecWith context = SpecFree context IO ()
-type SpecWithM context m = SpecFree context m ()
-
+type Spec context m = SpecFree context m ()
 type SpecFree context m a = Free (SpecCommand context m) a
-type SpecFreeM context m = Free (SpecCommand context m)
 
 makeFree_ ''SpecCommand
 
 instance Show1 (SpecCommand context m) where
-  liftShowsPrec sp _ d (Before {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (After {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Introduce {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
-  liftShowsPrec sp _ d (IntroduceWith {..}) = showsUnaryWith sp [i|IntroduceWith[#{label}]<#{show subspecAugmented}>|] d next
-  liftShowsPrec sp _ d (Around {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Describe {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Parallel {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (It {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
+  liftShowsPrec sp _ d (Before' {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (After' {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Introduce' {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (IntroduceWith' {..}) = showsUnaryWith sp [i|IntroduceWith[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (Around' {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Describe' {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Parallel' {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (It' {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
 
 -- First write beforeEach/afterEach to demonstrate push down approach
 -- Then think about how/whether we can to introduceEach / aroundEach
@@ -211,58 +217,143 @@ before ::
   -- ^ Action to perform
   -> SpecFree context m ()
   -- ^ Child spec tree
-  -> SpecFreeM context m ()
+  -> SpecFree context m ()
+before = before' (NodeOptions 100)
 
--- | Perform an action before each example in a given spec tree.
+-- | Perform an action after a given spec tree.
+after ::
+  String
+  -- ^ Label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+after = after' (NodeOptions 100)
+
+introduce ::
+  String
+  -> Label l intro
+  -> ExampleT context m intro
+  -> (intro -> ExampleT context m ())
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -> SpecFree context m ()
+introduce = introduce' (NodeOptions 100)
+
+introduceWith ::
+  String
+  -> Label l intro
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -> SpecFree context m ()
+introduceWith = introduceWith' (NodeOptions 100)
+
+around ::
+  String
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+around = around' (NodeOptions 100)
+
+-- | Make a group of tests.
+describe ::
+  String
+  -- ^ Label for this group
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+describe = describe' (NodeOptions 50)
+
+-- | Run a group of tests in parallel.
+parallel ::
+  SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+parallel = parallel' (NodeOptions 50)
+
+-- | Define a single test example.
+it ::
+  String
+  -- ^ Label for the example.
+  -> ExampleT context m ()
+  -- ^ The test example
+  -> Free (SpecCommand context m) ()
+it = it' (NodeOptions 0)
+
 beforeEach ::
   String
   -> (ExampleT context m ())
   -> SpecFree context m ()
   -> SpecFree context m ()
-beforeEach l f (Free x@(Before {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(After {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(Around {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(Describe {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(Parallel {..})) = Free (x { subspec = beforeEach l f subspec, next = beforeEach l f next })
-beforeEach l f (Free x@(It {..})) = Free (Before l f (Free (x { next = Pure () })) (beforeEach l f next))
-beforeEach _ _ (Pure x) = Pure x
-beforeEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (beforeEach l f' subspec) (beforeEach l f next))
-  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
-beforeEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (beforeEach l f' subspec) (beforeEach l f next))
-  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+beforeEach = beforeEach' (NodeOptions 100)
 
--- | Perform an action after each example in a given spec tree.
 afterEach ::
   String
   -> (ExampleT context m ())
   -> SpecFree context m ()
   -> SpecFree context m ()
-afterEach l f (Free x@(Before {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(After {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(Around {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(Describe {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(Parallel {..})) = Free (x { subspec = afterEach l f subspec, next = afterEach l f next })
-afterEach l f (Free x@(It {..})) = Free (After l f (Free (x { next = Pure () })) (afterEach l f next))
-afterEach _ _ (Pure x) = Pure x
-afterEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (afterEach l f' subspec) (afterEach l f next))
-  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
-afterEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (afterEach l f' subspec) (afterEach l f next))
-  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+afterEach = afterEach' (NodeOptions 100)
 
 aroundEach :: (Monad m) =>
   String
   -> (ExampleT context m [Result] -> ExampleT context m ())
   -> SpecFree context m ()
   -> SpecFree context m ()
-aroundEach l f (Free x@(Before {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(After {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(Around {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(Describe {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(Parallel {..})) = Free (x { subspec = aroundEach l f subspec, next = aroundEach l f next })
-aroundEach l f (Free x@(It {..})) = Free (Around l f (Free (x { next = Pure () })) (aroundEach l f next))
-aroundEach _ _ (Pure x) = Pure x
-aroundEach l f (Free (IntroduceWith li cl action subspec next)) = Free (IntroduceWith li cl action (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
-aroundEach l f (Free (Introduce li cl alloc clean subspec next)) = Free (Introduce li cl alloc clean (aroundEach l (unwrapContext f) subspec) (aroundEach l f next))
+aroundEach = aroundEach' (NodeOptions 100)
+
+-- | Perform an action before each example in a given spec tree.
+beforeEach' ::
+  NodeOptions
+  -> String
+  -> (ExampleT context m ())
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+beforeEach' no l f (Free x@(Before' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
+beforeEach' no l f (Free x@(After' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
+beforeEach' no l f (Free x@(Around' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
+beforeEach' no l f (Free x@(Describe' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
+beforeEach' no l f (Free x@(Parallel' {..})) = Free (x { subspec = beforeEach' no l f subspec, next = beforeEach' no l f next })
+beforeEach' no l f (Free x@(It' {..})) = Free (Before' no l f (Free (x { next = Pure () })) (beforeEach' no l f next))
+beforeEach' no l f (Free (Introduce' noi li cl alloc clean subspec next)) = Free (Introduce' noi li cl alloc clean (beforeEach' no l f' subspec) (beforeEach' no l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+beforeEach' no l f (Free (IntroduceWith' noi li cl action subspec next)) = Free (IntroduceWith' noi li cl action (beforeEach' no l f' subspec) (beforeEach' no l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+beforeEach' _ _ _ (Pure x) = Pure x
+
+-- | Perform an action after each example in a given spec tree.
+afterEach' ::
+  NodeOptions
+  -> String
+  -> (ExampleT context m ())
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+afterEach' no l f (Free x@(Before' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
+afterEach' no l f (Free x@(After' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
+afterEach' no l f (Free x@(Around' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
+afterEach' no l f (Free x@(Describe' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
+afterEach' no l f (Free x@(Parallel' {..})) = Free (x { subspec = afterEach' no l f subspec, next = afterEach' no l f next })
+afterEach' no l f (Free x@(It' {..})) = Free (After' no l f (Free (x { next = Pure () })) (afterEach' no l f next))
+afterEach' no l f (Free (Introduce' noi li cl alloc clean subspec next)) = Free (Introduce' noi li cl alloc clean (afterEach' no l f' subspec) (afterEach' no l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+afterEach' no l f (Free (IntroduceWith' noi li cl action subspec next)) = Free (IntroduceWith' noi li cl action (afterEach' no l f' subspec) (afterEach' no l f next))
+  where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
+afterEach' _ _ _ (Pure x) = Pure x
+
+aroundEach' :: (Monad m) =>
+  NodeOptions
+  -> String
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+aroundEach' no l f (Free x@(Before' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
+aroundEach' no l f (Free x@(After' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
+aroundEach' no l f (Free x@(Around' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
+aroundEach' no l f (Free x@(Describe' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
+aroundEach' no l f (Free x@(Parallel' {..})) = Free (x { subspec = aroundEach' no l f subspec, next = aroundEach' no l f next })
+aroundEach' no l f (Free x@(It' {..})) = Free (Around' no l f (Free (x { next = Pure () })) (aroundEach' no l f next))
+aroundEach' no _ _ (Pure x) = Pure x
+aroundEach' no l f (Free (IntroduceWith' noi li cl action subspec next)) = Free (IntroduceWith' noi li cl action (aroundEach' no l (unwrapContext f) subspec) (aroundEach' no l f next))
+aroundEach' no l f (Free (Introduce' noi li cl alloc clean subspec next)) = Free (Introduce' noi li cl alloc clean (aroundEach' no l (unwrapContext f) subspec) (aroundEach' no l f next))
 
 unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do

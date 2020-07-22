@@ -36,14 +36,14 @@ appendLogMessage logs msg = do
   atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
 getImmediateChildren :: Free (SpecCommand context m) () -> [Free (SpecCommand context m) ()]
-getImmediateChildren (Free (It l ex next)) = (Free (It l ex (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Before l f subspec next)) = (Free (Before l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (After l f subspec next)) = (Free (After l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Introduce l cl alloc cleanup subspec next)) = (Free (Introduce l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (IntroduceWith l cl action subspec next)) = (Free (IntroduceWith l cl action subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Around l f subspec next)) = (Free (Around l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Describe l subspec next)) = (Free (Describe l subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Parallel subspec next)) = (Free (Parallel subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (It' no l ex next)) = (Free (It' no l ex (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Before' no l f subspec next)) = (Free (Before' no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (After' no l f subspec next)) = (Free (After' no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Introduce' no l cl alloc cleanup subspec next)) = (Free (Introduce' no l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (IntroduceWith' no l cl action subspec next)) = (Free (IntroduceWith' no l cl action subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Around' no l f subspec next)) = (Free (Around' no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Describe' no l subspec next)) = (Free (Describe' no l subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Parallel' no subspec next)) = (Free (Parallel' no subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Pure ()) = [Pure ()]
 
 countChildren :: Free (SpecCommand context m) () -> Int

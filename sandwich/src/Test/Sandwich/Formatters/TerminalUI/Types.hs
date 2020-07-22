@@ -18,15 +18,15 @@ import Test.Sandwich.Types.RunTree
 -- | Initial settings for the TUI interface. All of these settings can be changed interactively.
 data TerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold :: Int
-  -- * The initial visibility threshold to use when the formatter starts.
+  -- ^ The initial visibility threshold to use when the formatter starts.
   , terminalUIInitialFolding :: InitialFolding
-  -- * The initial folding settings to use when the formatter starts.
+  -- ^ The initial folding settings to use when the formatter starts.
   , terminalUIShowRunTimes :: Bool
-  -- * Whether to show or hide run times.
+  -- ^ Whether to show or hide run times.
   , terminalUIShowVisibilityThresholds :: Bool
-  -- * Whether to show or hide visibility thresholds next to nodes.
+  -- ^ Whether to show or hide visibility thresholds next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
-  -- * Log level for test log displays.
+  -- ^ Log level for test log displays.
   }
 
 data InitialFolding =

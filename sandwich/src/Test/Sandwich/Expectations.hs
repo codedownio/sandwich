@@ -30,21 +30,25 @@ xit name _ex = it name (throwIO $ Pending (Just callStack) Nothing)
 
 -- * Assertions
 
+-- | Asserts that two things are equal.
 shouldBe :: (HasCallStack, MonadThrow m, Eq a, Show a) => a -> a -> m ()
 shouldBe x y
   | x == y = return ()
   | otherwise = throwIO (ExpectedButGot (Just callStack) (SEB y) (SEB x))
 
+-- | Asserts that two things are not equal.
 shouldNotBe :: (HasCallStack, MonadThrow m, Eq a, Show a) => a -> a -> m ()
 shouldNotBe x y
   | x /= y = return ()
   | otherwise = throwIO (DidNotExpectButGot (Just callStack) (SEB y))
 
+-- | Asserts that the given list contains a subsequence.
 shouldContain :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> [a] -> m ()
 shouldContain haystack needle = case needle `L.isInfixOf` haystack of
   True -> return ()
   False -> expectationFailure [i|Expected #{show haystack} to contain #{show needle}|] -- TODO: custom exception type
 
+-- | Asserts that the given list does not contain a subsequence.
 shouldNotContain :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> [a] -> m ()
 shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
   True -> expectationFailure [i|Expected #{show haystack} not to contain #{show needle}|]
@@ -58,7 +62,13 @@ t `textShouldContain` txt = ((T.unpack t) :: String) `shouldContain` (T.unpack t
 textShouldNotContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
 t `textShouldNotContain` txt = ((T.unpack t) :: String) `shouldNotContain` (T.unpack txt)
 
-shouldThrow :: (HasCallStack, MonadThrow m, MonadIO m, Exception e) => IO a -> (e -> Bool) -> m ()
+-- | Asserts that an IO action should throw an exception.
+shouldThrow :: (HasCallStack, MonadThrow m, MonadIO m, Exception e) =>
+  IO a
+  -- ^ The action to run.
+  -> (e -> Bool)
+  -- ^ A predicate on the exception to determine if it's as expected.
+  -> m ()
 shouldThrow action f = do
   liftIO (try action) >>= \case
     Right _ -> expectationFailure [i|Expected exception to be thrown.|]

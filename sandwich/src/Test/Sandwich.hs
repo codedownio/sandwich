@@ -4,12 +4,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Sandwich (
-  runSandwich
-  , runSandwichTree
-  , startSandwichTree
 
-  , it
+  -- * Basic nodes
+  it
   , describe
+  , parallel
+
+  -- * Context manager nodes
   , introduce
   , introduceWith
   , before
@@ -18,7 +19,11 @@ module Test.Sandwich (
   , afterEach
   , around
   , aroundEach
-  , parallel
+
+  -- * Running tests
+  , runSandwich
+  , runSandwichTree
+  , startSandwichTree
 
   , TopSpec
 
@@ -39,8 +44,8 @@ module Test.Sandwich (
   , FailureReason(..)
   , SomeExceptionWithEq(..)
 
+  , Spec
   , SpecFree
-  , SpecWith
 
   , ExampleT
   , ExampleM

@@ -4,11 +4,8 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 -- |
 
 module Test.Sandwich.Types.RunTree where
@@ -118,7 +115,7 @@ instance HasBaseContext context => HasBaseContext (intro :> context) where
   getBaseContext (_ :> ctx) = getBaseContext ctx
   modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
 
-type TopSpec = Spec BaseContext
+type TopSpec = Spec BaseContext IO
 
 -- * Formatter
 

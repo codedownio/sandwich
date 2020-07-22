@@ -12,18 +12,18 @@ prettyShow :: Free (SpecCommand context m) r -> String
 prettyShow = prettyShow' 0
 
 prettyShow' :: Int -> Free (SpecCommand context m) r -> String
-prettyShow' indent (Free (Before l f subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (After l f subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Introduce l cl alloc cleanup subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (IntroduceWith l cl action subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Around l f subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Describe l subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Parallel subspec next)) = showNode indent "parallel" subspec next
-prettyShow' indent (Free (It l ex next)) = showNode indent l ((return ()) :: Free (SpecCommand () m) ()) next
+prettyShow' indent (Free (Before' no l f subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (After' no l f subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Introduce' no l cl alloc cleanup subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (IntroduceWith' no l cl action subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Around' no l f subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Describe' no l subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Parallel' no subspec next)) = showNode indent "parallel" subspec next
+prettyShow' indent (Free (It' no l ex next)) = showNode indent l ((return ()) :: Free (SpecCommand () m) ()) next
 prettyShow' _ (Pure _) = ""
 
 -- * Util
-  
+
 indentSize :: Int
 indentSize = 2
 

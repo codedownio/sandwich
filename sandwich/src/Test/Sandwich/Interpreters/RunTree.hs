@@ -44,29 +44,30 @@ specToRunTreeM baseContext spec = do
 
 -- | Convert a spec to a run tree
 specToRunTree' :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
-specToRunTree'  (Free (Before l f subspec next)) = do
-  common <- getCommon l 100
+specToRunTree'  (Free (Before' no l f subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeBefore <$> pure common <*> recurse l common subspec <*> pure f
-specToRunTree'  (Free (After l f subspec next)) = do
-  common <- getCommon l 100
+specToRunTree'  (Free (After' no l f subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeAfter <$> pure common <*> recurse l common subspec <*> pure f
-specToRunTree'  (Free (Introduce l cl alloc cleanup subspec next)) = do
-  common <- getCommon l 100
+specToRunTree'  (Free (Introduce' no l cl alloc cleanup subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l common subspec <*> pure alloc <*> pure cleanup
-specToRunTree'  (Free (IntroduceWith l _cl action subspec next)) = do
-  common <- getCommon l 100
+specToRunTree'  (Free (IntroduceWith' no l _cl action subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l common subspec <*> pure action
-specToRunTree'  (Free (Around l actionWith subspec next)) = do
-  common <- getCommon l 100
+specToRunTree'  (Free (Around' no l actionWith subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeAround <$> pure common <*> recurse l common subspec <*> pure actionWith
-specToRunTree'  (Free (Describe l subspec next)) = do
-  common <- getCommon l 50
+specToRunTree'  (Free (Describe' no l subspec next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l common subspec
-specToRunTree'  (Free (Parallel subspec next)) = do
-  common <- getCommon "Parallel" 100
+specToRunTree'  (Free (Parallel' no subspec next)) = do
+  common <- getCommon "Parallel" (nodeOptionsVisibilityThreshold no)
   continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" common subspec
-specToRunTree'  (Free (It l example next)) =
-  continueWith next =<< RunNodeIt <$> getCommon l 0 <*> pure example
+specToRunTree'  (Free (It' no l example next)) = do
+  common <- getCommon l (nodeOptionsVisibilityThreshold no)
+  continueWith next =<< RunNodeIt <$> pure common <*> pure example
 specToRunTree'  (Pure _) = return []
 
 

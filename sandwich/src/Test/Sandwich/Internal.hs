@@ -2,7 +2,6 @@
 
 module Test.Sandwich.Internal (
   Spec
-  , SpecWith
   , SpecFree
   , HasBaseContext
   , HasLabel
