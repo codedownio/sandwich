@@ -34,6 +34,7 @@ import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
 
 instance Formatter PrintFormatter where
   runFormatter = runApp
@@ -46,6 +47,9 @@ runApp pf@(PrintFormatter {..}) rts bc = do
 
   putStrLn "\n"
   putStrLn [i|Beginning suite of #{total} tests\n|]
+
+  whenJust (baseContextRunRoot bc) $ \runRoot ->
+    putStrLn [i|Run root: #{runRoot}\n|]
 
   runReaderT (mapM_ runWithIndentation rts) (pf, 1)
   putStrLn "\n"
