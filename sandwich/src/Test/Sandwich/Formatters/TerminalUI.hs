@@ -74,7 +74,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = do
           , _appStartTime = startTime
           , _appTimeSinceStart = 0
 
-          , _appVisibilityThresholdSteps = L.sort $ L.nub $ fmap runTreeVisibilityLevel $ concatMap getCommons rts
+          , _appVisibilityThresholdSteps = L.sort $ L.nub $ terminalUIVisibilityThreshold : (fmap runTreeVisibilityLevel $ concatMap getCommons rts)
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
 
           , _appLogLevel = terminalUILogLevel
@@ -206,15 +206,12 @@ appEvent s x@(VtyEvent e) =
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
-      let currentIndex = L.elemIndex (s ^. appVisibilityThreshold) (s ^. appVisibilityThresholdSteps)
-      case currentIndex of
-        Nothing -> continue s -- Should never happen
-        Just index -> do
-          let newIndex = (index + 1) `mod` (length (s ^. appVisibilityThresholdSteps))
-          let newVisibilityThreshold = (s ^. appVisibilityThresholdSteps) !! newIndex
-          continue $ s
-            & appVisibilityThreshold .~ newVisibilityThreshold
-            & updateFilteredTree
+      let newVisibilityThreshold =  case [(i, x) | (i, x) <- zip [0..] (s ^. appVisibilityThresholdSteps), x > s ^. appVisibilityThreshold] of
+            [] -> 0
+            xs -> minimum $ fmap snd xs
+      continue $ s
+        & appVisibilityThreshold .~ newVisibilityThreshold
+        & updateFilteredTree
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
     V.EvKey c [] | c == toggleVisibilityThresholdsKey -> continue $ s
