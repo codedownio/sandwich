@@ -135,7 +135,13 @@ appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
         & appMainList %~ (listMoveTo index)
         & updateFilteredTree
 
-appEvent s (MouseDown (ListRow i) _ _ _) =
+appEvent s evt@(MouseDown (ListRow i) V.BScrollUp _ _) = do
+  vScrollBy (viewportScroll MainList) (-1)
+  continue s
+appEvent s evt@(MouseDown (ListRow i) V.BScrollDown _ _) = do
+  vScrollBy (viewportScroll MainList) 1
+  continue s
+appEvent s evt@(MouseDown (ListRow i) V.BLeft _ _) = do
   continue (s & appMainList %~ (listMoveTo i))
 appEvent s x@(VtyEvent e) =
   case e of
