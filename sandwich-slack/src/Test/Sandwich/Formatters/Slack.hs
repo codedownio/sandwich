@@ -15,10 +15,12 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Data.Function
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time
+import Safe
 import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.Internal.Formatters
@@ -71,10 +73,14 @@ runApp pf@(SlackFormatter {..}) rts bc = do
 publishTree topMessage elapsed tree = pbi
   where
     pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
-                          , progressBarInfoBottomMessage = Just bottomMessage
+                          , progressBarInfoBottomMessage = Just fullBottomMessage
                           , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
                           , progressBarInfoAttachments = Just attachments
                           }
+
+    fullBottomMessage = case runningMessage of
+      Nothing -> bottomMessage
+      Just t -> T.pack t <> "\n" <> bottomMessage
 
     bottomMessage = T.intercalate "\n" $ catMaybes [
       maybeMessage
@@ -82,6 +88,8 @@ publishTree topMessage elapsed tree = pbi
       ]
 
     maybeMessage = Nothing
+
+    runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
 
     failures = catMaybes $ concatMap (extractValues (\node -> if isFailedItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
     attachments = [ProgressBarAttachment (T.pack t) "#ff4136" | t <- failures]
