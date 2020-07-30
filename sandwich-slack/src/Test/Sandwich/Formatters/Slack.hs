@@ -73,7 +73,7 @@ publishTree topMessage elapsed tree = pbi
     pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
                           , progressBarInfoBottomMessage = Just bottomMessage
                           , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
-                          , progressBarInfoAttachments = Nothing
+                          , progressBarInfoAttachments = Just attachments
                           }
 
     bottomMessage = T.intercalate "\n" $ catMaybes [
@@ -82,6 +82,9 @@ publishTree topMessage elapsed tree = pbi
       ]
 
     maybeMessage = Nothing
+
+    failures = catMaybes $ concatMap (extractValues (\node -> if isFailedItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
+    attachments = [ProgressBarAttachment (T.pack t) "#ff4136" | t <- failures]
 
     total = countWhere isItBlock tree
     succeeded = countWhere isSuccessItBlock tree
