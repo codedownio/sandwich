@@ -39,7 +39,7 @@ instance Formatter SlackFormatter where
   runFormatter = runApp
 
 runApp :: SlackFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
-runApp pf@(SlackFormatter {..}) rts bc = do
+runApp (SlackFormatter {..}) rts bc = do
   startTime <- getCurrentTime
 
   rtsFixed <- atomically $ mapM fixRunTree rts
@@ -60,8 +60,8 @@ runApp pf@(SlackFormatter {..}) rts bc = do
     now <- getCurrentTime
     let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
     tryAny (updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
-      Left err -> return () -- TODO: notify somehow?
-      Right (Left err) -> return ()
+      Left _ -> return () -- TODO: notify somehow?
+      Right (Left _) -> return ()
       Right (Right ()) -> return ()
 
     if | all (isDone . runTreeStatus . runNodeCommon) newFixedTree -> return ()
@@ -84,7 +84,7 @@ publishTree topMessage elapsed tree = pbi
 
     bottomMessage = T.intercalate "\n" $ catMaybes [
       maybeMessage
-      , Just [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending of #{total} (#{formatNominalDiffTime elapsed}s elapsed)|]
+      , Just [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
       ]
 
     maybeMessage = Nothing
