@@ -44,8 +44,9 @@ defaultLogSaverFormatter = LogSaverFormatter {
 
 instance Formatter LogSaverFormatter where
   runFormatter = runApp
+  formatterName _ = "log-saver-formatter"
 
-runApp :: LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
+runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp lsf@(LogSaverFormatter {..}) rts bc = do
   let maybePath = case logSaverPath of
         LogPathAbsolute p -> Just p
@@ -54,7 +55,7 @@ runApp lsf@(LogSaverFormatter {..}) rts bc = do
           Just rr -> Just (rr </> p)
 
   whenJust maybePath $ \path ->
-    withFile path AppendMode $ \h ->
+    liftIO $ withFile path AppendMode $ \h ->
       runReaderT (mapM_ run rts) (lsf, h)
 
 run :: RunNode context -> ReaderT (LogSaverFormatter, Handle) IO ()

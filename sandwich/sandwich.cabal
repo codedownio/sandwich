@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c1c449dd83de7b745b13cf3f7d63353004d896316a5b939d05c281c1b7e36976
+-- hash: 179f8b96035c902112dbb459eea4ffecc3a7e8f3f5c720fc5d430d3e50bd1a61
 
 name:           sandwich
 version:        0.1.0.0
@@ -82,6 +82,7 @@ library
     , colour
     , containers
     , directory
+    , exceptions
     , filepath
     , free
     , interpolate
@@ -123,6 +124,7 @@ executable sandwich-exe
     , colour
     , containers
     , directory
+    , exceptions
     , filepath
     , free
     , interpolate
@@ -170,6 +172,7 @@ executable sandwich-test
     , colour
     , containers
     , directory
+    , exceptions
     , filepath
     , free
     , interpolate
@@ -218,6 +221,7 @@ test-suite sandwich-test-suite
     , colour
     , containers
     , directory
+    , exceptions
     , filepath
     , free
     , interpolate

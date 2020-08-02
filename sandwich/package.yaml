@@ -29,6 +29,7 @@ dependencies:
 - brick
 - bytestring
 - directory
+- exceptions
 - filepath
 - free
 - interpolate

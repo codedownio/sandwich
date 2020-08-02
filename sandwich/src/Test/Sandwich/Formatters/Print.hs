@@ -19,6 +19,7 @@ module Test.Sandwich.Formatters.Print (
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
@@ -38,9 +39,10 @@ import Test.Sandwich.Util
 
 instance Formatter PrintFormatter where
   runFormatter = runApp
+  formatterName _ = "print-formatter"
 
-runApp :: PrintFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
-runApp pf@(PrintFormatter {..}) rts bc = do
+runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
+runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
   let total = countWhere isItBlock rts
 
   startTime <- getCurrentTime

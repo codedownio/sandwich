@@ -14,6 +14,8 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Logger hiding (logError)
 import Data.Function
 import qualified Data.List as L
 import Data.Maybe
@@ -38,36 +40,37 @@ data SlackFormatter = SlackFormatter {
 
 instance Formatter SlackFormatter where
   runFormatter = runApp
+  formatterName _ = "slack-formatter"
 
-runApp :: SlackFormatter -> [RunNode BaseContext] -> BaseContext -> IO ()
+runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp (SlackFormatter {..}) rts bc = do
-  startTime <- getCurrentTime
+  startTime <- liftIO getCurrentTime
 
-  rtsFixed <- atomically $ mapM fixRunTree rts
+  rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
   let pbi = publishTree slackFormatterTopMessage 0 rtsFixed
-  pb <- (createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
-    Left err -> throwIO $ userError $ T.unpack err
+  pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
+    Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
 
-  currentFixedTree <- newTVarIO rtsFixed
+  currentFixedTree <- liftIO $ newTVarIO rtsFixed
   fix $ \loop -> do
-    newFixedTree <- atomically $ do
+    newFixedTree <- liftIO $ atomically $ do
       currentFixed <- readTVar currentFixedTree
       newFixed <- mapM fixRunTree rts
       when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
       writeTVar currentFixedTree newFixed
       return newFixed
 
-    now <- getCurrentTime
+    now <- liftIO getCurrentTime
     let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
-    tryAny (updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
-      Left _ -> return () -- TODO: notify somehow?
-      Right (Left _) -> return ()
+    tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
+      Left err -> logError [i|Error updating progress bar: '#{err}'|]
+      Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
       Right (Right ()) -> return ()
 
     if | all (isDone . runTreeStatus . runNodeCommon) newFixedTree -> return ()
        | otherwise -> do
-           threadDelay 100000 -- Sleep 100ms
+           liftIO $ threadDelay 100000 -- Sleep 100ms
            loop
 
 

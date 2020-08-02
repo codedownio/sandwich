@@ -53,6 +53,7 @@ import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
+import Control.Monad.Logger
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
@@ -76,7 +77,13 @@ runSandwich options spec = do
   baseContext <- baseContextFromOptions options
   rts <- startSandwichTree' baseContext options spec
 
-  formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ runFormatter f rts baseContext
+  formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ do
+    let loggingFn = case baseContextRunRoot baseContext of
+          Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
+          Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
+
+    loggingFn $
+      runFormatter f rts baseContext
 
   let shutdown = do
         putStrLn "Shutting down..."

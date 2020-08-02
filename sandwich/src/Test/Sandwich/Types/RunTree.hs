@@ -13,6 +13,8 @@ module Test.Sandwich.Types.RunTree where
 import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Concurrent.STM
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
@@ -120,7 +122,8 @@ type TopSpec = Spec BaseContext IO
 -- * Formatter
 
 class Formatter f where
-  runFormatter :: f -> [RunNode BaseContext] -> BaseContext -> IO ()
+  runFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
+  formatterName :: f -> String
 
 -- | An existential wrapper around 'Formatter's
 data SomeFormatter = forall f. (Formatter f) => SomeFormatter f
