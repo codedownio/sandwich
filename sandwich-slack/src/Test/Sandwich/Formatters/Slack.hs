@@ -30,7 +30,8 @@ data SlackFormatter = SlackFormatter {
   slackFormatterSlackConfig :: SlackConfig
   -- ^ Slack credentials
   , slackFormatterTopMessage :: Maybe String
-  -- ^ Message to put above the progress bar. For example, the name of the test suite and a link to the run in the CI system.
+  -- ^ Message to put above the progress bar.
+  -- For example, the name of the test suite and a link to the run in the CI system.
   , slackFormatterChannel :: String
   -- ^ Slack channel on which to create the progress bar.
   }

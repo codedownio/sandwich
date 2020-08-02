@@ -148,19 +148,24 @@ runInAsync node ctx action = do
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
 
       whenFailure result $ \reason -> do
-        -- Create error symlink when configured to
         let (BaseContext {..}) = getBaseContext ctx
-        whenJust baseContextErrorSymlinksDir $ \errorsDir ->
-          whenJust baseContextPath $ \dir -> do
-            whenJust baseContextRunRoot $ \runRoot -> do
-              -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
-              -- introduce ".." components, so we have to do it ourselves
-              let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
-              let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
-              errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
-              let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
-              liftIO $ createDirectoryLink relativePath (errorsDir </> symlinkName)
+        -- Create error symlink when configured to
+        case node of
+          RunNodeDescribe {} -> return () -- These are just noisy so don't create them
+          RunNodeParallel {} -> return () -- These are just noisy so don't create them
+          _ -> do
+            whenJust baseContextErrorSymlinksDir $ \errorsDir ->
+              whenJust baseContextPath $ \dir -> do
+                whenJust baseContextRunRoot $ \runRoot -> do
+                  -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
+                  -- introduce ".." components, so we have to do it ourselves
+                  let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
+                  let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
+
+                  errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
+                  let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
+                  liftIO $ createDirectoryLink relativePath (errorsDir </> symlinkName)
 
         -- Write failure info
         whenJust baseContextPath $ \dir -> do
