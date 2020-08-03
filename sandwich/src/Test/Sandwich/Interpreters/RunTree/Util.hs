@@ -54,6 +54,7 @@ appendFolder (RunTreeContext {runTreeCurrentFolder=Nothing}) _ = Nothing
 appendFolder (RunTreeContext {runTreeCurrentFolder=(Just f), ..}) l = Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
 
 nodeToFolderName :: String -> Int -> Int -> String
+nodeToFolderName name 1 0 = fixupName name
 nodeToFolderName name numSiblings indexInParent = padding <> fixupName name
   where
     paddingNeeded
@@ -72,7 +73,7 @@ nodeToFolderName name numSiblings indexInParent = padding <> fixupName name
     padding = if | numSiblings == 1 -> ""
                  | otherwise -> paddedNumber <> "_"
 
-    fixupName = replace '/' '_'
+fixupName = replace '/' '_'
 
-    replace :: Eq a => a -> a -> [a] -> [a]
-    replace a b = map $ \c -> if c == a then b else c
+replace :: Eq a => a -> a -> [a] -> [a]
+replace a b = map $ \c -> if c == a then b else c

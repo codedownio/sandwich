@@ -45,28 +45,28 @@ specToRunTreeM baseContext spec = do
 -- | Convert a spec to a run tree
 specToRunTree' :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 specToRunTree'  (Free (Before' no l f subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeBefore <$> pure common <*> recurse l common subspec <*> pure f
+  common <- getCommon l no
+  continueWith next =<< RunNodeBefore <$> pure common <*> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (After' no l f subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeAfter <$> pure common <*> recurse l common subspec <*> pure f
+  common <- getCommon l no
+  continueWith next =<< RunNodeAfter <$> pure common <*> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (Introduce' no l cl alloc cleanup subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l common subspec <*> pure alloc <*> pure cleanup
+  common <- getCommon l no
+  continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l no common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith' no l _cl action subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l common subspec <*> pure action
+  common <- getCommon l no
+  continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l no common subspec <*> pure action
 specToRunTree'  (Free (Around' no l actionWith subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeAround <$> pure common <*> recurse l common subspec <*> pure actionWith
+  common <- getCommon l no
+  continueWith next =<< RunNodeAround <$> pure common <*> recurse l no common subspec <*> pure actionWith
 specToRunTree'  (Free (Describe' no l subspec next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l common subspec
+  common <- getCommon l no
+  continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l no common subspec
 specToRunTree'  (Free (Parallel' no subspec next)) = do
-  common <- getCommon "Parallel" (nodeOptionsVisibilityThreshold no)
-  continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" common subspec
+  common <- getCommon "Parallel" no
+  continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" no common subspec
 specToRunTree'  (Free (It' no l example next)) = do
-  common <- getCommon l (nodeOptionsVisibilityThreshold no)
+  common <- getCommon l no
   continueWith next =<< RunNodeIt <$> pure common <*> pure example
 specToRunTree'  (Pure _) = return []
 
@@ -75,8 +75,8 @@ specToRunTree'  (Pure _) = return []
 
 type ConvertM m = RWST RunTreeContext () Int m
 
-getCommon :: (Monad m) => String -> Int -> ConvertM m RunNodeCommonFixed
-getCommon l visibilityLevel = do
+getCommon :: (Monad m) => String -> NodeOptions -> ConvertM m RunNodeCommonFixed
+getCommon l (NodeOptions {..}) = do
   rtc@(RunTreeContext {..}) <- ask
 
   -- Get a unique ID for this node
@@ -91,8 +91,8 @@ getCommon l visibilityLevel = do
     , runTreeOpen = True
     , runTreeStatus = NotStarted
     , runTreeVisible = True
-    , runTreeFolder = appendFolder rtc l
-    , runTreeVisibilityLevel = visibilityLevel
+    , runTreeFolder = if nodeOptionsCreateFolder then appendFolder rtc l else runTreeCurrentFolder
+    , runTreeVisibilityLevel = nodeOptionsVisibilityThreshold
     , runTreeLogs = mempty
     }
 
@@ -101,6 +101,10 @@ continueWith next node = do
   rest <- local (\rtc -> rtc { runTreeIndexInParent = (runTreeIndexInParent rtc) + 1}) $ specToRunTree' next
   return (node : rest)
 
-recurse :: (Monad m, HasBaseContext context) => String -> RunNodeCommonFixed -> Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
-recurse l (RunNodeCommonWithStatus {..}) subspec = local (\rtc -> rtc { runTreeCurrentFolder = appendFolder rtc l
-                                                                      , runTreeCurrentAncestors = runTreeAncestors }) (specToRunTree' subspec)
+recurse :: (Monad m, HasBaseContext context) => String -> NodeOptions -> RunNodeCommonFixed -> Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
+recurse l (NodeOptions {..}) (RunNodeCommonWithStatus {..}) subspec = local
+  (\rtc -> rtc {
+      runTreeCurrentFolder = if nodeOptionsCreateFolder then appendFolder rtc l else runTreeCurrentFolder rtc
+      , runTreeCurrentAncestors = runTreeAncestors
+      })
+  (specToRunTree' subspec)

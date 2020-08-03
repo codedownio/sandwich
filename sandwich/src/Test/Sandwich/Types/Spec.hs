@@ -137,11 +137,14 @@ type ActionWith a = a -> IO ()
 data NodeOptions = NodeOptions {
   nodeOptionsVisibilityThreshold :: Int
   -- ^ The visibility threshold of the node. See the main docs for an explanation of this.
+  , nodeOptionsCreateFolder :: Bool
+  -- ^ Whether to create a folder in the on-disk test results for this node.
+  -- Defaults to 'True', but can be turned off to reduce extraneous folders from nodes like 'Parallel'.
   }
 
 -- | Reasonable default node options.
 defaultNodeOptions :: NodeOptions
-defaultNodeOptions = NodeOptions 100
+defaultNodeOptions = NodeOptions 100 True
 
 data SpecCommand context m next where
   Before' :: { nodeOptions :: NodeOptions
@@ -224,7 +227,7 @@ before ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-before = before' (NodeOptions 100)
+before = before' (NodeOptions 100 True)
 
 -- | Perform an action after a given spec tree.
 after ::
@@ -235,7 +238,7 @@ after ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-after = after' (NodeOptions 100)
+after = after' (NodeOptions 100 True)
 
 -- | Introduce a new value and make it available to the child spec tree.
 introduce ::
@@ -250,7 +253,7 @@ introduce ::
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduce = introduce' (NodeOptions 100)
+introduce = introduce' (NodeOptions 100 True)
 
 -- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
 introduceWith ::
@@ -263,7 +266,7 @@ introduceWith ::
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduceWith = introduceWith' (NodeOptions 100)
+introduceWith = introduceWith' (NodeOptions 100 True)
 
 -- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
 around ::
@@ -273,7 +276,7 @@ around ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-around = around' (NodeOptions 100)
+around = around' (NodeOptions 100 True)
 
 -- | Make a group of tests.
 describe ::
@@ -282,14 +285,14 @@ describe ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-describe = describe' (NodeOptions 50)
+describe = describe' (NodeOptions 50 True)
 
 -- | Run a group of tests in parallel.
 parallel ::
   SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-parallel = parallel' (NodeOptions 50)
+parallel = parallel' (NodeOptions 50 False)
 
 -- | Define a single test example.
 it ::
@@ -298,7 +301,7 @@ it ::
   -> ExampleT context m ()
   -- ^ The test example
   -> Free (SpecCommand context m) ()
-it = it' (NodeOptions 0)
+it = it' (NodeOptions 0 True)
 
 -- | Same as 'before', but applied individually to every 'it' node.
 beforeEach ::
@@ -309,7 +312,7 @@ beforeEach ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-beforeEach = beforeEach' (NodeOptions 100)
+beforeEach = beforeEach' (NodeOptions 100 True)
 
 -- | Same as 'after', but applied individually to every 'it' node.
 afterEach ::
@@ -320,7 +323,7 @@ afterEach ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-afterEach = afterEach' (NodeOptions 100)
+afterEach = afterEach' (NodeOptions 100 True)
 
 -- | Same as 'around', but applied individually to every 'it' node.
 aroundEach :: (Monad m) =>
@@ -331,7 +334,7 @@ aroundEach :: (Monad m) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-aroundEach = aroundEach' (NodeOptions 100)
+aroundEach = aroundEach' (NodeOptions 100 True)
 
 
 -- * Primed versions
