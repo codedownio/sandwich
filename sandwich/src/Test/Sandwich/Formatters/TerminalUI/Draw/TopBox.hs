@@ -10,6 +10,7 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.TopBox (
 
 import Brick
 import qualified Brick.Widgets.List as L
+import Control.Monad.Logger
 import qualified Data.List as L
 import Data.Maybe
 import Lens.Micro
@@ -41,7 +42,17 @@ topBox app = hBox [columnPadding settingsColumn
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
                                        , toggleIndicator (app ^. appShowVisibilityThresholds) (showKey toggleVisibilityThresholdsKey) "Hide visibility thresholds" "Show visibility thresholds"
-                                       , keyIndicator (L.intersperse '/' (fmap unKChar [debugKey, infoKey, warnKey, errorKey])) "Set log level"
+                                       , hBox [str "["
+                                              , highlightIfLogLevel app LevelDebug [unKChar debugKey]
+                                              , str "/"
+                                              , highlightIfLogLevel app LevelInfo [unKChar infoKey]
+                                              , str "/"
+                                              , highlightIfLogLevel app LevelWarn [unKChar warnKey]
+                                              , str "/"
+                                              , highlightIfLogLevel app LevelError [unKChar errorKey]
+                                              , str "] "
+                                              , str "Set log level"]
+
                                        , keyIndicator "Meta + [0-9]" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]
 
@@ -53,6 +64,10 @@ visibilityThresholdWidget app = hBox $
 columnPadding = padLeft (Pad 1) . padRight (Pad 3) -- . padTop (Pad 1)
 
 keybindingBox = vBox
+
+highlightIfLogLevel app desiredLevel thing =
+  if | app ^. appLogLevel == Just desiredLevel -> withAttr visibilityThresholdSelectedAttr $ str thing
+     | otherwise -> withAttr hotkeyAttr $ str thing
 
 toggleIndicator True key onMsg _ = keyIndicator key onMsg
 toggleIndicator False key _ offMsg = keyIndicator key offMsg
