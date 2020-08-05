@@ -8,13 +8,18 @@ module Test.Sandwich.Formatters.Print.PrintPretty (
   ) where
 
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 import qualified Data.List as L
+import System.IO
 import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.Printing
+import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Text.Show.Pretty as P
 
 
+printPretty :: (MonadReader (PrintFormatter, Int, Handle) m, MonadIO m) => Bool -> Value -> m ()
 #if MIN_VERSION_pretty_show(1,10,0)
 printPretty (getPrintFn -> f) (Quote s) = f quoteColor s
 printPretty (getPrintFn -> f) (Time s) = f timeColor s

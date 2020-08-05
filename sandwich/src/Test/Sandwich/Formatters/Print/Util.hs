@@ -28,7 +28,10 @@ isSingleLine (Quote s) = '\n' `L.notElem` s
 isSingleLine _ = True
 
 withBumpIndent action = do
-  (PrintFormatter {..}, indent) <- ask
+  (PrintFormatter {..}, _, _) <- ask
   withBumpIndent' printFormatterIndentSize action
 
-withBumpIndent' n = local (\(pf, indent) -> (pf, indent + n))
+withBumpIndent' n = local (\(pf, indent, h) -> (pf, indent + n, h))
+
+
+fst3 (x, _, _) = x

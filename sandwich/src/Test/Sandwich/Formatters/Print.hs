@@ -23,6 +23,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
+import System.IO
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.Print.CallStacks
@@ -53,7 +54,7 @@ runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
   whenJust (baseContextRunRoot bc) $ \runRoot ->
     putStrLn [i|Run root: #{runRoot}\n|]
 
-  runReaderT (mapM_ runWithIndentation rts) (pf, 1)
+  runReaderT (mapM_ runWithIndentation rts) (pf, 1, stdout)
   putStrLn "\n"
 
   fixedTree <- atomically $ mapM fixRunTree rts
@@ -70,9 +71,9 @@ runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
     _ -> putStrLn [i| (#{pending} pending)|]
 
 
-runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int) IO ()
+runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
 runWithIndentation node@(RunNodeIt {..}) = do
-  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
+  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst3)
 
   let RunNodeCommonWithStatus {..} = runNodeCommon
 
@@ -97,7 +98,7 @@ runWithIndentation node@(RunNodeIt {..}) = do
   -- Print the logs, if configured
   printLogs runTreeLogs
 runWithIndentation node = do
-  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst)
+  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst3)
 
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   pin runTreeLabel
@@ -123,14 +124,3 @@ runWithIndentation node = do
 
   -- Print the logs, if configured
   printLogs runTreeLogs
-
-
-printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int) m, Foldable t) => TVar (t LogEntry) -> m ()
-printLogs runTreeLogs = do
-  (asks (printFormatterLogLevel . fst)) >>= \case
-    Nothing -> return ()
-    Just logLevel -> do
-      logEntries <- liftIO $ readTVarIO runTreeLogs
-      withBumpIndent $
-        forM_ logEntries $ \entry ->
-          when (logEntryLevel entry >= logLevel) $ printLogEntry entry

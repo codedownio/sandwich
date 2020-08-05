@@ -29,6 +29,11 @@ import Data.Time.Clock
 import System.Directory
 import System.FilePath
 import System.IO
+import Test.Sandwich.Formatters.Print
+import Test.Sandwich.Formatters.Print.CallStacks
+import Test.Sandwich.Formatters.Print.FailureReason
+import Test.Sandwich.Formatters.Print.Logs
+import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
@@ -169,7 +174,20 @@ runInAsync node ctx action = do
 
         -- Write failure info
         whenJust baseContextPath $ \dir -> do
-          writeFile (dir </> "failure.txt") (show reason)
+          withFile (dir </> "failure.txt") AppendMode $ \h -> do
+            -- Use the PrintFormatter to format failure.txt nicely
+            let pf = defaultPrintFormatter {
+                  printFormatterUseColor = False
+                  , printFormatterLogLevel = Just LevelDebug
+                  , printFormatterIncludeCallStacks = True
+                  }
+            flip runReaderT (pf, 0, h) $ do
+              printFailureReason reason
+              whenJust (failureCallStack reason) $ \cs -> do
+                p "\n"
+                printCallStack cs
+              p "\n"
+              printLogs runTreeLogs
 
       return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync

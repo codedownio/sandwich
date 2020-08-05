@@ -9,6 +9,7 @@ module Test.Sandwich.Formatters.Print.FailureReason (
 import Control.Monad.Reader
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
+import System.IO
 import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.PrintPretty
 import Test.Sandwich.Formatters.Print.Printing as P
@@ -39,7 +40,7 @@ printFailureReason (GotAsyncException _ maybeMessage e) = case maybeMessage of
 
 -- * Pretty printing
 
-printShowBoxPrettyWithTitle :: String -> ShowEqBox -> ReaderT (PrintFormatter, Int) IO ()
+printShowBoxPrettyWithTitle :: String -> ShowEqBox -> ReaderT (PrintFormatter, Int, Handle) IO ()
 printShowBoxPrettyWithTitle title (SEB v) = case P.reify v of
   Nothing -> do
     picn midWhite title

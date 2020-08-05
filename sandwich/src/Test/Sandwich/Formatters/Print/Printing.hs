@@ -9,6 +9,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader
 import qualified Data.List as L
 import System.Console.ANSI
+import System.IO
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Util
 
@@ -30,12 +31,12 @@ pYellowLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Yellow)) 
 pRedLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Red)) (msg <> "\n") -- Tried solarizedRed here but it was too orange
 
 printIndentedWithColor maybeColor msg = do
-  (PrintFormatter {..}, indent) <- ask
-  liftIO $ putStr $ L.replicate indent ' '
+  (PrintFormatter {..}, indent, h) <- ask
+  liftIO $ hPutStr h $ L.replicate indent ' '
   printWithColor maybeColor msg
 
 printWithColor maybeColor msg = do
-  (PrintFormatter {..}, _) <- ask
+  (PrintFormatter {..}, _, h) <- ask
   when (printFormatterUseColor) $ whenJust maybeColor $ \color -> liftIO $ setSGR [color]
-  liftIO $ putStr msg
+  liftIO $ hPutStr h msg
   when (printFormatterUseColor) $ whenJust maybeColor $ \_ -> liftIO $ setSGR [Reset]
