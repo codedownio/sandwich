@@ -52,26 +52,29 @@ runApp (SlackFormatter {..}) rts bc = do
     Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
 
-  currentFixedTree <- liftIO $ newTVarIO rtsFixed
-  fix $ \loop -> do
-    newFixedTree <- liftIO $ atomically $ do
-      currentFixed <- readTVar currentFixedTree
-      newFixed <- mapM fixRunTree rts
-      when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
-      writeTVar currentFixedTree newFixed
-      return newFixed
+  unless (allIsDone rtsFixed) $ do
+    currentFixedTree <- liftIO $ newTVarIO rtsFixed
+    fix $ \loop -> do
+      newFixedTree <- liftIO $ atomically $ do
+        currentFixed <- readTVar currentFixedTree
+        newFixed <- mapM fixRunTree rts
+        when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
+        writeTVar currentFixedTree newFixed
+        return newFixed
 
-    now <- liftIO getCurrentTime
-    let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
-    tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
-      Left err -> logError [i|Error updating progress bar: '#{err}'|]
-      Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
-      Right (Right ()) -> return ()
+      now <- liftIO getCurrentTime
+      let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
+      tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
+        Left err -> logError [i|Error updating progress bar: '#{err}'|]
+        Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
+        Right (Right ()) -> return ()
 
-    if | all (isDone . runTreeStatus . runNodeCommon) newFixedTree -> return ()
-       | otherwise -> do
-           liftIO $ threadDelay 100000 -- Sleep 100ms
-           loop
+      if | allIsDone newFixedTree -> do
+             debug [i|All tree nodes are done, exiting!|]
+             return ()
+         | otherwise -> do
+             liftIO $ threadDelay 100000 -- Sleep 100ms
+             loop
 
 
 publishTree topMessage elapsed tree = pbi
@@ -105,6 +108,9 @@ publishTree topMessage elapsed tree = pbi
     totalRunningTests = countWhere isRunningItBlock tree
     totalNotStartedTests = countWhere isNotStartedItBlock tree
 
-isDone :: Status -> Bool
-isDone (Done {}) = True
-isDone _ = False
+allIsDone :: [RunNodeFixed context] -> Bool
+allIsDone = all (isDone . runTreeStatus . runNodeCommon)
+  where
+    isDone :: Status -> Bool
+    isDone (Done {}) = True
+    isDone _ = False
