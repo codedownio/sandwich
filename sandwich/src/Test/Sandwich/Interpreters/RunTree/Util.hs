@@ -51,16 +51,16 @@ countChildren = L.length . getImmediateChildren
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
 countImmediateFolderChildren (Free (It' no l ex next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
-  | otherwise = 0
+  | otherwise = countImmediateFolderChildren next
 countImmediateFolderChildren (Free (Introduce' no l cl alloc cleanup subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
-  | otherwise = countImmediateFolderChildren subspec
+  | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
 countImmediateFolderChildren (Free (IntroduceWith' no l cl action subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
-  | otherwise = countImmediateFolderChildren subspec
+  | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
 countImmediateFolderChildren (Free node)
   | nodeOptionsCreateFolder (nodeOptions node) = 1 + countImmediateFolderChildren (next node)
-  | otherwise = countImmediateFolderChildren (subspec node)
+  | otherwise = countImmediateFolderChildren (subspec node) + countImmediateFolderChildren (next node)
 countImmediateFolderChildren (Pure _) = 0
 
 nodeToFolderName :: String -> Int -> Int -> String
