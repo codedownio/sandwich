@@ -4,7 +4,6 @@
 module Test.Sandwich.WebDriver.Internal.Action where
 
 import Control.Concurrent.MVar.Lifted
-import qualified Control.Exception.Lifted as EL
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
@@ -17,8 +16,6 @@ import Test.Sandwich.Logging
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Config as W
-import qualified Test.WebDriver.Session as W
 
 closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Browser -> WdSession -> m ()
 closeSession browser (WdSession {wdSessionMap}) = do

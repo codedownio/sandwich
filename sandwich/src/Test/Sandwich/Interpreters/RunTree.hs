@@ -2,6 +2,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -91,20 +92,30 @@ getCommon l (NodeOptions {..}) = do
     , runTreeOpen = True
     , runTreeStatus = NotStarted
     , runTreeVisible = True
-    , runTreeFolder = if nodeOptionsCreateFolder then appendFolder rtc l else runTreeCurrentFolder
+    , runTreeFolder = case (nodeOptionsCreateFolder, runTreeCurrentFolder) of
+        (True, Just f) -> Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
+        _ -> Nothing
     , runTreeVisibilityLevel = nodeOptionsVisibilityThreshold
     , runTreeLogs = mempty
     }
 
 continueWith :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> RunNodeFixed context -> ConvertM m [RunNodeFixed context]
 continueWith next node = do
-  rest <- local (\rtc -> rtc { runTreeIndexInParent = (runTreeIndexInParent rtc) + 1}) $ specToRunTree' next
+  rest <- local (\rtc -> rtc { runTreeIndexInParent = (runTreeIndexInParent rtc) + 1 }) $ specToRunTree' next
   return (node : rest)
 
 recurse :: (Monad m, HasBaseContext context) => String -> NodeOptions -> RunNodeCommonFixed -> Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 recurse l (NodeOptions {..}) (RunNodeCommonWithStatus {..}) subspec = local
-  (\rtc -> rtc {
-      runTreeCurrentFolder = if nodeOptionsCreateFolder then appendFolder rtc l else runTreeCurrentFolder rtc
-      , runTreeCurrentAncestors = runTreeAncestors
-      })
+  (\rtc ->
+     if | nodeOptionsCreateFolder ->
+          rtc { runTreeCurrentFolder = case runTreeCurrentFolder rtc of
+                  Nothing -> Nothing
+                  Just f -> Just (f </> (nodeToFolderName l (runTreeNumSiblings rtc) (runTreeIndexInParent rtc)))
+              , runTreeIndexInParent = 0
+              , runTreeNumSiblings = countImmediateFolderChildren subspec
+              , runTreeCurrentAncestors = runTreeAncestors
+              }
+        | otherwise ->
+          rtc { runTreeCurrentAncestors = runTreeAncestors }
+  )
   (specToRunTree' subspec)

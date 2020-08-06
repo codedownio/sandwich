@@ -15,7 +15,6 @@ import qualified Data.List as L
 import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
 import Data.Time.Clock
-import System.FilePath
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
@@ -49,9 +48,20 @@ getImmediateChildren (Pure ()) = [Pure ()]
 countChildren :: Free (SpecCommand context m) () -> Int
 countChildren = L.length . getImmediateChildren
 
-appendFolder :: RunTreeContext -> String -> Maybe FilePath
-appendFolder (RunTreeContext {runTreeCurrentFolder=Nothing}) _ = Nothing
-appendFolder (RunTreeContext {runTreeCurrentFolder=(Just f), ..}) l = Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
+countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
+countImmediateFolderChildren (Free (It' no l ex next))
+  | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
+  | otherwise = 0
+countImmediateFolderChildren (Free (Introduce' no l cl alloc cleanup subspec next))
+  | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
+  | otherwise = countImmediateFolderChildren subspec
+countImmediateFolderChildren (Free (IntroduceWith' no l cl action subspec next))
+  | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
+  | otherwise = countImmediateFolderChildren subspec
+countImmediateFolderChildren (Free node)
+  | nodeOptionsCreateFolder (nodeOptions node) = 1 + countImmediateFolderChildren (next node)
+  | otherwise = countImmediateFolderChildren (subspec node)
+countImmediateFolderChildren (Pure _) = 0
 
 nodeToFolderName :: String -> Int -> Int -> String
 nodeToFolderName name 1 0 = fixupName name
