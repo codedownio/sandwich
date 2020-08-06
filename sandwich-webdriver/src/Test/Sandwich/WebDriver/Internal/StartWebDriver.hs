@@ -44,24 +44,17 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl I
 
 -- | Spin up a Selenium WebDriver and create a WdSession
 startWebDriver :: Constraints m => WdOptions -> FilePath -> m WdSession
-startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = do
+startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> (liftIO makeUUID)
-
-  -- Set up config
-  port <- liftIO findFreePortOrException
-  let capabilities = capabilities' { W.browser = configureBrowser (W.browser capabilities') runMode }
-  let wdConfig = (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities })
 
   -- Directory to long everything for this webdriver
   let webdriverRoot = runRoot </> (T.unpack webdriverName)
   liftIO $ createDirectoryIfMissing True webdriverRoot
 
-  -- Get the CreateProcess
+  -- Get selenium and chromedriver
   debug [i|Preparing to create the Selenium process|]
   liftIO $ createDirectoryIfMissing True toolsRoot
-
-  -- Get selenium and chromedriver
   seleniumPath <- obtainSelenium toolsRoot seleniumToUse >>= \case
     Left err -> error [i|Failed to obtain selenium: '#{err}'|]
     Right p -> return p
@@ -73,6 +66,23 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
       (s, e) <- getXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
       return (Just s, Just e)
     _ -> return (Nothing, Nothing)
+
+  -- Retry up to 10 times
+  -- This is necessary because sometimes we get a race for the port we get from findFreePortOrException.
+  -- There doesn't seem to be any way to make Selenium choose its own port.
+  let policy = constantDelay 0 <> limitRetries 10
+  recoverAll policy $ \retryStatus -> do
+    when (rsIterNumber retryStatus > 0) $
+      warn [i|Trying again to start selenium server|]
+
+    -- Create a distinct process name
+    webdriverProcessName <- ("webdriver_process_" <>) <$> (liftIO makeUUID)
+    let webdriverProcessRoot = webdriverRoot </> T.unpack webdriverProcessName
+    liftIO $ createDirectoryIfMissing True webdriverProcessRoot
+    startWebDriver' wdOptions webdriverName webdriverProcessRoot seleniumPath chromeDriverPath maybeXvfbSession javaEnv
+
+startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot seleniumPath chromeDriverPath maybeXvfbSession javaEnv = do
+  port <- liftIO findFreePortOrException
   let wdCreateProcess = (proc "java" [[i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
                                      , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
                                      , [i|-Dwebdriver.chrome.verboseLogging=true|]
@@ -117,7 +127,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
             <*> liftIO (newMVar mempty)
             <*> liftIO (newMVar 0)
             <*> liftIO (newMVar mempty)
-            <*> pure wdConfig
+            <*> pure (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities' {
+                              W.browser = configureBrowser (W.browser capabilities') runMode }
+                          })
 
 
 stopWebDriver :: Constraints m => WdSession -> m ()
