@@ -101,7 +101,6 @@ data RunTreeContext = RunTreeContext {
 data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
                                , baseContextErrorSymlinksDir :: Maybe FilePath
-                               , baseContextErrorCounter :: MVar Int
                                , baseContextOptions :: Options
                                , baseContextOnlyRunIds :: Maybe (S.Set Int) }
 

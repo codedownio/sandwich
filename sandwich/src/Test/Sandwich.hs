@@ -145,7 +145,6 @@ baseContextFromOptions options@(Options {..}) = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
-  errorCounter <- newMVar 0
   let errorSymlinksDir = (</> "errors") <$> runRoot
   whenJust errorSymlinksDir $ createDirectoryIfMissing True
   return $ BaseContext {
@@ -153,6 +152,5 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextOptions = options
     , baseContextRunRoot = runRoot
     , baseContextErrorSymlinksDir = errorSymlinksDir
-    , baseContextErrorCounter = errorCounter
     , baseContextOnlyRunIds = Nothing
     }

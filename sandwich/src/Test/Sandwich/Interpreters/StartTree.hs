@@ -168,8 +168,7 @@ runInAsync node ctx action = do
                   let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
                   let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
-                  errorIndex <- liftIO $ modifyMVar baseContextErrorCounter $ \x -> return (x + 1, x)
-                  let symlinkName = nodeToFolderName (takeFileName dir) 9999999 errorIndex
+                  let symlinkName = nodeToFolderName (takeFileName dir) 9999999 runTreeId
                   liftIO $ createDirectoryLink relativePath (errorsDir </> symlinkName)
 
         -- Write failure info
