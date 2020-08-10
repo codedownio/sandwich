@@ -9,6 +9,7 @@ module Test.Sandwich.Formatters.TerminalUI.Types where
 import qualified Brick.Widgets.List as L
 import Control.Monad.Logger
 import Data.Sequence
+import qualified Data.Text as T
 import Data.Time
 import Lens.Micro.TH
 import Test.Sandwich.RunTree
@@ -47,6 +48,9 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
 
 data AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
 
+instance Show AppEvent where
+  show (RunTreeUpdated {}) = "<RunTreeUpdated>"
+
 data MainListElem = MainListElem {
   label :: String
   , depth :: Int
@@ -62,7 +66,7 @@ data MainListElem = MainListElem {
 
 data SomeRunNode = forall context s l t. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context s l t }
 
-data ClickableName = ColorBar | ListRow Int | MainList
+data ClickableName = ColorBar | ListRow Int | MainList | InnerViewport T.Text
   deriving (Show, Ord, Eq)
 
 data AppState = AppState {

@@ -14,6 +14,7 @@ import Control.Monad.Logger (LogLevel(..))
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
+import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
 
@@ -154,6 +155,13 @@ introduceFailure = do
         db <- getContext database
         debug [i|Got db: #{db}|]
 
+introduceWithInterrupt :: TopSpec
+introduceWithInterrupt = do
+  introduceWith "Database around" database (\action -> liftIO $ threadDelay 999999999999999) $ do
+    it "uses the DB 1" $ do
+      db <- getContext database
+      debug [i|Got db: #{db}|]
+
 beforeExceptionSafetyNested :: TopSpec
 beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userError "OH NO") $ do
   it "does thing 1" $ return ()
@@ -162,19 +170,31 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
     it "does nested thing 1" $ return ()
     it "does nested thing 2" $ return ()
 
+longLogs :: TopSpec
+longLogs = do
+  it "does thing 1" $ return ()
+  it "does thing 2" $ return ()
+  it "does thing 3" $ do
+    forM_ [0..200] $ \n -> debug [i|Log entry #{n}|]
+  it "does thing 4" $ return ()
+  it "does thing 5" $ return ()
+
 -- mainFilter :: IO ()
 -- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
 
 -- mainPretty :: IO ()
 -- mainPretty = putStrLn $ prettyShow topSpec
 
+mainFormatter = SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})
+-- mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
+
 main :: IO ()
-main = runSandwich options medium
+main = runSandwich options longLogs
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-      , optionsFormatters = [SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})]
-      -- , optionsFormatters = [SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})]
+      , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter]
+      -- , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter]
       }
 
 

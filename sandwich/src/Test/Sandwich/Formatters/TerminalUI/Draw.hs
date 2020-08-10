@@ -16,7 +16,7 @@ import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
-import Data.String.Interpolate
+import Data.String.Interpolate.IsString
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import qualified Graphics.Vty as V
@@ -45,13 +45,17 @@ drawUI app = [ui]
 
 mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (app ^. appMainList)
   where
-    listDrawElement i isSelected x@(MainListElem {..}) = clickable (ListRow i) $ padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
+    listDrawElement ix isSelected x@(MainListElem {..}) = clickable (ListRow ix) $ padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
       Just $ renderLine isSelected x
       , do
           guard toggled
           let infoWidgets = getInfoWidgets x
           guard (not $ L.null infoWidgets)
-          return $ padLeft (Pad 4) (vBox infoWidgets)
+          return $ padLeft (Pad 4) $
+            -- vLimitPercent 1 $
+            vLimit 30 $
+              viewport (InnerViewport [i|viewport_#{ident}|]) Vertical $
+                vBox infoWidgets
       ]
 
     renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [

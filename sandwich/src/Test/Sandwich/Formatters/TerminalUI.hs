@@ -34,6 +34,7 @@ import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
+import Data.String.Interpolate.IsString
 import Data.Time
 import qualified Data.Vector as Vec
 import qualified Graphics.Vty as V
@@ -173,6 +174,17 @@ appEvent s x@(VtyEvent e) =
       continue s
     V.EvKey c [] | c `elem` toggleKeys -> modifyToggled s not
 
+    -- Scrolling in toggled items
+    -- Wanted to make these uniformly Ctrl+whatever, but Ctrl+PageUp/PageDown was causing it to get KEsc and exit (?)
+    V.EvKey V.KUp [V.MCtrl] -> withScroll s $ flip vScrollBy (-1)
+    V.EvKey (V.KChar 'p') [V.MCtrl] -> withScroll s $ flip vScrollBy (-1)
+    V.EvKey V.KDown [V.MCtrl] -> withScroll s $ flip vScrollBy 1
+    V.EvKey (V.KChar 'n') [V.MCtrl] -> withScroll s $ flip vScrollBy 1
+    V.EvKey (V.KChar 'v') [V.MMeta] -> withScroll s $ flip vScrollPage Up
+    V.EvKey (V.KChar 'v') [V.MCtrl] -> withScroll s $ flip vScrollPage Down
+    V.EvKey V.KHome [V.MCtrl] -> withScroll s vScrollToBeginning
+    V.EvKey V.KEnd [V.MCtrl] -> withScroll s vScrollToEnd
+
     -- Column 2
     V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
@@ -297,3 +309,12 @@ findRunNodeChildrenById' ident (RunNodeIt {}) = Nothing
 findRunNodeChildrenById' ident (RunNodeIntroduce {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
 findRunNodeChildrenById' ident (RunNodeIntroduceWith {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
 findRunNodeChildrenById' ident node = findRunNodeChildrenById ident (runNodeChildren node)
+
+withScroll s action = do
+  case listSelectedElement (s ^. appMainList) of
+    Nothing -> return ()
+    Just (_, MainListElem {..}) -> do
+      let scroll = viewportScroll (InnerViewport [i|viewport_#{ident}|])
+      action scroll
+
+  continue s
