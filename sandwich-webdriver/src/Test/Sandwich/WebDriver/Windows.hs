@@ -5,23 +5,20 @@ module Test.Sandwich.WebDriver.Windows (
   setWindowLeftSide
   , setWindowRightSide
   , setWindowFullScreen
+
+  , getScreenResolution
   ) where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Bits as B
-import qualified Data.List as L
 import Data.Maybe
-import Data.String
 import Data.String.Interpolate.IsString
-import qualified Data.Text as T
 import GHC.Stack
 import qualified Graphics.X11.Xinerama as X
 import qualified Graphics.X11.Xlib.Display as X
 import Safe
-import System.Environment
-import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.WebDriver
@@ -59,28 +56,12 @@ setWindowFullScreen = do
   setWindowPos (x + 0, y + 0)
   setWindowSize (fromIntegral width, fromIntegral height)
 
+-- * Getting screen dimensions and resolution
+
+getScreenResolution :: (HasCallStack) => WdSession -> IO (Int, Int, Int, Int)
+getScreenResolution = getScreenResolutionX11
+
 -- * Internal
-
--- * Getting screen resolution by shelling out to xdpyinfo
-
-getScreenResolutionXdpyinfo :: (HasCallStack) => WdSession -> IO (Int, Int)
-getScreenResolutionXdpyinfo (WdSession {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = do
-  getScreenResolutionXdpyinfoWithEnv =<< case maybeXvfbSession of
-    Nothing -> return Nothing
-    Just (XvfbSession {..}) -> do
-      -- Use same environment as shell, but replace DISPLAY arg
-      env' <- liftIO getEnvironment
-      return $ Just $ L.nubBy (\x y -> fst x == fst y) $ [("DISPLAY", ":" <> show xvfbDisplayNum)
-                                                         , ("XAUTHORITY", xvfbXauthority)] <> env'
-
-getScreenResolutionXdpyinfoWithEnv :: (HasCallStack) => Maybe [(String, String)] -> IO (Int, Int)
-getScreenResolutionXdpyinfoWithEnv envArg = do
-  result <- readCreateProcess ((shell "xdpyinfo | grep dimensions") { env=envArg }) ""
-  let resolutionPart = (T.words $ fromString result) !! 1
-  let (widthText:heightText:_) = T.splitOn "x" resolutionPart
-  return (read $ T.unpack widthText, read $ T.unpack heightText)
-
--- * Getting screen resolution with X11 library
 
 getScreenResolutionX11 :: (HasCallStack) => WdSession -> IO (Int, Int, Int, Int)
 getScreenResolutionX11 (WdSession {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = case maybeXvfbSession of
