@@ -28,6 +28,7 @@ topBox app = hBox [columnPadding settingsColumn
     settingsColumn = keybindingBox [keyIndicator (L.intersperse '/' [unKChar nextKey, unKChar previousKey, '↑', '↓']) "Navigate"
                                    , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
                                    , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold nodes"
+                                   , keyIndicator "Meta + [0-9]" "Unfold top # nodes"
                                    , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"]
 
     actionsColumn = keybindingBox [keyIndicatorSomeTestRunning app (showKey cancelAllKey) "Cancel all"
@@ -53,7 +54,6 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str "] "
                                               , str "Set log level"]
 
-                                       , keyIndicator "Meta + [0-9]" "Make top # nodes open"
                                        , keyIndicator "q" "Exit"]
 
 visibilityThresholdWidget app = hBox $

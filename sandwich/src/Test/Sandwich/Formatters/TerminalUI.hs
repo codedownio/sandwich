@@ -167,6 +167,10 @@ appEvent s x@(VtyEvent e) =
         Just (i', _) -> continue (s & appMainList %~ (listMoveTo i'))
     V.EvKey c [] | c == closeNodeKey -> modifyOpen s (const False)
     V.EvKey c [] | c == openNodeKey -> modifyOpen s (const True)
+    V.EvKey c@(V.KChar ch) [V.MMeta] | c `elem` (fmap V.KChar ['0'..'9']) -> do
+      let num :: Int = read [ch]
+      liftIO $ openToDepth (s ^. (appMainList . listElementsL)) num
+      continue s
     V.EvKey c [] | c `elem` toggleKeys -> modifyToggled s not
 
     -- Column 2
@@ -226,10 +230,6 @@ appEvent s x@(VtyEvent e) =
     V.EvKey c [] | c == infoKey -> continue (s & appLogLevel .~ Just LevelInfo)
     V.EvKey c [] | c == warnKey -> continue (s & appLogLevel .~ Just LevelWarn)
     V.EvKey c [] | c == errorKey -> continue (s & appLogLevel .~ Just LevelError)
-    V.EvKey c@(V.KChar ch) [V.MMeta] | c `elem` (fmap V.KChar ['0'..'9']) -> do
-      let num :: Int = read [ch]
-      liftIO $ openToDepth (s ^. (appMainList . listElementsL)) num
-      continue s
 
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
 
