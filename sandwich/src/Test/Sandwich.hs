@@ -49,7 +49,6 @@ module Test.Sandwich (
   ) where
 
 import Control.Concurrent.Async
-import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
