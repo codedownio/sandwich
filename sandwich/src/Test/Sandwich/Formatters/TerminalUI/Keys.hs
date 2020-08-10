@@ -40,6 +40,7 @@ exitKey = V.KChar 'q'
 showKey (V.KChar '\t') = "Tab"
 showKey (V.KChar c) = [c]
 showKey V.KEnter = "Enter"
+showKey _ = "?"
 
 showKeys = L.intercalate "/" . fmap showKey
 

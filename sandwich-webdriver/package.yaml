@@ -65,6 +65,10 @@ default-extensions:
 
 library:
   source-dirs: src
+  # exposed-modules:
+  #   - Test.Sandwich.Webdriver
+  #   - Test.Sandwich.Webdriver.Video
+  #   - Test.Sandwich.Webdriver.Windows
 
 executables:
   sandwich-webdriver-exe:

@@ -85,7 +85,8 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-  , optionsFormatters = [SomeFormatter defaultTerminalUIFormatter]
+  -- , optionsFormatters = [SomeFormatter defaultTerminalUIFormatter]
+  , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   }
 
 main :: IO ()
