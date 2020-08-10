@@ -63,7 +63,7 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
     Right p -> return p
   (maybeXvfbSession, javaEnv) <- case runMode of
     RunInXvfb (XvfbConfig {..}) -> do
-      (s, e) <- getXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
+      (s, e) <- makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
       return (Just s, Just e)
     _ -> return (Nothing, Nothing)
 
@@ -144,18 +144,11 @@ stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) 
 
     liftIO (interruptProcessGroupOf xvfbProcess >> waitForProcess xvfbProcess)
 
-    liftIO $ hClose xvfbOut
-    liftIO $ hClose xvfbErr
-
 -- * Util
 
 seleniumOutFileName, seleniumErrFileName :: FilePath
 seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
-
-
-
--- * Util
 
 configureBrowser browser@(W.Chrome {..}) (RunHeadless (HeadlessConfig {..})) =
   browser { W.chromeOptions = "--headless":resolution:chromeOptions }

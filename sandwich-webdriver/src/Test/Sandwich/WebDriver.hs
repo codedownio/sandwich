@@ -44,7 +44,9 @@ module Test.Sandwich.WebDriver (
 
   , WdSession
   , getDisplayNumber
-  , wdName
+  , getXvfbSession
+  , getWdName
+  , XvfbSession(..)
 
   , ExampleWithWebDriver
   , HasWebDriverContext

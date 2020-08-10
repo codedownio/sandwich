@@ -131,13 +131,18 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbXauthority :: FilePath
                                , xvfbDimensions :: (Int, Int)
                                , xvfbProcess :: ProcessHandle
-                               , xvfbOut :: Handle
-                               , xvfbErr :: Handle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
 getDisplayNumber :: WdSession -> Maybe Int
 getDisplayNumber (WdSession {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
+
+getXvfbSession :: WdSession -> Maybe XvfbSession
+getXvfbSession (WdSession {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
+getXvfbSession _ = Nothing
+
+getWdName :: WdSession -> String
+getWdName (WdSession {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]

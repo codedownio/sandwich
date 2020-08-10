@@ -13,7 +13,7 @@
 -- |
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb (
-  getXvfbSession
+  makeXvfbSession
   ) where
 
 import Control.Exception
@@ -46,23 +46,16 @@ import System.Posix.Types
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
 
 
-getXvfbSession :: Constraints m => Maybe (Int, Int) -> Bool -> FilePath -> m (XvfbSession, [(String, String)])
-getXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
+makeXvfbSession :: Constraints m => Maybe (Int, Int) -> Bool -> FilePath -> m (XvfbSession, [(String, String)])
+makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
   let (w, h) = fromMaybe (1920, 1080) xvfbResolution
   liftIO $ createDirectoryIfMissing True webdriverRoot
-
-  -- TODO: forgo temporary file and just use createPipeFd
-  -- (readFd, writeFd) <- liftIO Posix.createPipe
-  -- readHandle <- liftIO $ fdToHandle readFd
-
-  xvfbOut <- liftIO $ openFile (webdriverRoot </> "xvfb_out.log") AppendMode
-  xvfbErr <- liftIO $ openFile (webdriverRoot </> "xvfb_err.log") AppendMode
 
   let policy = constantDelay 10000 <> limitRetries 1000
   (serverNum :: Int, p, authFile, displayNum) <- recoverAll policy $ \_ -> do
     withTempFile webdriverRoot "x11_server_num" $ \path tmpHandle -> do
       fd <- liftIO $ handleToFd tmpHandle
-      (serverNum, p, authFile) <- createXvfbSession webdriverRoot w h fd xvfbOut xvfbErr -- writeFd
+      (serverNum, p, authFile) <- createXvfbSession webdriverRoot w h fd
 
       debug [i|Trying to determine display number for auth file '#{authFile}', using '#{path}'|]
 
@@ -81,8 +74,6 @@ getXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
         , xvfbXauthority = authFile
         , xvfbDimensions = (w, h)
         , xvfbProcess = p
-        , xvfbOut = xvfbOut
-        , xvfbErr = xvfbErr
         , xvfbFluxboxProcess = fluxboxProcess
         }
 
@@ -93,20 +84,18 @@ getXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
   return (xvfbSession, env)
 
 
-createXvfbSession :: Constraints m => FilePath -> Int -> Int -> Fd -> Handle -> Handle -> m (Int, ProcessHandle, FilePath)
-createXvfbSession webdriverRoot w h (Fd fd) xvfbOut xvfbErr = do
+createXvfbSession :: Constraints m => FilePath -> Int -> Int -> Fd -> m (Int, ProcessHandle, FilePath)
+createXvfbSession webdriverRoot w h (Fd fd) = do
   serverNum <- liftIO findFreeServerNum
 
   -- Start the Xvfb session
   authFile <- liftIO $ writeTempFile webdriverRoot ".Xauthority" ""
-  (_, _, _, p) <- liftIO $ createProcess $ (proc "Xvfb" [":" <> show serverNum
-                                                        , "-screen", "0", [i|#{w}x#{h}x24|]
-                                                        , "-displayfd", [i|#{fd}|]
-                                                        , "-auth", authFile
-                                                        ]) { cwd = Just webdriverRoot
-                                                           , create_group = True
-                                                           , std_out = UseHandle xvfbOut
-                                                           , std_err = UseHandle xvfbErr }
+  p <- createProcessWithLogging $ (proc "Xvfb" [":" <> show serverNum
+                                               , "-screen", "0", [i|#{w}x#{h}x24|]
+                                               , "-displayfd", [i|#{fd}|]
+                                               , "-auth", authFile
+                                               ]) { cwd = Just webdriverRoot
+                                                  , create_group = True }
 
   return (serverNum, p, authFile)
 
