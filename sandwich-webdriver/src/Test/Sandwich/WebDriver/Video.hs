@@ -55,6 +55,10 @@ startVideoRecording path (width, height, x, y) vs logToDisk = do
   cp' <- liftIO $ getVideoArgs path (width, height, x, y) vs maybeXvfbSession
   let cp = cp' { create_group = True }
 
+  case cmdspec cp of
+    ShellCommand s -> debug [i|ffmpeg command: #{s}|]
+    RawCommand p args -> debug [i|ffmpeg command: #{p} #{unwords args}|]
+
   case logToDisk of
     False -> createProcessWithLogging cp
     True -> do
