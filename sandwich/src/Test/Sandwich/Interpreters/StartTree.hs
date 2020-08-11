@@ -270,7 +270,9 @@ runExampleM' ex ctx logs exceptionMessage = do
     wrapInFailureReasonIfNecessary :: Maybe String -> SomeException -> IO (Either FailureReason a)
     wrapInFailureReasonIfNecessary msg e = return $ Left $ case fromException e of
       Just (x :: FailureReason) -> x
-      _ -> GotException Nothing msg (SomeExceptionWithEq e)
+      _ -> case fromException e of
+        Just (SomeExceptionWithCallStack e cs) -> GotException (Just cs) msg (SomeExceptionWithEq (SomeException e))
+        _ -> GotException Nothing msg (SomeExceptionWithEq e)
 
 recordExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()
 recordExceptionInStatus status e = do

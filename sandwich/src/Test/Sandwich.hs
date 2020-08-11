@@ -42,6 +42,8 @@ module Test.Sandwich (
   , HasLabel
   , (:>)
 
+  , SomeExceptionWithCallStack(..)
+
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging

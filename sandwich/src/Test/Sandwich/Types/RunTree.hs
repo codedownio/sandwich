@@ -11,7 +11,6 @@
 module Test.Sandwich.Types.RunTree where
 
 import Control.Concurrent.Async
-import Control.Concurrent.MVar
 import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
@@ -19,6 +18,7 @@ import Control.Monad.Logger
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import Data.Time.Clock
+import GHC.Stack
 import Test.Sandwich.Types.Spec
 
 data Status = NotStarted
@@ -162,3 +162,12 @@ data Options = Options {
   , optionsFormatters :: [SomeFormatter]
   -- ^ Which formatters to use to output the results of the tests.
   }
+
+
+-- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way
+-- to reliably get a callstack from an exception, but if you can throw (or catch+rethrow) this type
+-- then we'll unwrap it and present the callstack nicely.
+data SomeExceptionWithCallStack = forall e. Exception e => SomeExceptionWithCallStack e CallStack
+instance Show SomeExceptionWithCallStack where
+  showsPrec p (SomeExceptionWithCallStack e _) = showsPrec p e
+instance Exception SomeExceptionWithCallStack
