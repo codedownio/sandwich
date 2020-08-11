@@ -103,19 +103,8 @@ unFixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
 
 
 getCallStackFromStatus :: Status -> Maybe CallStack
-getCallStackFromStatus NotStarted {} = Nothing
-getCallStackFromStatus Running {} = Nothing
-getCallStackFromStatus Done {statusResult} = getCallStackFromResult statusResult
-
-getCallStackFromResult :: Result -> Maybe CallStack
-getCallStackFromResult (Success {}) = Nothing
-getCallStackFromResult (Failure (Reason x _)) = x
-getCallStackFromResult (Failure (ExpectedButGot x _ _)) = x
-getCallStackFromResult (Failure (DidNotExpectButGot x _)) = x
-getCallStackFromResult (Failure (Pending x _)) = x
-getCallStackFromResult (Failure (GotException {})) = Nothing
-getCallStackFromResult (Failure (GetContextException {})) = Nothing
-getCallStackFromResult (Failure (GotAsyncException {})) = Nothing
+getCallStackFromStatus Done {statusResult=(Failure reason)} = failureCallStack reason
+getCallStackFromStatus _ = Nothing
 
 isDone :: Status -> Bool
 isDone (Done {}) = True
