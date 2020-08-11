@@ -23,7 +23,7 @@ import Test.Sandwich.Types.Spec
 
 -- * Manually fail a test or mark as pending
 
-expectationFailure :: (HasCallStack, MonadThrow m) => String -> m ()
+expectationFailure :: (HasCallStack, MonadThrow m) => String -> m a
 expectationFailure = throwIO . Reason (Just callStack)
 
 pending :: (HasCallStack, MonadThrow m) => m ()
