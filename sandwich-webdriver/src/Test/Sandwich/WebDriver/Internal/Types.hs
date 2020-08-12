@@ -9,6 +9,7 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
+import Network.HTTP.Client (Manager)
 import System.IO
 import System.Process
 import Test.Sandwich
@@ -67,6 +68,12 @@ data WdOptions = WdOptions {
 
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.)
+
+  , httpManager :: Maybe Manager
+  -- ^ HTTP manager for making requests to Selenium. If not provided, one will be created for each session.
+
+  , httpRetryCount :: Int
+  -- ^ Number of times to retry an HTTP request if it times out
   }
 
 -- | How to obtain the Selenium server JAR file
@@ -110,7 +117,17 @@ defaultXvfbConfig = XvfbConfig Nothing False
 
 
 defaultWdOptions :: FilePath -> WdOptions
-defaultWdOptions toolsRoot = WdOptions toolsRoot def OnException mempty DownloadSeleniumDefault DownloadChromeDriverAutodetect Normal
+defaultWdOptions toolsRoot = WdOptions {
+  toolsRoot = toolsRoot
+  , capabilities = def
+  , saveSeleniumMessageHistory = OnException
+  , saveLogSettings = mempty
+  , seleniumToUse = DownloadSeleniumDefault
+  , chromeDriverToUse = DownloadChromeDriverAutodetect
+  , runMode = Normal
+  , httpManager = Nothing
+  , httpRetryCount = 0
+  }
 
 type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text, W.LogEntry -> Bool)
 
@@ -118,8 +135,6 @@ data WdSession = WdSession { wdName :: String
                            , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
                            , wdOptions :: WdOptions
                            , wdSessionMap :: MVar (M.Map Browser W.WDSession)
-                           , wdFailureCounter :: MVar Int
-                           , wdSaveBrowserLogs :: MVar SaveLogSettings
                            , wdConfig :: W.WDConfig }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]

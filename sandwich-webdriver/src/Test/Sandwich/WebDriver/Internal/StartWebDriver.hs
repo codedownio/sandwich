@@ -125,16 +125,16 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
             <*> pure (hout, herr, p, seleniumOutPath, seleniumErrPath, maybeXvfbSession)
             <*> pure wdOptions
             <*> liftIO (newMVar mempty)
-            <*> liftIO (newMVar 0)
-            <*> liftIO (newMVar mempty)
-            <*> pure (def { W.wdPort = fromIntegral port, W.wdCapabilities = capabilities' {
-                              W.browser = configureBrowser (W.browser capabilities') runMode }
+            <*> pure (def { W.wdPort = fromIntegral port
+                          , W.wdCapabilities = capabilities' { W.browser = configureBrowser (W.browser capabilities') runMode }
+                          , W.wdHTTPManager = httpManager
+                          , W.wdHTTPRetryCount = httpRetryCount
                           })
 
 
 stopWebDriver :: Constraints m => WdSession -> m ()
 stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) = do
-  liftIO (interruptProcessGroupOf h >> waitForProcess h)
+  _ <- liftIO (interruptProcessGroupOf h >> waitForProcess h)
   liftIO $ hClose hout
   liftIO $ hClose herr
 
