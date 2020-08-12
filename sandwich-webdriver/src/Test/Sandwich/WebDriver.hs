@@ -65,6 +65,8 @@ module Test.Sandwich.WebDriver (
   , chromeDriverToUse
   , WhenToSave(..)
   , capabilities
+  , httpManager
+  , httpRetryCount
 
   , hoistExample -- experimental
   ) where
