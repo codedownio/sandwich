@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a1b9f9dbc2ed26c575863fc024370595ee8b7bd36934ff2af73309b1a2d6e8bf
+-- hash: 181e72119fab29de75ab84c923abf99f5dd43a8425c0d48d3a28b9f1bf2a64a8
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -32,7 +32,6 @@ library
       Test.Sandwich.WebDriver.Internal.Binaries
       Test.Sandwich.WebDriver.Internal.Binaries.Util
       Test.Sandwich.WebDriver.Internal.Capabilities
-      Test.Sandwich.WebDriver.Internal.Exceptions
       Test.Sandwich.WebDriver.Internal.Ports
       Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
