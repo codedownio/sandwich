@@ -168,8 +168,14 @@ runInAsync node ctx action = do
                   let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
                   let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
-                  let symlinkName = nodeToFolderName (takeFileName dir) 9999999 runTreeId
-                  liftIO $ createDirectoryLink relativePath (errorsDir </> symlinkName)
+                  let symlinkPath = errorsDir </> (nodeToFolderName (takeFileName dir) 9999999 runTreeId)
+
+                  -- Delete the symlink if it's already present. This can happen when re-running
+                  -- a previously failed test
+                  exists <- doesPathExist symlinkPath
+                  when exists $ removePathForcibly symlinkPath
+
+                  liftIO $ createDirectoryLink relativePath symlinkPath
 
         -- Write failure info
         whenJust baseContextPath $ \dir -> do
