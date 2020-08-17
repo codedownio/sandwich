@@ -15,6 +15,7 @@ import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import Data.Time.Clock
@@ -147,6 +148,12 @@ data TestArtifactsDirectory =
 
 newtype TreeFilter = TreeFilter String
 
+type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+type LogEntryFormatter = Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
+
+defaultLogEntryFormatter :: LogEntryFormatter
+defaultLogEntryFormatter a b c d = fromLogStr $ defaultLogStr a b c d
+
 -- | All the options controlling a test run.
 data Options = Options {
   optionsTestArtifactsDirectory :: TestArtifactsDirectory
@@ -155,6 +162,8 @@ data Options = Options {
   -- ^ Minimum test log level to save (has no effect if 'optionsTestArtifactsDirectory' is 'TestArtifactsNone').
   , optionsMemoryLogLevel :: Maybe LogLevel
   -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
+  , optionsLogFormatter :: LogEntryFormatter
+  -- ^ Formatter function for log entries.
   , optionsFilterTree :: Maybe TreeFilter
   -- ^ Filter to apply to the text tree before running.
   , optionsDryRun :: Bool

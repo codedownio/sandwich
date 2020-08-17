@@ -20,6 +20,7 @@ import qualified Data.ByteString.Char8 as BS8
 import System.FilePath
 import System.IO
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Util
 
@@ -28,6 +29,8 @@ data LogSaverFormatter = LogSaverFormatter {
   -- ^ Path under runRoot where logs will be saved. Should be a relative path.
   , logSaverLogLevel :: LogLevel
   -- ^ Minimum log level to save.
+  , logSaverFormatter :: LogEntryFormatter
+  -- ^ Formatter function for log entries.
   }
 
 data LogPath =
@@ -40,6 +43,7 @@ defaultLogSaverFormatter :: LogSaverFormatter
 defaultLogSaverFormatter = LogSaverFormatter {
   logSaverPath = LogPathRelativeToRunRoot "logs.txt"
   , logSaverLogLevel = LevelWarn
+  , logSaverFormatter = defaultLogEntryFormatter
   }
 
 instance Formatter LogSaverFormatter where
@@ -75,7 +79,4 @@ printLogs runTreeLogs = do
   forM_ logEntries $ \(LogEntry {..}) ->
     when (logEntryLevel >= logSaverLogLevel) $
       liftIO $ BS8.hPutStr h $
-        defaultLogStrBS logEntryLoc logEntrySource logEntryLevel logEntryStr
-
-defaultLogStrBS :: Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
-defaultLogStrBS a b c d = fromLogStr $ defaultLogStr a b c d
+        logSaverFormatter logEntryLoc logEntrySource logEntryLevel logEntryStr

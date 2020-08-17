@@ -264,7 +264,7 @@ runExampleM' ex ctx logs exceptionMessage = do
     withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
     withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
       hSetBuffering h LineBuffering
-      action (logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel logs h)
+      action (logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
 
     getTestDirectory :: (HasBaseContext a) => a -> IO (Maybe FilePath)
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextPath of

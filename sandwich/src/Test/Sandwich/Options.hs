@@ -32,6 +32,7 @@ defaultOptions = Options {
   optionsTestArtifactsDirectory = TestArtifactsNone
   , optionsSavedLogLevel = Just LevelDebug
   , optionsMemoryLogLevel = Just LevelDebug
+  , optionsLogFormatter = defaultLogEntryFormatter
   , optionsFilterTree = Nothing
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
