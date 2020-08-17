@@ -4,6 +4,7 @@
 module Test.Sandwich.WebDriver.Internal.Binaries (
   obtainSelenium
   , obtainChromeDriver
+  , obtainGeckoDriver
   , downloadSeleniumIfNecessary
   , downloadChromeDriverIfNecessary
   ) where
@@ -71,6 +72,28 @@ obtainChromeDriver _ (UseChromeDriverAt path) =
     False -> return $ Left [i|Path '#{path}' didn't exist|]
     True -> return $ Right path
 
+obtainGeckoDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
+obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
+  let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
+  liftIO $ createDirectoryIfMissing True (takeDirectory path)
+  unlessM (liftIO $ doesFileExist path) $
+    void $ liftIO $ readCreateProcess (shell [i|curl #{url} -o #{path}|]) ""
+  return $ Right path
+obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = runExceptT $ do
+  let path = getGeckoDriverPath toolsDir geckoDriverVersion
+  (liftIO $ doesFileExist path) >>= \case
+    True -> return path
+    False -> do
+      let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
+      ExceptT $ downloadAndUntarballToPath downloadPath path
+      return path
+obtainGeckoDriver toolsDir DownloadGeckoDriverAutodetect = runExceptT $ do
+  version <- ExceptT $ liftIO getGeckoDriverVersion
+  ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
+obtainGeckoDriver _ (UseGeckoDriverAt path) =
+  (liftIO $ doesFileExist path) >>= \case
+    False -> return $ Left [i|Path '#{path}' didn't exist|]
+    True -> return $ Right path
 
 -- * Lower level helpers
 
@@ -105,15 +128,29 @@ downloadChromeDriverIfNecessary toolsDir = runExceptT $ do
 getChromeDriverPath :: FilePath -> ChromeDriverVersion -> FilePath
 getChromeDriverPath toolsDir (ChromeDriverVersion (w, x, y, z)) = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{chromeDriverExecutable}|]
 
+getGeckoDriverPath :: FilePath -> GeckoDriverVersion -> FilePath
+getGeckoDriverPath toolsDir (GeckoDriverVersion (x, y, z)) = [i|#{toolsDir}/geckodrivers/#{x}.#{y}.#{z}/#{geckoDriverExecutable}|]
+
 chromeDriverExecutable = case detectPlatform of
   Windows -> "chromedriver.exe"
   _ -> "chromedriver"
+
+geckoDriverExecutable = case detectPlatform of
+  Windows -> "geckodriver.exe"
+  _ -> "geckodriver"
 
 downloadAndUnzipToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
   liftIO $ void $ readCreateProcess (shell [i|wget -nc -O - #{downloadPath} | gunzip - > #{localPath}|]) ""
+  liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
+
+downloadAndUntarballToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do
+  info [i|Downloading #{downloadPath} to #{localPath}|]
+  liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
+  liftIO $ void $ readCreateProcess (shell [i|wget -qO- #{downloadPath} | tar xvz  -C #{takeDirectory localPath}|]) ""
   liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
 
 unlessM :: Monad m => m Bool -> m () -> m ()

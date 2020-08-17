@@ -66,6 +66,9 @@ data WdOptions = WdOptions {
   , chromeDriverToUse :: ChromeDriverToUse
   -- ^ Which chromedriver executable to use
 
+  , geckoDriverToUse :: GeckoDriverToUse
+  -- ^ Which geckodriver executable to use
+
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.)
 
@@ -95,8 +98,21 @@ data ChromeDriverToUse =
   | UseChromeDriverAt FilePath
   -- ^ Use the chromedriver at the given path
 
-newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int)
-newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int)
+data GeckoDriverToUse =
+  DownloadGeckoDriverFrom String
+  -- ^ Download geckodriver from the given URL to the 'toolsRoot'
+  | DownloadGeckoDriverVersion GeckoDriverVersion
+  -- ^ Download the given geckodriver version to the 'toolsRoot'
+  | DownloadGeckoDriverAutodetect
+  -- ^ Autodetect geckodriver to use based on the Gecko version and download it to the 'toolsRoot'
+  | UseGeckoDriverAt FilePath
+  -- ^ Use the geckodriver at the given path
+
+newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int) deriving Show
+newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int) deriving Show
+
+newtype FirefoxVersion = FirefoxVersion (Int, Int, Int) deriving Show
+newtype GeckoDriverVersion = GeckoDriverVersion (Int, Int, Int) deriving Show
 
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)
@@ -124,6 +140,7 @@ defaultWdOptions toolsRoot = WdOptions {
   , saveLogSettings = mempty
   , seleniumToUse = DownloadSeleniumDefault
   , chromeDriverToUse = DownloadChromeDriverAutodetect
+  , geckoDriverToUse = DownloadGeckoDriverAutodetect
   , runMode = Normal
   , httpManager = Nothing
   , httpRetryCount = 0

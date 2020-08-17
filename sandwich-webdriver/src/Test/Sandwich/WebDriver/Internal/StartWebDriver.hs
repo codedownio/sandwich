@@ -58,9 +58,24 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   seleniumPath <- obtainSelenium toolsRoot seleniumToUse >>= \case
     Left err -> error [i|Failed to obtain selenium: '#{err}'|]
     Right p -> return p
-  chromeDriverPath <- obtainChromeDriver toolsRoot chromeDriverToUse >>= \case
-    Left err -> error [i|Failed to obtain chromedriver: '#{err}'|]
-    Right p -> return p
+  driverArgs <- case W.browser capabilities of
+    W.Firefox {} -> do
+      obtainGeckoDriver toolsRoot geckoDriverToUse >>= \case
+        Left err -> error [i|Failed to obtain geckodriver: '#{err}'|]
+        Right p -> return [[i|-Dwebdriver.gecko.driver=#{p}|]
+                          -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
+                          -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
+                          ]
+    W.Chrome {} -> do
+      obtainChromeDriver toolsRoot chromeDriverToUse >>= \case
+        Left err -> error [i|Failed to obtain chromedriver: '#{err}'|]
+        Right p -> return [[i|-Dwebdriver.chrome.driver=#{p}|]
+                          , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
+                          , [i|-Dwebdriver.chrome.verboseLogging=true|]]
+    x -> error [i|Browser #{x} is not supported yet|]
+
+  debug [i|driverArgs: #{driverArgs}|]
+
   (maybeXvfbSession, javaEnv) <- case runMode of
     RunInXvfb (XvfbConfig {..}) -> do
       (s, e) <- makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
@@ -79,15 +94,12 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
     webdriverProcessName <- ("webdriver_process_" <>) <$> (liftIO makeUUID)
     let webdriverProcessRoot = webdriverRoot </> T.unpack webdriverProcessName
     liftIO $ createDirectoryIfMissing True webdriverProcessRoot
-    startWebDriver' wdOptions webdriverName webdriverProcessRoot seleniumPath chromeDriverPath maybeXvfbSession javaEnv
+    startWebDriver' wdOptions webdriverName webdriverProcessRoot seleniumPath driverArgs maybeXvfbSession javaEnv
 
-startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot seleniumPath chromeDriverPath maybeXvfbSession javaEnv = do
+startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot seleniumPath driverArgs maybeXvfbSession javaEnv = do
   port <- liftIO findFreePortOrException
-  let wdCreateProcess = (proc "java" [[i|-Dwebdriver.chrome.driver=#{chromeDriverPath}|]
-                                     , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
-                                     , [i|-Dwebdriver.chrome.verboseLogging=true|]
-                                     , "-jar", seleniumPath
-                                     , "-port", show port]) { env = javaEnv }
+  let wdCreateProcess = (proc "java" (driverArgs <> ["-jar", seleniumPath
+                                                    , "-port", show port])) { env = javaEnv }
 
   -- Open output handles
   let seleniumOutPath = webdriverRoot </> seleniumOutFileName

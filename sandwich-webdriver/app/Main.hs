@@ -78,7 +78,8 @@ simple = introduceWebdriver wdOptions $ do
 -- webdriverPool = Label :: Label "webdriverPool" (Pool WdSession)
 
 wdOptions = (defaultWdOptions "/tmp/tools") {
-  capabilities = chromeCapabilities
+  -- capabilities = chromeCapabilities
+  capabilities = firefoxCapabilities
   , saveSeleniumMessageHistory = Always
   , runMode = Normal
   }

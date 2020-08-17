@@ -30,6 +30,7 @@ dependencies:
 - exceptions
 - filepath
 - http-client
+- http-client-tls
 - http-conduit
 - interpolate
 - lifted-base

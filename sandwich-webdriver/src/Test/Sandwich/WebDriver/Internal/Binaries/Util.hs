@@ -6,17 +6,24 @@ module Test.Sandwich.WebDriver.Internal.Binaries.Util (
   , getChromeDriverVersion
   , getChromeDriverDownloadUrl
   , Platform(..)
-  , ChromeVersion(..)
-  , ChromeDriverVersion(..)
+
+  , detectFirefoxVersion
+  , getGeckoDriverVersion
+  , getGeckoDriverDownloadUrl
   ) where
 
 import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
+import qualified Data.Aeson as A
 import Data.Convertible
+import qualified Data.HashMap.Strict as HM
+import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
-import Network.HTTP.Conduit
+import Network.HTTP.Client
+import Network.HTTP.Client.TLS
+import Network.HTTP.Conduit (simpleHttp)
 import Safe
 import System.Exit
 import qualified System.Info as SI
@@ -32,6 +39,8 @@ detectPlatform =  case SI.os of
   "linux" -> Linux
   "darwin" -> OSX
   _ -> error [i|Couldn't determine host platform from string: '#{SI.os}'|]
+
+-- * Chrome
 
 detectChromeVersion :: IO (Either T.Text ChromeVersion)
 detectChromeVersion = leftOnException $ runExceptT $ do
@@ -67,5 +76,51 @@ getChromeDriverDownloadUrl :: ChromeDriverVersion -> Platform -> T.Text
 getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Linux = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_linux64.zip|]
 getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) OSX = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_mac64.zip|]
 getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Windows = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_win32.zip|]
+
+-- * Firefox
+
+detectFirefoxVersion :: IO (Either T.Text FirefoxVersion)
+detectFirefoxVersion = leftOnException $ runExceptT $ do
+  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell [i|firefox --version | grep -Eo "[0-9]+\.[0-9]+(\.[0-9]+)?"|]) ""
+
+  rawString <- case exitCode of
+                 ExitFailure _ -> throwE [i|Couldn't parse firefox version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
+                 ExitSuccess -> return $ T.strip $ convert stdout
+
+  case T.splitOn "." rawString of
+    [tReadMay -> Just x, tReadMay -> Just y] -> return $ FirefoxVersion (x, y, 0)
+    [tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ FirefoxVersion (x, y, z)
+    _ -> throwE [i|Failed to parse firefox version from string: '#{rawString}'|]
+
+
+getGeckoDriverVersion :: IO (Either T.Text GeckoDriverVersion)
+getGeckoDriverVersion = runExceptT $ do
+  -- firefoxVersion <- ExceptT $ liftIO detectFirefoxVersion
+
+  -- Just get the latest release on GitHub
+  let url = [i|https://api.github.com/repos/mozilla/geckodriver/releases/latest|]
+  req <- parseRequest url
+  manager <- liftIO newTlsManager
+  ExceptT $
+    handle (\(e :: HttpException) -> return $ Left [i|Error when requesting '#{url}': '#{e}'|])
+           (do
+               result <- httpLbs (req { requestHeaders = ("User-Agent", "foo") : (requestHeaders req) }) manager
+               case A.eitherDecode $ responseBody result of
+                 Left err -> return $ Left [i|Failed to decode GitHub releases: '#{err}'|]
+                 Right (A.Object (HM.lookup "tag_name" -> Just (A.String tag))) -> do
+                   let parts = T.splitOn "." $ T.drop 1 tag
+                   case parts of
+                     [tReadMay -> Just x, tReadMay -> Just y] -> return $ Right $ GeckoDriverVersion (x, y, 0)
+                     [tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ Right $ GeckoDriverVersion (x, y, z)
+                     _ -> return $ Left [i|Unexpected geckodriver release tag: '#{tag}'|]
+           )
+
+
+getGeckoDriverDownloadUrl :: GeckoDriverVersion -> Platform -> T.Text
+getGeckoDriverDownloadUrl (GeckoDriverVersion (x, y, z)) Linux = [i|https://github.com/mozilla/geckodriver/releases/download/v#{x}.#{y}.#{z}/geckodriver-v#{x}.#{y}.#{z}-linux64.tar.gz|]
+getGeckoDriverDownloadUrl (GeckoDriverVersion (x, y, z)) OSX = [i|https://github.com/mozilla/geckodriver/releases/download/v#{x}.#{y}.#{z}/geckodriver-v#{x}.#{y}.#{z}-macos.tar.gz|]
+getGeckoDriverDownloadUrl (GeckoDriverVersion (x, y, z)) Windows = [i|https://github.com/mozilla/geckodriver/releases/download/v#{x}.#{y}.#{z}/geckodriver-v#{x}.#{y}.#{z}-win32.tar.gz|]
+
+-- * Util
 
 tReadMay = readMay . convert

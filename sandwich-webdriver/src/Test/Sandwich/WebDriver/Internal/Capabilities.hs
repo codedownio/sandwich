@@ -1,8 +1,12 @@
 -- |
 
 module Test.Sandwich.WebDriver.Internal.Capabilities (
+  -- * Chrome
   chromeCapabilities
   , headlessChromeCapabilities
+
+  -- * Firefox
+  , firefoxCapabilities
   ) where
 
 import qualified Data.Aeson as A
@@ -18,6 +22,8 @@ loggingPrefs = A.object [("browser", "ALL")
                         , ("performance", "ALL")
                         , ("server", "WARNING")
                         ]
+
+-- * Chrome
 
 -- | Default capabilities for regular Chrome.
 -- It's important to set the "browser" log level to "ALL" so that tests can collect browser logs.
@@ -47,9 +53,12 @@ chromePrefs = HM.fromList [
                      , ("download.default_directory", "/tmp")])
   ]
 
--- getFirefoxCapabilities :: IO Capabilities
--- getFirefoxCapabilities = do
---   profile <- prepareProfile (addPref "webdriver.log.file" ("/tmp/firefox_console" :: String) defaultProfile)
---   let ffAcceptInsecureCerts = Nothing
---   let ff = Firefox (Just profile) LogAll Nothing ffAcceptInsecureCerts
---   return $ def {browser=ff}
+-- * Firefox
+
+firefoxCapabilities :: Capabilities
+firefoxCapabilities = def { browser=ff }
+  where ff = Firefox { ffProfile = Nothing
+                     , ffLogPref = LogAll
+                     , ffBinary = Nothing
+                     , ffAcceptInsecureCerts = Nothing
+                     }

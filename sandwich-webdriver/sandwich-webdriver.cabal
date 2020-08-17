@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 181e72119fab29de75ab84c923abf99f5dd43a8425c0d48d3a28b9f1bf2a64a8
+-- hash: a00ce036d55bebc3b0390253089a39715faada86ff38ce7fbb609dc3f76ddacb
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -58,6 +58,7 @@ library
     , exceptions
     , filepath
     , http-client
+    , http-client-tls
     , http-conduit
     , interpolate
     , lifted-base
@@ -101,6 +102,7 @@ executable sandwich-webdriver-exe
     , exceptions
     , filepath
     , http-client
+    , http-client-tls
     , http-conduit
     , interpolate
     , lifted-base
@@ -146,6 +148,7 @@ test-suite sandwich-webdriver-test
     , exceptions
     , filepath
     , http-client
+    , http-client-tls
     , http-conduit
     , interpolate
     , lifted-base
