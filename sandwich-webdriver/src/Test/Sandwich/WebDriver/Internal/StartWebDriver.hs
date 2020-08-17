@@ -10,6 +10,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE ViewPatterns #-}
 -- |
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
@@ -22,12 +24,19 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
+import qualified Data.Aeson as A
 import Data.Default
+import Data.Function
+import qualified Data.HashMap.Strict as HM
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import qualified Data.Vector as V
 import GHC.Stack
+import Lens.Micro
+import Lens.Micro.Aeson
 import System.Directory
 import System.FilePath
 import System.IO
@@ -138,7 +147,7 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
             <*> pure wdOptions
             <*> liftIO (newMVar mempty)
             <*> pure (def { W.wdPort = fromIntegral port
-                          , W.wdCapabilities = capabilities' { W.browser = configureBrowser (W.browser capabilities') runMode }
+                          , W.wdCapabilities = configureCapabilities capabilities' runMode
                           , W.wdHTTPManager = httpManager
                           , W.wdHTTPRetryCount = httpRetryCount
                           })
@@ -162,9 +171,33 @@ seleniumOutFileName, seleniumErrFileName :: FilePath
 seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 
-configureBrowser browser@(W.Chrome {..}) (RunHeadless (HeadlessConfig {..})) =
-  browser { W.chromeOptions = "--headless":resolution:chromeOptions }
-  where resolution = [i|--window-size=#{w},#{h}|]
+-- | Add headless configuration to the Chrome browser
+configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) (RunHeadless (HeadlessConfig {..})) = caps { W.browser = browser' }
+  where browser' = browser { W.chromeOptions = "--headless":resolution:chromeOptions }
+        resolution = [i|--window-size=#{w},#{h}|]
         (w, h) = fromMaybe (1920, 1080) headlessResolution
-configureBrowser browser (RunHeadless {}) = error [i|Headless mode not yet supported for browser '#{browser}'|]
-configureBrowser browser _ = browser
+
+-- | Add headless configuration to the Firefox capabilities
+configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Firefox {..}), W.additionalCaps=ac}) (RunHeadless (HeadlessConfig {..})) = caps { W.additionalCaps = additionalCaps }
+  where
+    additionalCaps = case L.findIndex (\x -> fst x == "moz:firefoxOptions") ac of
+      Nothing -> ("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])]) : ac
+      Just i -> let ffOptions' = (snd $ ac !! i)
+                      & ensureKeyExists "args" (A.Array [])
+                      & ((key "args" . _Array) %~ addHeadlessArg) in
+        L.nubBy (\x y -> fst x == fst y) (("moz:firefoxOptions", ffOptions') : ac)
+
+    ensureKeyExists :: T.Text -> A.Value -> A.Value -> A.Value
+    ensureKeyExists key _ val@(A.Object (HM.lookup key -> Just _)) = val
+    ensureKeyExists key defaultVal val@(A.Object m@(HM.lookup key -> Nothing)) = A.Object (HM.insert key defaultVal m)
+    ensureKeyExists _ _ _ = error "Expected Object in ensureKeyExists"
+
+    addHeadlessArg :: V.Vector A.Value -> V.Vector A.Value
+    addHeadlessArg xs | (A.String "-headless") `V.elem` xs = xs
+    addHeadlessArg xs = (A.String "-headless") `V.cons` xs
+
+    ensureObjectExists :: Maybe A.Value -> Maybe A.Value
+    ensureObjectExists hm = if isJust hm then hm else (Just $ A.object [])
+
+configureCapabilities browser (RunHeadless {}) = error [i|Headless mode not yet supported for browser '#{browser}'|]
+configureCapabilities browser _ = browser

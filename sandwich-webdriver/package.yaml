@@ -34,6 +34,8 @@ dependencies:
 - http-conduit
 - interpolate
 - lifted-base
+- microlens
+- microlens-aeson
 - monad-control
 - monad-logger
 - mtl
@@ -51,6 +53,7 @@ dependencies:
 - transformers-base
 - unix
 - unordered-containers
+- vector
 - webdriver
 - X11
 
