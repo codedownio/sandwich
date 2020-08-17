@@ -58,6 +58,7 @@ module Test.Sandwich.WebDriver (
   , WdOptions
   , SeleniumToUse(..)
   , ChromeDriverToUse(..)
+  , GeckoDriverToUse(..)
   , obtainSelenium
   , obtainChromeDriver
   , defaultWdOptions
@@ -65,6 +66,7 @@ module Test.Sandwich.WebDriver (
   , saveSeleniumMessageHistory
   , seleniumToUse
   , chromeDriverToUse
+  , geckoDriverToUse
   , WhenToSave(..)
   , capabilities
   , httpManager
