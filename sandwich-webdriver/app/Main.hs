@@ -79,7 +79,8 @@ simple = introduceWebdriver wdOptions $ do
 
 wdOptions = (defaultWdOptions "/tmp/tools") {
   -- capabilities = chromeCapabilities
-  capabilities = firefoxCapabilities
+  -- capabilities = firefoxCapabilities
+  capabilities = headlessFirefoxCapabilities
   , saveSeleniumMessageHistory = Always
   , runMode = Normal
   }

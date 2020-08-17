@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 -- |
 
 module Test.Sandwich.WebDriver.Internal.Capabilities (
@@ -7,6 +8,7 @@ module Test.Sandwich.WebDriver.Internal.Capabilities (
 
   -- * Firefox
   , firefoxCapabilities
+  , headlessFirefoxCapabilities
   ) where
 
 import qualified Data.Aeson as A
@@ -57,8 +59,20 @@ chromePrefs = HM.fromList [
 
 firefoxCapabilities :: Capabilities
 firefoxCapabilities = def { browser=ff }
-  where ff = Firefox { ffProfile = Nothing
-                     , ffLogPref = LogAll
-                     , ffBinary = Nothing
-                     , ffAcceptInsecureCerts = Nothing
-                     }
+  where
+    ff = Firefox { ffProfile = Nothing
+                 , ffLogPref = LogAll
+                 , ffBinary = Nothing
+                 , ffAcceptInsecureCerts = Nothing
+                 }
+
+headlessFirefoxCapabilities :: Capabilities
+headlessFirefoxCapabilities = def { browser=ff, additionalCaps=additionalCaps }
+  where
+    ff = Firefox { ffProfile = Nothing
+                 , ffLogPref = LogAll
+                 , ffBinary = Nothing
+                 , ffAcceptInsecureCerts = Nothing
+                 }
+
+    additionalCaps = [("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])])]

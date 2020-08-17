@@ -43,6 +43,7 @@ module Test.Sandwich.WebDriver (
   , headlessChromeCapabilities
 
   , firefoxCapabilities
+  , headlessFirefoxCapabilities
 
   , WdSession
   , getDisplayNumber
