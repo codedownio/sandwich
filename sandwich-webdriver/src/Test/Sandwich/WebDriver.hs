@@ -61,6 +61,7 @@ module Test.Sandwich.WebDriver (
   , GeckoDriverToUse(..)
   , obtainSelenium
   , obtainChromeDriver
+  , obtainGeckoDriver
   , defaultWdOptions
   , runMode
   , saveSeleniumMessageHistory
