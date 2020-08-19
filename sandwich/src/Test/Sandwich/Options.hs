@@ -12,6 +12,7 @@ module Test.Sandwich.Options (
   , optionsSavedLogLevel
   , optionsMemoryLogLevel
   , optionsLogFormatter
+  , LogEntryFormatter
 
   -- * Formatting
   , optionsFormatters
