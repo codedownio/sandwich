@@ -149,10 +149,10 @@ data TestArtifactsDirectory =
 newtype TreeFilter = TreeFilter String
 
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
-type LogEntryFormatter = Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
+type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
 
 defaultLogEntryFormatter :: LogEntryFormatter
-defaultLogEntryFormatter a b c d = fromLogStr $ defaultLogStr a b c d
+defaultLogEntryFormatter _ts a b c d = fromLogStr $ defaultLogStr a b c d
 
 -- | All the options controlling a test run.
 data Options = Options {

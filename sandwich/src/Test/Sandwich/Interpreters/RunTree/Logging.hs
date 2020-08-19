@@ -25,13 +25,15 @@ logToMemory (Just minLevel) logs loc logSrc logLevel logStr =
 
 logToMemoryAndFile :: Maybe LogLevel -> Maybe LogLevel -> LogEntryFormatter -> TVar (Seq LogEntry) -> Handle -> Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 logToMemoryAndFile maybeMemLogLevel maybeSavedLogLevel formatter logs h loc logSrc logLevel logStr = do
-  case maybeMemLogLevel of
+  maybeTs <- case maybeMemLogLevel of
     Just x | x <= logLevel -> do
       ts <- getCurrentTime
       atomically $ modifyTVar logs (|> LogEntry ts loc logSrc logLevel logStr)
-    _ -> return ()
+      return $ Just ts
+    _ -> return Nothing
 
   case maybeSavedLogLevel of
-    Just x | x <= logLevel ->
-      BS8.hPutStr h $ formatter loc logSrc logLevel logStr
+    Just x | x <= logLevel -> do
+      ts <- maybe getCurrentTime return maybeTs
+      BS8.hPutStr h $ formatter ts loc logSrc logLevel logStr
     _ -> return ()

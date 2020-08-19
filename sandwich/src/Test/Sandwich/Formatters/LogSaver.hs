@@ -79,4 +79,4 @@ printLogs runTreeLogs = do
   forM_ logEntries $ \(LogEntry {..}) ->
     when (logEntryLevel >= logSaverLogLevel) $
       liftIO $ BS8.hPutStr h $
-        logSaverFormatter logEntryLoc logEntrySource logEntryLevel logEntryStr
+        logSaverFormatter logEntryTime logEntryLoc logEntrySource logEntryLevel logEntryStr
