@@ -11,6 +11,7 @@ module Test.Sandwich.Options (
   -- * Logging
   , optionsSavedLogLevel
   , optionsMemoryLogLevel
+  , optionsLogFormatter
 
   -- * Formatting
   , optionsFormatters
