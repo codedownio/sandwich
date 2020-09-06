@@ -74,5 +74,9 @@ endVideoRecording p = do
 
   liftIO (waitForProcess p) >>= \case
     ExitSuccess -> return ()
-    ExitFailure 255 -> return () -- ffmpeg seems to exit with the code used to signal it (?)
+
+    -- ffmpeg seems to exit with code 255 when exiting in response to a signal
+    -- https://github.com/FFmpeg/FFmpeg/blob/d182d8f10cf69c59ef9c21df4b06e5478df063ef/fftools/ffmpeg.c#L4890
+    ExitFailure 255 -> return ()
+
     ExitFailure n -> logError [i|ffmpeg exited with unexpected exit code #{n}'|]
