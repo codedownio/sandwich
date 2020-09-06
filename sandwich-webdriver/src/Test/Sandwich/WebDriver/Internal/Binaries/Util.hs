@@ -18,7 +18,6 @@ import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import Data.Convertible
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Network.HTTP.Client
@@ -106,13 +105,13 @@ getGeckoDriverVersion = runExceptT $ do
            (do
                result <- httpLbs (req { requestHeaders = ("User-Agent", "foo") : (requestHeaders req) }) manager
                case A.eitherDecode $ responseBody result of
-                 Left err -> return $ Left [i|Failed to decode GitHub releases: '#{err}'|]
                  Right (A.Object (HM.lookup "tag_name" -> Just (A.String tag))) -> do
                    let parts = T.splitOn "." $ T.drop 1 tag
                    case parts of
                      [tReadMay -> Just x, tReadMay -> Just y] -> return $ Right $ GeckoDriverVersion (x, y, 0)
                      [tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ Right $ GeckoDriverVersion (x, y, z)
                      _ -> return $ Left [i|Unexpected geckodriver release tag: '#{tag}'|]
+                 val -> return $ Left [i|Failed to decode GitHub releases: '#{val}'|]
            )
 
 

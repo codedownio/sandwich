@@ -178,7 +178,7 @@ configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) 
         (w, h) = fromMaybe (1920, 1080) headlessResolution
 
 -- | Add headless configuration to the Firefox capabilities
-configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Firefox {..}), W.additionalCaps=ac}) (RunHeadless (HeadlessConfig {..})) = caps { W.additionalCaps = additionalCaps }
+configureCapabilities caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) (RunHeadless (HeadlessConfig {..})) = caps { W.additionalCaps = additionalCaps }
   where
     additionalCaps = case L.findIndex (\x -> fst x == "moz:firefoxOptions") ac of
       Nothing -> ("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])]) : ac
@@ -189,15 +189,12 @@ configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Firefox {..}), 
 
     ensureKeyExists :: T.Text -> A.Value -> A.Value -> A.Value
     ensureKeyExists key _ val@(A.Object (HM.lookup key -> Just _)) = val
-    ensureKeyExists key defaultVal val@(A.Object m@(HM.lookup key -> Nothing)) = A.Object (HM.insert key defaultVal m)
+    ensureKeyExists key defaultVal (A.Object m@(HM.lookup key -> Nothing)) = A.Object (HM.insert key defaultVal m)
     ensureKeyExists _ _ _ = error "Expected Object in ensureKeyExists"
 
     addHeadlessArg :: V.Vector A.Value -> V.Vector A.Value
     addHeadlessArg xs | (A.String "-headless") `V.elem` xs = xs
     addHeadlessArg xs = (A.String "-headless") `V.cons` xs
-
-    ensureObjectExists :: Maybe A.Value -> Maybe A.Value
-    ensureObjectExists hm = if isJust hm then hm else (Just $ A.object [])
 
 configureCapabilities browser (RunHeadless {}) = error [i|Headless mode not yet supported for browser '#{browser}'|]
 configureCapabilities browser _ = browser

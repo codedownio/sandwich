@@ -29,8 +29,6 @@ import GHC.Stack
 import Safe
 import System.Directory
 import System.Environment
-import System.FilePath
-import System.IO
 import System.IO.Temp
 import System.Process
 import Test.Sandwich
