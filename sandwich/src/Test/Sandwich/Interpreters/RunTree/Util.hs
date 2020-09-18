@@ -65,15 +65,16 @@ countImmediateFolderChildren (Free node)
 countImmediateFolderChildren (Pure _) = 0
 
 maxFileNameLength :: Int
-#ifdef linux_HOST_OS
-maxFileNameLength = 255
-#endif
-#ifdef darwin_HOST_OS
-maxFileNameLength = 255
-#endif
-#ifdef mingw32_HOST_OS
-maxFileNameLength = 255
-#endif
+-- #ifdef linux_HOST_OS
+-- maxFileNameLength = 255
+-- #endif
+-- #ifdef darwin_HOST_OS
+-- maxFileNameLength = 255
+-- #endif
+-- #ifdef mingw32_HOST_OS
+-- maxFileNameLength = 255
+-- #endif
+maxFileNameLength = 150
 
 nodeToFolderName :: String -> Int -> Int -> String
 nodeToFolderName name 1 0 = truncateFileNameToLength maxFileNameLength $ fixupName name
