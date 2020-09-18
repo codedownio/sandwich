@@ -22,7 +22,9 @@ import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time
+import GHC.Stack
 import Safe
+import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.Internal.Formatters
@@ -98,7 +100,11 @@ publishTree topMessage elapsed tree = pbi
 
     runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
 
-    failures = catMaybes $ concatMap (extractValues (\node -> if isFailedItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
+    failures = catMaybes $ flip concatMap tree $ extractValues $ \node ->
+          if | isFailedItBlock node -> Just $ case runTreeLoc $ runNodeCommon node of
+                 Nothing -> runTreeLabel $ runNodeCommon node
+                 Just (SrcLoc {..}) -> [i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> runTreeLabel (runNodeCommon node)
+             | otherwise -> Nothing
     attachments = [ProgressBarAttachment (T.pack t) "#ff4136" | t <- failures]
 
     total = countWhere isItBlock tree
