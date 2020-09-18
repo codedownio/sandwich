@@ -4,7 +4,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
 -- |
 
 module Test.Sandwich.Interpreters.RunTree.Util where
@@ -37,13 +36,13 @@ appendLogMessage logs msg = do
 
 getImmediateChildren :: Free (SpecCommand context m) () -> [Free (SpecCommand context m) ()]
 getImmediateChildren (Free (It' no loc l ex next)) = (Free (It' no loc l ex (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Before' no l f subspec next)) = (Free (Before' no l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (After' no l f subspec next)) = (Free (After' no l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Introduce' no l cl alloc cleanup subspec next)) = (Free (Introduce' no l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (IntroduceWith' no l cl action subspec next)) = (Free (IntroduceWith' no l cl action subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Around' no l f subspec next)) = (Free (Around' no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Before' no loc l f subspec next)) = (Free (Before' no loc l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (After' no loc l f subspec next)) = (Free (After' no loc l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Introduce' no loc l cl alloc cleanup subspec next)) = (Free (Introduce' no loc l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (IntroduceWith' no loc l cl action subspec next)) = (Free (IntroduceWith' no loc l cl action subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Around' no loc l f subspec next)) = (Free (Around' no loc l f subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Free (Describe' no loc l subspec next)) = (Free (Describe' no loc l subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Parallel' no subspec next)) = (Free (Parallel' no subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Parallel' no loc subspec next)) = (Free (Parallel' no loc subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Pure ()) = [Pure ()]
 
 countChildren :: Free (SpecCommand context m) () -> Int
@@ -53,10 +52,10 @@ countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
 countImmediateFolderChildren (Free (It' no loc l ex next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren next
-countImmediateFolderChildren (Free (Introduce' no l cl alloc cleanup subspec next))
+countImmediateFolderChildren (Free (Introduce' no l loc cl alloc cleanup subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
-countImmediateFolderChildren (Free (IntroduceWith' no l cl action subspec next))
+countImmediateFolderChildren (Free (IntroduceWith' no l loc cl action subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
 countImmediateFolderChildren (Free node)
@@ -65,15 +64,6 @@ countImmediateFolderChildren (Free node)
 countImmediateFolderChildren (Pure _) = 0
 
 maxFileNameLength :: Int
--- #ifdef linux_HOST_OS
--- maxFileNameLength = 255
--- #endif
--- #ifdef darwin_HOST_OS
--- maxFileNameLength = 255
--- #endif
--- #ifdef mingw32_HOST_OS
--- maxFileNameLength = 255
--- #endif
 maxFileNameLength = 150
 
 nodeToFolderName :: String -> Int -> Int -> String

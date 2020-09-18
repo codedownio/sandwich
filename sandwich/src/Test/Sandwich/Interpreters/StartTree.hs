@@ -26,6 +26,7 @@ import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
+import GHC.Stack
 import System.Directory
 import System.FilePath
 import System.IO
@@ -168,8 +169,10 @@ runInAsync node ctx action = do
                   let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
                   let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
-                  let pathForSymlinkName = joinPath $ L.drop 2 $ splitPath relativePath -- Drop the "../results"
-                  let symlinkPath = errorsDir </> (nodeToFolderName pathForSymlinkName 9999999 runTreeId)
+                  let symlinkBaseName = case runTreeLoc of
+                        Nothing -> takeFileName dir
+                        Just loc -> [i|#{srcLocFile loc}:#{srcLocStartLine loc}_#{takeFileName dir}|]
+                  let symlinkPath = errorsDir </> (nodeToFolderName symlinkBaseName 9999999 runTreeId)
 
                   -- Delete the symlink if it's already present. This can happen when re-running
                   -- a previously failed test
