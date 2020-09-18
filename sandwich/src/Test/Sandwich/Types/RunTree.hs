@@ -171,6 +171,10 @@ data Options = Options {
   -- ^ Whether to skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI.
   , optionsFormatters :: [SomeFormatter]
   -- ^ Which formatters to use to output the results of the tests.
+  , optionsProjectRoot :: Maybe FilePath
+  -- ^ An optional absolute path to the root of the project being tested (i.e. the folder where the cabal file is found).
+  -- This is useful to provide when the current working directory does not match the project root, for example in multi-project Stack setups.
+  -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
   }
 
 

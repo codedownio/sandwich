@@ -8,10 +8,10 @@ module Test.Sandwich.Formatters.TerminalUI.OpenInEditor where
 
 import Control.Monad
 import Data.String.Interpolate.IsString
+import qualified Data.Text as T
 import GHC.Stack
 import System.Environment
 import System.Process
-import qualified Data.Text as T
 
 autoOpenInEditor :: SrcLoc -> IO ()
 autoOpenInEditor loc = do
@@ -21,7 +21,7 @@ autoOpenInEditor loc = do
     Just s -> return () -- TODO: support vim, VSCode, etc.
 
 openInEmacs :: SrcLoc -> IO ()
-openInEmacs (SrcLoc {..}) = do
+openInEmacs loc@(SrcLoc {..}) = do
   void $ createProcess $ (proc "emacsclient" [[i|+#{srcLocStartLine}:#{srcLocStartCol}|], srcLocFile, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
   void $ createProcess $ (proc "emacsclient" ["--eval", elisp, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
     where

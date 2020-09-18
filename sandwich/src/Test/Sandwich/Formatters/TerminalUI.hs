@@ -37,9 +37,11 @@ import qualified Data.Set as S
 import Data.String.Interpolate.IsString
 import Data.Time
 import qualified Data.Vector as Vec
+import GHC.Stack
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Safe
+import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw
@@ -225,9 +227,16 @@ appEvent s x@(VtyEvent e) =
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openInEditorKey -> withContinueS $
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) ->
-        whenJust (runTreeLoc node) $ \loc ->
-          liftIO $ (s ^. appOpenInEditor) loc
+        whenJust (runTreeLoc node) $ \loc' -> do
+          -- Try to make the file path in the SrcLoc absolute
+          loc <- case isRelative (srcLocFile loc') of
+            False -> return loc'
+            True -> do
+              case optionsProjectRoot (baseContextOptions (s ^. appBaseContext)) of
+                Just d -> return $ loc' { srcLocFile = d </> (srcLocFile loc') }
+                Nothing -> return loc'
 
+          liftIO $ (s ^. appOpenInEditor) loc
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do

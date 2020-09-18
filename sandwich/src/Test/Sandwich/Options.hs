@@ -22,6 +22,9 @@ module Test.Sandwich.Options (
   -- * Filtering
   , optionsFilterTree
   , TreeFilter(..)
+
+  -- * Misc
+  , optionsProjectRoot
   ) where
 
 import Control.Monad.Logger
@@ -38,4 +41,5 @@ defaultOptions = Options {
   , optionsFilterTree = Nothing
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
+  , optionsProjectRoot = Nothing
   }
