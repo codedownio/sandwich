@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 64376808ec408a3301437efb651e60dff4b492a488570c9bc225253837181584
+-- hash: 8fd2500dbb961d729807a2b98aa53655d82dcc13e05665a7651f9fc4f9843db2
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+    , filepath
     , interpolate
     , monad-logger
     , safe
@@ -54,6 +55,7 @@ executable sandwich-slack-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , filepath
     , interpolate
     , monad-logger
     , safe
@@ -76,6 +78,7 @@ test-suite sandwich-slack-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , filepath
     , interpolate
     , monad-logger
     , safe
