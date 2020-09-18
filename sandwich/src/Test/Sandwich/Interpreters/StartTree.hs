@@ -168,7 +168,8 @@ runInAsync node ctx action = do
                   let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
                   let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
-                  let symlinkPath = errorsDir </> (nodeToFolderName (takeFileName dir) 9999999 runTreeId)
+                  let pathForSymlinkName = joinPath $ L.drop 2 $ splitPath relativePath -- Drop the "../results"
+                  let symlinkPath = errorsDir </> (nodeToFolderName pathForSymlinkName 9999999 runTreeId)
 
                   -- Delete the symlink if it's already present. This can happen when re-running
                   -- a previously failed test
