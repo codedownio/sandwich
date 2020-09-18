@@ -4,6 +4,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 -- |
 
 module Test.Sandwich.Interpreters.RunTree.Util where
@@ -63,9 +64,20 @@ countImmediateFolderChildren (Free node)
   | otherwise = countImmediateFolderChildren (subspec node) + countImmediateFolderChildren (next node)
 countImmediateFolderChildren (Pure _) = 0
 
+maxFileNameLength :: Int
+#ifdef linux_HOST_OS
+maxFileNameLength = 255
+#endif
+#ifdef darwin_HOST_OS
+maxFileNameLength = 255
+#endif
+#ifdef mingw32_HOST_OS
+maxFileNameLength = 255
+#endif
+
 nodeToFolderName :: String -> Int -> Int -> String
-nodeToFolderName name 1 0 = fixupName name
-nodeToFolderName name numSiblings indexInParent = padding <> fixupName name
+nodeToFolderName name 1 0 = truncateFileNameToLength maxFileNameLength $ fixupName name
+nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToLength (maxFileNameLength - (L.length padding)) (fixupName name)
   where
     paddingNeeded
       | numSiblings < 10 = 1
@@ -87,3 +99,12 @@ fixupName = replace '/' '_'
 
 replace :: Eq a => a -> a -> [a] -> [a]
 replace a b = map $ \c -> if c == a then b else c
+
+truncateFileNameToLength :: Int -> String -> String
+truncateFileNameToLength len x | L.length x <= len = x
+truncateFileNameToLength len x = "..." <> (takeEnd (len - 3) x)
+
+takeEnd :: Int -> [a] -> [a]
+takeEnd j xs = f xs (L.drop j xs)
+  where f (_:zs) (_:ys) = f zs ys
+        f zs _ = zs
