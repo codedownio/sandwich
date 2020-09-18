@@ -83,6 +83,8 @@ runApp (TerminalUIFormatter {..}) rts baseContext = liftIO $ do
           , _appShowRunTimes = terminalUIShowRunTimes
           , _appShowFileLocations = terminalUIShowFileLocations
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
+
+          , _appOpenInEditor = terminalUIOpenInEditor
         }
 
   eventChan <- newBChan 10
@@ -221,6 +223,11 @@ appEvent s x@(VtyEvent e) =
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openTestRootKey -> withContinueS $
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
+    V.EvKey c [] | c == openInEditorKey -> withContinueS $
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) ->
+        whenJust (runTreeLoc node) $ \loc ->
+          liftIO $ (s ^. appOpenInEditor) loc
+
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do

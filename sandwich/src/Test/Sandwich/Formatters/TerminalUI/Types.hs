@@ -11,10 +11,11 @@ import Control.Monad.Logger
 import Data.Sequence
 import qualified Data.Text as T
 import Data.Time
+import GHC.Stack
 import Lens.Micro.TH
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
-
+import Test.Sandwich.Formatters.TerminalUI.OpenInEditor
 
 -- | Initial settings for the TUI interface. All of these settings can be changed interactively.
 data TerminalUIFormatter = TerminalUIFormatter {
@@ -30,6 +31,8 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- ^ Whether to show or hide visibility thresholds next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
   -- ^ Log level for test log displays.
+  , terminalUIOpenInEditor :: SrcLoc -> IO ()
+  -- ^ Callback to open a source location in your editor.
   }
 
 data InitialFolding =
@@ -46,8 +49,8 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowFileLocations = False
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
+  , terminalUIOpenInEditor = autoOpenInEditor
   }
-
 
 data AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
 
@@ -88,6 +91,8 @@ data AppState = AppState {
   , _appShowRunTimes :: Bool
   , _appShowFileLocations :: Bool
   , _appShowVisibilityThresholds :: Bool
+
+  , _appOpenInEditor :: SrcLoc -> IO ()
   }
 
 makeLenses ''AppState

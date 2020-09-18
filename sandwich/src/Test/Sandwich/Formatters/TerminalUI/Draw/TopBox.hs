@@ -38,6 +38,7 @@ topBox app = hBox [columnPadding settingsColumn
                                   , keyIndicatorAllTestsDone app (showKey clearResultsKey) "Clear results"
                                   , keyIndicatorHasSelectedAndFolder app (showKey openSelectedFolderInFileExplorer) "Open selected folder"
                                   , keyIndicator (showKey openTestRootKey) "Open test root"
+                                  , keyIndicatorHasSelected app (showKey openInEditorKey) "Open in editor"
                                   ]
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
