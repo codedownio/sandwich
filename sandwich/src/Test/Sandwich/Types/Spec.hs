@@ -6,7 +6,6 @@
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -141,60 +140,60 @@ defaultNodeOptions :: NodeOptions
 defaultNodeOptions = NodeOptions 100 True
 
 data SpecCommand context m next where
-  Before' :: { nodeOptions :: NodeOptions
-             , location :: Maybe SrcLoc
+  Before'' :: { location :: Maybe SrcLoc
+              , nodeOptions :: NodeOptions
+              , label :: String
+              , action :: ExampleT context m ()
+              , subspec :: SpecFree context m ()
+              , next :: next } -> SpecCommand context m next
+
+  After'' :: { location :: Maybe SrcLoc
+             , nodeOptions :: NodeOptions
              , label :: String
              , action :: ExampleT context m ()
              , subspec :: SpecFree context m ()
              , next :: next } -> SpecCommand context m next
 
-  After' :: { nodeOptions :: NodeOptions
-            , location :: Maybe SrcLoc
-            , label :: String
-            , action :: ExampleT context m ()
-            , subspec :: SpecFree context m ()
-            , next :: next } -> SpecCommand context m next
+  Introduce'' :: { location :: Maybe SrcLoc
+                 , nodeOptions :: NodeOptions
+                 , label :: String
+                 , contextLabel :: Label l intro
+                 , allocate :: ExampleT context m intro
+                 , cleanup :: intro -> ExampleT context m ()
+                 , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+                 , next :: next } -> SpecCommand context m next
 
-  Introduce' :: { nodeOptions :: NodeOptions
-                , location :: Maybe SrcLoc
+  IntroduceWith'' :: { location :: Maybe SrcLoc
+                     , nodeOptions :: NodeOptions
+                     , label :: String
+                     , contextLabel :: Label l intro
+                     , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
+                     , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+                     , next :: next } -> SpecCommand context m next
+
+  Around'' :: { location :: Maybe SrcLoc
+              , nodeOptions :: NodeOptions
+              , label :: String
+              , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
+              , subspec :: SpecFree context m ()
+              , next :: next } -> SpecCommand context m next
+
+  Describe'' :: { location :: Maybe SrcLoc
+                , nodeOptions :: NodeOptions
                 , label :: String
-                , contextLabel :: Label l intro
-                , allocate :: ExampleT context m intro
-                , cleanup :: intro -> ExampleT context m ()
-                , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+                , subspec :: SpecFree context m ()
                 , next :: next } -> SpecCommand context m next
 
-  IntroduceWith' :: { nodeOptions :: NodeOptions
-                    , location :: Maybe SrcLoc
-                    , label :: String
-                    , contextLabel :: Label l intro
-                    , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
-                    , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
-                    , next :: next } -> SpecCommand context m next
+  Parallel'' :: { location :: Maybe SrcLoc
+                , nodeOptions :: NodeOptions
+                , subspec :: SpecFree context m ()
+                , next :: next } -> SpecCommand context m next
 
-  Around' :: { nodeOptions :: NodeOptions
-             , location :: Maybe SrcLoc
-             , label :: String
-             , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
-             , subspec :: SpecFree context m ()
-             , next :: next } -> SpecCommand context m next
-
-  Describe' :: { nodeOptions :: NodeOptions
-               , location :: Maybe SrcLoc
-               , label :: String
-               , subspec :: SpecFree context m ()
-               , next :: next } -> SpecCommand context m next
-
-  Parallel' :: { nodeOptions :: NodeOptions
-               , location :: Maybe SrcLoc
-               , subspec :: SpecFree context m ()
-               , next :: next } -> SpecCommand context m next
-
-  It' :: { nodeOptions :: NodeOptions
-         , location :: Maybe SrcLoc
-         , label :: String
-         , example :: ExampleT context m ()
-         , next :: next } -> SpecCommand context m next
+  It'' :: { location :: Maybe SrcLoc
+          , nodeOptions :: NodeOptions
+          , label :: String
+          , example :: ExampleT context m ()
+          , next :: next } -> SpecCommand context m next
 
 deriving instance Functor (SpecCommand context m)
 deriving instance Foldable (SpecCommand context m)
@@ -207,18 +206,19 @@ type SpecFree context m a = Free (SpecCommand context m) a
 makeFree_ ''SpecCommand
 
 instance Show1 (SpecCommand context m) where
-  liftShowsPrec sp _ d (Before' {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (After' {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Introduce' {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
-  liftShowsPrec sp _ d (IntroduceWith' {..}) = showsUnaryWith sp [i|IntroduceWith[#{label}]<#{show subspecAugmented}>|] d next
-  liftShowsPrec sp _ d (Around' {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Describe' {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (Parallel' {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
-  liftShowsPrec sp _ d (It' {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
+  liftShowsPrec sp _ d (Before'' {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (After'' {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Introduce'' {..}) = showsUnaryWith sp [i|Introduce[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (IntroduceWith'' {..}) = showsUnaryWith sp [i|IntroduceWith[#{label}]<#{show subspecAugmented}>|] d next
+  liftShowsPrec sp _ d (Around'' {..}) = showsUnaryWith sp [i|Around[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Describe'' {..}) = showsUnaryWith sp [i|Describe[#{label}]<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (Parallel'' {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
+  liftShowsPrec sp _ d (It'' {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
 
 -- First write beforeEach/afterEach to demonstrate push down approach
 -- Then think about how/whether we can to introduceEach / aroundEach
 
+-- * ----------------------------------------------------------
 
 -- | Perform an action before a given spec tree.
 before :: (HasCallStack) =>
@@ -229,7 +229,36 @@ before :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-before = before' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
+before = before' (NodeOptions 100 True)
+
+-- | Perform an action before a given spec tree.
+before' :: (HasCallStack) =>
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+before' = before'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Perform an action before a given spec tree.
+before'' :: (HasCallStack) =>
+  Maybe SrcLoc
+  -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- * ----------------------------------------------------------
 
 -- | Perform an action after a given spec tree.
 after :: (HasCallStack) =>
@@ -240,7 +269,36 @@ after :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-after = after' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
+after = after' (NodeOptions 100 True)
+
+-- | Perform an action after a given spec tree.
+after' :: (HasCallStack) =>
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+after' = after'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Perform an action after a given spec tree.
+after'' :: (HasCallStack) =>
+  Maybe SrcLoc
+  -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
+  -> String
+  -- ^ String label for this context manager
+  -> ExampleT context m ()
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+
+-- * ----------------------------------------------------------
 
 -- | Introduce a new value and make it available to the child spec tree.
 introduce :: (HasCallStack) =>
@@ -255,127 +313,31 @@ introduce :: (HasCallStack) =>
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduce = introduce' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
+introduce = introduce' (NodeOptions 100 True)
 
--- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
-introduceWith :: (HasCallStack) =>
-  String
+-- | Introduce a new value and make it available to the child spec tree.
+introduce' :: (HasCallStack) =>
+  NodeOptions
+  -- ^ Custom options for this node
+  -> String
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
-  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
-  -- ^ Callback to receive the new value and the child tree.
+  -> ExampleT context m intro
+  -- ^ Action to produce the new value (of type 'intro')
+  -> (intro -> ExampleT context m ())
+  -- ^ Action to clean up the new value
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduceWith = introduceWith' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
-
--- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
-around :: (HasCallStack) =>
-  String
-  -> (ExampleT context m [Result] -> ExampleT context m ())
-  -- ^ Callback to run the child tree
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-around = around' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
-
--- | Make a group of tests.
-describe :: (HasCallStack) =>
-  String
-  -- ^ Label for this group
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-describe = describe' (NodeOptions 50 True) (snd <$> headMay (getCallStack callStack))
-
--- | Run a group of tests in parallel.
-parallel :: (HasCallStack) =>
-  SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-parallel = parallel' (NodeOptions 50 False) (snd <$> headMay (getCallStack callStack))
-
--- | Define a single test example.
-it :: (HasCallStack) =>
-  String
-  -- ^ Label for the example.
-  -> ExampleT context m ()
-  -- ^ The test example
-  -> Free (SpecCommand context m) ()
-it = it' (NodeOptions 0 True) (snd <$> headMay (getCallStack callStack))
-
--- | Same as 'before', but applied individually to every 'it' node.
-beforeEach :: (HasCallStack) =>
-  String
-  -- ^ String label for this context manager
-  -> (ExampleT context m ())
-  -- ^ Action to perform
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-beforeEach = beforeEach' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
-
--- | Same as 'after', but applied individually to every 'it' node.
-afterEach :: (HasCallStack) =>
-  String
-  -- ^ String label for this context manager
-  -> (ExampleT context m ())
-  -- ^ Action to perform
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-afterEach = afterEach' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
-
--- | Same as 'around', but applied individually to every 'it' node.
-aroundEach :: (Monad m) => (HasCallStack) =>
-  String
-  -- ^ String label for this context manager
-  -> (ExampleT context m [Result] -> ExampleT context m ())
-  -- ^ Callback to run the child tree
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-aroundEach = aroundEach' (NodeOptions 100 True) (snd <$> headMay (getCallStack callStack))
-
-
--- * Primed versions
-
-
--- | Perform an action before a given spec tree.
-before' ::
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
-  -- ^ Location of this call
-  -> String
-  -- ^ String label for this context manager
-  -> ExampleT context m ()
-  -- ^ Action to perform
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
-
--- | Perform an action after a given spec tree.
-after' ::
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
-  -- ^ Location of this call
-  -> String
-  -- ^ String label for this context manager
-  -> ExampleT context m ()
-  -- ^ Action to perform
-  -> SpecFree context m ()
-  -- ^ Child spec tree
-  -> SpecFree context m ()
+introduce' = introduce'' (snd <$> headMay (drop 1 $ getCallStack callStack))
 
 -- | Introduce a new value and make it available to the child spec tree.
-introduce' ::
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
+introduce'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for this node
   -> Label l intro
@@ -388,12 +350,42 @@ introduce' ::
   -- ^ Child spec tree
   -> SpecFree context m ()
 
+-- * ----------------------------------------------------------
+
 -- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
-introduceWith' ::
+introduceWith :: (HasCallStack) =>
+  String
+  -- ^ String label for this node
+  -> Label l intro
+  -- ^ 'Label' under which to introduce the value
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -- ^ Callback to receive the new value and the child tree.
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+introduceWith = introduceWith' (NodeOptions 100 True)
+
+-- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
+introduceWith' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
-  -> Maybe SrcLoc
+  -> String
+  -- ^ String label for this node
+  -> Label l intro
+  -- ^ 'Label' under which to introduce the value
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -- ^ Callback to receive the new value and the child tree.
+  -> SpecFree (LabelValue l intro :> context) m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+introduceWith' = introduceWith'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
+introduceWith'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for this node
   -> Label l intro
@@ -404,12 +396,37 @@ introduceWith' ::
   -- ^ Child spec tree
   -> SpecFree context m ()
 
+-- * ----------------------------------------------------------
+
 -- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
-around' ::
+around :: (HasCallStack) =>
+  String
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+around = around' (NodeOptions 100 True)
+
+-- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
+around' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
-  -> Maybe SrcLoc
+  -> String
+  -- ^ String label for this node
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+around' = around'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
+around'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for this node
   -> (ExampleT context m [Result] -> ExampleT context m ())
@@ -418,46 +435,122 @@ around' ::
   -- ^ Child spec tree
   -> SpecFree context m ()
 
+
+-- * ----------------------------------------------------------
+
 -- | Make a group of tests.
-describe' ::
+describe :: (HasCallStack) =>
+  String
+  -- ^ Label for this group
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+describe = describe' (NodeOptions 50 True)
+
+-- | Make a group of tests.
+describe' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
-  -> Maybe SrcLoc
+  -> String
+  -- ^ Label for this group
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+describe' = describe'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Make a group of tests.
+describe'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ Label for this group
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
 
+-- * ----------------------------------------------------------
+
 -- | Run a group of tests in parallel.
-parallel' ::
+parallel :: (HasCallStack) =>
+  SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+parallel = parallel' (NodeOptions 50 False)
+
+-- | Run a group of tests in parallel.
+parallel' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
-  -> Maybe SrcLoc
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+parallel' = parallel'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Run a group of tests in parallel.
+parallel'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
 
+-- * ----------------------------------------------------------
+
 -- | Define a single test example.
-it' ::
+it :: (HasCallStack) =>
+  String
+  -- ^ Label for the example.
+  -> ExampleT context m ()
+  -- ^ The test example
+  -> Free (SpecCommand context m) ()
+it = it' (NodeOptions 0 True)
+
+-- | Define a single test example.
+it' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
-  -> Maybe SrcLoc
+  -> String
+  -- ^ String label for the example.
+  -> ExampleT context m ()
+  -- ^ The test example
+  -> Free (SpecCommand context m) ()
+it' = it'' (snd <$> headMay (drop 1 $ getCallStack callStack))
+
+-- | Define a single test example.
+it'' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for the example.
   -> ExampleT context m ()
   -- ^ The test example
   -> Free (SpecCommand context m) ()
 
+-- * ----------------------------------------------------------
+
+-- | Same as 'before', but applied individually to every 'it' node.
+beforeEach :: (HasCallStack) =>
+  String
+  -- ^ String label for this context manager
+  -> (ExampleT context m ())
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+beforeEach = beforeEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+
 -- | Perform an action before each example in a given spec tree.
-beforeEach' ::
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
+beforeEach' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for this context manager
   -> (ExampleT context m ())
@@ -465,24 +558,37 @@ beforeEach' ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-beforeEach' no loc l f (Free x@(Before' {..})) = Free (x { subspec = beforeEach' no loc l f subspec, next = beforeEach' no loc l f next })
-beforeEach' no loc l f (Free x@(After' {..})) = Free (x { subspec = beforeEach' no loc l f subspec, next = beforeEach' no loc l f next })
-beforeEach' no loc l f (Free x@(Around' {..})) = Free (x { subspec = beforeEach' no loc l f subspec, next = beforeEach' no loc l f next })
-beforeEach' no loc l f (Free x@(Describe' {..})) = Free (x { subspec = beforeEach' no loc l f subspec, next = beforeEach' no loc l f next })
-beforeEach' no loc l f (Free x@(Parallel' {..})) = Free (x { subspec = beforeEach' no loc l f subspec, next = beforeEach' no loc l f next })
-beforeEach' no loc l f (Free x@(It' {..})) = Free (Before' no loc l f (Free (x { next = Pure () })) (beforeEach' no loc l f next))
-beforeEach' no loc l f (Free (Introduce' noi loci li cl alloc clean subspec next)) = Free (Introduce' noi loci li cl alloc clean (beforeEach' no loc l f' subspec) (beforeEach' no loc l f next))
+beforeEach' loc no l f (Free x@(Before'' {..})) = Free (x { subspec = beforeEach' loc no l f subspec, next = beforeEach' loc no l f next })
+beforeEach' loc no l f (Free x@(After'' {..})) = Free (x { subspec = beforeEach' loc no l f subspec, next = beforeEach' loc no l f next })
+beforeEach' loc no l f (Free x@(Around'' {..})) = Free (x { subspec = beforeEach' loc no l f subspec, next = beforeEach' loc no l f next })
+beforeEach' loc no l f (Free x@(Describe'' {..})) = Free (x { subspec = beforeEach' loc no l f subspec, next = beforeEach' loc no l f next })
+beforeEach' loc no l f (Free x@(Parallel'' {..})) = Free (x { subspec = beforeEach' loc no l f subspec, next = beforeEach' loc no l f next })
+beforeEach' loc no l f (Free x@(It'' {..})) = Free (Before'' loc no l f (Free (x { next = Pure () })) (beforeEach' loc no l f next))
+beforeEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec next)) = Free (Introduce'' loci noi li cl alloc clean (beforeEach' loc no l f' subspec) (beforeEach' loc no l f next))
   where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
-beforeEach' no loc l f (Free (IntroduceWith' noi loci li cl action subspec next)) = Free (IntroduceWith' noi loci li cl action (beforeEach' no loc l f' subspec) (beforeEach' no loc l f next))
+beforeEach' loc no l f (Free (IntroduceWith'' loci noi li cl action subspec next)) = Free (IntroduceWith'' loci noi li cl action (beforeEach' loc no l f' subspec) (beforeEach' loc no l f next))
   where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
 beforeEach' _ _ _ _ (Pure x) = Pure x
 
+-- * ----------------------------------------------------------
+
+-- | Same as 'after', but applied individually to every 'it' node.
+afterEach :: (HasCallStack) =>
+  String
+  -- ^ String label for this context manager
+  -> (ExampleT context m ())
+  -- ^ Action to perform
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+afterEach = afterEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+
 -- | Perform an action after each example in a given spec tree.
-afterEach' ::
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
+afterEach' :: (HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ Label for this context manager
   -> (ExampleT context m ())
@@ -490,23 +596,36 @@ afterEach' ::
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-afterEach' no loc l f (Free x@(Before' {..})) = Free (x { subspec = afterEach' no loc l f subspec, next = afterEach' no loc l f next })
-afterEach' no loc l f (Free x@(After' {..})) = Free (x { subspec = afterEach' no loc l f subspec, next = afterEach' no loc l f next })
-afterEach' no loc l f (Free x@(Around' {..})) = Free (x { subspec = afterEach' no loc l f subspec, next = afterEach' no loc l f next })
-afterEach' no loc l f (Free x@(Describe' {..})) = Free (x { subspec = afterEach' no loc l f subspec, next = afterEach' no loc l f next })
-afterEach' no loc l f (Free x@(Parallel' {..})) = Free (x { subspec = afterEach' no loc l f subspec, next = afterEach' no loc l f next })
-afterEach' no loc l f (Free x@(It' {..})) = Free (After' no loc l f (Free (x { next = Pure () })) (afterEach' no loc l f next))
-afterEach' no loc l f (Free (Introduce' noi loci li cl alloc clean subspec next)) = Free (Introduce' noi loci li cl alloc clean (afterEach' no loc l f' subspec) (afterEach' no loc l f next))
+afterEach' loc no l f (Free x@(Before'' {..})) = Free (x { subspec = afterEach' loc no l f subspec, next = afterEach' loc no l f next })
+afterEach' loc no l f (Free x@(After'' {..})) = Free (x { subspec = afterEach' loc no l f subspec, next = afterEach' loc no l f next })
+afterEach' loc no l f (Free x@(Around'' {..})) = Free (x { subspec = afterEach' loc no l f subspec, next = afterEach' loc no l f next })
+afterEach' loc no l f (Free x@(Describe'' {..})) = Free (x { subspec = afterEach' loc no l f subspec, next = afterEach' loc no l f next })
+afterEach' loc no l f (Free x@(Parallel'' {..})) = Free (x { subspec = afterEach' loc no l f subspec, next = afterEach' loc no l f next })
+afterEach' loc no l f (Free x@(It'' {..})) = Free (After'' loc no l f (Free (x { next = Pure () })) (afterEach' loc no l f next))
+afterEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec next)) = Free (Introduce'' loci noi li cl alloc clean (afterEach' loc no l f' subspec) (afterEach' loc no l f next))
   where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
-afterEach' no loc l f (Free (IntroduceWith' noi loci li cl action subspec next)) = Free (IntroduceWith' noi loci li cl action (afterEach' no loc l f' subspec) (afterEach' no loc l f next))
+afterEach' loc no l f (Free (IntroduceWith'' loci noi li cl action subspec next)) = Free (IntroduceWith'' loci noi li cl action (afterEach' loc no l f' subspec) (afterEach' loc no l f next))
   where f' = ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT f
 afterEach' _ _ _ _ (Pure x) = Pure x
 
-aroundEach' :: (Monad m) =>
-  NodeOptions
-  -- ^ Custom options for this node
-  -> Maybe SrcLoc
+-- * ----------------------------------------------------------
+
+-- | Same as 'around', but applied individually to every 'it' node.
+aroundEach :: (Monad m, HasCallStack) =>
+  String
+  -- ^ String label for this context manager
+  -> (ExampleT context m [Result] -> ExampleT context m ())
+  -- ^ Callback to run the child tree
+  -> SpecFree context m ()
+  -- ^ Child spec tree
+  -> SpecFree context m ()
+aroundEach = aroundEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+
+aroundEach' :: (Monad m, HasCallStack) =>
+  Maybe SrcLoc
   -- ^ Location of this call
+  -> NodeOptions
+  -- ^ Custom options for this node
   -> String
   -- ^ String label for this context manager
   -> (ExampleT context m [Result] -> ExampleT context m ())
@@ -514,15 +633,17 @@ aroundEach' :: (Monad m) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-aroundEach' no loc l f (Free x@(Before' {..})) = Free (x { subspec = aroundEach' no loc l f subspec, next = aroundEach' no loc l f next })
-aroundEach' no loc l f (Free x@(After' {..})) = Free (x { subspec = aroundEach' no loc l f subspec, next = aroundEach' no loc l f next })
-aroundEach' no loc l f (Free x@(Around' {..})) = Free (x { subspec = aroundEach' no loc l f subspec, next = aroundEach' no loc l f next })
-aroundEach' no loc l f (Free x@(Describe' {..})) = Free (x { subspec = aroundEach' no loc l f subspec, next = aroundEach' no loc l f next })
-aroundEach' no loc l f (Free x@(Parallel' {..})) = Free (x { subspec = aroundEach' no loc l f subspec, next = aroundEach' no loc l f next })
-aroundEach' no loc l f (Free x@(It' {..})) = Free (Around' no loc l f (Free (x { next = Pure () })) (aroundEach' no loc l f next))
+aroundEach' loc no l f (Free x@(Before'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
+aroundEach' loc no l f (Free x@(After'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
+aroundEach' loc no l f (Free x@(Around'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
+aroundEach' loc no l f (Free x@(Describe'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
+aroundEach' loc no l f (Free x@(Parallel'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
+aroundEach' loc no l f (Free x@(It'' {..})) = Free (Around'' loc no l f (Free (x { next = Pure () })) (aroundEach' loc no l f next))
 aroundEach' no _ _ _ (Pure x) = Pure x
-aroundEach' no loc l f (Free (IntroduceWith' noi loci li cl action subspec next)) = Free (IntroduceWith' noi loci li cl action (aroundEach' no loc l (unwrapContext f) subspec) (aroundEach' no loc l f next))
-aroundEach' no loc l f (Free (Introduce' noi loci li cl alloc clean subspec next)) = Free (Introduce' noi loci li cl alloc clean (aroundEach' no loc l (unwrapContext f) subspec) (aroundEach' no loc l f next))
+aroundEach' loc no l f (Free (IntroduceWith'' loci noi li cl action subspec next)) = Free (IntroduceWith'' loci noi li cl action (aroundEach' loc no l (unwrapContext f) subspec) (aroundEach' loc no l f next))
+aroundEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec next)) = Free (Introduce'' loci noi li cl alloc clean (aroundEach' loc no l (unwrapContext f) subspec) (aroundEach' loc no l f next))
+
+-- * ----------------------------------------------------------
 
 unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do

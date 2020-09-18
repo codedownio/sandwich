@@ -35,27 +35,27 @@ appendLogMessage logs msg = do
   atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
 getImmediateChildren :: Free (SpecCommand context m) () -> [Free (SpecCommand context m) ()]
-getImmediateChildren (Free (It' no loc l ex next)) = (Free (It' no loc l ex (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Before' no loc l f subspec next)) = (Free (Before' no loc l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (After' no loc l f subspec next)) = (Free (After' no loc l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Introduce' no loc l cl alloc cleanup subspec next)) = (Free (Introduce' no loc l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (IntroduceWith' no loc l cl action subspec next)) = (Free (IntroduceWith' no loc l cl action subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Around' no loc l f subspec next)) = (Free (Around' no loc l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Describe' no loc l subspec next)) = (Free (Describe' no loc l subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Parallel' no loc subspec next)) = (Free (Parallel' no loc subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (It'' loc no l ex next)) = (Free (It'' loc no l ex (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Before'' loc no l f subspec next)) = (Free (Before'' loc no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (After'' loc no l f subspec next)) = (Free (After'' loc no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Introduce'' loc no l cl alloc cleanup subspec next)) = (Free (Introduce'' loc no l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (IntroduceWith'' loc no l cl action subspec next)) = (Free (IntroduceWith'' loc no l cl action subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Around'' loc no l f subspec next)) = (Free (Around'' loc no l f subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Describe'' loc no l subspec next)) = (Free (Describe'' loc no l subspec (Pure ()))) : getImmediateChildren next
+getImmediateChildren (Free (Parallel'' loc no subspec next)) = (Free (Parallel'' loc no subspec (Pure ()))) : getImmediateChildren next
 getImmediateChildren (Pure ()) = [Pure ()]
 
 countChildren :: Free (SpecCommand context m) () -> Int
 countChildren = L.length . getImmediateChildren
 
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
-countImmediateFolderChildren (Free (It' no loc l ex next))
+countImmediateFolderChildren (Free (It'' loc no l ex next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren next
-countImmediateFolderChildren (Free (Introduce' no l loc cl alloc cleanup subspec next))
+countImmediateFolderChildren (Free (Introduce'' loc no l cl alloc cleanup subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
-countImmediateFolderChildren (Free (IntroduceWith' no l loc cl action subspec next))
+countImmediateFolderChildren (Free (IntroduceWith'' loc no l cl action subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
 countImmediateFolderChildren (Free node)
