@@ -81,6 +81,7 @@ runApp (TerminalUIFormatter {..}) rts baseContext = liftIO $ do
 
           , _appLogLevel = terminalUILogLevel
           , _appShowRunTimes = terminalUIShowRunTimes
+          , _appShowFileLocations = terminalUIShowFileLocations
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
         }
 
@@ -231,6 +232,8 @@ appEvent s x@(VtyEvent e) =
         & updateFilteredTree
     V.EvKey c [] | c == toggleShowRunTimesKey -> continue $ s
       & appShowRunTimes %~ not
+    V.EvKey c [] | c == toggleFileLocationsKey -> continue $ s
+      & appShowFileLocations %~ not
     V.EvKey c [] | c == toggleVisibilityThresholdsKey -> continue $ s
       & appShowVisibilityThresholds %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do

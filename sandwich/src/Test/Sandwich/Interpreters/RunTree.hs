@@ -19,6 +19,7 @@ import Control.Monad.Free
 import Control.Monad.Trans.RWS
 import Data.Functor.Identity
 import Data.Sequence
+import GHC.Stack
 import System.FilePath
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
@@ -46,28 +47,28 @@ specToRunTreeM baseContext spec = do
 -- | Convert a spec to a run tree
 specToRunTree' :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 specToRunTree'  (Free (Before' no l f subspec next)) = do
-  common <- getCommon l no
+  common <- getCommon l no Nothing
   continueWith next =<< RunNodeBefore <$> pure common <*> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (After' no l f subspec next)) = do
-  common <- getCommon l no
+  common <- getCommon l no Nothing
   continueWith next =<< RunNodeAfter <$> pure common <*> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (Introduce' no l cl alloc cleanup subspec next)) = do
-  common <- getCommon l no
+  common <- getCommon l no Nothing
   continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l no common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith' no l _cl action subspec next)) = do
-  common <- getCommon l no
+  common <- getCommon l no Nothing
   continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l no common subspec <*> pure action
 specToRunTree'  (Free (Around' no l actionWith subspec next)) = do
-  common <- getCommon l no
+  common <- getCommon l no Nothing
   continueWith next =<< RunNodeAround <$> pure common <*> recurse l no common subspec <*> pure actionWith
-specToRunTree'  (Free (Describe' no l subspec next)) = do
-  common <- getCommon l no
+specToRunTree'  (Free (Describe' no loc l subspec next)) = do
+  common <- getCommon l no loc
   continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l no common subspec
 specToRunTree'  (Free (Parallel' no subspec next)) = do
-  common <- getCommon "Parallel" no
+  common <- getCommon "Parallel" no Nothing
   continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" no common subspec
-specToRunTree'  (Free (It' no l example next)) = do
-  common <- getCommon l no
+specToRunTree'  (Free (It' no loc l example next)) = do
+  common <- getCommon l no loc
   continueWith next =<< RunNodeIt <$> pure common <*> pure example
 specToRunTree'  (Pure _) = return []
 
@@ -76,8 +77,8 @@ specToRunTree'  (Pure _) = return []
 
 type ConvertM m = RWST RunTreeContext () Int m
 
-getCommon :: (Monad m) => String -> NodeOptions -> ConvertM m RunNodeCommonFixed
-getCommon l (NodeOptions {..}) = do
+getCommon :: (Monad m) => String -> NodeOptions -> Maybe SrcLoc -> ConvertM m RunNodeCommonFixed
+getCommon l (NodeOptions {..}) srcLoc = do
   rtc@(RunTreeContext {..}) <- ask
 
   -- Get a unique ID for this node
@@ -97,6 +98,7 @@ getCommon l (NodeOptions {..}) = do
         _ -> Nothing
     , runTreeVisibilityLevel = nodeOptionsVisibilityThreshold
     , runTreeLogs = mempty
+    , runTreeLoc = srcLoc
     }
 
 continueWith :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> RunNodeFixed context -> ConvertM m [RunNodeFixed context]

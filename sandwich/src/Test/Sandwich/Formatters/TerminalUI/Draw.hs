@@ -19,6 +19,7 @@ import qualified Data.Sequence as Seq
 import Data.String.Interpolate.IsString
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
+import GHC.Stack
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Test.Sandwich.Formatters.Common.Count
@@ -61,6 +62,15 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr openMarkerAttr $ str (if open then "[-] " else "[+] ")
       , Just $ withAttr (chooseAttr status) (str label)
+      , if not (app ^. appShowFileLocations) then Nothing else
+          case runTreeLoc node of
+            Nothing -> Nothing
+            Just loc ->
+              Just $ hBox [str " ["
+                          , withAttr logFilenameAttr $ str $ srcLocFile loc
+                          , str ":"
+                          , withAttr logLineAttr $ str $ show $ srcLocStartLine loc
+                          , str "]"]
       , if not (app ^. appShowVisibilityThresholds) then Nothing else
           Just $ hBox [str " ["
                       , withAttr visibilityThresholdIndicatorMutedAttr $ str "V="

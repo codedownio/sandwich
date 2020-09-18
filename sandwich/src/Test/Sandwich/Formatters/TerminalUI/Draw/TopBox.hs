@@ -42,6 +42,7 @@ topBox app = hBox [columnPadding settingsColumn
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
                                        , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
+                                       , toggleIndicator (app ^. appShowFileLocations) (showKey toggleFileLocationsKey) "Hide file locations" "Show file locations"
                                        , toggleIndicator (app ^. appShowVisibilityThresholds) (showKey toggleVisibilityThresholdsKey) "Hide visibility thresholds" "Show visibility thresholds"
                                        , hBox [str "["
                                               , highlightIfLogLevel app LevelDebug [unKChar debugKey]

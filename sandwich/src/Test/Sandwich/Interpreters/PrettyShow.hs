@@ -17,9 +17,9 @@ prettyShow' indent (Free (After' no l f subspec next)) = showNode indent l subsp
 prettyShow' indent (Free (Introduce' no l cl alloc cleanup subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (IntroduceWith' no l cl action subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (Around' no l f subspec next)) = showNode indent l subspec next
-prettyShow' indent (Free (Describe' no l subspec next)) = showNode indent l subspec next
+prettyShow' indent (Free (Describe' no loc l subspec next)) = showNode indent l subspec next
 prettyShow' indent (Free (Parallel' no subspec next)) = showNode indent "parallel" subspec next
-prettyShow' indent (Free (It' no l ex next)) = showNode indent l ((return ()) :: Free (SpecCommand () m) ()) next
+prettyShow' indent (Free (It' no loc l ex next)) = showNode indent l ((return ()) :: Free (SpecCommand () m) ()) next
 prettyShow' _ (Pure _) = ""
 
 -- * Util

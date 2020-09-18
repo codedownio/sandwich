@@ -74,6 +74,7 @@ data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
   , runTreeLogs :: l
+  , runTreeLoc :: Maybe SrcLoc
   } deriving (Show, Eq)
 
 type RunNodeCommonFixed = RunNodeCommonWithStatus Status (Seq LogEntry) Bool

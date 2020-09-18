@@ -32,6 +32,7 @@ import Data.Functor.Classes
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
+import Safe
 
 -- * ExampleM monad
 
@@ -99,13 +100,6 @@ newtype SomeAsyncExceptionWithEq = SomeAsyncExceptionWithEq SomeAsyncException
   deriving Show
 instance Eq SomeAsyncExceptionWithEq where
   (SomeAsyncExceptionWithEq e1) == (SomeAsyncExceptionWithEq e2) = show e1 == show e2
-
--- | @Location@ is used to represent source locations.
-data Location = Location {
-  locationFile :: FilePath
-, locationLine :: Int
-, locationColumn :: Int
-} deriving (Eq, Show, Read)
 
 -- * Label stuff
 
@@ -181,6 +175,7 @@ data SpecCommand context m next where
              , next :: next } -> SpecCommand context m next
 
   Describe' :: { nodeOptions :: NodeOptions
+               , loc :: Maybe SrcLoc
                , label :: String
                , subspec :: SpecFree context m ()
                , next :: next } -> SpecCommand context m next
@@ -190,6 +185,7 @@ data SpecCommand context m next where
                , next :: next } -> SpecCommand context m next
 
   It' :: { nodeOptions :: NodeOptions
+         , loc :: Maybe SrcLoc
          , label :: String
          , example :: ExampleT context m ()
          , next :: next } -> SpecCommand context m next
@@ -279,13 +275,13 @@ around ::
 around = around' (NodeOptions 100 True)
 
 -- | Make a group of tests.
-describe ::
+describe :: (HasCallStack) =>
   String
   -- ^ Label for this group
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-describe = describe' (NodeOptions 50 True)
+describe = describe' (NodeOptions 50 True) (snd <$> headMay (getCallStack callStack))
 
 -- | Run a group of tests in parallel.
 parallel ::
@@ -295,13 +291,13 @@ parallel ::
 parallel = parallel' (NodeOptions 50 False)
 
 -- | Define a single test example.
-it ::
+it :: (HasCallStack) =>
   String
   -- ^ Label for the example.
   -> ExampleT context m ()
   -- ^ The test example
   -> Free (SpecCommand context m) ()
-it = it' (NodeOptions 0 True)
+it = it' (NodeOptions 0 True) (snd <$> headMay (getCallStack callStack))
 
 -- | Same as 'before', but applied individually to every 'it' node.
 beforeEach ::
@@ -409,6 +405,8 @@ around' ::
 describe' ::
   NodeOptions
   -- ^ Custom options for this node
+  -> Maybe SrcLoc
+  -- ^ Location of this call
   -> String
   -- ^ Label for this group
   -> SpecFree context m ()
@@ -427,6 +425,8 @@ parallel' ::
 it' ::
   NodeOptions
   -- ^ Custom options for this node
+  -> Maybe SrcLoc
+  -- ^ Location of this call
   -> String
   -- ^ String label for the example.
   -> ExampleT context m ()

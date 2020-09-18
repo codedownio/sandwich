@@ -33,17 +33,17 @@ filterTree match (Free (Around' no l f subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Around' no l f x (filterTree match next))
-filterTree match (Free (Describe' no l subspec next))
-  | l `matches` match = Free (Describe' no l subspec (filterTree match next))
+filterTree match (Free (Describe' no loc l subspec next))
+  | l `matches` match = Free (Describe' no loc l subspec (filterTree match next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
-      x -> Free (Describe' no l x (filterTree match next))
+      x -> Free (Describe' no loc l x (filterTree match next))
 filterTree match (Free (Parallel' no subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (Parallel' no x (filterTree match next))
-filterTree match (Free (It' no l ex next))
-  | l `matches` match = Free (It' no l ex (filterTree match next))
+filterTree match (Free (It' no loc l ex next))
+  | l `matches` match = Free (It' no loc l ex (filterTree match next))
   | otherwise = filterTree match (filterTree match next)
 filterTree _ (Pure x) = Pure x
 

@@ -24,6 +24,8 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- ^ The initial folding settings to use when the formatter starts.
   , terminalUIShowRunTimes :: Bool
   -- ^ Whether to show or hide run times.
+  , terminalUIShowFileLocations :: Bool
+  -- ^ Whether to show or hide the files in which tests are defined.
   , terminalUIShowVisibilityThresholds :: Bool
   -- ^ Whether to show or hide visibility thresholds next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
@@ -41,6 +43,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold = 50
   , terminalUIInitialFolding = InitialFoldingAllOpen
   , terminalUIShowRunTimes = True
+  , terminalUIShowFileLocations = False
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
   }
@@ -83,6 +86,7 @@ data AppState = AppState {
 
   , _appLogLevel :: Maybe LogLevel
   , _appShowRunTimes :: Bool
+  , _appShowFileLocations :: Bool
   , _appShowVisibilityThresholds :: Bool
   }
 
