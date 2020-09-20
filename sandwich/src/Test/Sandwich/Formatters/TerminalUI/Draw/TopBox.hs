@@ -63,8 +63,18 @@ topBox app = hBox [columnPadding settingsColumn
                                          , withAttr hotkeyMessageAttr $ str " folder"
                                          ]
                                   , keyIndicatorAllTestsDone app (showKey clearResultsKey) "Clear results"
-                                  , keyIndicatorHasSelected app (showKey openInEditorKey) "Open source in editor"
-                                  , keyIndicatorHasSelected app (showKey openLogsInEditorKey) "Open logs in editor"
+
+                                  , hBox [str "["
+                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openInEditorKey)
+                                         , str "/"
+                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openLogsInEditorKey)
+                                         , str "] "
+                                         , withAttr hotkeyMessageAttr $ str "Open "
+                                         , highlightMessageIfPredicate someTestSelected app (str "source")
+                                         , str "/"
+                                         , highlightMessageIfPredicate someTestSelected app (str "logs")
+                                         , withAttr hotkeyMessageAttr $ str " in editor"
+                                         ]
                                   ]
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
