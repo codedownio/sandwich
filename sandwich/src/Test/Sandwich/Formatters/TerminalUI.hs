@@ -237,6 +237,18 @@ appEvent s x@(VtyEvent e) =
                 Nothing -> return loc'
 
           liftIO $ (s ^. appOpenInEditor) loc
+    V.EvKey c [] | c == openLogsInEditorKey -> withContinueS $
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) -> do
+        whenJust (runTreeFolder node) $ \dir -> do
+          liftIO $ (s ^. appOpenInEditor) $ SrcLoc {
+            srcLocPackage = ""
+            , srcLocModule = ""
+            , srcLocFile = dir </> "test_logs.txt"
+            , srcLocStartLine = 0
+            , srcLocStartCol = 0
+            , srcLocEndLine = 0
+            , srcLocEndCol = 0
+            }
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do

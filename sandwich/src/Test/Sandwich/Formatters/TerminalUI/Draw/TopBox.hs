@@ -51,10 +51,20 @@ topBox app = hBox [columnPadding settingsColumn
                                          , str "/"
                                          , highlightMessageIfPredicate noTestsRunning app (str "all")
                                          ]
+                                  , hBox [str "["
+                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openSelectedFolderInFileExplorer)
+                                         , str "/"
+                                         , highlightKeyIfPredicate (const True) app (str $ showKey openTestRootKey)
+                                         , str "] "
+                                         , withAttr hotkeyMessageAttr $ str "Open "
+                                         , highlightMessageIfPredicate someTestSelected app (str "selected")
+                                         , str "/"
+                                         , highlightMessageIfPredicate (const True) app (str "root")
+                                         , withAttr hotkeyMessageAttr $ str " folder"
+                                         ]
                                   , keyIndicatorAllTestsDone app (showKey clearResultsKey) "Clear results"
-                                  , keyIndicatorHasSelectedAndFolder app (showKey openSelectedFolderInFileExplorer) "Open selected folder"
-                                  , keyIndicator (showKey openTestRootKey) "Open test root"
-                                  , keyIndicatorHasSelected app (showKey openInEditorKey) "Open in editor"
+                                  , keyIndicatorHasSelected app (showKey openInEditorKey) "Open source in editor"
+                                  , keyIndicatorHasSelected app (showKey openLogsInEditorKey) "Open logs in editor"
                                   ]
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
@@ -102,7 +112,7 @@ keyIndicator key msg = keyIndicator' key (withAttr hotkeyMessageAttr $ str msg)
 
 keyIndicator' key label = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", label]
 
-keyIndicatorHasSelected app = keyIndicatorContextual app (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
+keyIndicatorHasSelected app = keyIndicatorContextual app someTestSelected
 
 keyIndicatorSelectedTestDone app = keyIndicatorContextual app selectedTestDone
 keyIndicatorSelectedTestRunning app = keyIndicatorContextual app selectedTestRunning
@@ -134,3 +144,5 @@ selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
 noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 someTestRunning s = any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+
+someTestSelected s = isJust $ L.listSelectedElement (s ^. appMainList)

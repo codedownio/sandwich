@@ -23,6 +23,7 @@ clearResultsKey = V.KChar 'k'
 openSelectedFolderInFileExplorer = V.KChar 'o'
 openTestRootKey = V.KChar 'O'
 openInEditorKey = V.KChar 'E'
+openLogsInEditorKey = V.KChar 'l'
 
 -- Column 3
 cycleVisibilityThresholdKey = V.KChar 'v'
