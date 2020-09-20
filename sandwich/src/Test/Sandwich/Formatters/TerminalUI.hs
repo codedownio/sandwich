@@ -218,7 +218,13 @@ appEvent s x@(VtyEvent e) =
               -- Start a run for all affected nodes
               let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
               void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
-    V.EvKey c [] | c == clearResultsKey -> withContinueS $ do
+    V.EvKey c [] | c == clearSelectedKey -> withContinueS $ do
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
+        Running {} -> return ()
+        _ -> case findRunNodeChildrenById ident (s ^. appRunTree) of
+          Nothing -> return ()
+          Just childIds -> liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` childIds)) (s ^. appRunTreeBase)
+    V.EvKey c [] | c == clearAllKey -> withContinueS $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
     V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {folderPath}) ->

@@ -52,6 +52,16 @@ topBox app = hBox [columnPadding settingsColumn
                                          , highlightMessageIfPredicate noTestsRunning app (str "all")
                                          ]
                                   , hBox [str "["
+                                         , highlightKeyIfPredicate selectedTestDone app (str $ showKey clearSelectedKey)
+                                         , str "/"
+                                         , highlightKeyIfPredicate allTestsDone app (str $ showKey clearAllKey)
+                                         , str "] "
+                                         , withAttr hotkeyMessageAttr $ str "Clear "
+                                         , highlightMessageIfPredicate selectedTestDone app (str "selected")
+                                         , str "/"
+                                         , highlightMessageIfPredicate allTestsDone app (str "all")
+                                         ]
+                                  , hBox [str "["
                                          , highlightKeyIfPredicate someTestSelected app (str $ showKey openSelectedFolderInFileExplorer)
                                          , str "/"
                                          , highlightKeyIfPredicate (const True) app (str $ showKey openTestRootKey)
@@ -62,8 +72,6 @@ topBox app = hBox [columnPadding settingsColumn
                                          , highlightMessageIfPredicate (const True) app (str "root")
                                          , withAttr hotkeyMessageAttr $ str " folder"
                                          ]
-                                  , keyIndicatorAllTestsDone app (showKey clearResultsKey) "Clear results"
-
                                   , hBox [str "["
                                          , highlightKeyIfPredicate someTestSelected app (str $ showKey openInEditorKey)
                                          , str "/"
@@ -133,7 +141,7 @@ keyIndicatorHasSelectedAndFolder app = keyIndicatorContextual app $ \s -> case L
 
 keyIndicatorSomeTestRunning app = keyIndicatorContextual app someTestRunning
 keyIndicatorNoTestsRunning app = keyIndicatorContextual app noTestsRunning
-keyIndicatorAllTestsDone app = keyIndicatorContextual app $ \s -> all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+keyIndicatorAllTestsDone app = keyIndicatorContextual app allTestsDone
 -- keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 keyIndicatorContextual app p key msg = case p app of
@@ -154,5 +162,7 @@ selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
 noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 someTestRunning s = any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+
+allTestsDone s = all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 someTestSelected s = isJust $ L.listSelectedElement (s ^. appMainList)
