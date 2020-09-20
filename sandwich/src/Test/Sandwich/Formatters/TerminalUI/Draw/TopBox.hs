@@ -31,10 +31,26 @@ topBox app = hBox [columnPadding settingsColumn
                                    , keyIndicator "Meta + [0-9]" "Unfold top # nodes"
                                    , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"]
 
-    actionsColumn = keybindingBox [keyIndicatorSomeTestRunning app (showKey cancelAllKey) "Cancel all"
-                                  , keyIndicatorSelectedTestRunning app (showKey cancelSelectedKey) "Cancel selected"
-                                  , keyIndicatorNoTestsRunning app (showKey runAllKey) "Run all"
-                                  , keyIndicatorSelectedTestDone app (showKey runSelectedKey) "Run selected"
+    actionsColumn = keybindingBox [hBox [str "["
+                                         , highlightKeyIfPredicate selectedTestRunning app (str $ showKey cancelSelectedKey)
+                                         , str "/"
+                                         , highlightKeyIfPredicate someTestRunning app (str $ showKey cancelAllKey)
+                                         , str "] "
+                                         , withAttr hotkeyMessageAttr $ str "Cancel "
+                                         , highlightMessageIfPredicate selectedTestRunning app (str "selected")
+                                         , str "/"
+                                         , highlightMessageIfPredicate someTestRunning app (str "all")
+                                         ]
+                                  , hBox [str "["
+                                         , highlightKeyIfPredicate selectedTestDone app (str $ showKey runSelectedKey)
+                                         , str "/"
+                                         , highlightKeyIfPredicate noTestsRunning app (str $ showKey runAllKey)
+                                         , str "] "
+                                         , withAttr hotkeyMessageAttr $ str "Run "
+                                         , highlightMessageIfPredicate selectedTestDone app (str "selected")
+                                         , str "/"
+                                         , highlightMessageIfPredicate noTestsRunning app (str "all")
+                                         ]
                                   , keyIndicatorAllTestsDone app (showKey clearResultsKey) "Clear results"
                                   , keyIndicatorHasSelectedAndFolder app (showKey openSelectedFolderInFileExplorer) "Open selected folder"
                                   , keyIndicator (showKey openTestRootKey) "Open test root"
@@ -59,7 +75,7 @@ topBox app = hBox [columnPadding settingsColumn
                                        , keyIndicator "q" "Exit"]
 
 visibilityThresholdWidget app = hBox $
-  [str "Change visibility threshold ("]
+  [withAttr hotkeyMessageAttr $ str "Change visibility threshold ("]
   <> L.intersperse (str ", ") [withAttr (if x == app ^. appVisibilityThreshold then visibilityThresholdSelectedAttr else visibilityThresholdNotSelectedAttr) $ str $ show x | x <- (app ^. appVisibilityThresholdSteps)]
   <> [(str ")")]
 
@@ -71,6 +87,14 @@ highlightIfLogLevel app desiredLevel thing =
   if | app ^. appLogLevel == Just desiredLevel -> withAttr visibilityThresholdSelectedAttr $ str thing
      | otherwise -> withAttr hotkeyAttr $ str thing
 
+highlightKeyIfPredicate p app x = case p app of
+  True -> withAttr hotkeyAttr x
+  False -> withAttr disabledHotkeyAttr x
+
+highlightMessageIfPredicate p app x = case p app of
+  True -> withAttr hotkeyMessageAttr x
+  False -> withAttr disabledHotkeyMessageAttr x
+
 toggleIndicator True key onMsg _ = keyIndicator key onMsg
 toggleIndicator False key _ offMsg = keyIndicator key offMsg
 
@@ -80,22 +104,33 @@ keyIndicator' key label = hBox [str "[", withAttr hotkeyAttr $ str key, str "] "
 
 keyIndicatorHasSelected app = keyIndicatorContextual app (\s -> isJust $ L.listSelectedElement (s ^. appMainList))
 
-keyIndicatorSelectedTestDone app = keyIndicatorContextual app $ \s -> case L.listSelectedElement (s ^. appMainList) of
-  Nothing -> False
-  Just (_, MainListElem {..}) -> isDone status
-keyIndicatorSelectedTestRunning app = keyIndicatorContextual app $ \s -> case L.listSelectedElement (s ^. appMainList) of
-  Nothing -> False
-  Just (_, MainListElem {..}) -> isRunning status
+keyIndicatorSelectedTestDone app = keyIndicatorContextual app selectedTestDone
+keyIndicatorSelectedTestRunning app = keyIndicatorContextual app selectedTestRunning
 
 keyIndicatorHasSelectedAndFolder app = keyIndicatorContextual app $ \s -> case L.listSelectedElement (s ^. appMainList) of
   Just (_, MainListElem {folderPath=(Just _)}) -> True
   _ -> False
 
-keyIndicatorSomeTestRunning app = keyIndicatorContextual app $ \s -> any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
-keyIndicatorNoTestsRunning app = keyIndicatorContextual app $ \s -> all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+keyIndicatorSomeTestRunning app = keyIndicatorContextual app someTestRunning
+keyIndicatorNoTestsRunning app = keyIndicatorContextual app noTestsRunning
 keyIndicatorAllTestsDone app = keyIndicatorContextual app $ \s -> all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 -- keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 keyIndicatorContextual app p key msg = case p app of
   True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
   False -> hBox [str "[", withAttr disabledHotkeyAttr $ str key, str "] ", withAttr disabledHotkeyMessageAttr $ str msg]
+
+
+-- * Predicates
+
+selectedTestRunning s = case L.listSelectedElement (s ^. appMainList) of
+  Nothing -> False
+  Just (_, MainListElem {..}) -> isRunning status
+
+selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
+  Nothing -> False
+  Just (_, MainListElem {..}) -> isDone status
+
+noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+
+someTestRunning s = any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
