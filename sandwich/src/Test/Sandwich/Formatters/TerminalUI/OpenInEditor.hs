@@ -28,4 +28,5 @@ openInEmacs loc@(SrcLoc {..}) = do
       elisp = [i|(progn
                    (x-focus-frame (selected-frame))
                    (raise-frame)
+                   (recenter)
                    )|]
