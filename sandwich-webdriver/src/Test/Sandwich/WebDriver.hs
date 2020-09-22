@@ -46,6 +46,7 @@ module Test.Sandwich.WebDriver (
   , headlessFirefoxCapabilities
 
   , WdSession
+  , getWdOptions
   , getDisplayNumber
   , getXvfbSession
   , getWdName

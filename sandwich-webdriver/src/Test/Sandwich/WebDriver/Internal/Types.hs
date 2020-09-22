@@ -165,6 +165,9 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbProcess :: ProcessHandle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
+getWdOptions :: WdSession -> WdOptions
+getWdOptions = wdOptions
+
 getDisplayNumber :: WdSession -> Maybe Int
 getDisplayNumber (WdSession {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
