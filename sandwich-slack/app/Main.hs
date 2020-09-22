@@ -21,7 +21,7 @@ simple = do
   it "does the thing 6" sleepThenSucceed
 
 
-slackFormatter = SlackFormatter {
+slackFormatter = defaultSlackFormatter {
   slackFormatterSlackConfig = SlackConfig ""
   , slackFormatterTopMessage = Just "Top message"
   , slackFormatterChannel = "test-channel"

@@ -6,8 +6,14 @@
 -- |
 
 module Test.Sandwich.Formatters.Slack (
-  SlackFormatter(..)
+  SlackFormatter
   , SlackConfig(..)
+
+  , defaultSlackFormatter
+  , slackFormatterSlackConfig
+  , slackFormatterTopMessage
+  , slackFormatterChannel
+  , slackFormatterMaxFailureAttachments
   ) where
 
 import Control.Concurrent
@@ -43,6 +49,14 @@ data SlackFormatter = SlackFormatter {
   -- If too many attachments are included, it's possible to hit Slack's request limit of 8KB, which
   -- causes the progressbar to fail to update.
   -- Defaults to 30.
+  }
+
+defaultSlackFormatter :: SlackFormatter
+defaultSlackFormatter = SlackFormatter {
+  slackFormatterSlackConfig = SlackConfig "my-password"
+  , slackFormatterTopMessage = Just "Top message"
+  , slackFormatterChannel = "slack-channel"
+  , slackFormatterMaxFailureAttachments = Just 30
   }
 
 instance Formatter SlackFormatter where
@@ -89,7 +103,9 @@ publishTree maybeMaxAttachments topMessage elapsed tree = pbi
     pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
                           , progressBarInfoBottomMessage = Just fullBottomMessage
                           , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
-                          , progressBarInfoAttachments = Just $ L.take (fromMaybe 30 maybeMaxAttachments) attachments
+                          , progressBarInfoAttachments = Just $ case maybeMaxAttachments of
+                              Nothing -> attachments
+                              Just n -> L.take n attachments
                           }
 
     fullBottomMessage = case runningMessage of
