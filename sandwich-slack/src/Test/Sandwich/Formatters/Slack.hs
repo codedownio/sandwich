@@ -38,6 +38,11 @@ data SlackFormatter = SlackFormatter {
   -- For example, the name of the test suite and a link to the run in the CI system.
   , slackFormatterChannel :: String
   -- ^ Slack channel on which to create the progress bar.
+  , slackFormatterMaxFailureAttachments :: Maybe Int
+  -- ^ Maximum number of failure attachments to include.
+  -- If too many attachments are included, it's possible to hit Slack's request limit of 8KB, which
+  -- causes the progressbar to fail to update.
+  -- Defaults to 30.
   }
 
 instance Formatter SlackFormatter where
@@ -49,7 +54,7 @@ runApp (SlackFormatter {..}) rts bc = do
   startTime <- liftIO getCurrentTime
 
   rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
-  let pbi = publishTree slackFormatterTopMessage 0 rtsFixed
+  let pbi = publishTree slackFormatterMaxFailureAttachments slackFormatterTopMessage 0 rtsFixed
   pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
     Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
@@ -65,7 +70,7 @@ runApp (SlackFormatter {..}) rts bc = do
         return newFixed
 
       now <- liftIO getCurrentTime
-      let pbi' = publishTree slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
+      let pbi' = publishTree slackFormatterMaxFailureAttachments slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
       tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
         Left err -> logError [i|Error updating progress bar: '#{err}'|]
         Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
@@ -79,12 +84,12 @@ runApp (SlackFormatter {..}) rts bc = do
              loop
 
 
-publishTree topMessage elapsed tree = pbi
+publishTree maybeMaxAttachments topMessage elapsed tree = pbi
   where
     pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
                           , progressBarInfoBottomMessage = Just fullBottomMessage
                           , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
-                          , progressBarInfoAttachments = Just attachments
+                          , progressBarInfoAttachments = Just $ L.take (fromMaybe 30 maybeMaxAttachments) attachments
                           }
 
     fullBottomMessage = case runningMessage of
