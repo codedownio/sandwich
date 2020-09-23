@@ -12,12 +12,14 @@
 module Test.Sandwich.Interpreters.RunTree (
   specToRunTree
   , specToRunTreeVariable
+  , isEmptySpec
   ) where
 
 import Control.Concurrent.STM
 import Control.Monad.Free
 import Control.Monad.Trans.RWS
 import Data.Functor.Identity
+import qualified Data.List as L
 import Data.Sequence
 import GHC.Stack
 import System.FilePath
@@ -33,6 +35,16 @@ specToRunTree baseContext spec = runIdentity $ specToRunTreeM baseContext spec
 specToRunTreeVariable :: BaseContext -> Free (SpecCommand BaseContext IO) () -> STM [RunNode BaseContext]
 specToRunTreeVariable bc spec = mapM unFixRunTree $ specToRunTree bc spec
 
+isEmptySpec :: Free (SpecCommand context IO) () -> Bool
+isEmptySpec spec = L.null ret
+  where context = RunTreeContext {
+          runTreeIndexInParent = 0
+          , runTreeNumSiblings = 0
+          , runTreeCurrentAncestors = mempty
+          , runTreeCurrentFolder = Nothing
+          }
+        (ret, _, _) = runIdentity $ runRWST (specToRunTree' spec) context 0
+
 specToRunTreeM :: (Monad m) => BaseContext -> Free (SpecCommand BaseContext IO) () -> m [RunNodeFixed BaseContext]
 specToRunTreeM baseContext spec = do
   let context = RunTreeContext {
@@ -45,7 +57,7 @@ specToRunTreeM baseContext spec = do
   return ret
 
 -- | Convert a spec to a run tree
-specToRunTree' :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
+specToRunTree' :: (Monad m) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 specToRunTree'  (Free (Before'' loc no l f subspec next)) = do
   common <- getCommon l loc no
   continueWith next =<< RunNodeBefore <$> pure common <*> recurse l no common subspec <*> pure f
@@ -101,12 +113,12 @@ getCommon l srcLoc (NodeOptions {..}) = do
     , runTreeLoc = srcLoc
     }
 
-continueWith :: (Monad m, HasBaseContext context) => Free (SpecCommand context IO) r -> RunNodeFixed context -> ConvertM m [RunNodeFixed context]
+continueWith :: (Monad m) => Free (SpecCommand context IO) r -> RunNodeFixed context -> ConvertM m [RunNodeFixed context]
 continueWith next node = do
   rest <- local (\rtc -> rtc { runTreeIndexInParent = (runTreeIndexInParent rtc) + 1 }) $ specToRunTree' next
   return (node : rest)
 
-recurse :: (Monad m, HasBaseContext context) => String -> NodeOptions -> RunNodeCommonFixed -> Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
+recurse :: (Monad m) => String -> NodeOptions -> RunNodeCommonFixed -> Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 recurse l (NodeOptions {..}) (RunNodeCommonWithStatus {..}) subspec = local
   (\rtc ->
      if | nodeOptionsCreateFolder ->

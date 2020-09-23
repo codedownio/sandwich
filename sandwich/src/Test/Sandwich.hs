@@ -42,6 +42,8 @@ module Test.Sandwich (
   , HasLabel
   , (:>)
 
+  , isEmptySpec
+
   , SomeExceptionWithCallStack(..)
 
   , module Test.Sandwich.Contexts
