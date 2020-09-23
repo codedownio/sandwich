@@ -35,7 +35,7 @@ specToRunTree baseContext spec = runIdentity $ specToRunTreeM baseContext spec
 specToRunTreeVariable :: BaseContext -> Free (SpecCommand BaseContext IO) () -> STM [RunNode BaseContext]
 specToRunTreeVariable bc spec = mapM unFixRunTree $ specToRunTree bc spec
 
-isEmptySpec :: (forall context . Free (SpecCommand context IO) ()) -> Bool
+isEmptySpec :: forall context. Free (SpecCommand context IO) () -> Bool
 isEmptySpec spec = L.null ret
   where context = RunTreeContext {
           runTreeIndexInParent = 0
