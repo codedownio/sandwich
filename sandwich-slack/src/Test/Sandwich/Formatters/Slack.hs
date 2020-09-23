@@ -126,7 +126,8 @@ publishTree maybeMaxAttachments topMessage elapsed tree = pbi
           RunNodeParallel {} -> (True, Nothing)
           node | isFailedBlock node -> case runTreeLoc $ runNodeCommon node of
                    Nothing -> (False, Just $ runTreeLabel $ runNodeCommon node)
-                   Just (SrcLoc {..}) -> (False, Just $ [i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> runTreeLabel (runNodeCommon node))
+                   Just (SrcLoc {..}) -> (False, Just ([i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> runTreeLabel (runNodeCommon node)))
+          _ -> (True, Nothing)
     attachments = [ProgressBarAttachment (T.pack t) "#ff4136" | t <- failures]
 
     total = countWhere isItBlock tree
