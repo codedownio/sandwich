@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 -- |
 
 module Test.Sandwich.Formatters.Common.Count where
@@ -32,6 +33,9 @@ isPendingItBlock _ = False
 isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})}) = False
 isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})}) = True
 isFailedItBlock _ = False
+
+isFailedBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})) = False
+isFailedBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})) = True
 
 isDoneItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {})})}) = True
 isDoneItBlock _ = False

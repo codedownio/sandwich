@@ -121,11 +121,12 @@ publishTree maybeMaxAttachments topMessage elapsed tree = pbi
 
     runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
 
-    failures = catMaybes $ flip concatMap tree $ extractValues $ \node ->
-          if | isFailedItBlock node -> Just $ case runTreeLoc $ runNodeCommon node of
-                 Nothing -> runTreeLabel $ runNodeCommon node
-                 Just (SrcLoc {..}) -> [i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> runTreeLabel (runNodeCommon node)
-             | otherwise -> Nothing
+    failures = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
+          RunNodeDescribe {} -> (True, Nothing) -- Recurse into grouping nodes, because their failures are actually just derived from child failures
+          RunNodeParallel {} -> (True, Nothing)
+          node | isFailedBlock node -> case runTreeLoc $ runNodeCommon node of
+                   Nothing -> (False, Just $ runTreeLabel $ runNodeCommon node)
+                   Just (SrcLoc {..}) -> (False, Just $ [i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> runTreeLabel (runNodeCommon node))
     attachments = [ProgressBarAttachment (T.pack t) "#ff4136" | t <- failures]
 
     total = countWhere isItBlock tree

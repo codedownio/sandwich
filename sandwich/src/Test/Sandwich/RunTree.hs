@@ -18,6 +18,18 @@ extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : 
 extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
 
+extractValuesControlRecurse :: (forall context. RunNodeWithStatus context s l t -> (Bool, a)) -> RunNodeWithStatus context s l t -> [a]
+extractValuesControlRecurse f node@(RunNodeIt {}) = [snd $ f node]
+extractValuesControlRecurse f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = case f node of
+  (True, x) -> x : (concatMap (extractValuesControlRecurse f) runNodeChildrenAugmented)
+  (False, x) -> [x]
+extractValuesControlRecurse f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = case f node of
+  (True, x) -> x : (concatMap (extractValuesControlRecurse f) runNodeChildrenAugmented)
+  (False, x) -> [x]
+extractValuesControlRecurse f node = case f node of
+  (True, x) -> x : (concatMap (extractValuesControlRecurse f) (runNodeChildren node))
+  (False, x) -> [x]
+
 getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
 getCommons = extractValues runNodeCommon
 

@@ -16,6 +16,7 @@ module Test.Sandwich.Internal (
   , RunNode
   , RunNodeCommonWithStatus(..)
   , extractValues
+  , extractValuesControlRecurse
   , getCommons
   , cancelNode
   , Status(..)
