@@ -3,6 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main where
 
@@ -172,8 +173,12 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
 
 longLogs :: TopSpec
 longLogs = do
-  it "does thing 1" $ return ()
-  it "does thing 2" $ return ()
+  it "does thing 1" $
+    shouldFail (2 `shouldBe` 3)
+  it "does thing 2" $
+    shouldFailPredicate (\case
+                            Reason {} -> True
+                            _ -> False) (2 `shouldBe` 3)
   it "does thing 3" $ do
     forM_ [0..200] $ \n -> debug [i|Log entry #{n}|]
   it "does thing 4" $ return ()

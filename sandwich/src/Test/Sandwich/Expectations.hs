@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 
 module Test.Sandwich.Expectations (
@@ -34,6 +35,22 @@ pendingWith msg = throwIO $ Pending (Just callStack) (Just msg)
 
 xit :: (HasCallStack, Monad m, MonadThrow m) => String -> ExampleT context m1 () -> SpecFree context m ()
 xit name _ex = it name (throwIO $ Pending (Just callStack) Nothing)
+
+-- * Expecting failures
+
+shouldFail :: (HasCallStack, MonadCatch m, MonadThrow m) => m () -> m ()
+shouldFail action = do
+  try action >>= \case
+    Left (_ :: FailureReason) -> return ()
+    Right () -> expectationFailure [i|Expected test to fail|]
+
+shouldFailPredicate :: (HasCallStack, MonadCatch m, MonadThrow m) => (FailureReason -> Bool) -> m () -> m ()
+shouldFailPredicate pred action = do
+  try action >>= \case
+    Left (err :: FailureReason) -> case pred err of
+      True -> return ()
+      False -> expectationFailure [i|Expected test to fail with a failure matching the predicate, but got a different failure: '#{err}'|]
+    Right () -> expectationFailure [i|Expected test to fail, but it succeeded|]
 
 -- * Assertions
 
