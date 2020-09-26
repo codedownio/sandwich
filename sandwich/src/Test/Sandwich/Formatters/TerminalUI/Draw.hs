@@ -34,13 +34,13 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-#if !MIN_VERSION_brick(56,0,0)
+#if MIN_VERSION_brick(0,56,0)
 import Control.Monad.Reader
 #endif
 
 
 vLimitPercentWindow :: Int -> Widget n -> Widget n
-#if !MIN_VERSION_brick(56,0,0)
+#if MIN_VERSION_brick(0,56,0)
 vLimitPercentWindow h' p =
   Widget (hSize p) Fixed $ do
     let h = clamp 0 100 h'
