@@ -55,11 +55,23 @@ shouldContain haystack needle = case needle `L.isInfixOf` haystack of
   True -> return ()
   False -> expectationFailure [i|Expected #{show haystack} to contain #{show needle}|] -- TODO: custom exception type
 
+-- | Asserts that the given list contains an item matching a predicate.
+shouldContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
+shouldContainPredicate haystack pred = case L.find pred haystack of
+  Just _ -> return ()
+  Nothing -> expectationFailure [i|Expected #{show haystack} to contain an item matching the predicate|]
+
 -- | Asserts that the given list does not contain a subsequence.
 shouldNotContain :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> [a] -> m ()
 shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
   True -> expectationFailure [i|Expected #{show haystack} not to contain #{show needle}|]
   False -> return ()
+
+-- | Asserts that the given list contains an item matching a predicate.
+shouldNotContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
+shouldNotContainPredicate haystack pred = case L.find pred haystack of
+  Nothing -> return ()
+  Just _ -> expectationFailure [i|Expected #{show haystack} not to contain an item matching the predicate|]
 
 -- | Asserts that the given text contains a substring.
 textShouldContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
