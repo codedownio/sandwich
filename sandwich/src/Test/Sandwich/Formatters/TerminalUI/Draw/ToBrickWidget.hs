@@ -54,7 +54,7 @@ instance ToBrickWidget FailureReason where
     Just msg -> hBox [withAttr pendingAttr $ str "Pending"
                      , str (": " <> msg)]
 
-  toBrickWidget x@(Reason _ msg) = boxWithTitle "Failure reason:" (str msg)
+  toBrickWidget x@(Reason _ msg) = boxWithTitle "Failure reason:" (strWrap msg)
   toBrickWidget x@(GotException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
     where heading = case maybeMessage of
             Nothing -> "Got exception: "
@@ -69,7 +69,7 @@ instance ToBrickWidget FailureReason where
 boxWithTitle heading inside = hBox [
   border $
     padAll 1 $
-      (padBottom (Pad 1) (withAttr expectedAttr $ str heading))
+      (padBottom (Pad 1) (withAttr expectedAttr $ strWrap heading))
       <=>
       inside
   ]
