@@ -189,7 +189,7 @@ mainFormatter = SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(J
 -- mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
 
 main :: IO ()
-main = runSandwich options medium
+main = runSandwich options longLogs
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

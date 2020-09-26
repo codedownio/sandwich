@@ -2,6 +2,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE CPP #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI.Draw where
@@ -33,6 +34,24 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
+#if !MIN_VERSION_brick(56,0,0)
+import Control.Monad.Reader
+#endif
+
+
+vLimitPercentWindow :: Int -> Widget n -> Widget n
+#if !MIN_VERSION_brick(56,0,0)
+vLimitPercentWindow h' p =
+  Widget (hSize p) Fixed $ do
+    let h = clamp 0 100 h'
+    ctx <- getContext
+    let usableHeight = ctx ^. windowHeightL
+    let widgetHeight = round (toRational usableHeight * (toRational h / 100))
+    withReaderT (availHeightL %~ (min widgetHeight)) $ render $ cropToContext p
+#else
+vLimitPercentWindow = vLimit -- Fallback
+#endif
+
 
 drawUI :: AppState -> [Widget ClickableName]
 drawUI app = [ui]
@@ -53,10 +72,8 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           let infoWidgets = getInfoWidgets x
           guard (not $ L.null infoWidgets)
           return $ padLeft (Pad 4) $
-            -- vLimitPercent 1 $
-            vLimit 30 $
-              viewport (InnerViewport [i|viewport_#{ident}|]) Vertical $
-                vBox infoWidgets
+            (if isJust (logWidget x) then vLimitPercentWindow 30 . viewport (InnerViewport [i|viewport_#{ident}|]) Vertical else id) $
+              vBox infoWidgets
       ]
 
     renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
@@ -95,19 +112,19 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           _ -> Nothing
       ]
 
-    getInfoWidgets (MainListElem {..}) = catMaybes [
-      Just $ toBrickWidget status
-      , do
-          cs <- getCallStackFromStatus status
-          return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ toBrickWidget cs
-      , do
-          let filteredLogs = case app ^. appLogLevel of
-                Nothing -> mempty
-                Just logLevel -> Seq.filter (\x -> logEntryLevel x >= logLevel) logs
-          guard (not $ Seq.null filteredLogs)
-          return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox $
-            toList $ fmap logEntryWidget filteredLogs
-      ]
+    getInfoWidgets mle@(MainListElem {..}) = catMaybes [Just $ toBrickWidget status, callStackWidget mle, logWidget mle]
+
+    callStackWidget (MainListElem {..}) = do
+      cs <- getCallStackFromStatus status
+      return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ toBrickWidget cs
+
+    logWidget (MainListElem {..}) = do
+      let filteredLogs = case app ^. appLogLevel of
+            Nothing -> mempty
+            Just logLevel -> Seq.filter (\x -> logEntryLevel x >= logLevel) logs
+      guard (not $ Seq.null filteredLogs)
+      return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox $
+        toList $ fmap logEntryWidget filteredLogs
 
     getResultTitle (NotStarted {}) = str "Not started"
     getResultTitle (Running {}) = withAttr runningAttr $ str "Running"
