@@ -3,25 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    name: brick
-    version: '0.56'
-    git: https://github.com/thomasjm/brick.git
-    pantry-tree:
-      size: 6917
-      sha256: e58a592aa74be3f0a339f6cc618aa5e932d177d0245b20fd11ca2a4366f9d4bb
-    commit: 1039dea4f3fd43a6e5b89abd4e0e859e5597be54
-  original:
-    git: https://github.com/thomasjm/brick.git
-    commit: 1039dea4f3fd43a6e5b89abd4e0e859e5597be54
-- completed:
-    hackage: vty-5.30@sha256:4af3938d7b9e6096e222bf52d0ea5d39873bc6fe19febd34106906306af13730,20857
-    pantry-tree:
-      size: 5330
-      sha256: d7af4668450596f7becd5317f81199e3ccd890e1c8e9a9186343d3b39f76619e
-  original:
-    hackage: vty-5.30@sha256:4af3938d7b9e6096e222bf52d0ea5d39873bc6fe19febd34106906306af13730,20857
+packages: []
 snapshots:
 - completed:
     size: 532380

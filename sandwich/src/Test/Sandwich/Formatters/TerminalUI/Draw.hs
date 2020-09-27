@@ -29,28 +29,11 @@ import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
 import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
+import Test.Sandwich.Formatters.TerminalUI.Draw.Util
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
-
-#if MIN_VERSION_brick(0,56,0)
-import Control.Monad.Reader
-#endif
-
-
-vLimitPercentWindow :: Int -> Widget n -> Widget n
-#if MIN_VERSION_brick(0,56,0)
-vLimitPercentWindow h' p =
-  Widget (hSize p) Fixed $ do
-    let h = clamp 0 100 h'
-    ctx <- getContext
-    let usableHeight = ctx ^. windowHeightL
-    let widgetHeight = round (toRational usableHeight * (toRational h / 100))
-    withReaderT (availHeightL %~ (min widgetHeight)) $ render $ cropToContext p
-#else
-vLimitPercentWindow = vLimit -- Fallback
-#endif
 
 
 drawUI :: AppState -> [Widget ClickableName]
@@ -72,7 +55,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           let infoWidgets = getInfoWidgets x
           guard (not $ L.null infoWidgets)
           return $ padLeft (Pad 4) $
-            (if isJust (logWidget x) then vLimitPercentWindow 30 . viewport (InnerViewport [i|viewport_#{ident}|]) Vertical else id) $
+            fixedHeightOrViewportPercent (InnerViewport [i|viewport_#{ident}|]) 30 $
               vBox infoWidgets
       ]
 

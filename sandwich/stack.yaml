@@ -4,9 +4,4 @@ resolver: lts-16.15
 packages:
 - .
 
-extra-deps:
-
-- git: https://github.com/thomasjm/brick.git
-  commit: 1039dea4f3fd43a6e5b89abd4e0e859e5597be54
-
-- vty-5.30@sha256:4af3938d7b9e6096e222bf52d0ea5d39873bc6fe19febd34106906306af13730,20857
+extra-deps: []
