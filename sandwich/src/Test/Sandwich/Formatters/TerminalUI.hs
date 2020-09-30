@@ -7,6 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE ViewPatterns #-}
 -- |
 
 module Test.Sandwich.Formatters.TerminalUI (
@@ -53,6 +54,7 @@ import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 
@@ -231,18 +233,9 @@ appEvent s x@(VtyEvent e) =
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openTestRootKey -> withContinueS $
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
-    V.EvKey c [] | c == openInEditorKey -> withContinueS $
+    V.EvKey c [] | c == openTestInEditorKey -> withContinueS $
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) ->
-        whenJust (runTreeLoc node) $ \loc' -> do
-          -- Try to make the file path in the SrcLoc absolute
-          loc <- case isRelative (srcLocFile loc') of
-            False -> return loc'
-            True -> do
-              case optionsProjectRoot (baseContextOptions (s ^. appBaseContext)) of
-                Just d -> return $ loc' { srcLocFile = d </> (srcLocFile loc') }
-                Nothing -> return loc'
-
-          liftIO $ (s ^. appOpenInEditor) loc
+        whenJust (runTreeLoc node) $ openSrcLoc s
     V.EvKey c [] | c == openLogsInEditorKey -> withContinueS $
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) -> do
         whenJust (runTreeFolder node) $ \dir -> do
@@ -255,6 +248,10 @@ appEvent s x@(VtyEvent e) =
             , srcLocEndLine = 0
             , srcLocEndCol = 0
             }
+    V.EvKey c [] | c == openFailureInEditorKey -> withContinueS $
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node, status}) -> case status of
+        Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
+        _ -> return ()
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
@@ -355,3 +352,16 @@ withScroll s action = do
       action scroll
 
   continue s
+
+openSrcLoc s loc' = do
+  -- Try to make the file path in the SrcLoc absolute
+  loc <- case isRelative (srcLocFile loc') of
+    False -> return loc'
+    True -> do
+      case optionsProjectRoot (baseContextOptions (s ^. appBaseContext)) of
+        Just d -> return $ loc' { srcLocFile = d </> (srcLocFile loc') }
+        Nothing -> return loc'
+
+  -- TODO: check if the path exists and show a warning message if not
+  -- Maybe choose the first callstack location we can find?
+  liftIO $ (s ^. appOpenInEditor) loc

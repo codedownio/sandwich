@@ -19,6 +19,7 @@ import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 
 topBox app = hBox [columnPadding settingsColumn
@@ -73,14 +74,18 @@ topBox app = hBox [columnPadding settingsColumn
                                          , withAttr hotkeyMessageAttr $ str " folder"
                                          ]
                                   , hBox [str "["
-                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openInEditorKey)
+                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openTestInEditorKey)
                                          , str "/"
                                          , highlightKeyIfPredicate someTestSelected app (str $ showKey openLogsInEditorKey)
+                                         , str "/"
+                                         , highlightKeyIfPredicate someTestSelected app (str $ showKey openFailureInEditorKey)
                                          , str "] "
                                          , withAttr hotkeyMessageAttr $ str "Open "
-                                         , highlightMessageIfPredicate someTestSelected app (str "source")
+                                         , highlightMessageIfPredicate someTestSelected app (str "test")
                                          , str "/"
                                          , highlightMessageIfPredicate someTestSelected app (str "logs")
+                                         , str "/"
+                                         , highlightMessageIfPredicate selectedTestHasCallStack app (str "failure")
                                          , withAttr hotkeyMessageAttr $ str " in editor"
                                          ]
                                   ]
@@ -158,6 +163,12 @@ selectedTestRunning s = case L.listSelectedElement (s ^. appMainList) of
 selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
   Nothing -> False
   Just (_, MainListElem {..}) -> isDone status
+
+selectedTestHasCallStack s = case L.listSelectedElement (s ^. appMainList) of
+  Nothing -> False
+  Just (_, MainListElem {..}) -> case status of
+    (Done _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
+    _ -> False
 
 noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
