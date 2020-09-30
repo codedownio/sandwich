@@ -30,7 +30,8 @@ topBox app = hBox [columnPadding settingsColumn
                                    , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
                                    , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold nodes"
                                    , keyIndicator "Meta + [0-9]" "Unfold top # nodes"
-                                   , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"]
+                                   , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"
+                                   , keyIndicatorHasSelected app "Control-v/Meta-v" "Scroll item"]
 
     actionsColumn = keybindingBox [hBox [str "["
                                          , highlightKeyIfPredicate selectedTestRunning app (str $ showKey cancelSelectedKey)
@@ -91,9 +92,20 @@ topBox app = hBox [columnPadding settingsColumn
                                   ]
 
     otherActionsColumn = keybindingBox [keyIndicator' (showKey cycleVisibilityThresholdKey) (visibilityThresholdWidget app)
-                                       , toggleIndicator (app ^. appShowRunTimes) (showKey toggleShowRunTimesKey) "Hide run times" "Show run times"
-                                       , toggleIndicator (app ^. appShowFileLocations) (showKey toggleFileLocationsKey) "Hide file locations" "Show file locations"
-                                       , toggleIndicator (app ^. appShowVisibilityThresholds) (showKey toggleVisibilityThresholdsKey) "Hide visibility thresholds" "Show visibility thresholds"
+                                       , hBox [str "["
+                                              , str $ showKey toggleShowRunTimesKey
+                                              , str "/"
+                                              , str $ showKey toggleFileLocationsKey
+                                              , str "/"
+                                              , str $ showKey toggleVisibilityThresholdsKey
+                                              , str "] "
+                                              , withAttr hotkeyMessageAttr $ str "Show "
+                                              , highlightMessageIfPredicate (^. appShowRunTimes) app (str "run times")
+                                              , str "/"
+                                              , highlightMessageIfPredicate (^. appShowFileLocations) app (str "file locations")
+                                              , str "/"
+                                              , highlightMessageIfPredicate (^. appShowVisibilityThresholds) app (str "visibility thresholds")
+                                         ]
                                        , hBox [str "["
                                               , highlightIfLogLevel app LevelDebug [unKChar debugKey]
                                               , str "/"
