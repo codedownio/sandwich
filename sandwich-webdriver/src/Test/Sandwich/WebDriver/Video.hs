@@ -27,7 +27,7 @@ import Test.WebDriver.Class
 import Test.WebDriver.Commands
 
 
-startFullScreenVideoRecording :: (MonadIO m, MonadReader context m, MonadLogger m, HasWebDriverContext context, MonadBaseControl IO m) =>
+startFullScreenVideoRecording :: (MonadIO m, MonadReader context m, MonadLogger m, HasWebDriverContext context, MonadBaseControl IO m, MonadMask m) =>
   FilePath -> VideoSettings -> Bool -> m ProcessHandle
 startFullScreenVideoRecording path videoSettings logToDisk = do
   sess <- getContext webdriver
@@ -35,7 +35,7 @@ startFullScreenVideoRecording path videoSettings logToDisk = do
   (width, height) <- case maybeXvfbSession of
     Just (XvfbSession {xvfbDimensions}) -> return xvfbDimensions
     Nothing -> do
-      (_x, _y, w, h) <- liftIO $ getScreenResolution sess
+      (_x, _y, w, h) <- getScreenResolution sess
       return (fromIntegral w, fromIntegral h)
   startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings logToDisk
 
