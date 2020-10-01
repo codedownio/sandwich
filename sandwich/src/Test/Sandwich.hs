@@ -7,6 +7,7 @@ module Test.Sandwich (
 
   -- * Running tests
   runSandwich
+  , runSandwich'
   , runSandwichTree
   , startSandwichTree
 
@@ -63,20 +64,27 @@ import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
+import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Options
+import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 
+-- | Run the spec
 runSandwich :: Options -> TopSpec -> IO ()
-runSandwich options spec = do
+runSandwich options spec = void $ runSandwich' options spec
+
+-- | Run the spec and return the number of failures
+runSandwich' :: Options -> TopSpec -> IO Int
+runSandwich' options spec = do
   baseContext <- baseContextFromOptions options
   rts <- startSandwichTree' baseContext options spec
 
@@ -98,6 +106,10 @@ runSandwich options spec = do
   putStrLn [i|Beginning wait for formatterAsync|]
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   putStrLn [i|Final result: #{finalResults}|]
+
+  fixedTree <- atomically $ mapM fixRunTree rts
+  let failed = countWhere isFailedItBlock fixedTree
+  return failed
 
 startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 startSandwichTree options spec = do
