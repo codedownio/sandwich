@@ -1,0 +1,10 @@
+{
+  "docs": {
+    "Sandwich": ["intro", "concepts"],
+    "Extensions": ["sandwich-webdriver", "sandwich-slack", "sandwich-quickcheck"],
+    "Advanced": ["introduce"]
+  },
+  "docs-other": {
+    "First Category": ["doc4", "doc5"]
+  }
+}
