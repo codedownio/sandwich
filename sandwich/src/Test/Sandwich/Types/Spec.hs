@@ -25,6 +25,7 @@ import Control.Monad.Base
 import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Free.TH
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
@@ -39,6 +40,9 @@ import Safe
 newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (LoggingT m) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadLogger, MonadThrow, MonadCatch, MonadMask)
 type ExampleM context = ExampleT context IO
+
+instance (MonadIO m, MonadUnliftIO m) => MonadUnliftIO (ExampleT context m) where
+  withRunInIO inner = ExampleT $ withRunInIO $ \run -> inner (run . unExampleT)
 
 instance (MonadBase b m) => MonadBase b (ExampleT context m) where
   liftBase = liftBaseDefault
