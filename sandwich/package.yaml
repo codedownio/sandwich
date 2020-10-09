@@ -49,6 +49,7 @@ dependencies:
 - time
 - transformers
 - transformers-base
+- unliftio-core
 - unix
 - vector
 - vty
