@@ -14,6 +14,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE InstanceSigs #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
 
@@ -54,6 +55,10 @@ instance (MonadBaseControl b m) => MonadBaseControl b (ExampleT context m) where
   type StM (ExampleT context m) a = ComposeSt (ExampleT context) m a
   liftBaseWith = defaultLiftBaseWith
   restoreM = defaultRestoreM
+
+instance (Monad m, MonadThrow m) => MonadFail (ExampleT context m) where
+  fail :: (HasCallStack) => String -> ExampleT context m a
+  fail = throwIO . Reason (Just callStack)
 
 -- * Results
 
