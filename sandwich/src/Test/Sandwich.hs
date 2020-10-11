@@ -58,6 +58,8 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Logger
+import Data.Either
+import Data.IORef
 import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
@@ -73,6 +75,7 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
+import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
@@ -83,7 +86,7 @@ runSandwich :: Options -> TopSpec -> IO ()
 runSandwich options spec = void $ runSandwich' options spec
 
 -- | Run the spec and return the number of failures
-runSandwich' :: Options -> TopSpec -> IO Int
+runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
 runSandwich' options spec = do
   baseContext <- baseContextFromOptions options
   rts <- startSandwichTree' baseContext options spec
@@ -96,20 +99,25 @@ runSandwich' options spec = do
     loggingFn $
       runFormatter f rts baseContext
 
+  exitReasonRef <- newIORef NormalExit
+
   let shutdown = do
         putStrLn "Shutting down..."
+        writeIORef exitReasonRef InterruptExit
         forM_ rts cancelNode
-        -- cancel formatterAsync
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
   putStrLn [i|Beginning wait for formatterAsync|]
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
-  putStrLn [i|Final result: #{finalResults}|]
+  let failures = lefts finalResults
+  unless (null failures) $
+    putStrLn [i|Some formatters failed: '#{failures}'|]
 
   fixedTree <- atomically $ mapM fixRunTree rts
   let failed = countWhere isFailedItBlock fixedTree
-  return failed
+  exitReason <- readIORef exitReasonRef
+  return (exitReason, failed)
 
 startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 startSandwichTree options spec = do
