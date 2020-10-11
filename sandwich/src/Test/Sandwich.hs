@@ -47,6 +47,8 @@ module Test.Sandwich (
 
   , SomeExceptionWithCallStack(..)
 
+  , ExitReason(..)
+
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
