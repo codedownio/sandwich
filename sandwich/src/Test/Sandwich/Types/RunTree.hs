@@ -123,8 +123,12 @@ type TopSpec = Spec BaseContext IO
 -- * Formatter
 
 class Formatter f where
-  runFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
   formatterName :: f -> String
+  -- ^ Name of the formatter
+  runFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
+  -- ^ The main function, executed while the test tree is running
+  finalize :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
+  -- ^ Called after the test tree is completed, can be used to print final results
 
 -- | An existential wrapper around 'Formatter's
 data SomeFormatter = forall f. (Formatter f) => SomeFormatter f

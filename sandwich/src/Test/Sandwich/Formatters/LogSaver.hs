@@ -24,15 +24,17 @@ import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Util
 
+-- | Used to save test all logs from the tests to a given path.
 data LogSaverFormatter = LogSaverFormatter {
   logSaverPath :: LogPath
-  -- ^ Path under runRoot where logs will be saved. Should be a relative path.
+  -- ^ Path where logs will be saved.
   , logSaverLogLevel :: LogLevel
   -- ^ Minimum log level to save.
   , logSaverFormatter :: LogEntryFormatter
   -- ^ Formatter function for log entries.
   }
 
+-- | A path under which to save logs.
 data LogPath =
   LogPathRelativeToRunRoot FilePath
   -- ^ Interpret the path as relative to the test's run root. (If there is no run root, the logs won't be saved.)
@@ -47,8 +49,9 @@ defaultLogSaverFormatter = LogSaverFormatter {
   }
 
 instance Formatter LogSaverFormatter where
-  runFormatter = runApp
   formatterName _ = "log-saver-formatter"
+  runFormatter = runApp
+  finalize _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp lsf@(LogSaverFormatter {..}) rts bc = do
