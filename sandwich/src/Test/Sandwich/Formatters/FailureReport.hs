@@ -6,6 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 
 module Test.Sandwich.Formatters.FailureReport (
@@ -21,7 +22,12 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
+import Data.Foldable
+import qualified Data.Map as M
+import Data.Maybe
+import qualified Data.Sequence as Seq
 import Data.String.Interpolate.IsString
+import qualified Data.Text as T
 import System.IO
 import Test.Sandwich.Formatters.Print.Common
 import Test.Sandwich.Formatters.Print.FailureReason
@@ -29,6 +35,7 @@ import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
@@ -64,17 +71,20 @@ printFailureReport (FailureReportFormatter {..}) rts baseContext = do
         , printFormatterIndentSize = failureReportIndentSize
         }
 
-  liftIO $ runReaderT (mapM_ runWithIndentation rts) (pf, 0, stdout)
+  let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, T.pack runTreeLabel)
+  let idToLabel = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
 
-runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
-runWithIndentation node = do
+  liftIO $ runReaderT (mapM_ (runWithIndentation idToLabel) rts) (pf, 0, stdout)
+
+runWithIndentation :: M.Map Int T.Text -> RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
+runWithIndentation idToLabel node = do
   let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
 
   case node of
     RunNodeIt {} -> return ()
-    RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented runWithIndentation
-    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented runWithIndentation
-    _ -> forM_ (runNodeChildren node) runWithIndentation
+    RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented (runWithIndentation idToLabel)
+    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation idToLabel)
+    _ -> forM_ (runNodeChildren node) (runWithIndentation idToLabel)
 
   result <- liftIO $ waitForTree node
 
@@ -84,10 +94,15 @@ runWithIndentation node = do
     Failure reason -> do
       p "\n"
 
+      let ancestorIds = runTreeAncestors
+      let ancestorNames = fmap (\k -> fromMaybe "?" $ M.lookup k idToLabel) ancestorIds
+      let label = T.unpack $ T.intercalate ", " (toList ancestorNames)
+
       case reason of
         Pending {} -> do
-          pYellowLn runTreeLabel
+          pYellowLn label
         _ -> do
-          pRedLn runTreeLabel
+          -- TODO: get full list of ancestor labels joined on ", "
+          pRedLn label
           withBumpIndent $ printFailureReason reason
           finishPrinting common result

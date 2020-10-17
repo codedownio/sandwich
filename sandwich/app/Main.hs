@@ -15,6 +15,7 @@ import Control.Monad.Logger (LogLevel(..))
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
 import Test.Sandwich
+import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
@@ -129,7 +130,7 @@ medium = do
           otherDb <- getContext otherDatabase
           debug [i|Got otherDb: #{otherDb}|]
 
-    it "does a thing sequentially" $ sleepThenSucceed
+    it "does a thing sequentially" $ sleepThenFail
     it "does a thing sequentially 2" $ sleepThenSucceed
     it "does a thing sequentially 3" $ sleepThenSucceed
     it "does a thing sequentially 4" $ sleepThenSucceed
@@ -190,15 +191,15 @@ longLogs = do
 -- mainPretty :: IO ()
 -- mainPretty = putStrLn $ prettyShow topSpec
 
-mainFormatter = SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})
--- mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
+-- mainFormatter = SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})
+mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
 
 main :: IO ()
-main = runSandwich options longLogs
+main = runSandwich options medium
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-      , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter]
+      , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter, SomeFormatter defaultFailureReportFormatter]
       -- , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter]
       }
 
