@@ -250,7 +250,7 @@ appEvent s x@(VtyEvent e) =
             }
     V.EvKey c [] | c == openFailureInEditorKey -> withContinueS $
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node, status}) -> case status of
-        Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
+        Done _ _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
         _ -> return ()
 
     -- Column 3

@@ -24,7 +24,10 @@ class ToBrickWidget a where
 instance ToBrickWidget Status where
   toBrickWidget (NotStarted {}) = strWrap "Not started"
   toBrickWidget (Running {statusStartTime}) = strWrap [i|Started at #{statusStartTime}|]
-  toBrickWidget (Done startTime endTime Success) = strWrap [i|Succeeded in #{formatNominalDiffTime (diffUTCTime endTime startTime)}|]
+
+  -- TODO
+  toBrickWidget (Done startTime endTime _ Success) = strWrap [i|Succeeded in #{formatNominalDiffTime (diffUTCTime endTime startTime)}|]
+
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
 
 instance ToBrickWidget FailureReason where

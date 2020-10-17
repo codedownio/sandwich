@@ -22,11 +22,21 @@ import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 
+data ExtraTimingInfo = ExtraTimingInfo { setupStartTime :: Maybe UTCTime
+                                       , setupEndTime :: Maybe UTCTime
+                                       , teardownStartTime :: Maybe UTCTime
+                                       , teardownEndTime :: Maybe UTCTime }
+  deriving (Show, Eq)
+
+defaultExtraTimingInfo = ExtraTimingInfo Nothing Nothing Nothing Nothing
+
 data Status = NotStarted
             | Running { statusStartTime :: UTCTime
+                      , statusExtraTimingInfo :: ExtraTimingInfo
                       , statusAsync :: Async Result }
             | Done { statusStartTime :: UTCTime
                    , statusEndTime :: UTCTime
+                   , statusExtraTimingInfo :: ExtraTimingInfo
                    , statusResult :: Result }
             deriving (Show, Eq)
 

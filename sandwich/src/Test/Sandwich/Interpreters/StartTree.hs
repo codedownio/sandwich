@@ -73,9 +73,10 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
   runInAsync node ctx $ do
     result <- liftIO $ newIORef Success
     bracket (do
-                let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
-                flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
-                  runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
+                withSetupTiming runTreeStatus $ do
+                  let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
+                  flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
+                    runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
             (\case
                 Left failureReason -> writeIORef result (Failure failureReason)
                 Right intro ->
@@ -151,7 +152,7 @@ runInAsync node ctx action = do
       readMVar mvar
       result <- action
       endTime <- liftIO getCurrentTime
-      liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
+      liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime defaultExtraTimingInfo result
 
       whenFailure result $ \reason -> do
         let (BaseContext {..}) = getBaseContext ctx
@@ -199,7 +200,7 @@ runInAsync node ctx action = do
               printLogs runTreeLogs
 
       return result
-  liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync
+  liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime defaultExtraTimingInfo myAsync
   liftIO $ putMVar mvar ()
   return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
 
@@ -221,7 +222,7 @@ markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode co
 markAllChildrenWithResult children baseContext status = do
   now <- liftIO getCurrentTime
   forM_ (L.filter (shouldRunChild' baseContext) $ concatMap getCommons children) $ \child ->
-    liftIO $ atomically $ writeTVar (runTreeStatus child) (Done now now status)
+    liftIO $ atomically $ writeTVar (runTreeStatus child) (Done now now defaultExtraTimingInfo status)
 
 cancelAllChildrenWith :: [RunNode context] -> SomeAsyncException -> IO ()
 cancelAllChildrenWith children e = do
@@ -231,7 +232,7 @@ cancelAllChildrenWith children e = do
       NotStarted -> do
         now <- getCurrentTime
         let reason = GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e)
-        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now (Failure reason))
+        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now defaultExtraTimingInfo (Failure reason))
       _ -> return ()
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
@@ -293,5 +294,16 @@ recordExceptionInStatus status e = do
           Just (e' :: FailureReason) -> Failure e'
           _ -> Failure (GotException Nothing Nothing (SomeExceptionWithEq e))
   liftIO $ atomically $ modifyTVar status $ \case
-    Running {statusStartTime} -> Done statusStartTime endTime ret
-    _ -> Done endTime endTime ret
+    Running {statusStartTime, statusExtraTimingInfo} -> Done statusStartTime endTime statusExtraTimingInfo ret
+    _ -> Done endTime endTime defaultExtraTimingInfo ret
+
+withSetupTiming status action = do
+  bracket_ (do
+               t <- getCurrentTime
+               atomically $ modifyTVar status $ \case
+                 x@(Running {statusExtraTimingInfo}) -> x { statusExtraTimingInfo = statusExtraTimingInfo { setupStartTime = Just t } }
+                 x@(Done {}) -> x
+                 x -> x
+           )
+           (return ())
+           action

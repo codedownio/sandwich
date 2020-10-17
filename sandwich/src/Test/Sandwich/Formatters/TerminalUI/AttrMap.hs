@@ -124,9 +124,9 @@ disabledHotkeyMessageAttr = "disabledHotkeyMessage"
 chooseAttr :: Status -> AttrName
 chooseAttr NotStarted = notStartedAttr
 chooseAttr (Running {}) = runningAttr
-chooseAttr (Done _ _ (Success {})) = successAttr
-chooseAttr (Done _ _ (Failure (Pending {}))) = pendingAttr
-chooseAttr (Done _ _ (Failure {})) = failureAttr
+chooseAttr (Done _ _ _ (Success {})) = successAttr
+chooseAttr (Done _ _ _ (Failure (Pending {}))) = pendingAttr
+chooseAttr (Done _ _ _ (Failure {})) = failureAttr
 
 -- * Logging and callstacks
 

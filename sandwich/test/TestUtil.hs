@@ -89,7 +89,7 @@ getLogs = extractValues $ \node -> runTreeLogs $ runNodeCommon node
 statusToResult :: (HasCallStack) => (String, Status) -> Result
 statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]
 statusToResult (label, Running {}) = error [i|Expected status to be Done but was Running for label '#{label}'|]
-statusToResult (_, Done _ _ result) = result
+statusToResult (_, Done _ _ _ result) = result
 
 mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y

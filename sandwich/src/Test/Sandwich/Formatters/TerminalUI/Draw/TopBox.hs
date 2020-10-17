@@ -179,7 +179,7 @@ selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
 selectedTestHasCallStack s = case L.listSelectedElement (s ^. appMainList) of
   Nothing -> False
   Just (_, MainListElem {..}) -> case status of
-    (Done _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
+    (Done _ _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
     _ -> False
 
 noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)

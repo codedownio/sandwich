@@ -127,7 +127,7 @@ isRunning (Running {}) = True
 isRunning _ = False
 
 isFailureStatus :: Status -> Bool
-isFailureStatus (Done _ _ stat) = isFailure stat
+isFailureStatus (Done _ _ _ stat) = isFailure stat
 isFailureStatus _ = False
 
 isFailure :: Result -> Bool
