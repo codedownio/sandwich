@@ -27,6 +27,7 @@ import System.IO
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.Print.CallStacks
+import Test.Sandwich.Formatters.Print.Common
 import Test.Sandwich.Formatters.Print.FailureReason
 import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
@@ -39,8 +40,9 @@ import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
 
 instance Formatter PrintFormatter where
-  runFormatter = runApp
   formatterName _ = "print-formatter"
+  runFormatter = runApp
+  finalize _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
@@ -73,9 +75,7 @@ runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
 
 runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
 runWithIndentation node@(RunNodeIt {..}) = do
-  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst3)
-
-  let RunNodeCommonWithStatus {..} = runNodeCommon
+  let common@(RunNodeCommonWithStatus {..}) = runNodeCommon
 
   result <- liftIO $ waitForTree node
 
@@ -87,21 +87,12 @@ runWithIndentation node@(RunNodeIt {..}) = do
       pRedLn runTreeLabel
       withBumpIndent $ printFailureReason reason
 
-  -- Print the callstack, if configured and present
-  when includeCallStacks $ do
-    case result of
-      Failure (failureCallStack -> Just cs) -> do
-        p "\n"
-        withBumpIndent $ printCallStack cs
-      _ -> return ()
-
-  -- Print the logs, if configured
-  printLogs runTreeLogs
+  finishPrinting common result
 runWithIndentation node = do
-  includeCallStacks <- asks (printFormatterIncludeCallStacks . fst3)
+  let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
 
-  let RunNodeCommonWithStatus {..} = runNodeCommon node
   pin runTreeLabel
+
   case node of
     RunNodeIntroduce {..} -> withBumpIndent $ forM_ runNodeChildrenAugmented runWithIndentation
     RunNodeIntroduceWith {..} -> withBumpIndent $ forM_ runNodeChildrenAugmented runWithIndentation
@@ -114,13 +105,4 @@ runWithIndentation node = do
     Failure r -> withBumpIndent $ printFailureReason r
     Success -> return ()
 
-  -- Print the callstack, if configured and present
-  when includeCallStacks $ do
-    case result of
-      Failure (failureCallStack -> Just cs) -> do
-        p "\n"
-        withBumpIndent $ printCallStack cs
-      _ -> return ()
-
-  -- Print the logs, if configured
-  printLogs runTreeLogs
+  finishPrinting common result

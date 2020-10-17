@@ -110,11 +110,20 @@ runSandwich' options spec = do
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
+  -- Wait for all formatters to finish
   putStrLn [i|Beginning wait for formatterAsync|]
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   let failures = lefts finalResults
   unless (null failures) $
     putStrLn [i|Some formatters failed: '#{failures}'|]
+
+  -- Run finalize method on formatters
+  forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
+    let loggingFn = case baseContextRunRoot baseContext of
+          Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
+          Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
+
+    loggingFn $ finalize f rts baseContext
 
   fixedTree <- atomically $ mapM fixRunTree rts
   let failed = countWhere isFailedItBlock fixedTree

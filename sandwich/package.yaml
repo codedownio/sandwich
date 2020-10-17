@@ -63,6 +63,7 @@ library:
     - Test.Sandwich.Logging
     - Test.Sandwich.Nodes
     - Test.Sandwich.Options
+    - Test.Sandwich.Formatters.FailureReport
     - Test.Sandwich.Formatters.LogSaver
     - Test.Sandwich.Formatters.Print
     - Test.Sandwich.Formatters.TerminalUI
