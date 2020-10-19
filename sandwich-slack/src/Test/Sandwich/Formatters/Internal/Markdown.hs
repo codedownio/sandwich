@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.Formatters.Internal.Markdown where
 
@@ -32,8 +33,7 @@ callStackToMarkdown SlackFormatterNoCallStacks cs = ""
 callStackToMarkdown (SlackFormatterTopNCallStackFrames n) cs = "\n\n" <> showCallStack (fromCallSiteList $ L.take n $ getCallStack cs)
 callStackToMarkdown SlackFormatterFullCallStack cs = "\n\n" <> showCallStack cs
 
-showCallStack cs = prettyCallStack cs
-  & T.pack
-  & T.lines
-  & fmap ("> " <>)
+showCallStack (getCallStack -> rows) = ["> *" <> (T.pack name) <> "*, called at "
+                                        <> [i|_#{srcLocPackage}_:*#{srcLocFile}*:#{srcLocStartLine}:#{srcLocStartCol}|]
+                                       | (name, SrcLoc {..}) <- rows]
   & T.intercalate "\n"
