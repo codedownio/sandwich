@@ -20,17 +20,25 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/thomasjm/sandwich-slack#readme>
 
 dependencies:
+- aeson
+- aeson-qq
 - base >= 4.7 && < 5
+- bytestring
+- containers
 - filepath
 - interpolate
+- lens
+- lens-aeson
 - monad-logger
+- mtl
 - safe
 - safe-exceptions
 - sandwich
-- slack-progressbar
 - stm
 - text
 - time
+- vector
+- wreq
 
 library:
   source-dirs: src
