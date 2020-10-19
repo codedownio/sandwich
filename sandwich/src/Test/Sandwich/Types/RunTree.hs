@@ -127,7 +127,7 @@ class Formatter f where
   -- ^ Name of the formatter
   runFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
   -- ^ The main function, executed while the test tree is running
-  finalize :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
+  finalizeFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
   -- ^ Called after the test tree is completed, can be used to print final results
 
 -- | An existential wrapper around 'Formatter's

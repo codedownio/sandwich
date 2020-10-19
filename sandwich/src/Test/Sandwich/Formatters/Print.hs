@@ -42,7 +42,7 @@ import Test.Sandwich.Util
 instance Formatter PrintFormatter where
   formatterName _ = "print-formatter"
   runFormatter = runApp
-  finalize _ _ _ = return ()
+  finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do

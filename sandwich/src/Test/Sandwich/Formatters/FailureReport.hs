@@ -57,7 +57,7 @@ defaultFailureReportFormatter = FailureReportFormatter {
 instance Formatter FailureReportFormatter where
   formatterName _ = "failure-report-formatter"
   runFormatter _ _ _ = return ()
-  finalize = printFailureReport
+  finalizeFormatter = printFailureReport
 
 printFailureReport :: (MonadIO m, MonadLogger m, MonadCatch m) => FailureReportFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 printFailureReport (FailureReportFormatter {..}) rts baseContext = do

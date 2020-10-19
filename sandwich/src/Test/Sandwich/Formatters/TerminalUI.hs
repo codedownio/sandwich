@@ -61,7 +61,7 @@ import Test.Sandwich.Util
 instance Formatter TerminalUIFormatter where
   formatterName _ = "terminal-ui-formatter"
   runFormatter = runApp
-  finalize _ _ _ = return ()
+  finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp (TerminalUIFormatter {..}) rts baseContext = liftIO $ do

@@ -86,7 +86,7 @@ defaultSlackFormatter = SlackFormatter {
 instance Formatter SlackFormatter where
   formatterName _ = "slack-formatter"
   runFormatter = runApp
-  finalize _ _ _ = return ()
+  finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp sf@(SlackFormatter {..}) rts bc = do
