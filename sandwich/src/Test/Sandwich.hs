@@ -117,13 +117,13 @@ runSandwich' options spec = do
   unless (null failures) $
     putStrLn [i|Some formatters failed: '#{failures}'|]
 
-  -- Run finalize method on formatters
+  -- Run finalizeFormatter method on formatters
   forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
 
-    loggingFn $ finalize f rts baseContext
+    loggingFn $ finalizeFormatter f rts baseContext
 
   fixedTree <- atomically $ mapM fixRunTree rts
   let failed = countWhere isFailedItBlock fixedTree

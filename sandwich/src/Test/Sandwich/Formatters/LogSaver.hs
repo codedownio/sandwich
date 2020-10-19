@@ -51,7 +51,7 @@ defaultLogSaverFormatter = LogSaverFormatter {
 instance Formatter LogSaverFormatter where
   formatterName _ = "log-saver-formatter"
   runFormatter = runApp
-  finalize _ _ _ = return ()
+  finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp lsf@(LogSaverFormatter {..}) rts bc = do
