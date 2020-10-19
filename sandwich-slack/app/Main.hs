@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import Control.Concurrent
@@ -25,6 +27,8 @@ slackFormatter = defaultSlackFormatter {
   slackFormatterSlackConfig = SlackConfig ""
   , slackFormatterTopMessage = Just "Top message"
   , slackFormatterChannel = "test-channel"
+  -- , slackFormatterShowFailureReason = False
+  -- , slackFormatterShowCallStacks = SlackFormatterNoCallStacks
   }
 
 -- baseFormatter = SomeFormatter defaultTerminalUIFormatter
@@ -43,14 +47,14 @@ main = runSandwich options simple
 sleepThenSucceed :: ExampleM context ()
 sleepThenSucceed = do
   -- liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^5)
+  liftIO $ threadDelay (2 * 10^5)
   -- liftIO $ threadDelay (1 * 10^6)
-  liftIO $ threadDelay (3 * 10^6)
+  -- liftIO $ threadDelay (3 * 10^6)
 
 sleepThenFail :: ExampleM context ()
 sleepThenFail = do
   -- liftIO $ threadDelay (2 * 10^1)
-  -- liftIO $ threadDelay (2 * 10^5)
+  liftIO $ threadDelay (2 * 10^5)
   -- liftIO $ threadDelay (1 * 10^6)
-  liftIO $ threadDelay (3 * 10^6)
+  -- liftIO $ threadDelay (3 * 10^6)
   2 `shouldBe` 3
