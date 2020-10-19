@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8fd2500dbb961d729807a2b98aa53655d82dcc13e05665a7651f9fc4f9843db2
+-- hash: 01a1ba0d8c2e98df3ca732f693637be76c3aa0c451e2550a242273111cf7fe37
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -27,23 +27,35 @@ source-repository head
 
 library
   exposed-modules:
+      Test.Sandwich.Formatters.Internal.Core
+      Test.Sandwich.Formatters.Internal.Markdown
+      Test.Sandwich.Formatters.Internal.ProgressBar
+      Test.Sandwich.Formatters.Internal.Types
       Test.Sandwich.Formatters.Slack
   other-modules:
       Paths_sandwich_slack
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , aeson-qq
+    , base >=4.7 && <5
+    , bytestring
+    , containers
     , filepath
     , interpolate
+    , lens
+    , lens-aeson
     , monad-logger
+    , mtl
     , safe
     , safe-exceptions
     , sandwich
-    , slack-progressbar
     , stm
     , text
     , time
+    , vector
+    , wreq
   default-language: Haskell2010
 
 executable sandwich-slack-exe
@@ -54,18 +66,26 @@ executable sandwich-slack-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , aeson-qq
+    , base >=4.7 && <5
+    , bytestring
+    , containers
     , filepath
     , interpolate
+    , lens
+    , lens-aeson
     , monad-logger
+    , mtl
     , safe
     , safe-exceptions
     , sandwich
     , sandwich-slack
-    , slack-progressbar
     , stm
     , text
     , time
+    , vector
+    , wreq
   default-language: Haskell2010
 
 test-suite sandwich-slack-test
@@ -77,16 +97,24 @@ test-suite sandwich-slack-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , aeson-qq
+    , base >=4.7 && <5
+    , bytestring
+    , containers
     , filepath
     , interpolate
+    , lens
+    , lens-aeson
     , monad-logger
+    , mtl
     , safe
     , safe-exceptions
     , sandwich
     , sandwich-slack
-    , slack-progressbar
     , stm
     , text
     , time
+    , vector
+    , wreq
   default-language: Haskell2010

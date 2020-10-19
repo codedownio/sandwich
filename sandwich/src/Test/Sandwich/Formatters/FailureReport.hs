@@ -25,7 +25,6 @@ import Control.Monad.Reader
 import Data.Foldable
 import qualified Data.Map as M
 import Data.Maybe
-import qualified Data.Sequence as Seq
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import System.IO

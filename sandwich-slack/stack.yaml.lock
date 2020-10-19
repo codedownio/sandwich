@@ -3,14 +3,7 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    hackage: slack-progressbar-0.1.0.0@sha256:5e27fc693f787e1dd51e105c06fb2f467ff5d84c1e6f16e23b8f2077cff75b81,2043
-    pantry-tree:
-      size: 431
-      sha256: 7711df47c71262415dc996c218b230688a6bc5e3c306154090a1ef260645fc8c
-  original:
-    hackage: slack-progressbar-0.1.0.0@sha256:5e27fc693f787e1dd51e105c06fb2f467ff5d84c1e6f16e23b8f2077cff75b81,2043
+packages: []
 snapshots:
 - completed:
     size: 532380
