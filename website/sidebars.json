@@ -1,6 +1,7 @@
 {
   "docs": {
     "Sandwich": ["intro", "concepts"],
+    "Formatters": ["formatters/formatters", "formatters/tui", "formatters/print"],
     "Extensions": ["sandwich-webdriver", "sandwich-slack", "sandwich-quickcheck"],
     "Advanced": ["introduce"]
   },

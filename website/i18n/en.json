@@ -3,10 +3,10 @@
   "localized-strings": {
     "next": "Next",
     "previous": "Previous",
-    "tagline": "A test framework for Haskell",
+    "tagline": "A superpowered test framework for Haskell",
     "docs": {
       "concepts": {
-        "title": "Sandwich Concepts",
+        "title": "Core Concepts",
         "sidebar_label": "Concepts"
       },
       "introduce": {
@@ -18,8 +18,17 @@
       "doc5": {
         "title": "Fifth Document"
       },
+      "formatters/formatters": {
+        "title": "About formatters"
+      },
+      "formatters/print": {
+        "title": "Print Formatter"
+      },
+      "formatters/tui": {
+        "title": "Terminal UI Formatter"
+      },
       "intro": {
-        "title": "Introduction to Sandwich",
+        "title": "Welcome to Sandwich",
         "sidebar_label": "Introduction"
       },
       "sandwich-quickcheck": {
@@ -40,6 +49,7 @@
     },
     "categories": {
       "Sandwich": "Sandwich",
+      "Formatters": "Formatters",
       "Extensions": "Extensions",
       "Advanced": "Advanced",
       "First Category": "First Category"

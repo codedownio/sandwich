@@ -31,6 +31,16 @@ data Simple = Simple { simpleInt :: Int } deriving (Show, Eq)
 database = Label :: Label "database" Database
 otherDatabase = Label :: Label "otherDatabase" Database
 
+documentation :: TopSpec
+documentation = describe "arithmetic" $ do
+  it "tests addition" $ do
+    (2 + 2) `shouldBe` 4
+
+  it "tests subtraction" $ do
+    warn "Having some trouble getting this test to pass..."
+    (2 - 2) `shouldBe` 1
+
+
 
 verySimple :: TopSpec
 verySimple = do
@@ -195,7 +205,7 @@ longLogs = do
 mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
 
 main :: IO ()
-main = runSandwich options medium
+main = runSandwich options documentation
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

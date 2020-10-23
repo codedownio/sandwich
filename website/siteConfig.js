@@ -21,8 +21,8 @@ const users = [
 ];
 
 const siteConfig = {
-  title: 'Sandwich', // Title for your website.
-  tagline: 'A test framework for Haskell',
+  title: 'Sandwich',
+  tagline: 'A superpowered test framework for Haskell',
   // url: 'https://your-docusaurus-test-site.com', // Your website URL
   // baseUrl: '/', // Base URL for your project */
   // For github.io type URLs, you would set the url and baseUrl like:
@@ -54,8 +54,8 @@ const siteConfig = {
 
   /* Colors for website */
   colors: {
-    primaryColor: '#9d12a9',
-    secondaryColor: '#6d0c76',
+    primaryColor: '#4285f4',
+    secondaryColor: '#373737',
   },
 
   /* Custom fonts for website */
@@ -73,11 +73,11 @@ const siteConfig = {
   */
 
   // This copyright info is used in /core/Footer.js and blog RSS/Atom feeds.
-  copyright: `Copyright © ${new Date().getFullYear()} Your Name or Your Company Name`,
+  copyright: `Copyright © ${new Date().getFullYear()} CodeDown, Inc.`,
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: 'default',
+    theme: 'default'
   },
 
   // Add custom scripts here that would be placed in <script> tags.
