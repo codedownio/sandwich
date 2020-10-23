@@ -8,9 +8,10 @@ import Data.Time
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.Slack
+import Test.Sandwich.Formatters.TerminalUI
 
 simple :: TopSpec
-simple = do
+simple = parallel $ do
   it "does the thing 1" sleepThenSucceed
   it "does the thing 2" sleepThenSucceed
   it "does the thing 3" sleepThenFail
@@ -29,10 +30,11 @@ slackFormatter = defaultSlackFormatter {
   , slackFormatterChannel = "test-channel"
   -- , slackFormatterShowFailureReason = False
   -- , slackFormatterShowCallStacks = SlackFormatterNoCallStacks
+  , slackFormatterVisibilityThreshold = Just 50
   }
 
--- baseFormatter = SomeFormatter defaultTerminalUIFormatter
-baseFormatter = SomeFormatter defaultPrintFormatter
+baseFormatter = SomeFormatter defaultTerminalUIFormatter
+-- baseFormatter = SomeFormatter defaultPrintFormatter
 
 main :: IO ()
 main = runSandwich options simple

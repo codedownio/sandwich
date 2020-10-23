@@ -18,6 +18,7 @@ module Test.Sandwich.Formatters.Slack (
   , slackFormatterMaxFailures
   , slackFormatterShowFailureReason
   , slackFormatterShowCallStacks
+  , slackFormatterVisibilityThreshold
   -- , slackFormatterAttachFailureReport
 
   , SlackFormatterShowCallStacks(..)
@@ -68,6 +69,9 @@ data SlackFormatter = SlackFormatter {
   -- ^ Show failure reasons with failures.
   , slackFormatterShowCallStacks :: SlackFormatterShowCallStacks
   -- ^ Show call stacks with failures.
+  , slackFormatterVisibilityThreshold :: Maybe Int
+  -- ^ If present, filter the headings on failures to only include nodes whose visibility
+  -- threshold is less than or equal to the value.
   -- , slackFormatterAttachFailureReport :: Bool
   -- -- ^ After tests are complete, attach a text file containing a complete failure report.
   }
@@ -80,6 +84,7 @@ defaultSlackFormatter = SlackFormatter {
   , slackFormatterMaxFailures = Just 30
   , slackFormatterShowFailureReason = True
   , slackFormatterShowCallStacks = SlackFormatterTopNCallStackFrames 3
+  , slackFormatterVisibilityThreshold = Nothing
   -- , slackFormatterAttachFailureReport = False
   }
 
@@ -92,11 +97,13 @@ runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode
 runApp sf@(SlackFormatter {..}) rts bc = do
   startTime <- liftIO getCurrentTime
 
-  let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, T.pack runTreeLabel)
-  let idToLabel = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
+  let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, (T.pack runTreeLabel, runTreeVisibilityLevel))
+  let idToLabelAndVisibilityThreshold = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
+
+  debug [i|idToLabelAndVisibilityThreshold: '#{idToLabelAndVisibilityThreshold}'|]
 
   rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
-  let pbi = publishTree sf idToLabel slackFormatterMaxFailures slackFormatterTopMessage 0 rtsFixed
+  let pbi = publishTree sf idToLabelAndVisibilityThreshold slackFormatterMaxFailures slackFormatterTopMessage 0 rtsFixed
   pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
     Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
@@ -112,7 +119,7 @@ runApp sf@(SlackFormatter {..}) rts bc = do
         return newFixed
 
       now <- liftIO getCurrentTime
-      let pbi' = publishTree sf idToLabel slackFormatterMaxFailures slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
+      let pbi' = publishTree sf idToLabelAndVisibilityThreshold slackFormatterMaxFailures slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
       tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
         Left err -> logError [i|Error updating progress bar: '#{err}'|]
         Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
@@ -126,7 +133,7 @@ runApp sf@(SlackFormatter {..}) rts bc = do
              loop
 
 
-publishTree sf idToLabel maybeMaxFailures topMessage elapsed tree = pbi
+publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elapsed tree = pbi
   where
     pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
                           , progressBarInfoBottomMessage = Just fullBottomMessage
@@ -144,7 +151,7 @@ publishTree sf idToLabel maybeMaxFailures topMessage elapsed tree = pbi
       Just t -> T.pack t <> "\n" <> bottomMessage
     bottomMessage = [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
 
-    blocks = getFailureBlocks sf idToLabel tree
+    blocks = getFailureBlocks sf idToLabelAndVisibilityThreshold tree
 
     total = countWhere isItBlock tree
     succeeded = countWhere isSuccessItBlock tree
@@ -153,7 +160,7 @@ publishTree sf idToLabel maybeMaxFailures topMessage elapsed tree = pbi
     totalRunningTests = countWhere isRunningItBlock tree
     totalNotStartedTests = countWhere isNotStartedItBlock tree
 
-getFailureBlocks sf idToLabel tree = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
+getFailureBlocks sf idToLabelAndVisibilityThreshold tree = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
   RunNodeDescribe {} ->
     (True, Nothing) -- Recurse into grouping nodes, because their failures are actually just derived from child failures
   RunNodeParallel {} ->
@@ -161,11 +168,11 @@ getFailureBlocks sf idToLabel tree = catMaybes $ flip concatMap tree $ extractVa
   node@((runTreeStatus . runNodeCommon) ->
     (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
   node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
-    (False, Just $ getFailureBlock sf idToLabel node reason)
+    (False, Just $ getFailureBlock sf node reason)
   _ -> (True, Nothing)
 
   where
-    getFailureBlock sf idToLabel node reason = A.object [
+    getFailureBlock sf node reason = A.object [
       ("type", A.String "context")
       , ("elements", A.Array $ V.singleton $
             (A.object [("type", A.String "mrkdwn")
@@ -182,7 +189,14 @@ getFailureBlocks sf idToLabel tree = catMaybes $ flip concatMap tree $ extractVa
         )
       ]
       where
-        label = T.intercalate ", " [fromMaybe "?" (M.lookup k idToLabel) | k <- toList (runTreeAncestors $ runNodeCommon node)]
+        -- Show a question mark if we can't determine the label for a node (should never happen).
+        -- Otherwise, use slackFormatterVisibilityThreshold to filter if provided.
+        filterFn k = case M.lookup k idToLabelAndVisibilityThreshold of
+          Nothing -> Just "?"
+          Just (l, thresh) -> case slackFormatterVisibilityThreshold sf of
+            Just maxThresh | thresh > maxThresh -> Nothing
+            _ -> Just l
+        label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
 
         labelWithLocation = case runTreeLoc $ runNodeCommon node of
           Nothing -> (False, Just label)
