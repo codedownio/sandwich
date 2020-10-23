@@ -486,7 +486,7 @@ parallel :: (HasCallStack) =>
   SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-parallel = parallel' (NodeOptions 50 False)
+parallel = parallel' (NodeOptions 70 False)
 
 -- | Run a group of tests in parallel.
 parallel' :: (HasCallStack) =>
