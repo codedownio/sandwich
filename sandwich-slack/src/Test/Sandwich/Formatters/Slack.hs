@@ -100,8 +100,6 @@ runApp sf@(SlackFormatter {..}) rts bc = do
   let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, (T.pack runTreeLabel, runTreeVisibilityLevel))
   let idToLabelAndVisibilityThreshold = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
 
-  debug [i|idToLabelAndVisibilityThreshold: '#{idToLabelAndVisibilityThreshold}'|]
-
   rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
   let pbi = publishTree sf idToLabelAndVisibilityThreshold slackFormatterMaxFailures slackFormatterTopMessage 0 rtsFixed
   pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
