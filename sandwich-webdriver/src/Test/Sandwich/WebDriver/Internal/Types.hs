@@ -170,19 +170,24 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbProcess :: ProcessHandle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
+-- | Get the 'WdOptions' associated with the 'WebDriver'
 getWdOptions :: WebDriver -> WdOptions
 getWdOptions = wdOptions
 
+-- | Get the X11 display number associated with the 'WebDriver'.
+-- Only present if running in 'RunInXvfb' mode.
 getDisplayNumber :: WebDriver -> Maybe Int
 getDisplayNumber (WebDriver {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
 
+-- | Get the Xvfb session associated with the 'WebDriver', if present
 getXvfbSession :: WebDriver -> Maybe XvfbSession
 getXvfbSession (WebDriver {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
-getWdName :: WebDriver -> String
-getWdName (WebDriver {wdName}) = wdName
+-- | Get the name of the 'WebDriver'
+getWebDriverName :: WebDriver -> String
+getWebDriverName (WebDriver {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]
