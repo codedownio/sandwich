@@ -5,18 +5,27 @@
     "previous": "Previous",
     "tagline": "A superpowered test framework for Haskell",
     "docs": {
+      "advanced/introduce": {
+        "title": "Introduce*"
+      },
       "concepts": {
         "title": "Core Concepts",
         "sidebar_label": "Concepts"
-      },
-      "introduce": {
-        "title": "Introduce*"
       },
       "doc4": {
         "title": "Other Document"
       },
       "doc5": {
         "title": "Fifth Document"
+      },
+      "extensions/sandwich-quickcheck": {
+        "title": "sandwich-quickcheck"
+      },
+      "extensions/sandwich-slack": {
+        "title": "sandwich-slack"
+      },
+      "extensions/sandwich-webdriver": {
+        "title": "Sandwich Selenium integration"
       },
       "formatters/formatters": {
         "title": "About formatters"
@@ -30,15 +39,6 @@
       "intro": {
         "title": "Welcome to Sandwich",
         "sidebar_label": "Introduction"
-      },
-      "sandwich-quickcheck": {
-        "title": "sandwich-quickcheck"
-      },
-      "sandwich-slack": {
-        "title": "sandwich-slack"
-      },
-      "sandwich-webdriver": {
-        "title": "sandwich-webdriver"
       }
     },
     "links": {
