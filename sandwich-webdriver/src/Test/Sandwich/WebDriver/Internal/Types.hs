@@ -17,7 +17,7 @@ import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
 
-type Browser = String
+type Session = String
 
 -- * Labels
 webdriver = Label :: Label "webdriver" WdSession
@@ -155,7 +155,7 @@ type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text
 data WdSession = WdSession { wdName :: String
                            , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
                            , wdOptions :: WdOptions
-                           , wdSessionMap :: MVar (M.Map Browser W.WDSession)
+                           , wdSessionMap :: MVar (M.Map Session W.WDSession)
                            , wdConfig :: W.WDConfig }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]

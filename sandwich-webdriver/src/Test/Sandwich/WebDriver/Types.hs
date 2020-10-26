@@ -16,7 +16,9 @@ module Test.Sandwich.WebDriver.Types (
 
   -- * Constraint synonyms
   , BaseMonad
+  , BaseMonadContext
   , WebDriverMonad
+  , WebDriverSessionMonad
   ) where
 
 import Control.Exception.Safe as ES
@@ -60,4 +62,6 @@ hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
 type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m)
+type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WdSession)
 type BaseMonad m = (HasCallStack, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
+type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)

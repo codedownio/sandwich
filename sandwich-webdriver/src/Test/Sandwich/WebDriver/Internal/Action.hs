@@ -17,14 +17,14 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 
-closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Browser -> WdSession -> m ()
-closeSession browser (WdSession {wdSessionMap}) = do
+closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Session -> WdSession -> m ()
+closeSession session (WdSession {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
-    whenJust (M.lookup browser sessionMap) $ \sess ->
+    whenJust (M.lookup session sessionMap) $ \sess ->
       liftIO $ W.runWD sess W.closeSession
-    return $ M.delete browser sessionMap
+    return $ M.delete session sessionMap
 
-closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Browser] -> WdSession -> m ()
+closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Session] -> WdSession -> m ()
 closeAllSessionsExcept toKeep (WdSession {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
     forM_ (M.toList sessionMap) $ \(name, sess) -> unless (name `elem` toKeep) $

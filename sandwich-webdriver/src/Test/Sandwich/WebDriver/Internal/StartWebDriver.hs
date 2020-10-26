@@ -57,7 +57,7 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> (liftIO makeUUID)
 
-  -- Directory to long everything for this webdriver
+  -- Directory to log everything for this webdriver
   let webdriverRoot = runRoot </> (T.unpack webdriverName)
   liftIO $ createDirectoryIfMissing True webdriverRoot
 
