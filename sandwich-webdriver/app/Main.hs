@@ -17,8 +17,8 @@ import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver
 
 simple :: TopSpec
-simple = introduceWebdriver wdOptions $ do
-  it "does the thing 1" $ withBrowser1 $ do
+simple = introduceWebDriver wdOptions $ do
+  it "does the thing 1" $ withSession1 $ do
     openPage "http://www.google.com"
     setWindowLeftSide
     search <- findElem (ByCSS [i|input[title="Search"]|])
@@ -31,18 +31,18 @@ simple = introduceWebdriver wdOptions $ do
     liftIO $ threadDelay 1000000
     findElem (ByCSS ".does-not-exist")
     expectationFailure "OH NO"
-  -- it "does the thing 2" $ withBrowser2 $ do
+  -- it "does the thing 2" $ withSession2 $ do
   --   openPage "http://www.cnn.com"
   --   setWindowRightSide
   --   liftIO $ threadDelay 1000000
 
 -- concurrent :: TopSpec
--- concurrent = introduceWebdriver wdOptions $ parallel $ do
---   it "does the thing 1" $ withBrowser1 $ do
+-- concurrent = introduceWebDriver wdOptions $ parallel $ do
+--   it "does the thing 1" $ withSession1 $ do
 --     openPage "http://www.google.com"
 --     setWindowLeftSide
 --     liftIO $ threadDelay 10000000
---   it "does the thing 2" $ withBrowser2 $ do
+--   it "does the thing 2" $ withSession2 $ do
 --     openPage "http://www.cnn.com"
 --     setWindowRightSide
 --     liftIO $ threadDelay 10000000
@@ -53,13 +53,13 @@ simple = introduceWebdriver wdOptions $ do
 --     it "works" (2 `shouldBe` 2)
 
 --     claimWebDriver $ do
---       it "does the thing 1" $ withBrowser1 $ do
+--       it "does the thing 1" $ withSession1 $ do
 --         openPage "http://www.google.com"
 --         setWindowLeftSide
 --         liftIO $ threadDelay 1000000
 
 --     claimWebDriver $ do
---       it "does the thing 2" $ withBrowser1 $ do
+--       it "does the thing 2" $ withSession1 $ do
 --         openPage "http://www.cnn.com"
 --         setWindowRightSide
 --         liftIO $ threadDelay 1000000

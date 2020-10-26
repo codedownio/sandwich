@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4a4c0cf6c945d1bcfe143db1bb833ee3d01939e551fe1c48e3ae2b6cb8eb2cdb
+-- hash: 924c13bf6cd9916d8608db303fd6eb75616ddbf188426e5ebb40cf359b11e89c
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -91,6 +91,7 @@ library
 executable sandwich-webdriver-exe
   main-is: Main.hs
   other-modules:
+      Simple
       Paths_sandwich_webdriver
   hs-source-dirs:
       app
