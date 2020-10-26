@@ -28,7 +28,7 @@ loggingPrefs = A.object [("browser", "ALL")
 -- * Chrome
 
 -- | Default capabilities for regular Chrome.
--- It's important to set the "browser" log level to "ALL" so that tests can collect browser logs.
+-- Has the "browser" log level to "ALL" so that tests can collect browser logs.
 chromeCapabilities :: Capabilities
 chromeCapabilities =
   def {browser=Chrome Nothing Nothing args [] chromePrefs
@@ -57,6 +57,7 @@ chromePrefs = HM.fromList [
 
 -- * Firefox
 
+-- | Default capabilities for regular Firefox.
 firefoxCapabilities :: Capabilities
 firefoxCapabilities = def { browser=ff }
   where
@@ -66,6 +67,7 @@ firefoxCapabilities = def { browser=ff }
                  , ffAcceptInsecureCerts = Nothing
                  }
 
+-- | Default capabilities for headless Firefox.
 headlessFirefoxCapabilities :: Capabilities
 headlessFirefoxCapabilities = def { browser=ff, additionalCaps=additionalCaps }
   where

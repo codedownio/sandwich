@@ -31,7 +31,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
 import qualified Data.Aeson as A
-import Data.Aeson.QQ
 import Data.Foldable
 import Data.Function
 import qualified Data.List as L

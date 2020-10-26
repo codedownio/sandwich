@@ -79,7 +79,7 @@ data WdOptions = WdOptions {
   -- ^ Number of times to retry an HTTP request if it times out
   }
 
--- | How to obtain the Selenium server JAR file
+-- | How to obtain the Selenium server JAR file.
 data SeleniumToUse =
   DownloadSeleniumFrom String
   -- ^ Download selenium from the given URL to the 'toolsRoot'
@@ -88,6 +88,7 @@ data SeleniumToUse =
   | UseSeleniumAt FilePath
   -- ^ Use the JAR file at the given path
 
+-- | How to obtain the chromedriver binary.
 data ChromeDriverToUse =
   DownloadChromeDriverFrom String
   -- ^ Download chromedriver from the given URL to the 'toolsRoot'
@@ -98,6 +99,7 @@ data ChromeDriverToUse =
   | UseChromeDriverAt FilePath
   -- ^ Use the chromedriver at the given path
 
+-- | How to obtain the geckodriver binary.
 data GeckoDriverToUse =
   DownloadGeckoDriverFrom String
   -- ^ Download geckodriver from the given URL to the 'toolsRoot'
@@ -132,6 +134,8 @@ data XvfbConfig = XvfbConfig {
 defaultXvfbConfig = XvfbConfig Nothing False
 
 
+-- | The default 'WdOptions' object.
+-- You should start with this and modify it using the accessors.
 defaultWdOptions :: FilePath -> WdOptions
 defaultWdOptions toolsRoot = WdOptions {
   toolsRoot = toolsRoot

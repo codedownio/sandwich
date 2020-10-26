@@ -31,6 +31,8 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl I
 
   -- TODO: remove curl dependencies here
 
+-- | Manually obtain a Selenium server JAR file, according to the 'SeleniumToUse' policy,
+-- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainSelenium :: (MonadIO m, MonadLogger m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
 obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
   let seleniumPath = [i|#{toolsDir}/selenium-server-standalone.jar|]
@@ -49,6 +51,8 @@ obtainSelenium _ (UseSeleniumAt path) =
     False -> return $ Left [i|Path '#{path}' didn't exist|]
     True -> return $ Right path
 
+-- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
+-- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainChromeDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
 obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
@@ -72,6 +76,8 @@ obtainChromeDriver _ (UseChromeDriverAt path) =
     False -> return $ Left [i|Path '#{path}' didn't exist|]
     True -> return $ Right path
 
+-- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
+-- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainGeckoDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
 obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]

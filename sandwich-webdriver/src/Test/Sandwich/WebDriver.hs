@@ -1,12 +1,9 @@
-{-# LANGUAGE MonoLocalBinds #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -14,13 +11,16 @@
 -- |
 
 module Test.Sandwich.WebDriver (
-  webdriver
-  , introduceWebdriver
+  -- * Introducing a WebDriver server
+  introduceWebdriver
+
+  -- * Lower-level allocation functions
   , allocateWebDriver
   , allocateWebDriver'
   , cleanupWebDriver
   , cleanupWebDriver'
 
+  -- * Running an example in a given browser
   , withBrowser1
   , withBrowser2
   , withBrowser
@@ -28,54 +28,10 @@ module Test.Sandwich.WebDriver (
   , getBrowsers
   , Browser
 
-  , RunMode(..)
-
-  , XvfbConfig
-  , defaultXvfbConfig
-  , xvfbResolution
-  , xvfbStartFluxbox
-
-  , HeadlessConfig
-  , defaultHeadlessConfig
-  , headlessResolution
-
-  , chromeCapabilities
-  , headlessChromeCapabilities
-
-  , firefoxCapabilities
-  , headlessFirefoxCapabilities
-
-  , WdSession
-  , getWdOptions
-  , getDisplayNumber
-  , getXvfbSession
-  , getWdName
-  , XvfbSession(..)
-
-  , ExampleWithWebDriver
-  , HasWebDriverContext
-  , HasWebDriverSessionContext
-  , ContextWithSession
-
-  , WdOptions
-  , SeleniumToUse(..)
-  , ChromeDriverToUse(..)
-  , GeckoDriverToUse(..)
-  , obtainSelenium
-  , obtainChromeDriver
-  , obtainGeckoDriver
-  , defaultWdOptions
-  , runMode
-  , saveSeleniumMessageHistory
-  , seleniumToUse
-  , chromeDriverToUse
-  , geckoDriverToUse
-  , WhenToSave(..)
-  , capabilities
-  , httpManager
-  , httpRetryCount
-
-  , hoistExample -- experimental
+  -- * Re-exports
+  , module Test.Sandwich.WebDriver.Config
+  , module Test.Sandwich.WebDriver.Session
+  , module Test.Sandwich.WebDriver.Types
   ) where
 
 import Control.Concurrent.MVar.Lifted
@@ -93,16 +49,17 @@ import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
-import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Config
+import Test.Sandwich.WebDriver.Session
+import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Config as W
-import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
 
 
+-- | This is the main 'introduce' method for creating a WebDriver.
 introduceWebdriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
 introduceWebdriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
@@ -117,7 +74,7 @@ allocateWebDriver' :: FilePath -> WdOptions -> IO WdSession
 allocateWebDriver' runRoot wdOptions = do
   runNoLoggingT $ startWebDriver wdOptions runRoot
 
-cleanupWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdSession -> ExampleT context m ()
+cleanupWebDriver :: (HasBaseContext context, BaseMonad m) => WdSession -> ExampleT context m ()
 cleanupWebDriver sess = do
   debug "Doing cleanupWebDriver"
   closeAllSessions sess
@@ -130,13 +87,8 @@ cleanupWebDriver' sess = do
     closeAllSessions sess
     stopWebDriver sess
 
-withBrowser1 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
-withBrowser1 = withBrowser "browser1"
-
-withBrowser2 :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => ExampleT (ContextWithSession context) m a -> ExampleT context m a
-withBrowser2 = withBrowser "browser2"
-
-withBrowser :: forall m a context. (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m) => Browser -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
+-- | Run a given example using a given Selenium session.
+withBrowser :: forall m context a. WebDriverMonad m context => Browser -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withBrowser browser (ExampleT readerMonad) = do
   WdSession {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
@@ -157,33 +109,15 @@ withBrowser browser (ExampleT readerMonad) = do
 
   ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
-hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
-hoistExample (ExampleT r) = ExampleT $ transformContext r
-  where transformContext = withReaderT (\(_ :> ctx) -> ctx)
+-- | Convenience function. `withBrowser1 = withBrowser "browser1"`
+withBrowser1 :: WebDriverMonad m context => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withBrowser1 = withBrowser "browser1"
+
+-- | Convenience function. `withBrowser2 = withBrowser "browser2"`
+withBrowser2 :: WebDriverMonad m context => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withBrowser2 = withBrowser "browser2"
 
 getBrowsers :: (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadReader context m) => m [Browser]
 getBrowsers = do
   WdSession {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
-
-type ContextWithSession context = LabelValue "webdriverSession" (IORef W.WDSession) :> context
-
-instance (MonadIO m, HasLabel context "webdriverSession" (IORef W.WDSession)) => W.WDSessionState (ExampleT context m) where
-  getSession = do
-    sessVar <- getContext webdriverSession
-    liftIO $ readIORef sessVar
-  putSession sess = do
-    sessVar <- getContext webdriverSession
-    liftIO $ writeIORef sessVar sess
-
--- Implementation copied from that of the WD monad implementation
-instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" (IORef W.WDSession), MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
-  doCommand method path args = WI.mkRequest method path args
-    >>= WI.sendHTTPRequest
-    >>= either throwIO return
-    >>= WI.getJSONResult
-    >>= either throwIO return
-
-type HasWebDriverContext context = HasLabel context "webdriver" WdSession
-type HasWebDriverSessionContext context = HasLabel context "webdriverSession" (IORef W.WDSession)
-type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)

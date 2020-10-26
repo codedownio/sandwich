@@ -4,12 +4,11 @@
 module Test.Sandwich.WebDriver.Internal.Video where
 
 import Control.Monad.IO.Class
-import Data.Default
 import Data.Maybe
 import Data.String.Interpolate.IsString
 import System.Environment
 import System.Process
-import Test.Sandwich.WebDriver
+import Test.Sandwich.WebDriver.Internal.Types
 
 #ifdef darwin_HOST_OS
 import Safe
@@ -37,22 +36,6 @@ defaultAvfoundationOptions = ["-r", "30"
                              , "-threads", "0"]
 
 defaultGdigrabOptions = ["-framerate", "30"]
-
-data VideoSettings = VideoSettings { x11grabOptions :: [String]
-                                   -- ^ Arguments to x11grab, used with Linux.
-                                   , avfoundationOptions :: [String]
-                                   -- ^ Arguments to avfoundation, used with OS X.
-                                   , gdigrabOptions :: [String]
-                                   -- ^ Arguments to gdigrab, used with Windows.
-                                   , hideMouseWhenRecording :: Bool
-                                   -- ^ Hide the mouse while recording video. Linux and Windows only.
-                                   }
-
-instance Default VideoSettings where
-  def = VideoSettings { x11grabOptions = fastX11VideoOptions
-                      , avfoundationOptions = defaultAvfoundationOptions
-                      , gdigrabOptions = defaultGdigrabOptions
-                      , hideMouseWhenRecording = False }
 
 
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
