@@ -14,19 +14,19 @@ module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebdriver
 
-  -- * Lower-level allocation functions
-  , allocateWebDriver
-  , allocateWebDriver'
-  , cleanupWebDriver
-  , cleanupWebDriver'
-
-  -- * Running an example in a given browser
+  -- * Running an example in a given session
   , withBrowser1
   , withBrowser2
   , withBrowser
   , closeAllSessions
   , getBrowsers
   , Browser
+
+  -- * Lower-level allocation functions
+  , allocateWebDriver
+  , allocateWebDriver'
+  , cleanupWebDriver
+  , cleanupWebDriver'
 
   -- * Re-exports
   , module Test.Sandwich.WebDriver.Config
