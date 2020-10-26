@@ -35,18 +35,18 @@ import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
 
 
-type ContextWithSession context = LabelValue "webdriverSession" (IORef W.WDSession) :> context
+type ContextWithSession context = LabelValue "webdriverSession" WebDriverSession :> context
 
-instance (MonadIO m, HasLabel context "webdriverSession" (IORef W.WDSession)) => W.WDSessionState (ExampleT context m) where
+instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession) => W.WDSessionState (ExampleT context m) where
   getSession = do
-    sessVar <- getContext webdriverSession
+    (_, sessVar) <- getContext webdriverSession
     liftIO $ readIORef sessVar
   putSession sess = do
-    sessVar <- getContext webdriverSession
+    (_, sessVar) <- getContext webdriverSession
     liftIO $ writeIORef sessVar sess
 
 -- Implementation copied from that of the WD monad implementation
-instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" (IORef W.WDSession), MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
+instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" WebDriverSession, MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
   doCommand method path args = WI.mkRequest method path args
     >>= WI.sendHTTPRequest
     >>= either throwIO return
@@ -54,7 +54,7 @@ instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" (IORef W.
     >>= either throwIO return
 
 type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
-type HasWebDriverSessionContext context = HasLabel context "webdriverSession" (IORef W.WDSession)
+type HasWebDriverSessionContext context = HasLabel context "webdriverSession" WebDriverSession
 type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)
 
 hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
@@ -62,6 +62,6 @@ hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
 type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadIO m, MonadBaseControl IO m)
-type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WebDriver)
+type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriverSession" WebDriverSession)
 type BaseMonad m = (HasCallStack, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)

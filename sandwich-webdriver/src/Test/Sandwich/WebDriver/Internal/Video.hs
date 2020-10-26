@@ -15,29 +15,6 @@ import Safe
 #endif
 
 
-fastX11VideoOptions = ["-an"
-                      , "-r", "30"
-                      , "-vcodec"
-                      , "libxvid"
-                      , "-qscale:v", "1"
-                      , "-threads", "0"]
-
-qualityX11VideoOptions = ["-an"
-                         , "-r", "30"
-                         , "-vcodec", "libx264"
-                         , "-preset", "veryslow"
-                         , "-crf", "0"
-                         , "-threads", "0"]
-
-defaultAvfoundationOptions = ["-r", "30"
-                             , "-an"
-                             , "-vcodec", "libxvid"
-                             , "-qscale:v", "1"
-                             , "-threads", "0"]
-
-defaultGdigrabOptions = ["-framerate", "30"]
-
-
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
 #ifdef linux_HOST_OS
   displayNum <- case maybeXvfbSession of

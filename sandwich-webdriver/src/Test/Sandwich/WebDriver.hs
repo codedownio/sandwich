@@ -21,6 +21,7 @@ module Test.Sandwich.WebDriver (
 
   -- * Managing sessions
   , getSessions
+  , closeCurrentSession
   , closeSession
   , closeAllSessions
   , closeAllSessionsExcept
@@ -112,7 +113,7 @@ withSession session (ExampleT readerMonad) = do
   -- We could do the same here, but it's not clear that it's needed.
   let f :: m a -> m a = id
 
-  ExampleT (withReaderT (\ctx -> LabelValue ref :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
+  ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
 -- | Convenience function. 'withSession1' = 'withSession' "session1"
 withSession1 :: WebDriverMonad m context => ExampleT (ContextWithSession context) m a -> ExampleT context m a
@@ -123,7 +124,7 @@ withSession2 :: WebDriverMonad m context => ExampleT (ContextWithSession context
 withSession2 = withSession "session2"
 
 -- | Get all existing session names
-getSessions :: (WebDriverSessionMonad m context) => m [Session]
+getSessions :: (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WebDriver) => m [Session]
 getSessions = do
   WebDriver {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)

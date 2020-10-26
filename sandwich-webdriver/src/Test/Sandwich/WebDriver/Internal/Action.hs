@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, LambdaCase, QuasiQuotes, RecordWildCards, NamedFieldPuns, ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns, LambdaCase, QuasiQuotes, RecordWildCards, NamedFieldPuns, ScopedTypeVariables, DataKinds #-}
 -- |
 
 module Test.Sandwich.WebDriver.Internal.Action where
@@ -8,14 +8,18 @@ import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import GHC.Stack
-import Test.Sandwich.Logging
+import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
+import qualified Test.WebDriver.Session as W
+
 
 -- | Close the given sessions
 closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Session -> WebDriver -> m ()
@@ -37,3 +41,10 @@ closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
 -- | Close all sessions
 closeAllSessions :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => WebDriver -> m ()
 closeAllSessions = closeAllSessionsExcept []
+
+-- | Close the current session
+closeCurrentSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m, MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession) => m ()
+closeCurrentSession = do
+  webDriver <- getContext webdriver
+  (session, _) <- getContext webdriverSession
+  closeSession undefined webDriver

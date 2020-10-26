@@ -22,7 +22,7 @@ type Session = String
 
 -- * Labels
 webdriver = Label :: Label "webdriver" WebDriver
-webdriverSession = Label :: Label "webdriverSession" (IORef W.WDSession)
+webdriverSession = Label :: Label "webdriverSession" WebDriverSession
 
 type WebDriverContext context wd = (HasLabel context "webdriver" WebDriver, W.WebDriver (ExampleT context wd))
 
@@ -169,6 +169,8 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbDimensions :: (Int, Int)
                                , xvfbProcess :: ProcessHandle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
+
+type WebDriverSession = (Session, IORef W.WDSession)
 
 -- | Get the 'WdOptions' associated with the 'WebDriver'
 getWdOptions :: WebDriver -> WdOptions
