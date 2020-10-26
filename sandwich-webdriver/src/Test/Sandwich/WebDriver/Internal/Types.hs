@@ -17,20 +17,21 @@ import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
 
+-- | 'Session' is just a 'String' name
 type Session = String
 
 -- * Labels
-webdriver = Label :: Label "webdriver" WdSession
+webdriver = Label :: Label "webdriver" WebDriver
 webdriverSession = Label :: Label "webdriverSession" (IORef W.WDSession)
 
-type HasWebDriver context wd = (HasLabel context "webdriver" WdSession, W.WebDriver (ExampleT context wd))
+type WebDriverContext context wd = (HasLabel context "webdriver" WebDriver, W.WebDriver (ExampleT context wd))
 
 -- TODO: remove
-class HasWdSession a where
-  getWdSession :: a -> WdSession
+class HasWebDriver a where
+  getWebDriver :: a -> WebDriver
 
-instance HasWdSession WdSession where
-  getWdSession = id
+instance HasWebDriver WebDriver where
+  getWebDriver = id
 
 type ToolsRoot = FilePath
 
@@ -152,7 +153,7 @@ defaultWdOptions toolsRoot = WdOptions {
 
 type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text, W.LogEntry -> Bool)
 
-data WdSession = WdSession { wdName :: String
+data WebDriver = WebDriver { wdName :: String
                            , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
                            , wdOptions :: WdOptions
                            , wdSessionMap :: MVar (M.Map Session W.WDSession)
@@ -169,19 +170,19 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
                                , xvfbProcess :: ProcessHandle
                                , xvfbFluxboxProcess :: Maybe ProcessHandle }
 
-getWdOptions :: WdSession -> WdOptions
+getWdOptions :: WebDriver -> WdOptions
 getWdOptions = wdOptions
 
-getDisplayNumber :: WdSession -> Maybe Int
-getDisplayNumber (WdSession {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
+getDisplayNumber :: WebDriver -> Maybe Int
+getDisplayNumber (WebDriver {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
 
-getXvfbSession :: WdSession -> Maybe XvfbSession
-getXvfbSession (WdSession {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
+getXvfbSession :: WebDriver -> Maybe XvfbSession
+getXvfbSession (WebDriver {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
-getWdName :: WdSession -> String
-getWdName (WdSession {wdName}) = wdName
+getWdName :: WebDriver -> String
+getWdName (WebDriver {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]

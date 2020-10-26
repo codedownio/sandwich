@@ -13,7 +13,7 @@ import Test.Sandwich.WebDriver
 import Test.WebDriver
 
 spec :: TopSpec
-spec = introduceWebdriver (defaultWdOptions "/tmp/tools") $ do
+spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   it "opens Google and searches" $ withBrowser1 $ do
     openPage "http://www.google.com"
     search <- findElem (ByCSS "input[title='Search']")
@@ -61,7 +61,7 @@ For example, the code below open two windows, positions them on the left and rig
 
 ```haskell
 spec :: TopSpec
-spec = introduceWebdriver (defaultWdOptions "/tmp/tools") $ do
+spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withBrowser1 $ openPage "http://www.google.com"
     it "opens Yahoo" $ withBrowser2 $ openPage "http://www.yahoo.com"
@@ -75,7 +75,7 @@ The code below extends the previous example with window positioning.
 
 ```haskell
 spec :: TopSpec
-spec = introduceWebdriver (defaultWdOptions "/tmp/tools") $ do
+spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withBrowser "browser1" $ do
       setWindowLeftSide

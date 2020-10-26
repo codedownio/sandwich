@@ -18,8 +18,12 @@ module Test.Sandwich.WebDriver (
   , withSession
   , withSession1
   , withSession2
+
+  -- * Managing sessions
   , getSessions
+  , closeSession
   , closeAllSessions
+  , closeAllSessionsExcept
   , Session
 
   -- * Lower-level allocation functions
@@ -29,8 +33,8 @@ module Test.Sandwich.WebDriver (
   , cleanupWebDriver'
 
   -- * Re-exports
+  , module Test.Sandwich.WebDriver.Class
   , module Test.Sandwich.WebDriver.Config
-  , module Test.Sandwich.WebDriver.Session
   , module Test.Sandwich.WebDriver.Types
   ) where
 
@@ -44,15 +48,14 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate.IsString
-import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
-import Test.Sandwich.WebDriver.Session
 import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
@@ -60,11 +63,11 @@ import qualified Test.WebDriver.Session as W
 
 
 -- | This is the main 'introduce' method for creating a WebDriver.
-introduceWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WdSession :> context) m () -> SpecFree context m ()
+introduceWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 -- | Allocate a WebDriver using the given options
-allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WdSession
+allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WebDriver
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
   maybeRunRoot <- getRunRoot
@@ -72,18 +75,18 @@ allocateWebDriver wdOptions = do
   startWebDriver wdOptions runRoot
 
 -- | Allocate a WebDriver using the given options and putting logs under the given path
-allocateWebDriver' :: FilePath -> WdOptions -> IO WdSession
+allocateWebDriver' :: FilePath -> WdOptions -> IO WebDriver
 allocateWebDriver' runRoot wdOptions = do
   runNoLoggingT $ startWebDriver wdOptions runRoot
 
 -- | Clean up the given WebDriver
-cleanupWebDriver :: (HasBaseContext context, BaseMonad m) => WdSession -> ExampleT context m ()
+cleanupWebDriver :: (HasBaseContext context, BaseMonad m) => WebDriver -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
 
 -- | Clean up the given WebDriver without logging
-cleanupWebDriver' :: WdSession -> IO ()
+cleanupWebDriver' :: WebDriver -> IO ()
 cleanupWebDriver' sess = do
   runNoLoggingT $ do
     closeAllSessions sess
@@ -92,7 +95,7 @@ cleanupWebDriver' sess = do
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. WebDriverMonad m context => Session -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withSession session (ExampleT readerMonad) = do
-  WdSession {..} <- getContext webdriver
+  WebDriver {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup session sessionMap of
     Just sess -> return (sessionMap, sess)
@@ -122,5 +125,5 @@ withSession2 = withSession "session2"
 -- | Get all existing session names
 getSessions :: (WebDriverSessionMonad m context) => m [Session]
 getSessions = do
-  WdSession {..} <- getContext webdriver
+  WebDriver {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)

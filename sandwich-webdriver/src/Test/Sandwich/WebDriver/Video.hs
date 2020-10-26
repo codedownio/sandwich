@@ -24,7 +24,7 @@ import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Video
 import Test.Sandwich.WebDriver.Windows
-import Test.WebDriver.Class
+import Test.WebDriver.Class as W
 import Test.WebDriver.Commands
 
 
@@ -40,7 +40,7 @@ startFullScreenVideoRecording path videoSettings logToDisk = do
       return (fromIntegral w, fromIntegral h)
   startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings logToDisk
 
-startBrowserVideoRecording :: (MonadIO m, MonadThrow m, MonadReader context m, MonadLogger m, HasWebDriverContext context, HasWebDriverSessionContext context, MonadBaseControl IO m, WebDriver m) =>
+startBrowserVideoRecording :: (MonadIO m, MonadThrow m, MonadReader context m, MonadLogger m, HasWebDriverContext context, HasWebDriverSessionContext context, MonadBaseControl IO m, W.WebDriver m) =>
   FilePath -> VideoSettings -> Bool -> m ProcessHandle
 startBrowserVideoRecording path videoSettings logToDisk = do
   (x, y) <- getWindowPos

@@ -16,8 +16,8 @@ import System.FilePath
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.WebDriver
 
-saveScreenshots :: (HasCallStack) => T.Text -> WdSession -> FilePath -> IO ()
-saveScreenshots screenshotName (WdSession {..}) resultsDir = do
+saveScreenshots :: (HasCallStack) => T.Text -> WebDriver -> FilePath -> IO ()
+saveScreenshots screenshotName (WebDriver {..}) resultsDir = do
   -- For every session, and for every window, try to get a screenshot for the results dir
   sessionMap <- readMVar wdSessionMap
   forM_ (M.toList sessionMap) $ \(browser, sess) -> runWD sess $

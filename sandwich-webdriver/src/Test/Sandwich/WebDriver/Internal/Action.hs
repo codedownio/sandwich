@@ -17,20 +17,23 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 
-closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Session -> WdSession -> m ()
-closeSession session (WdSession {wdSessionMap}) = do
+-- | Close the given sessions
+closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Session -> WebDriver -> m ()
+closeSession session (WebDriver {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
     whenJust (M.lookup session sessionMap) $ \sess ->
       liftIO $ W.runWD sess W.closeSession
     return $ M.delete session sessionMap
 
-closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Session] -> WdSession -> m ()
-closeAllSessionsExcept toKeep (WdSession {wdSessionMap}) = do
+-- | Close all sessions except those listed
+closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Session] -> WebDriver -> m ()
+closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
   modifyMVar_ wdSessionMap $ \sessionMap -> do
     forM_ (M.toList sessionMap) $ \(name, sess) -> unless (name `elem` toKeep) $
       catch (liftIO $ W.runWD sess W.closeSession)
             (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
     return $ M.fromList [(b, s) | (b, s) <- M.toList sessionMap, b `elem` toKeep]
 
-closeAllSessions :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => WdSession -> m ()
+-- | Close all sessions
+closeAllSessions :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => WebDriver -> m ()
 closeAllSessions = closeAllSessionsExcept []

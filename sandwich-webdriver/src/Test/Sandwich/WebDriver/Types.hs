@@ -53,7 +53,7 @@ instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" (IORef W.
     >>= WI.getJSONResult
     >>= either throwIO return
 
-type HasWebDriverContext context = HasLabel context "webdriver" WdSession
+type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
 type HasWebDriverSessionContext context = HasLabel context "webdriverSession" (IORef W.WDSession)
 type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)
 
@@ -61,7 +61,7 @@ hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) I
 hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
-type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WdSession, MonadIO m, MonadBaseControl IO m)
-type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WdSession)
+type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadIO m, MonadBaseControl IO m)
+type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WebDriver)
 type BaseMonad m = (HasCallStack, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)

@@ -24,10 +24,10 @@ import Safe
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.WebDriver
-import Test.WebDriver.Class
+import qualified Test.WebDriver.Class as W
 
 
-setWindowLeftSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowLeftSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowLeftSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -37,7 +37,7 @@ setWindowLeftSide = do
   setWindowPos (x + 0, y + 0)
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
-setWindowRightSide :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowRightSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowRightSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -48,7 +48,7 @@ setWindowRightSide = do
   setWindowPos pos
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
-setWindowFullScreen :: (HasCallStack, MonadIO wd, HasWebDriver context wd, MonadReader context wd, WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowFullScreen :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowFullScreen = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -60,13 +60,13 @@ setWindowFullScreen = do
 
 -- * Getting screen dimensions and resolution
 
-getScreenResolution :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WdSession -> m (Int, Int, Int, Int)
+getScreenResolution :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WebDriver -> m (Int, Int, Int, Int)
 getScreenResolution = getScreenResolutionX11
 
 -- * Internal
 
-getScreenResolutionX11 :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WdSession -> m (Int, Int, Int, Int)
-getScreenResolutionX11 (WdSession {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = case maybeXvfbSession of
+getScreenResolutionX11 :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WebDriver -> m (Int, Int, Int, Int)
+getScreenResolutionX11 (WebDriver {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = case maybeXvfbSession of
     Nothing -> getScreenResolutionX11' ":0" 0
     Just (XvfbSession {..}) -> getScreenResolutionX11' (":" <> show xvfbDisplayNum) 0
 

@@ -51,8 +51,8 @@ import qualified Test.WebDriver as W
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
 
--- | Spin up a Selenium WebDriver and create a WdSession
-startWebDriver :: Constraints m => WdOptions -> FilePath -> m WdSession
+-- | Spin up a Selenium WebDriver and create a WebDriver
+startWebDriver :: Constraints m => WdOptions -> FilePath -> m WebDriver
 startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> (liftIO makeUUID)
@@ -141,8 +141,8 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
     interruptProcessGroupOf p >> waitForProcess p
     error [i|Selenium server failed to start after 60 seconds|]
 
-  -- Make the WdSession
-  WdSession <$> pure (T.unpack webdriverName)
+  -- Make the WebDriver
+  WebDriver <$> pure (T.unpack webdriverName)
             <*> pure (hout, herr, p, seleniumOutPath, seleniumErrPath, maybeXvfbSession)
             <*> pure wdOptions
             <*> liftIO (newMVar mempty)
@@ -153,8 +153,8 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
                           })
 
 
-stopWebDriver :: Constraints m => WdSession -> m ()
-stopWebDriver (WdSession {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) = do
+stopWebDriver :: Constraints m => WebDriver -> m ()
+stopWebDriver (WebDriver {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) = do
   _ <- liftIO (interruptProcessGroupOf h >> waitForProcess h)
   liftIO $ hClose hout
   liftIO $ hClose herr
