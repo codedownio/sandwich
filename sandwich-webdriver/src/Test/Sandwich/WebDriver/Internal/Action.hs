@@ -47,4 +47,4 @@ closeCurrentSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl
 closeCurrentSession = do
   webDriver <- getContext webdriver
   (session, _) <- getContext webdriverSession
-  closeSession undefined webDriver
+  closeSession session webDriver
