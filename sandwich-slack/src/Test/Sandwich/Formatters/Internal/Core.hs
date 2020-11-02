@@ -19,32 +19,35 @@ import Test.Sandwich.Formatters.Internal.Types
 
 postMessage :: (MonadError T.Text m, MonadIO m) => SlackConfig -> ChannelName -> T.Text -> [A.Value] -> Maybe [A.Value] -> m Value
 postMessage conf cid msg as maybeBlocks =
-  makeSlackCall conf "chat.postMessage" $
-    (W.param "channel"       .~ [cid])
-    . (W.param "text"        .~ [msg])
-    . (W.param "attachments" .~ [encode' as])
-    . (case maybeBlocks of Nothing -> id; Just blocks -> (W.param "blocks" .~ [encode' $ A.Array $ V.fromList blocks]))
-    . (W.param "as_user"     .~ ["true"])
+  makeSlackCall conf "chat.postMessage" $ A.object $ [
+    ("token", A.String $ slackApiToken conf)
+    , ("channel", A.String cid)
+    , ("text", A.String msg)
+    , ("attachments", A.Array $ V.fromList as)
+    , ("as_user", A.Bool True)
+    ]
+    <> (case maybeBlocks of Nothing -> []; Just blocks -> [("blocks", A.Array $ V.fromList blocks)])
 
 updateMessage :: (MonadError T.Text m, MonadIO m) => SlackConfig -> ChannelName -> T.Text -> T.Text -> [A.Value] -> Maybe [A.Value] -> m ()
 updateMessage conf cid ts msg as maybeBlocks =
-  void $ makeSlackCall conf "chat.update" $
-    (W.param "channel"     .~ [cid])
-    . (W.param "text"        .~ [msg])
-    . (W.param "attachments" .~ [encode' as])
-    . (case maybeBlocks of Nothing -> id; Just blocks -> (W.param "blocks" .~ [encode' $ A.Array $ V.fromList blocks]))
-    . (W.param "as_user"     .~ ["true"])
-    . (W.param "ts"          .~ [ts])
+  void $ makeSlackCall conf "chat.update" $ A.object $ [
+    ("token", A.String $ slackApiToken conf)
+    , ("channel", A.String cid)
+    , ("text", A.String msg)
+    , ("attachments", A.Array $ V.fromList as)
+    , ("as_user", A.Bool True)
+    , ("ts", A.String ts)
+    ]
+    <> (case maybeBlocks of Nothing -> []; Just blocks -> [("blocks", A.Array $ V.fromList blocks)])
 
 encode' :: A.ToJSON a => a -> T.Text
 encode' = T.decodeUtf8 . BL.toStrict . encode
 
-makeSlackCall :: (MonadError T.Text m, MonadIO m) => SlackConfig -> String -> (W.Options -> W.Options) -> m Value
-makeSlackCall conf method setArgs = do
+makeSlackCall :: (MonadError T.Text m, MonadIO m) => SlackConfig -> String -> A.Value -> m Value
+makeSlackCall conf method body = do
   let url = "https://slack.com/api/" ++ method
-  let setToken = W.param "token" .~ [slackApiToken conf]
-  let opts = W.defaults & setToken & setArgs
-  rawResp <- liftIO $ W.getWith opts url
+  let opts = W.defaults & (W.header "Authorization" .~ ["Bearer " <> T.encodeUtf8 (slackApiToken conf)])
+  rawResp <- liftIO $ W.postWith opts url (body)
   resp <- rawResp ^? W.responseBody . _Value ?? "Couldn't parse response"
   case resp ^? key "ok" . _Bool of
     Just True -> return resp
