@@ -80,4 +80,4 @@ endVideoRecording p = do
     -- https://github.com/FFmpeg/FFmpeg/blob/d182d8f10cf69c59ef9c21df4b06e5478df063ef/fftools/ffmpeg.c#L4890
     ExitFailure 255 -> return ()
 
-    ExitFailure n -> logError [i|ffmpeg exited with unexpected exit code #{n}'|]
+    ExitFailure n -> debug [i|ffmpeg exited with unexpected exit code #{n}'|]
