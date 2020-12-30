@@ -33,7 +33,7 @@ printFailureReason (Pending _ maybeMessage) = case maybeMessage of
   Nothing -> return () -- Just allow the yellow heading to show the pending state
   Just s -> printShowBoxPrettyWithTitle "Pending reason: " (SEB s)
 printFailureReason (GetContextException _ e) = do
-  printShowBoxPrettyWithTitle "Got exception: " (SEB e)
+  printShowBoxPrettyWithTitle "Context exception: " (SEB e)
 printFailureReason (GotAsyncException _ maybeMessage e) = case maybeMessage of
   Nothing -> printShowBoxPrettyWithTitle "Async exception" (SEB e)
   Just s -> printShowBoxPrettyWithTitle [i|Async exception (#{e}) |] (SEB s)

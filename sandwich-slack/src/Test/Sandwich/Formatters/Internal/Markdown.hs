@@ -5,7 +5,6 @@
 
 module Test.Sandwich.Formatters.Internal.Markdown where
 
-import qualified Data.Aeson as A
 import Data.Function
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
@@ -21,7 +20,7 @@ toMarkdown (ExpectedButGot {..}) = [i|Expected *#{failureValue1}* but got *#{fai
 toMarkdown (DidNotExpectButGot {..}) = [i|Did not expect *#{failureValue1}*|]
 toMarkdown (GotException {..}) = case failureMessage of
   Just msg -> [i|Got exception (_#{msg}_): #{failureException}|]
-  Nothing -> [i|Got exception: #{failureException}|]
+  Nothing -> [i|Got exception (no message): #{failureException}|]
 toMarkdown (Pending {..}) = "Example was pending"
 toMarkdown (GetContextException {..}) = [i|Context exception: #{failureException}|]
 toMarkdown (GotAsyncException {..}) = case failureMessage of
