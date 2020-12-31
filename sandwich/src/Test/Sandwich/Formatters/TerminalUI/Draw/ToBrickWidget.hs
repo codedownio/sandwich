@@ -2,12 +2,13 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
--- |
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget where
 
 import Brick
 import Brick.Widgets.Border
+import Control.Exception.Safe
 import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import Data.Time.Clock
@@ -42,7 +43,6 @@ instance ToBrickWidget FailureReason where
               (padBottom (Pad 1) (withAttr sawAttr $ str "Saw:"))
               <=>
               widget2
-
     ]
     where
       (widget1, widget2) = case (P.reify x1, P.reify x2) of
@@ -53,17 +53,20 @@ instance ToBrickWidget FailureReason where
     Nothing -> withAttr pendingAttr $ str "Pending"
     Just msg -> hBox [withAttr pendingAttr $ str "Pending"
                      , str (": " <> msg)]
-
-  toBrickWidget x@(Reason _ msg) = boxWithTitle "Failure reason:" (strWrap msg)
-  toBrickWidget x@(GotException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
+  toBrickWidget (Reason _ msg) = boxWithTitle "Failure reason:" (strWrap msg)
+  toBrickWidget (GotException _ maybeMessage e@(SomeExceptionWithEq baseException)) = case fromException baseException of
+    Just (fr :: FailureReason) -> boxWithTitle heading (toBrickWidget fr)
+    _ -> boxWithTitle heading (reifyWidget e)
     where heading = case maybeMessage of
             Nothing -> "Got exception: "
             Just msg -> [i|Got exception (#{msg}):|]
-  toBrickWidget x@(GotAsyncException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
+  toBrickWidget (GotAsyncException _ maybeMessage e) = boxWithTitle heading (reifyWidget e)
     where heading = case maybeMessage of
             Nothing -> "Got async exception: "
             Just msg -> [i|Got async exception (#{msg}):|]
-  toBrickWidget x@(GetContextException _ e) = boxWithTitle "Get context exception:" (reifyWidget e)
+  toBrickWidget (GetContextException _ e@(SomeExceptionWithEq baseException)) = case fromException baseException of
+    Just (fr :: FailureReason) -> boxWithTitle "Get context exception:" (toBrickWidget fr)
+    _ -> boxWithTitle "Get context exception:" (reifyWidget e)
 
 
 boxWithTitle heading inside = hBox [
