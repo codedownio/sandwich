@@ -38,7 +38,7 @@ import Safe
 -- * ExampleM monad
 
 newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (LoggingT m) a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadLogger, MonadThrow, MonadCatch, MonadMask)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadLogger, MonadLoggerIO, MonadThrow, MonadCatch, MonadMask)
 type ExampleM context = ExampleT context IO
 
 instance (MonadIO m, MonadUnliftIO m) => MonadUnliftIO (ExampleT context m) where
