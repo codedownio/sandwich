@@ -2,9 +2,9 @@ name:                sandwich-webdriver
 version:             0.1.0.0
 github:              "githubuser/sandwich-webdriver"
 license:             BSD3
-author:              "Author name here"
+author:              "Tom McLaughlin"
 maintainer:          "example@example.com"
-copyright:           "2020 Author name here"
+copyright:           "2020 Tom McLaughlin"
 
 extra-source-files:
 - README.md

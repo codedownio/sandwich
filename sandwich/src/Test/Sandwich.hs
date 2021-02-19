@@ -8,6 +8,7 @@ module Test.Sandwich (
   -- * Running tests
   runSandwich
   , runSandwich'
+  , runSandwichWithCommandLineArgs
   , runSandwichTree
   , startSandwichTree
 
@@ -59,6 +60,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Data.Either
 import Data.IORef
@@ -66,6 +68,7 @@ import Data.String.Interpolate.IsString
 import System.Directory
 import System.FilePath
 import System.Posix.Signals
+import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
@@ -86,6 +89,12 @@ import Test.Sandwich.Util
 -- | Run the spec
 runSandwich :: Options -> TopSpec -> IO ()
 runSandwich options spec = void $ runSandwich' options spec
+
+-- | Run the spec, configuring the options from the command line
+runSandwichWithCommandLineArgs :: Options -> TopSpec -> IO ()
+runSandwichWithCommandLineArgs baseOptions spec = do
+  (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions
+  void $ runSandwich' options spec
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
@@ -151,7 +160,7 @@ startSandwichTree' baseContext (Options {..}) spec' = do
 runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
 runSandwichTree options spec = do
   rts <- startSandwichTree options spec
-  _ <- mapM_ waitForTree rts
+  mapM_ waitForTree rts
   return rts
 
 baseContextFromOptions :: Options -> IO BaseContext

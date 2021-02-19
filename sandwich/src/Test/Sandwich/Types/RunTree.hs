@@ -1,12 +1,7 @@
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
--- |
 
 module Test.Sandwich.Types.RunTree where
 

@@ -11,9 +11,9 @@ version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-quickcheck#readme>
 homepage:       https://github.com/githubuser/sandwich-quickcheck#readme
 bug-reports:    https://github.com/githubuser/sandwich-quickcheck/issues
-author:         Author name here
+author:         Tom McLaughlin
 maintainer:     example@example.com
-copyright:      2020 Author name here
+copyright:      2020 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

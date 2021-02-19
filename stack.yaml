@@ -1,0 +1,11 @@
+
+resolver: lts-16.15
+
+packages:
+- ./sandwich
+- ./sandwich-demos
+- ./sandwich-quickcheck
+- ./sandwich-slack
+- ./sandwich-webdriver
+
+extra-deps: []

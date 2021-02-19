@@ -1,0 +1,67 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: ce8e12e40826efc60e15befa61c4ea4804e47e81c582468706a3f8efa287c41a
+
+name:           sandwich-demos
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-demos#readme>
+homepage:       https://github.com/githubuser/sandwich-demos#readme
+bug-reports:    https://github.com/githubuser/sandwich-demos/issues
+author:         Tom McLaughlin
+maintainer:     example@example.com
+copyright:      2020 Tom McLaughlin
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/sandwich-demos
+
+executable tui-demo
+  main-is: TUI.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      app
+  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , async
+    , base >=4.7 && <5
+    , containers
+    , convertible
+    , data-default
+    , directory
+    , exceptions
+    , filepath
+    , http-client
+    , http-conduit
+    , interpolate
+    , lifted-base
+    , monad-control
+    , monad-logger
+    , mtl
+    , network
+    , process
+    , random
+    , retry
+    , safe
+    , safe-exceptions
+    , sandwich
+    , temporary
+    , text
+    , time
+    , transformers
+    , transformers-base
+    , unix
+    , unordered-containers
+  default-language: Haskell2010

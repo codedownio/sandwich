@@ -109,7 +109,8 @@ class Index extends React.Component {
               'To make your landing page more attractive, use illustrations! Check out ' +
               '[**unDraw**](https://undraw.co/) which provides you with customizable illustrations which are free to use. ' +
               'The illustrations you see on this page are from unDraw.',
-            image: `${baseUrl}img/undraw_code_review.svg`,
+            image: `${baseUrl}videos/lalala.webm`,
+            /* image: `${baseUrl}img/undraw_code_review.svg`, */
             imageAlign: 'left',
             title: 'Wonderful SVG Illustrations',
           },
@@ -137,7 +138,7 @@ class Index extends React.Component {
           {
             content:
               'Each new Docusaurus project has **randomly-generated** theme colors.',
-            image: `${baseUrl}img/undraw_youtube_tutorial.svg`,
+            image: `${baseUrl}img/lalala.gif`,
             imageAlign: 'right',
             title: 'Randomly Generated Theme Colors',
           },

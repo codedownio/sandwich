@@ -12,7 +12,6 @@ import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.QuickCheck
 
 simple :: TopSpec
 simple = do
@@ -24,4 +23,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwich testOptions simple
+main = runSandwichWithCommandLineArgs testOptions simple

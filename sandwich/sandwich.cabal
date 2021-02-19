@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b2b4a3e7c1e6780d6bccbc94c449be36d74f2ed6d24dd2eee12c8a1e22b55ee3
+-- hash: 8510529efc40f85f305835f5067c69329cc2a16c46de90a2cfd75ffe70d95c31
 
 name:           sandwich
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich#readme>
 homepage:       https://github.com/githubuser/sandwich#readme
 bug-reports:    https://github.com/githubuser/sandwich/issues
-author:         Author name here
+author:         Tom McLaughlin
 maintainer:     example@example.com
-copyright:      2020 Author name here
+copyright:      2020 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -40,6 +40,7 @@ library
       Test.Sandwich.Internal
       Test.Sandwich.Internal.Formatters
   other-modules:
+      Test.Sandwich.ArgParsing
       Test.Sandwich.Formatters.Common.Count
       Test.Sandwich.Formatters.Common.Util
       Test.Sandwich.Formatters.Print.CallStacks
@@ -97,6 +98,7 @@ library
     , monad-control
     , monad-logger
     , mtl
+    , optparse-applicative
     , pretty-show
     , process
     , random
@@ -140,6 +142,7 @@ executable sandwich-exe
     , monad-control
     , monad-logger
     , mtl
+    , optparse-applicative
     , pretty-show
     , process
     , random
@@ -189,6 +192,7 @@ executable sandwich-test
     , monad-control
     , monad-logger
     , mtl
+    , optparse-applicative
     , pretty-show
     , process
     , random
@@ -239,6 +243,7 @@ test-suite sandwich-test-suite
     , monad-control
     , monad-logger
     , mtl
+    , optparse-applicative
     , pretty-show
     , process
     , random
