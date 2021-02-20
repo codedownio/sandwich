@@ -76,19 +76,8 @@ data CommandLineOptions = CommandLineOptions {
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
 
-  -- sandwich-webdriver
-  , optFirefox :: Bool
-  , optPoolSize :: Int
-  , optDisplay :: DisplayType
-  , optFluxbox :: Bool
-  , optIndividualVideos :: Bool
-  , optErrorVideos :: Bool
-
-  -- sandwich-slack
-  , optSlackToken :: Maybe String
-  , optSlackChannel :: Maybe String
-  , optSlackTopMessage :: Maybe String
-
+  , optWebdriverOptions :: CommandLineWebdriverOptions
+  , optSlackOptions :: CommandLineSlackOptions
   } deriving Show
 
 commandLineOptions :: Parser CommandLineOptions
@@ -100,18 +89,8 @@ commandLineOptions = CommandLineOptions
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
 
-  -- sandwich-webdriver
-  <*> flag False True (long "firefox" <> help "Use Firefox for Selenium tests (instead of the default of Chrome).")
-  <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "WebDriver pool size" <> value 4 <> metavar "INT")
-  <*> display
-  <*> flag False True (long "fluxbox" <> help "Launch fluxbox as window manager when using Xvfb")
-  <*> flag False True (long "individual-videos" <> help "Record individual videos of each test.")
-  <*> flag False True (long "error-videos" <> help "Record videos of each test but delete them unless there was an exception")
-
-  -- sandwich-slack
-  <*> optional (strOption (long "slack-token" <> help "Slack token to use with the Slack formatter" <> metavar "STRING"))
-  <*> optional (strOption (long "slack-channel" <> help "Slack channel to use with the Slack formatter" <> metavar "STRING"))
-  <*> optional (strOption (long "slack-top-message" <> help "Top message to display on Slack progress bars" <> metavar "STRING"))
+  <*> commandLineWebdriverOptions
+  <*> commandLineSlackOptions
 
 formatter :: Parser FormatterType
 formatter =
@@ -126,12 +105,47 @@ logLevel =
   <|> flag' (Just LevelWarn) (long "warn" <> help "Log level WARN")
   <|> flag (Just LevelWarn) (Just LevelError) (long "error" <> help "Log level ERROR")
 
+-- * sandwich-webdriver options
+
+data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
+  optFirefox :: Bool
+  , optPoolSize :: Int
+  , optDisplay :: DisplayType
+  , optFluxbox :: Bool
+  , optIndividualVideos :: Bool
+  , optErrorVideos :: Bool
+  } deriving Show
+
+commandLineWebdriverOptions :: Parser CommandLineWebdriverOptions
+commandLineWebdriverOptions = CommandLineWebdriverOptions
+  <$> flag False True (long "firefox" <> help "(sandwich-webdriver) Use Firefox for Selenium tests (instead of the default of Chrome).")
+  <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "(sandwich-webdriver) WebDriver pool size" <> value 4 <> metavar "INT")
+  <*> display
+  <*> flag False True (long "fluxbox" <> help "(sandwich-webdriver) Launch fluxbox as window manager when using Xvfb")
+  <*> flag False True (long "individual-videos" <> help "(sandwich-webdriver) Record individual videos of each test.")
+  <*> flag False True (long "error-videos" <> help "(sandwich-webdriver) Record videos of each test but delete them unless there was an exception")
+
 display :: Parser DisplayType
 display =
-  flag' Current (long "current" <> help "Open browser in current display")
-  <|> flag' Headless (long "headless" <> help "Run browser in headless mode")
-  <|> flag Current Xvfb (long "xvfb" <> help "Run browser in Xvfb session")
+  flag' Current (long "current" <> help "(sandwich-webdriver) Open browser in current display")
+  <|> flag' Headless (long "headless" <> help "(sandwich-webdriver) Run browser in headless mode")
+  <|> flag Current Xvfb (long "xvfb" <> help "(sandwich-webdriver) Run browser in Xvfb session")
 
+-- * sandwich-slack options
+
+data CommandLineSlackOptions = CommandLineSlackOptions {
+  optSlackToken :: Maybe String
+  , optSlackChannel :: Maybe String
+  , optSlackTopMessage :: Maybe String
+  } deriving Show
+
+commandLineSlackOptions :: Parser CommandLineSlackOptions
+commandLineSlackOptions = CommandLineSlackOptions
+  <$> optional (strOption (long "slack-token" <> help "(sandwich-slack) Slack token to use with the Slack formatter" <> metavar "STRING"))
+  <*> optional (strOption (long "slack-channel" <> help "(sandwich-slack) Slack channel to use with the Slack formatter" <> metavar "STRING"))
+  <*> optional (strOption (long "slack-top-message" <> help "(sandwich-slack) Top message to display on Slack progress bars" <> metavar "STRING"))
+
+-- * Main parsing function
 
 addOptionsFromArgs :: Options -> IO (Options, Int)
 addOptionsFromArgs baseOptions = do
