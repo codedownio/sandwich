@@ -51,12 +51,12 @@ import Data.Maybe
 import Data.String.Interpolate.IsString
 import Test.Sandwich
 import Test.Sandwich.Internal
+import Test.Sandwich.WebDriver.Class
+import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
-import Test.Sandwich.WebDriver.Class
-import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
