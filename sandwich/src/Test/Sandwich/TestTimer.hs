@@ -2,18 +2,19 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Test.Sandwich.TestTimer where
 
 import Control.Concurrent
-import Control.Exception.Lifted
+import Control.Exception.Safe
 import Control.Lens
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.State
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
-import Data.Convertible
 import qualified Data.List as L
 import qualified Data.Sequence as S
 import Data.String.Interpolate.IsString
@@ -48,12 +49,12 @@ introduceTestTimer = introduce' (defaultNodeOptions {nodeOptionsCreateFolder=Fal
 
 -- * Simple timing node
 
-timingNodeByProfile :: (MonadIO m, MonadBaseControl IO m, HasTestTimer context, HasTestTimerProfile context) => String -> SpecFree context m () -> SpecFree context m ()
-timingNodeByProfile name = around ("Timer for " <> name) (void . testTimerByProfile (convert name))
+timingNodeByProfile :: (MonadIO m, MonadMask m, HasTestTimer context, HasTestTimerProfile context) => String -> SpecFree context m () -> SpecFree context m ()
+timingNodeByProfile name = around ("Timer for " <> name) (void . testTimerByProfile (T.pack name))
 
 -- * Core
 
-withTestTimer :: (MonadBaseControl IO m, MonadIO m) => FilePath -> (TestTimer -> m a) -> m a
+withTestTimer :: (MonadMask m, MonadIO m) => FilePath -> (TestTimer -> m a) -> m a
 withTestTimer path action = bracket (liftIO $ newTestTimer path) (liftIO . finalizeTestTimer) action
 
 newTestTimer :: FilePath -> IO TestTimer
@@ -72,13 +73,13 @@ finalizeTestTimer (TestTimer {..}) = do
   file <- readMVar testTimerSpeedScopeFile
   BL.writeFile (testTimerBasePath </> "speedscope.json") (A.encode file)
 
-testTimerByProfile :: (MonadBaseControl IO m, MonadIO m, MonadReader context m, HasTestTimerProfile context) => T.Text -> m a -> m a
+testTimerByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimerProfile context) => T.Text -> m a -> m a
 testTimerByProfile name action = do
   tt <- getContext testTimerLabel
   profileName <- getContext testTimerProfile
   testTimer tt profileName name action
 
-testTimer :: (MonadBaseControl IO m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
+testTimer :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 testTimer tt profileName name action = bracket
   (liftIO $ do
       modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do

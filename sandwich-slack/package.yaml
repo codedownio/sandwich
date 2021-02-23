@@ -42,6 +42,8 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -W
 
 executables:
   sandwich-slack-exe:

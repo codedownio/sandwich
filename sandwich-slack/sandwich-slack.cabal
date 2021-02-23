@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01a1ba0d8c2e98df3ca732f693637be76c3aa0c451e2550a242273111cf7fe37
+-- hash: f6c2ec1dfd9857804be249118f2eaa56659dd140fb438ae894abd9da41a6bfe2
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -36,6 +36,7 @@ library
       Paths_sandwich_slack
   hs-source-dirs:
       src
+  ghc-options: -W
   build-depends:
       aeson
     , aeson-qq

@@ -21,6 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - QuickCheck
+- aeson
 - ansi-terminal
 - async
 - base >= 4.7 && < 5
@@ -33,6 +34,7 @@ dependencies:
 - filepath
 - free
 - interpolate
+- lens
 - lifted-async
 - microlens
 - microlens-th
