@@ -140,26 +140,11 @@ highlightMessageIfPredicate p app x = case p app of
   True -> withAttr hotkeyMessageAttr x
   False -> withAttr disabledHotkeyMessageAttr x
 
-toggleIndicator True key onMsg _ = keyIndicator key onMsg
-toggleIndicator False key _ offMsg = keyIndicator key offMsg
-
 keyIndicator key msg = keyIndicator' key (withAttr hotkeyMessageAttr $ str msg)
 
 keyIndicator' key label = hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", label]
 
 keyIndicatorHasSelected app = keyIndicatorContextual app someTestSelected
-
-keyIndicatorSelectedTestDone app = keyIndicatorContextual app selectedTestDone
-keyIndicatorSelectedTestRunning app = keyIndicatorContextual app selectedTestRunning
-
-keyIndicatorHasSelectedAndFolder app = keyIndicatorContextual app $ \s -> case L.listSelectedElement (s ^. appMainList) of
-  Just (_, MainListElem {folderPath=(Just _)}) -> True
-  _ -> False
-
-keyIndicatorSomeTestRunning app = keyIndicatorContextual app someTestRunning
-keyIndicatorNoTestsRunning app = keyIndicatorContextual app noTestsRunning
-keyIndicatorAllTestsDone app = keyIndicatorContextual app allTestsDone
--- keyIndicatorSomeTestsNotDone = keyIndicatorContextual $ \s -> not $ all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 keyIndicatorContextual app p key msg = case p app of
   True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]

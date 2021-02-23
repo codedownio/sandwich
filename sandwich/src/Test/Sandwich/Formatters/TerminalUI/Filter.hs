@@ -80,11 +80,11 @@ treeToList (nodeFixed, node) = L.zip (runReader (getCommonsWithVisibleDepth' nod
 
 getCommonsWithVisibleDepth' :: RunNodeWithStatus context s l t -> Reader Int [(RunNodeCommonWithStatus s l t, Int)]
 getCommonsWithVisibleDepth' node@(RunNodeIt {}) = ask >>= \vd -> return [(runNodeCommon node, vd)]
-getCommonsWithVisibleDepth' node@(RunNodeIntroduce {..}) = do
+getCommonsWithVisibleDepth' (RunNodeIntroduce {..}) = do
   let context = if runTreeVisible runNodeCommon then (local (+1)) else id
   rest <- context $ (mconcat <$>) $ forM runNodeChildrenAugmented getCommonsWithVisibleDepth'
   ask >>= \vd -> return ((runNodeCommon, vd) : rest)
-getCommonsWithVisibleDepth' node@(RunNodeIntroduceWith {..}) = do
+getCommonsWithVisibleDepth' (RunNodeIntroduceWith {..}) = do
   let context = if runTreeVisible runNodeCommon then (local (+1)) else id
   rest <- context $ (mconcat <$>) $ forM runNodeChildrenAugmented getCommonsWithVisibleDepth'
   ask >>= \vd -> return ((runNodeCommon, vd) : rest)

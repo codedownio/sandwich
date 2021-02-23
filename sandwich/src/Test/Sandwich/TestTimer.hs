@@ -26,7 +26,6 @@ import System.FilePath
 import System.IO
 import Test.Sandwich.Contexts
 import Test.Sandwich.Nodes
-import Test.Sandwich.TestTimer.SpeedScopeTypes
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
@@ -66,6 +65,7 @@ newTestTimer path = do
   return $ TestTimer path h speedScopeFile
 
 finalizeTestTimer :: TestTimer -> IO ()
+finalizeTestTimer NullTestTimer = return ()
 finalizeTestTimer (TestTimer {..}) = do
   hClose testTimerHandle
 
@@ -92,10 +92,12 @@ testTimer tt profileName name action = bracket
   )
   (\_ -> action)
 
+handleStartEvent NullTestTimer file _ _ _ = return file
 handleStartEvent tt@(TestTimer {..}) file profileName name time = do
   T.hPutStrLn testTimerHandle [i|#{time} START #{show profileName} #{name}|]
   return $ handleSpeedScopeEvent tt file profileName name time SpeedScopeEventTypeOpen
 
+handleEndEvent NullTestTimer file _ _ _ = return file
 handleEndEvent tt@(TestTimer {..}) file profileName name time = do
   T.hPutStrLn testTimerHandle [i|#{time} END #{show profileName} #{name}|]
   return $ handleSpeedScopeEvent tt file profileName name time SpeedScopeEventTypeClose
@@ -103,6 +105,7 @@ handleEndEvent tt@(TestTimer {..}) file profileName name time = do
 -- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
 -- so we don't have to do O(N) L.length and S.findIndexL
 handleSpeedScopeEvent :: TestTimer -> SpeedScopeFile -> T.Text -> T.Text -> POSIXTime -> SpeedScopeEventType -> SpeedScopeFile
+handleSpeedScopeEvent NullTestTimer initialFile _ _ _ _ = initialFile
 handleSpeedScopeEvent (TestTimer {..}) initialFile profileName eventName time typ = flip execState initialFile $ do
   frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
     Just i -> return i

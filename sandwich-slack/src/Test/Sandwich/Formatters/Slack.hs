@@ -40,9 +40,7 @@ import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time
 import qualified Data.Vector as V
-import GHC.Stack
 import Safe
-import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Formatters.Internal.Markdown
 import Test.Sandwich.Formatters.Internal.ProgressBar
@@ -93,7 +91,7 @@ instance Formatter SlackFormatter where
   finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-runApp sf@(SlackFormatter {..}) rts bc = do
+runApp sf@(SlackFormatter {..}) rts _bc = do
   startTime <- liftIO getCurrentTime
 
   let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, (T.pack runTreeLabel, runTreeVisibilityLevel))
@@ -155,14 +153,14 @@ publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elaps
     pending = countWhere isPendingItBlock tree
     failed = countWhere isFailedItBlock tree
     totalRunningTests = countWhere isRunningItBlock tree
-    totalNotStartedTests = countWhere isNotStartedItBlock tree
+    -- totalNotStartedTests = countWhere isNotStartedItBlock tree
 
 getFailureBlocks sf idToLabelAndVisibilityThreshold tree = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
   RunNodeDescribe {} ->
     (True, Nothing) -- Recurse into grouping nodes, because their failures are actually just derived from child failures
   RunNodeParallel {} ->
     (True, Nothing)
-  node@((runTreeStatus . runNodeCommon) ->
+  ((runTreeStatus . runNodeCommon) ->
     (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
   node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
     (False, Just $ getFailureBlock sf node reason)
@@ -194,10 +192,6 @@ getFailureBlocks sf idToLabelAndVisibilityThreshold tree = catMaybes $ flip conc
             Just maxThresh | thresh > maxThresh -> Nothing
             _ -> Just l
         label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
-
-        labelWithLocation = case runTreeLoc $ runNodeCommon node of
-          Nothing -> (False, Just label)
-          Just (SrcLoc {..}) -> (False, Just ([i|[#{takeFileName srcLocFile}:#{srcLocStartLine}] |] <> label))
 
 allIsDone :: [RunNodeFixed context] -> Bool
 allIsDone = all (isDone . runTreeStatus . runNodeCommon)

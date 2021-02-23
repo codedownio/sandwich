@@ -7,7 +7,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
--- |
 
 module Test.Sandwich.Formatters.FailureReport (
   defaultFailureReportFormatter
@@ -60,7 +59,7 @@ instance Formatter FailureReportFormatter where
   finalizeFormatter = printFailureReport
 
 printFailureReport :: (MonadIO m, MonadLogger m, MonadCatch m) => FailureReportFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-printFailureReport (FailureReportFormatter {..}) rts baseContext = do
+printFailureReport (FailureReportFormatter {..}) rts _bc = do
   liftIO $ putStrLn [i|\n\nFailure report:|]
 
   let pf = PrintFormatter {

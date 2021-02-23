@@ -3,7 +3,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE CPP #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.Draw where
 
@@ -33,7 +32,6 @@ import Test.Sandwich.Formatters.TerminalUI.Draw.Util
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Types.Spec
 
 
 drawUI :: AppState -> [Widget ClickableName]
@@ -59,7 +57,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
               vBox infoWidgets
       ]
 
-    renderLine isSelected (MainListElem {..}) = hBox $ catMaybes [
+    renderLine _isSelected (MainListElem {..}) = hBox $ catMaybes [
       Just $ withAttr openMarkerAttr $ str (if open then "[-] " else "[+] ")
       , Just $ withAttr (chooseAttr status) (str label)
       , if not (app ^. appShowFileLocations) then Nothing else
@@ -108,12 +106,6 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
       guard (not $ Seq.null filteredLogs)
       return $ borderWithLabel (padLeftRight 1 $ str "Logs") $ vBox $
         toList $ fmap logEntryWidget filteredLogs
-
-    getResultTitle (NotStarted {}) = str "Not started"
-    getResultTitle (Running {}) = withAttr runningAttr $ str "Running"
-    getResultTitle (Done {statusResult=(Success)}) = withAttr successAttr $ str "Success"
-    getResultTitle (Done {statusResult=(Failure (Pending {}))}) = withAttr pendingAttr $ str "Pending"
-    getResultTitle (Done {statusResult=(Failure _)}) = withAttr failureAttr $ str "Failure"
 
     logEntryWidget (LogEntry {..}) = hBox [
       withAttr logTimestampAttr $ str (show logEntryTime)

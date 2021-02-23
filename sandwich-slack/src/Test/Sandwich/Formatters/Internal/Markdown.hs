@@ -28,7 +28,7 @@ toMarkdown (GotAsyncException {..}) = case failureMessage of
   Nothing -> [i|Got async exception: #{failureAsyncException}|]
 
 callStackToMarkdown :: SlackFormatterShowCallStacks -> CallStack -> T.Text
-callStackToMarkdown SlackFormatterNoCallStacks cs = ""
+callStackToMarkdown SlackFormatterNoCallStacks _cs = ""
 callStackToMarkdown (SlackFormatterTopNCallStackFrames n) cs = "\n\n" <> showCallStack (fromCallSiteList $ L.take n $ getCallStack cs)
 callStackToMarkdown SlackFormatterFullCallStack cs = "\n\n" <> showCallStack cs
 

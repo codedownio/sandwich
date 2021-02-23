@@ -6,7 +6,6 @@ module Test.Sandwich.Formatters.Internal.Core where
 
 import Control.Lens hiding ((??))
 import Control.Monad.Except
-import Control.Monad.IO.Class
 import Data.Aeson
 import qualified Data.Aeson as A
 import Data.Aeson.Lens

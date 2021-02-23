@@ -7,7 +7,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
--- |
 
 module Test.Sandwich.Interpreters.RunTree (
   specToRunTree
@@ -64,7 +63,7 @@ specToRunTree'  (Free (Before'' loc no l f subspec next)) = do
 specToRunTree'  (Free (After'' loc no l f subspec next)) = do
   common <- getCommon l loc no
   continueWith next =<< RunNodeAfter <$> pure common <*> recurse l no common subspec <*> pure f
-specToRunTree'  (Free (Introduce'' loc no l cl alloc cleanup subspec next)) = do
+specToRunTree'  (Free (Introduce'' loc no l _cl alloc cleanup subspec next)) = do
   common <- getCommon l loc no
   continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l no common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith'' loc no l _cl action subspec next)) = do
@@ -91,7 +90,7 @@ type ConvertM m = RWST RunTreeContext () Int m
 
 getCommon :: (Monad m) => String -> Maybe SrcLoc -> NodeOptions -> ConvertM m RunNodeCommonFixed
 getCommon l srcLoc (NodeOptions {..}) = do
-  rtc@(RunTreeContext {..}) <- ask
+  RunTreeContext {..} <- ask
 
   -- Get a unique ID for this node
   ident <- get

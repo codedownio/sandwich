@@ -648,7 +648,7 @@ aroundEach' loc no l f (Free x@(Around'' {..})) = Free (x { subspec = aroundEach
 aroundEach' loc no l f (Free x@(Describe'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
 aroundEach' loc no l f (Free x@(Parallel'' {..})) = Free (x { subspec = aroundEach' loc no l f subspec, next = aroundEach' loc no l f next })
 aroundEach' loc no l f (Free x@(It'' {..})) = Free (Around'' loc no l f (Free (x { next = Pure () })) (aroundEach' loc no l f next))
-aroundEach' no _ _ _ (Pure x) = Pure x
+aroundEach' _no _ _ _ (Pure x) = Pure x
 aroundEach' loc no l f (Free (IntroduceWith'' loci noi li cl action subspec next)) = Free (IntroduceWith'' loci noi li cl action (aroundEach' loc no l (unwrapContext f) subspec) (aroundEach' loc no l f next))
 aroundEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec next)) = Free (Introduce'' loci noi li cl alloc clean (aroundEach' loc no l (unwrapContext f) subspec) (aroundEach' loc no l f next))
 
@@ -656,5 +656,5 @@ aroundEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec nex
 
 unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do
-  i :> c <- ask
+  i :> _ <- ask
   ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i :>) action)

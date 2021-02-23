@@ -16,9 +16,7 @@ import System.IO
 import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Options
-import Test.Sandwich.Types.RunTree
 
 #if MIN_VERSION_time(1,9,0)
 import Data.Time.Format.ISO8601

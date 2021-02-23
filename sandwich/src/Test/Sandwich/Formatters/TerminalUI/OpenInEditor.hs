@@ -2,7 +2,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.OpenInEditor where
 
@@ -18,10 +17,10 @@ autoOpenInEditor loc = do
   lookupEnv "EDITOR" >>= \case
     Nothing -> return ()
     Just s | "emacs" `T.isInfixOf` (T.toLower $ T.pack s) -> openInEmacs loc
-    Just s -> return () -- TODO: support vim, VSCode, etc.
+    Just _ -> return () -- TODO: support vim, VSCode, etc.
 
 openInEmacs :: SrcLoc -> IO ()
-openInEmacs loc@(SrcLoc {..}) = do
+openInEmacs (SrcLoc {..}) = do
   void $ createProcess $ (proc "emacsclient" [[i|+#{srcLocStartLine}:#{srcLocStartCol}|], srcLocFile, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
   void $ createProcess $ (proc "emacsclient" ["--eval", elisp, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
     where

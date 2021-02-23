@@ -8,8 +8,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 
--- |
-
 module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
@@ -54,7 +52,6 @@ import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
-import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Types

@@ -8,16 +8,12 @@ module Test.Sandwich.Formatters.Internal.ProgressBar where
 
 import Control.Lens hiding ((??))
 import Control.Monad.Except
-import Data.Aeson
 import qualified Data.Aeson as A
 import Data.Aeson.Lens
-import qualified Data.ByteString.Lazy as BL
 import Data.Char
 import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
-import qualified Network.Wreq as W
 import Test.Sandwich.Formatters.Internal.Core
 import Test.Sandwich.Formatters.Internal.Types
 

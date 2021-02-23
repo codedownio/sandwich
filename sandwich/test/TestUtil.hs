@@ -6,21 +6,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
--- |
-
 module TestUtil where
 
-import Control.Concurrent
-import Control.Concurrent.Async
 import Control.Concurrent.STM
-import qualified Control.Exception as E
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Writer
-import Data.Either
 import Data.Foldable
-import qualified Data.List as L
 import Data.String.Interpolate.IsString
 import GHC.Stack
 import System.Exit

@@ -6,7 +6,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
--- |
 
 module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
@@ -26,10 +25,8 @@ import Data.Time.Clock
 import System.IO
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
-import Test.Sandwich.Formatters.Print.CallStacks
 import Test.Sandwich.Formatters.Print.Common
 import Test.Sandwich.Formatters.Print.FailureReason
-import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
@@ -38,6 +35,7 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
+
 
 instance Formatter PrintFormatter where
   formatterName _ = "print-formatter"

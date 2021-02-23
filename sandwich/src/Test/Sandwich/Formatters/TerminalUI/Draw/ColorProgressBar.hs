@@ -3,7 +3,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE QuasiQuotes #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar (
   bottomProgressBarColored
@@ -46,6 +45,7 @@ splitIntoChunks chunkSize remaining = chunk : (splitIntoChunks chunkSize remaini
       if | amount == needed -> (chunkSoFar <> [(amount, val)], xs)
          | amount < needed -> go (chunkSoFar <> [(amount, val)]) (needed - amount) xs
          | amount > needed -> (chunkSoFar <> [(needed, val)], (amount - needed, val):xs)
+         | otherwise -> error "impossible"
     go chunkSoFar needed [] = error [i|Bottomed out in go: #{chunkSoFar}, #{needed}|]
 
 -- TODO: improve this to use block chars
@@ -74,15 +74,14 @@ maxBy = maximumBy . comparing
 
 -- * Block elems
 
-full = "█"
-seven_eighth = "▉"
-six_eighth = "▊"
-five_eighth = "▋"
-four_eighth = "▌"
-three_eighth = "▍"
-two_eighth = "▎"
-one_eighth = "▏"
-
+-- full = "█"
+-- seven_eighth = "▉"
+-- six_eighth = "▊"
+-- five_eighth = "▋"
+-- four_eighth = "▌"
+-- three_eighth = "▍"
+-- two_eighth = "▎"
+-- one_eighth = "▏"
 
 full_five_eighth_height = "▆"
 

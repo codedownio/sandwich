@@ -145,15 +145,15 @@ appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
         & appMainList %~ (listMoveTo index)
         & updateFilteredTree
 
-appEvent s evt@(MouseDown (ListRow i) V.BScrollUp _ _) = do
+appEvent s (MouseDown (ListRow _i) V.BScrollUp _ _) = do
   vScrollBy (viewportScroll MainList) (-1)
   continue s
-appEvent s evt@(MouseDown (ListRow i) V.BScrollDown _ _) = do
+appEvent s (MouseDown (ListRow _i) V.BScrollDown _ _) = do
   vScrollBy (viewportScroll MainList) 1
   continue s
-appEvent s evt@(MouseDown (ListRow i) V.BLeft _ _) = do
+appEvent s (MouseDown (ListRow i) V.BLeft _ _) = do
   continue (s & appMainList %~ (listMoveTo i))
-appEvent s x@(VtyEvent e) =
+appEvent s (VtyEvent e) =
   case e of
     -- Column 1
     V.EvKey c [] | c == nextKey -> continue (s & appMainList %~ (listMoveBy 1))
@@ -250,7 +250,7 @@ appEvent s x@(VtyEvent e) =
             , srcLocEndCol = 0
             }
     V.EvKey c [] | c == openFailureInEditorKey -> withContinueS $
-      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node, status}) -> case status of
+      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {status}) -> case status of
         Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
         _ -> return ()
 
@@ -285,13 +285,13 @@ appEvent s _ = continue s
 
 modifyToggled s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
-  Just (i, MainListElem {..}) -> do
+  Just (_i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeToggled node) f
     continue s
 
 modifyOpen s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
-  Just (i, MainListElem {..}) -> do
+  Just (_i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeOpen node) f
     continue s
 
@@ -308,7 +308,7 @@ openToDepth elems thresh =
        | otherwise -> modifyTVar (runTreeOpen node) (const False)
 
 setInitialFolding :: InitialFolding -> [RunNode BaseContext] -> IO ()
-setInitialFolding InitialFoldingAllOpen rts = return ()
+setInitialFolding InitialFoldingAllOpen _rts = return ()
 setInitialFolding InitialFoldingAllClosed rts =
   atomically $ forM_ (concatMap getCommons rts) $ \(RunNodeCommonWithStatus {..}) ->
     modifyTVar runTreeOpen (const False)
@@ -340,7 +340,7 @@ findRunNodeChildrenById ident rts = headMay $ mapMaybe (findRunNodeChildrenById'
 
 findRunNodeChildrenById' :: Int -> RunNodeFixed context -> Maybe (S.Set Int)
 findRunNodeChildrenById' ident node | ident == runTreeId (runNodeCommon node) = Just $ S.fromList $ extractValues (runTreeId . runNodeCommon) node
-findRunNodeChildrenById' ident (RunNodeIt {}) = Nothing
+findRunNodeChildrenById' _ident (RunNodeIt {}) = Nothing
 findRunNodeChildrenById' ident (RunNodeIntroduce {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
 findRunNodeChildrenById' ident (RunNodeIntroduceWith {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
 findRunNodeChildrenById' ident node = findRunNodeChildrenById ident (runNodeChildren node)

@@ -1,5 +1,4 @@
 {-# LANGUAGE ViewPatterns, LambdaCase, QuasiQuotes, RecordWildCards, NamedFieldPuns, ScopedTypeVariables, DataKinds #-}
--- |
 
 module Test.Sandwich.WebDriver.Internal.Action where
 
@@ -10,7 +9,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate.IsString
 import GHC.Stack
@@ -18,7 +16,6 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Session as W
 
 
 -- | Close the given sessions

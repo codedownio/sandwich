@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ViewPatterns #-}
--- |
 
 module Test.Sandwich.Formatters.Print.PrintPretty (
   printPretty
@@ -24,6 +23,15 @@ printPretty :: (MonadReader (PrintFormatter, Int, Handle) m, MonadIO m) => Bool 
 printPretty (getPrintFn -> f) (Quote s) = f quoteColor s
 printPretty (getPrintFn -> f) (Time s) = f timeColor s
 printPretty (getPrintFn -> f) (Date s) = f dateColor s
+printPretty indentFirst (InfixCons v pairs) = do
+  -- TODO: make sure this looks good
+  printPretty indentFirst v
+  withBumpIndent' 4 $
+    forM_ pairs $ \(name, val) -> do
+      pic constructorNameColor name
+      p " "
+      printPretty False val
+      p "\n"
 #endif
 printPretty (getPrintFn -> f) (String s) = f stringColor s
 printPretty (getPrintFn -> f) (Char s) = f charColor s

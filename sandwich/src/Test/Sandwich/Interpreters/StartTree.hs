@@ -94,7 +94,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left ())
   runInAsync node ctx $ do
     let wrappedAction = do
-          let failureResult e = Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
+          let failureResult _e = Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
             runNodeIntroduceAction $ \intro -> do
               results <- liftIO $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
@@ -111,7 +111,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left ())
   runInAsync node ctx $ do
     let wrappedAction = do
-          let failureResult e = Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|]
+          let failureResult _e = Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
             runNodeActionWith $ do
               results <- liftIO $ runNodesSequentially runNodeChildren ctx

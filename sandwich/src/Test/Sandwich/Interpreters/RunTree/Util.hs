@@ -4,7 +4,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
--- |
 
 module Test.Sandwich.Interpreters.RunTree.Util where
 
@@ -18,6 +17,7 @@ import Data.Time.Clock
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
+
 
 -- | Wait for a tree, catching any synchronous exceptions and returning them as a list
 waitForTree :: RunNode context -> IO Result
@@ -49,13 +49,13 @@ countChildren :: Free (SpecCommand context m) () -> Int
 countChildren = L.length . getImmediateChildren
 
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
-countImmediateFolderChildren (Free (It'' loc no l ex next))
+countImmediateFolderChildren (Free (It'' _loc no _l _ex next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren next
-countImmediateFolderChildren (Free (Introduce'' loc no l cl alloc cleanup subspec next))
+countImmediateFolderChildren (Free (Introduce'' _loc no _l _cl _alloc _cleanup subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
-countImmediateFolderChildren (Free (IntroduceWith'' loc no l cl action subspec next))
+countImmediateFolderChildren (Free (IntroduceWith'' _loc no _l _cl _action subspec next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
   | otherwise = countImmediateFolderChildren subspec + countImmediateFolderChildren next
 countImmediateFolderChildren (Free node)

@@ -13,7 +13,6 @@ import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (liftBaseOp)
 import Data.Bits as B
 import Data.Maybe
 import Data.String.Interpolate.IsString
