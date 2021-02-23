@@ -16,6 +16,7 @@ import qualified Data.Set as S
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Types.TestTimer
 
 data Status = NotStarted
             | Running { statusStartTime :: UTCTime
@@ -99,7 +100,8 @@ data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
                                , baseContextRunRoot :: Maybe FilePath
                                , baseContextErrorSymlinksDir :: Maybe FilePath
                                , baseContextOptions :: Options
-                               , baseContextOnlyRunIds :: Maybe (S.Set Int) }
+                               , baseContextOnlyRunIds :: Maybe (S.Set Int)
+                               , baseContextTestTimer :: TestTimer }
 
 class HasBaseContext a where
   getBaseContext :: a -> BaseContext
@@ -174,6 +176,8 @@ data Options = Options {
   -- ^ An optional absolute path to the root of the project being tested (i.e. the folder where the cabal file is found).
   -- This is useful to provide when the current working directory does not match the project root, for example in multi-project Stack setups.
   -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
+  , optionsEnableTestTimer :: Maybe Bool
+  -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
   }
 
 

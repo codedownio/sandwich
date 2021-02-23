@@ -57,6 +57,8 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -W
   exposed-modules:
     - Test.Sandwich
     - Test.Sandwich.Contexts

@@ -80,9 +80,11 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
+import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
 
@@ -188,6 +190,10 @@ baseContextFromOptions options@(Options {..}) = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
+  testTimer <- case (optionsEnableTestTimer, runRoot) of
+    (Just True, Just rr) -> liftIO $ newTestTimer rr
+    _ -> return NullTestTimer
+
   let errorSymlinksDir = (</> "errors") <$> runRoot
   whenJust errorSymlinksDir $ createDirectoryIfMissing True
   return $ BaseContext {
@@ -196,4 +202,5 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextRunRoot = runRoot
     , baseContextErrorSymlinksDir = errorSymlinksDir
     , baseContextOnlyRunIds = Nothing
+    , baseContextTestTimer = testTimer
     }
