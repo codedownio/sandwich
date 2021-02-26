@@ -8,6 +8,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module Test.Sandwich.Types.TestTimer where
 
 import Control.Concurrent

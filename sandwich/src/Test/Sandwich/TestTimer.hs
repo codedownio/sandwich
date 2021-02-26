@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE LambdaCase #-}
@@ -32,6 +33,7 @@ import Test.Sandwich.Types.TestTimer
 
 -- * User functions
 
+defaultProfileName :: T.Text
 defaultProfileName = "default"
 
 timingNodeByProfile :: (MonadIO m, MonadMask m, HasTestTimer context) => T.Text -> T.Text -> SpecFree context m () -> SpecFree context m ()
