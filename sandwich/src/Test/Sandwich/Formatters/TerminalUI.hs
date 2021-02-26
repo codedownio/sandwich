@@ -271,12 +271,12 @@ appEvent s (VtyEvent e) =
     V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
-      _ <- forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
+      forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
       halt s
-    V.EvKey c [] | c == debugKey -> continue (s & appLogLevel .~ Just LevelDebug)
-    V.EvKey c [] | c == infoKey -> continue (s & appLogLevel .~ Just LevelInfo)
-    V.EvKey c [] | c == warnKey -> continue (s & appLogLevel .~ Just LevelWarn)
-    V.EvKey c [] | c == errorKey -> continue (s & appLogLevel .~ Just LevelError)
+    V.EvKey c [] | c == debugKey -> continue (s & appLogLevel ?~ LevelDebug)
+    V.EvKey c [] | c == infoKey -> continue (s & appLogLevel ?~ LevelInfo)
+    V.EvKey c [] | c == warnKey -> continue (s & appLogLevel ?~ LevelWarn)
+    V.EvKey c [] | c == errorKey -> continue (s & appLogLevel ?~ LevelError)
 
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
 
