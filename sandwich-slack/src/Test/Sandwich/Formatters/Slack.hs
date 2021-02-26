@@ -5,7 +5,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
--- |
 
 module Test.Sandwich.Formatters.Slack (
   SlackFormatter
@@ -17,9 +16,8 @@ module Test.Sandwich.Formatters.Slack (
   , slackFormatterChannel
   , slackFormatterMaxFailures
   , slackFormatterMaxFailureReasonLines
-  , slackFormatterShowCallStacks
+  , slackFormatterMaxCallStackLines
   , slackFormatterVisibilityThreshold
-  -- , slackFormatterAttachFailureReport
 
   , SlackFormatterShowCallStacks(..)
   ) where
@@ -64,20 +62,17 @@ data SlackFormatter = SlackFormatter {
   -- causes the message to fail to update.
   -- Defaults to 30.
 
-  , slackFormatterMaxFailureReasonLines :: Int
+  , slackFormatterMaxFailureReasonLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the failure reason underneath a failure.
-  -- Set to zero to disable showing failure reasons.
+  -- Set to 'Just 0' to disable showing failure reasons.
 
-  , slackFormatterShowCallStacks :: SlackFormatterShowCallStacks
-  -- ^ Show call stacks with failures.
+  , slackFormatterMaxCallStackLines :: Maybe Int
+  -- ^ Maximum number of lines to devote to showing the call stack underneath a failure.
+  -- Set to 'Just 0' to disable showing call stacks.
 
   , slackFormatterVisibilityThreshold :: Maybe Int
   -- ^ If present, filter the headings on failures to only include nodes whose visibility
   -- threshold is less than or equal to the value.
-
-  -- , slackFormatterAttachFailureReport :: Bool
-  -- ^ After tests are complete, attach a text file containing a complete failure report.
-  -- TODO
   }
 
 defaultSlackFormatter :: SlackFormatter
@@ -87,10 +82,8 @@ defaultSlackFormatter = SlackFormatter {
   , slackFormatterChannel = "slack-channel"
 
   , slackFormatterMaxFailures = Just 30
-
-  , slackFormatterMaxFailureReasonLines = 10
-
-  , slackFormatterShowCallStacks = SlackFormatterTopNCallStackFrames 3
+  , slackFormatterMaxFailureReasonLines = Just 5
+  , slackFormatterMaxCallStackLines = Just 5
 
   , slackFormatterVisibilityThreshold = Nothing
 
@@ -110,7 +103,7 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
   let idToLabelAndVisibilityThreshold = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
 
   rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
-  let pbi = publishTree sf idToLabelAndVisibilityThreshold slackFormatterMaxFailures slackFormatterTopMessage 0 rtsFixed
+  let pbi = publishTree sf idToLabelAndVisibilityThreshold 0 rtsFixed
   pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
     Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
@@ -126,7 +119,7 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
         return newFixed
 
       now <- liftIO getCurrentTime
-      let pbi' = publishTree sf idToLabelAndVisibilityThreshold slackFormatterMaxFailures slackFormatterTopMessage (diffUTCTime now startTime) newFixedTree
+      let pbi' = publishTree sf idToLabelAndVisibilityThreshold (diffUTCTime now startTime) newFixedTree
       tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
         Left err -> logError [i|Error updating progress bar: '#{err}'|]
         Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
@@ -140,17 +133,17 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
              loop
 
 
-publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elapsed tree = pbi
+publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
   where
-    pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> topMessage
+    pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> (slackFormatterTopMessage sf)
                           , progressBarInfoBottomMessage = Just fullBottomMessage
                           , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
                           , progressBarInfoAttachments = Nothing
-                          , progressBarInfoBlocks = Just $ case maybeMaxFailures of
-                              Nothing -> blocks
+                          , progressBarInfoBlocks = Just $ case slackFormatterMaxFailures sf of
+                              Nothing -> mconcat blocks
                               Just n -> case L.splitAt n blocks of
-                                (xs, []) -> xs
-                                (xs, rest) -> xs <> [extraFailuresBlock (L.length rest)]
+                                (xs, []) -> mconcat xs
+                                (xs, rest) -> mconcat xs <> [extraFailuresBlock (L.length rest)]
                           }
 
     runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
@@ -160,7 +153,15 @@ publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elaps
       Just t -> T.pack t <> "\n" <> bottomMessage
     bottomMessage = [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
 
-    blocks = getFailureBlocks sf idToLabelAndVisibilityThreshold tree
+    blocks = flip concatMap tree $ extractValuesControlRecurse $ \case
+      -- Recurse into grouping nodes, because their failures are actually just derived from child failures
+      RunNodeDescribe {} -> (True, [])
+      RunNodeParallel {} -> (True, [])
+      ((runTreeStatus . runNodeCommon) ->
+        (Done {statusResult=(Failure (Pending {}))})) -> (False, [])
+      node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
+        (False, singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason)
+      _ -> (True, [])
 
     total = countWhere isItBlock tree
     succeeded = countWhere isSuccessItBlock tree
@@ -169,44 +170,42 @@ publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elaps
     totalRunningTests = countWhere isRunningItBlock tree
     -- totalNotStartedTests = countWhere isNotStartedItBlock tree
 
-getFailureBlocks sf idToLabelAndVisibilityThreshold tree = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
-  RunNodeDescribe {} ->
-    (True, Nothing) -- Recurse into grouping nodes, because their failures are actually just derived from child failures
-  RunNodeParallel {} ->
-    (True, Nothing)
-  ((runTreeStatus . runNodeCommon) ->
-    (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
-  node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
-    (False, Just $ getFailureBlock sf idToLabelAndVisibilityThreshold node reason)
-  _ -> (True, Nothing)
 
+singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
+  Just $ markdownSectionWithLines [":red_circle: *" <> label <> "*"]
 
-allIsDone :: [RunNodeFixed context] -> Bool
-allIsDone = all (isDone . runTreeStatus . runNodeCommon)
-  where
-    isDone :: Status -> Bool
-    isDone (Done {}) = True
-    isDone _ = False
+  -- Failure reason info
+  , case (markdownLinesToShow, overflowMarkdownLines) of
+      ([], _) -> Nothing
+      (toShow, []) -> Just $ markdownSectionWithLines toShow
+      (toShow, overflow) -> Just $ A.object [
+        ("type", A.String "section")
+        , ("text", markdownBlockWithLines toShow)
+        , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList [markdownBlockWithLines overflow]))])
+        ]
 
-getFailureBlock sf idToLabelAndVisibilityThreshold node reason = A.object [
-  ("type", A.String "context")
-  , ("elements", A.Array $ V.singleton $
-        (A.object [("type", A.String "mrkdwn")
-                  , ("text", A.String $
-                             ":red_circle: *"
-                             <> label
-                             <> "*"
-                             <> (case markdownLinesToShow of [] -> ""; xs -> "\n" <> T.unlines xs)
-                             <> (case failureCallStack reason of
-                                    Just cs -> callStackToMarkdown (slackFormatterShowCallStacks sf) cs
-                                    _ -> "")
-                    )
-                  ])
-    )
+  -- Callstack info
+  , case (callStackLinesToShow, overflowCallStackLines) of
+      ([], _) -> Nothing
+      (toShow, []) -> Just $ markdownSectionWithLines toShow
+      (toShow, overflow) -> Just $ A.object [
+        ("type", A.String "section")
+        , ("text", markdownBlockWithLines toShow)
+        , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList [markdownBlockWithLines overflow]))])
+        ]
   ]
   where
     allMarkdownLines = T.lines $ toMarkdown reason
-    (markdownLinesToShow, overflowMarkdownLines) = L.splitAt (slackFormatterMaxFailureReasonLines sf) allMarkdownLines
+    (markdownLinesToShow, overflowMarkdownLines) = case slackFormatterMaxFailureReasonLines sf of
+      Nothing -> (allMarkdownLines, [])
+      Just n -> L.splitAt n allMarkdownLines
+
+    allCallStackLines = case failureCallStack reason of
+      Just cs -> L.filter (not . T.null) $ T.lines $ callStackToMarkdown SlackFormatterFullCallStack cs
+      _ -> []
+    (callStackLinesToShow, overflowCallStackLines) = case slackFormatterMaxCallStackLines sf of
+      Nothing -> (allCallStackLines, [])
+      Just n -> L.splitAt n allCallStackLines
 
     -- Show a question mark if we can't determine the label for a node (should never happen).
     -- Otherwise, use slackFormatterVisibilityThreshold to filter if provided.
@@ -217,4 +216,16 @@ getFailureBlock sf idToLabelAndVisibilityThreshold node reason = A.object [
         _ -> Just l
     label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
 
-extraFailuresBlock numExtraFailures = undefined
+extraFailuresBlock numExtraFailures = markdownSectionWithLines [[i|+ #{numExtraFailures} more|]]
+
+markdownBlockWithLines ls = A.object [("type", A.String "mrkdwn"), ("text", A.String $ T.unlines ls)]
+
+markdownSectionWithLines ls = A.object [("type", A.String "section"), ("text", markdownBlockWithLines ls)]
+
+
+allIsDone :: [RunNodeFixed context] -> Bool
+allIsDone = all (isDone . runTreeStatus . runNodeCommon)
+  where
+    isDone :: Status -> Bool
+    isDone (Done {}) = True
+    isDone _ = False
