@@ -68,6 +68,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Data.Either
 import Data.IORef
 import Data.String.Interpolate.IsString
@@ -106,8 +107,14 @@ runSandwichWithCommandLineArgs baseOptions spec = do
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
-runSandwich' options spec = do
+runSandwich' options spec' = do
   baseContext <- baseContextFromOptions options
+
+  -- Wrap the spec in a finalizer for the test timer, when one is present
+  let spec = case baseContextTestTimer baseContext of
+        NullTestTimer -> spec'
+        _ -> after' defaultNodeOptions "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeTestTimer) spec'
+
   rts <- startSandwichTree' baseContext options spec
 
   formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ do
