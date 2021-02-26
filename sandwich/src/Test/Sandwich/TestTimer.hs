@@ -69,23 +69,22 @@ finalizeSpeedScopeTestTimer (TestTimer {..}) = do
   readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 
 testTimer :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
-testTimer tt profileName eventName = bracket_
-  (liftIO $ modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
+testTimer NullTestTimer _ _ = id
+testTimer tt@(TestTimer {..}) profileName eventName = bracket_
+  (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
     now <- getPOSIXTime
-    handleStartEvent tt file profileName eventName now
+    handleStartEvent file now
   )
-  (liftIO $ modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
+  (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
     now <- getPOSIXTime
-    handleEndEvent tt file profileName eventName now
+    handleEndEvent file now
   )
   where
-    handleStartEvent NullTestTimer file _ _ _ = return file
-    handleStartEvent tt@(TestTimer {..}) file profileName eventName time = do
+    handleStartEvent file time = do
       T.hPutStrLn testTimerHandle [i|#{time} START #{show profileName} #{eventName}|]
       return $ handleSpeedScopeEvent tt file profileName eventName time SpeedScopeEventTypeOpen
 
-    handleEndEvent NullTestTimer file _ _ _ = return file
-    handleEndEvent tt@(TestTimer {..}) file profileName eventName time = do
+    handleEndEvent file time = do
       T.hPutStrLn testTimerHandle [i|#{time} END #{show profileName} #{eventName}|]
       return $ handleSpeedScopeEvent tt file profileName eventName time SpeedScopeEventTypeClose
 
