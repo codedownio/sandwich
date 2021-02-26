@@ -44,12 +44,12 @@ timingNode eventName = around ("Timer for " <> T.unpack eventName) (void . timeA
 
 timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> T.Text -> m a -> m a
 timeActionByProfile profileName eventName action = do
-  tt <- getTestTimer <$> ask
+  tt <- asks getTestTimer
   testTimer tt profileName eventName action
 
 timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> m a -> m a
 timeAction eventName action = do
-  tt <- getTestTimer <$> ask
+  tt <- asks getTestTimer
   testTimer tt defaultProfileName eventName action
 
 -- * Core
@@ -85,7 +85,7 @@ testTimer tt profileName eventName action = bracket
         now <- getPOSIXTime
         handleEndEvent tt file profileName eventName now
   )
-  (\_ -> action)
+  (const action)
   where
     handleStartEvent NullTestTimer file _ _ _ = return file
     handleStartEvent tt@(TestTimer {..}) file profileName eventName time = do
