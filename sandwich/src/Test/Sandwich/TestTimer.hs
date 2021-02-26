@@ -69,23 +69,18 @@ finalizeTestTimer :: TestTimer -> IO ()
 finalizeTestTimer NullTestTimer = return ()
 finalizeTestTimer (TestTimer {..}) = do
   hClose testTimerHandle
-
-  file <- readMVar testTimerSpeedScopeFile
-  BL.writeFile (testTimerBasePath </> "speedscope.json") (A.encode file)
+  readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 
 testTimer :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
-testTimer tt profileName eventName action = bracket
-  (liftIO $ do
-      modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
-        now <- getPOSIXTime
-        handleStartEvent tt file profileName eventName now
+testTimer tt profileName eventName = bracket_
+  (liftIO $ modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
+    now <- getPOSIXTime
+    handleStartEvent tt file profileName eventName now
   )
-  (\_ -> liftIO $ do
-      modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
-        now <- getPOSIXTime
-        handleEndEvent tt file profileName eventName now
+  (liftIO $ modifyMVar_ (testTimerSpeedScopeFile tt) $ \file -> do
+    now <- getPOSIXTime
+    handleEndEvent tt file profileName eventName now
   )
-  (const action)
   where
     handleStartEvent NullTestTimer file _ _ _ = return file
     handleStartEvent tt@(TestTimer {..}) file profileName eventName time = do
@@ -103,17 +98,16 @@ testTimer tt profileName eventName action = bracket
     handleSpeedScopeEvent NullTestTimer initialFile _ _ _ _ = initialFile
     handleSpeedScopeEvent (TestTimer {..}) initialFile profileName eventName time typ = flip execState initialFile $ do
       frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
-        Just i -> return i
+        Just j -> return j
         Nothing -> do
           modify' $ over (shared . frames) (S.|> (SpeedScopeFrame eventName))
           return $ S.length $ f ^. shared . frames
 
       profileIndex <- get >>= \f -> case L.findIndex ((== profileName) . (^. name)) (f ^. profiles) of
-        Just i -> return i
+        Just j -> return j
         Nothing -> do
           modify' $ over profiles (\x -> x <> [newProfile profileName time])
           return $ L.length (f ^. profiles)
 
-      modify' $ \f -> f
-        & over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent typ frameID time))
-        & over (profiles . ix profileIndex . endValue) (max time)
+      modify' $ over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent typ frameID time))
+              . over (profiles . ix profileIndex . endValue) (max time)
