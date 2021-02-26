@@ -23,6 +23,10 @@ module Test.Sandwich.Options (
   , optionsFilterTree
   , TreeFilter(..)
 
+  -- * Timing
+  , optionsTestTimerType
+  , optionsTimeEveryNode
+
   -- * Misc
   , optionsProjectRoot
   ) where
@@ -42,5 +46,6 @@ defaultOptions = Options {
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
-  , optionsEnableTestTimer = SpeedScopeTestTimerType
+  , optionsTestTimerType = SpeedScopeTestTimerType
+  , optionsTimeEveryNode = True
   }

@@ -203,7 +203,7 @@ baseContextFromOptions options@(Options {..}) = do
       createDirectoryIfMissing True dir
       return $ Just dir
 
-  testTimer <- case (optionsEnableTestTimer, runRoot) of
+  testTimer <- case (optionsTestTimerType, runRoot) of
     (SpeedScopeTestTimerType, Just rr) -> liftIO $ newSpeedScopeTestTimer rr
     _ -> return NullTestTimer
 

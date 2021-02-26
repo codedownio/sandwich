@@ -188,8 +188,10 @@ data Options = Options {
   -- ^ An optional absolute path to the root of the project being tested (i.e. the folder where the cabal file is found).
   -- This is useful to provide when the current working directory does not match the project root, for example in multi-project Stack setups.
   -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
-  , optionsEnableTestTimer :: TestTimerType
+  , optionsTestTimerType :: TestTimerType
   -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
+  , optionsTimeEveryNode :: Bool
+  -- ^ Whether to record test timing for every node by default. Defaults to 'True'. Should be low overhead, but may be turned off if desired.
   }
 
 
