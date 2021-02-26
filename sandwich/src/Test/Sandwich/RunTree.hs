@@ -2,7 +2,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
--- |
 
 module Test.Sandwich.RunTree where
 

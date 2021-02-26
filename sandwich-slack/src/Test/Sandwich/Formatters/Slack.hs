@@ -16,7 +16,7 @@ module Test.Sandwich.Formatters.Slack (
   , slackFormatterTopMessage
   , slackFormatterChannel
   , slackFormatterMaxFailures
-  , slackFormatterShowFailureReason
+  , slackFormatterMaxFailureReasonLines
   , slackFormatterShowCallStacks
   , slackFormatterVisibilityThreshold
   -- , slackFormatterAttachFailureReport
@@ -57,20 +57,27 @@ data SlackFormatter = SlackFormatter {
   -- For example, the name of the test suite and a link to the run in the CI system.
   , slackFormatterChannel :: String
   -- ^ Slack channel on which to create the progress bar.
+
   , slackFormatterMaxFailures :: Maybe Int
   -- ^ Maximum number of failures to include in a message.
   -- If too many are included, it's possible to hit Slack's request limit of 8KB, which
   -- causes the message to fail to update.
   -- Defaults to 30.
-  , slackFormatterShowFailureReason :: Bool
-  -- ^ Show failure reasons with failures.
+
+  , slackFormatterMaxFailureReasonLines :: Int
+  -- ^ Maximum number of lines to devote to showing the failure reason underneath a failure.
+  -- Set to zero to disable showing failure reasons.
+
   , slackFormatterShowCallStacks :: SlackFormatterShowCallStacks
   -- ^ Show call stacks with failures.
+
   , slackFormatterVisibilityThreshold :: Maybe Int
   -- ^ If present, filter the headings on failures to only include nodes whose visibility
   -- threshold is less than or equal to the value.
+
   -- , slackFormatterAttachFailureReport :: Bool
-  -- -- ^ After tests are complete, attach a text file containing a complete failure report.
+  -- ^ After tests are complete, attach a text file containing a complete failure report.
+  -- TODO
   }
 
 defaultSlackFormatter :: SlackFormatter
@@ -78,10 +85,15 @@ defaultSlackFormatter = SlackFormatter {
   slackFormatterSlackConfig = SlackConfig "my-password"
   , slackFormatterTopMessage = Just "Top message"
   , slackFormatterChannel = "slack-channel"
+
   , slackFormatterMaxFailures = Just 30
-  , slackFormatterShowFailureReason = True
+
+  , slackFormatterMaxFailureReasonLines = 10
+
   , slackFormatterShowCallStacks = SlackFormatterTopNCallStackFrames 3
+
   , slackFormatterVisibilityThreshold = Nothing
+
   -- , slackFormatterAttachFailureReport = False
   }
 
@@ -136,7 +148,9 @@ publishTree sf idToLabelAndVisibilityThreshold maybeMaxFailures topMessage elaps
                           , progressBarInfoAttachments = Nothing
                           , progressBarInfoBlocks = Just $ case maybeMaxFailures of
                               Nothing -> blocks
-                              Just n -> L.take n blocks
+                              Just n -> case L.splitAt n blocks of
+                                (xs, []) -> xs
+                                (xs, rest) -> xs <> [extraFailuresBlock (L.length rest)]
                           }
 
     runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
@@ -163,35 +177,9 @@ getFailureBlocks sf idToLabelAndVisibilityThreshold tree = catMaybes $ flip conc
   ((runTreeStatus . runNodeCommon) ->
     (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
   node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
-    (False, Just $ getFailureBlock sf node reason)
+    (False, Just $ getFailureBlock sf idToLabelAndVisibilityThreshold node reason)
   _ -> (True, Nothing)
 
-  where
-    getFailureBlock sf node reason = A.object [
-      ("type", A.String "context")
-      , ("elements", A.Array $ V.singleton $
-            (A.object [("type", A.String "mrkdwn")
-                      , ("text", A.String $
-                                 ":red_circle: *"
-                                 <> label
-                                 <> "*"
-                                 <> (if slackFormatterShowFailureReason sf then "\n" <> toMarkdown reason else "")
-                                 <> (case failureCallStack reason of
-                                        Just cs -> callStackToMarkdown (slackFormatterShowCallStacks sf) cs
-                                        _ -> "")
-                        )
-                      ])
-        )
-      ]
-      where
-        -- Show a question mark if we can't determine the label for a node (should never happen).
-        -- Otherwise, use slackFormatterVisibilityThreshold to filter if provided.
-        filterFn k = case M.lookup k idToLabelAndVisibilityThreshold of
-          Nothing -> Just "?"
-          Just (l, thresh) -> case slackFormatterVisibilityThreshold sf of
-            Just maxThresh | thresh > maxThresh -> Nothing
-            _ -> Just l
-        label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
 
 allIsDone :: [RunNodeFixed context] -> Bool
 allIsDone = all (isDone . runTreeStatus . runNodeCommon)
@@ -199,3 +187,34 @@ allIsDone = all (isDone . runTreeStatus . runNodeCommon)
     isDone :: Status -> Bool
     isDone (Done {}) = True
     isDone _ = False
+
+getFailureBlock sf idToLabelAndVisibilityThreshold node reason = A.object [
+  ("type", A.String "context")
+  , ("elements", A.Array $ V.singleton $
+        (A.object [("type", A.String "mrkdwn")
+                  , ("text", A.String $
+                             ":red_circle: *"
+                             <> label
+                             <> "*"
+                             <> (case markdownLinesToShow of [] -> ""; xs -> "\n" <> T.unlines xs)
+                             <> (case failureCallStack reason of
+                                    Just cs -> callStackToMarkdown (slackFormatterShowCallStacks sf) cs
+                                    _ -> "")
+                    )
+                  ])
+    )
+  ]
+  where
+    allMarkdownLines = T.lines $ toMarkdown reason
+    (markdownLinesToShow, overflowMarkdownLines) = L.splitAt (slackFormatterMaxFailureReasonLines sf) allMarkdownLines
+
+    -- Show a question mark if we can't determine the label for a node (should never happen).
+    -- Otherwise, use slackFormatterVisibilityThreshold to filter if provided.
+    filterFn k = case M.lookup k idToLabelAndVisibilityThreshold of
+      Nothing -> Just "?"
+      Just (l, thresh) -> case slackFormatterVisibilityThreshold sf of
+        Just maxThresh | thresh > maxThresh -> Nothing
+        _ -> Just l
+    label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
+
+extraFailuresBlock numExtraFailures = undefined

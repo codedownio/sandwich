@@ -27,6 +27,12 @@ module Test.Sandwich (
   , around
   , aroundEach
 
+  -- * Timing
+  , timingNodeByProfile
+  , timingNode
+  , timeActionByProfile
+  , timeAction
+
   -- * The example monad
   , ExampleT
   , ExampleM

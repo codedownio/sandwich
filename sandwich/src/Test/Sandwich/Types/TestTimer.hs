@@ -19,6 +19,7 @@ import Data.Sequence
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX
 import System.IO
+import Test.Sandwich.Types.Spec
 
 
 -- * SpeedScope types
@@ -122,3 +123,12 @@ data TestTimer = TestTimer {
   , testTimerHandle :: Handle
   , testTimerSpeedScopeFile :: MVar SpeedScopeFile
   } | NullTestTimer
+
+-- * Labels and classes
+
+testTimerLabel = Label :: Label "testTimer" TestTimer
+class HasTestTimer context where
+  getTestTimer :: context -> TestTimer
+
+testTimerProfile = Label :: Label "testTimerProfile" T.Text
+type HasTestTimerProfile context = (HasTestTimer context, HasLabel context "testTimerProfile" T.Text)

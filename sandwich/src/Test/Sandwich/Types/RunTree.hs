@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Test.Sandwich.Types.RunTree where
 
@@ -96,12 +97,14 @@ data RunTreeContext = RunTreeContext {
 
 -- * Base context
 
-data BaseContext = BaseContext { baseContextPath :: Maybe FilePath
-                               , baseContextRunRoot :: Maybe FilePath
-                               , baseContextErrorSymlinksDir :: Maybe FilePath
-                               , baseContextOptions :: Options
-                               , baseContextOnlyRunIds :: Maybe (S.Set Int)
-                               , baseContextTestTimer :: TestTimer }
+data BaseContext = BaseContext {
+  baseContextPath :: Maybe FilePath
+  , baseContextRunRoot :: Maybe FilePath
+  , baseContextErrorSymlinksDir :: Maybe FilePath
+  , baseContextOptions :: Options
+  , baseContextOnlyRunIds :: Maybe (S.Set Int)
+  , baseContextTestTimer :: TestTimer
+  }
 
 class HasBaseContext a where
   getBaseContext :: a -> BaseContext
@@ -114,6 +117,9 @@ instance HasBaseContext BaseContext where
 instance HasBaseContext context => HasBaseContext (intro :> context) where
   getBaseContext (_ :> ctx) = getBaseContext ctx
   modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
+
+instance HasBaseContext context => HasTestTimer context where
+  getTestTimer = baseContextTestTimer <$> getBaseContext
 
 type TopSpec = Spec BaseContext IO
 
