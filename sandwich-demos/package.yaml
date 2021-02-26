@@ -61,11 +61,23 @@ default-extensions:
 - FlexibleInstances
 - LambdaCase
 
+ghc-options:
+- -threaded
+- -rtsopts
+- -with-rtsopts=-N
+
+library:
+  source-dirs: lib
+
 executables:
   tui-demo:
-    main:                TUI.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    main: Main.hs
+    source-dirs: demos/tui
+    dependencies:
+    - sandwich-demos
+
+  timing-demo:
+    main: Main.hs
+    source-dirs: demos/timing
+    dependencies:
+    - sandwich-demos

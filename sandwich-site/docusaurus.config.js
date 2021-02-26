@@ -9,6 +9,9 @@ module.exports = {
   organizationName: 'thomasjm', // Usually your GitHub org/user name.
   projectName: 'sandwich', // Usually your repo name.
   themeConfig: {
+    prism: {
+      additionalLanguages: ['haskell'],
+    },
     navbar: {
       title: 'Sandwich',
       logo: {
