@@ -162,6 +162,12 @@ type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS
 defaultLogEntryFormatter :: LogEntryFormatter
 defaultLogEntryFormatter _ts a b c d = fromLogStr $ defaultLogStr a b c d
 
+data TestTimerType =
+  NullTestTimerType
+  -- ^ Don't run a test timer
+  | SpeedScopeTestTimerType
+  -- ^ Test timer that outputs its results in <https://www.speedscope.app/ SpeedScope> JSON format. Also outputs a file with raw timing data in a simple event-based format.
+
 -- | All the options controlling a test run.
 data Options = Options {
   optionsTestArtifactsDirectory :: TestArtifactsDirectory
@@ -182,7 +188,7 @@ data Options = Options {
   -- ^ An optional absolute path to the root of the project being tested (i.e. the folder where the cabal file is found).
   -- This is useful to provide when the current working directory does not match the project root, for example in multi-project Stack setups.
   -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
-  , optionsEnableTestTimer :: Maybe Bool
+  , optionsEnableTestTimer :: TestTimerType
   -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
   }
 

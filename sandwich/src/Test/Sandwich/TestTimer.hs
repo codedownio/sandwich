@@ -54,20 +54,17 @@ timeAction eventName action = do
 
 -- * Core
 
-withTestTimer :: (MonadMask m, MonadIO m) => FilePath -> (TestTimer -> m a) -> m a
-withTestTimer path = bracket (liftIO $ newTestTimer path) (liftIO . finalizeTestTimer)
-
-newTestTimer :: FilePath -> IO TestTimer
-newTestTimer path = do
+newSpeedScopeTestTimer :: FilePath -> IO TestTimer
+newSpeedScopeTestTimer path = do
   createDirectoryIfMissing True path
   h <- openFile (path </> "timings_raw.txt") AppendMode
   hSetBuffering h LineBuffering
   speedScopeFile <- newMVar emptySpeedScopeFile
   return $ TestTimer path h speedScopeFile
 
-finalizeTestTimer :: TestTimer -> IO ()
-finalizeTestTimer NullTestTimer = return ()
-finalizeTestTimer (TestTimer {..}) = do
+finalizeSpeedScopeTestTimer :: TestTimer -> IO ()
+finalizeSpeedScopeTestTimer NullTestTimer = return ()
+finalizeSpeedScopeTestTimer (TestTimer {..}) = do
   hClose testTimerHandle
   readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 

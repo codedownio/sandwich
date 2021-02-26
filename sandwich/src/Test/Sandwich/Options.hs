@@ -42,5 +42,5 @@ defaultOptions = Options {
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
-  , optionsEnableTestTimer = Just True
+  , optionsEnableTestTimer = NullTestTimerType
   }
