@@ -28,8 +28,11 @@ slackFormatter = defaultSlackFormatter {
   slackFormatterSlackConfig = SlackConfig ""
   , slackFormatterTopMessage = Just "Top message"
   , slackFormatterChannel = "test-channel"
-  -- , slackFormatterShowFailureReason = False
-  -- , slackFormatterShowCallStacks = SlackFormatterNoCallStacks
+
+  , slackFormatterMaxFailures = Nothing -- Just 2
+  , slackFormatterMaxFailureReasonLines = Just 0
+  , slackFormatterMaxCallStackLines = Just 0
+
   , slackFormatterVisibilityThreshold = Just 50
   }
 
