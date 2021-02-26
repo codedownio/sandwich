@@ -1,7 +1,7 @@
 module.exports = {
   title: 'Sandwich',
   tagline: 'Yet another testing framework for Haskell',
-  url: 'https://github.com/thomasjm/sandwich,
+  url: 'https://github.com/thomasjm/sandwich',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
