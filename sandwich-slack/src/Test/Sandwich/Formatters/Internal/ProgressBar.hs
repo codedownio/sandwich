@@ -22,7 +22,7 @@ import Test.Sandwich.Formatters.Internal.Types
 createProgressBar :: SlackConfig -> ChannelName -> ProgressBarInfo -> IO (Either T.Text ProgressBar)
 createProgressBar slackConfig channel pbi@(ProgressBarInfo {..}) =
   (runExceptT $ postMessage slackConfig channel message (getAttachments pbi) (addMessageToBlocks message progressBarInfoBlocks)) >>= \case
-    Left err -> return $ Left [i|Failed to send initial result: '#{err}'|]
+    Left err -> return $ Left [i|Failed to send initial result: '#{err}'. Blocks were '#{A.encode progressBarInfoBlocks}'.|]
     Right resp -> case (resp ^? key "ts" . _String, resp ^? key "channel" . _String) of
       (Just ts, Just chan) -> return $ Right $ ProgressBar ts chan
       _ -> return $ Left [i|Couldn't find timestamp and/or channel in response|]
