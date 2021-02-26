@@ -81,13 +81,12 @@ topBox app = hBox [columnPadding settingsColumn
                                          , str "/"
                                          , highlightKeyIfPredicate someTestSelected app (str $ showKey openFailureInEditorKey)
                                          , str "] "
-                                         , withAttr hotkeyMessageAttr $ str "Open "
+                                         , withAttr hotkeyMessageAttr $ str "Edit "
                                          , highlightMessageIfPredicate someTestSelected app (str "test")
                                          , str "/"
                                          , highlightMessageIfPredicate someTestSelected app (str "logs")
                                          , str "/"
                                          , highlightMessageIfPredicate selectedTestHasCallStack app (str "failure")
-                                         , withAttr hotkeyMessageAttr $ str " in editor"
                                          ]
                                   ]
 
@@ -99,12 +98,11 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str "/"
                                               , str $ showKey toggleVisibilityThresholdsKey
                                               , str "] "
-                                              , withAttr hotkeyMessageAttr $ str "Show "
-                                              , highlightMessageIfPredicate (^. appShowRunTimes) app (str "run times")
+                                              , highlightMessageIfPredicate (^. appShowRunTimes) app (str "Times")
                                               , str "/"
-                                              , highlightMessageIfPredicate (^. appShowFileLocations) app (str "file locations")
+                                              , highlightMessageIfPredicate (^. appShowFileLocations) app (str "locations")
                                               , str "/"
-                                              , highlightMessageIfPredicate (^. appShowVisibilityThresholds) app (str "visibility thresholds")
+                                              , highlightMessageIfPredicate (^. appShowVisibilityThresholds) app (str "thresholds")
                                          ]
                                        , hBox [str "["
                                               , highlightIfLogLevel app LevelDebug [unKChar debugKey]
@@ -115,12 +113,12 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str "/"
                                               , highlightIfLogLevel app LevelError [unKChar errorKey]
                                               , str "] "
-                                              , str "Set log level"]
+                                              , str "Log level"]
 
                                        , keyIndicator "q" "Exit"]
 
 visibilityThresholdWidget app = hBox $
-  [withAttr hotkeyMessageAttr $ str "Change visibility threshold ("]
+  [withAttr hotkeyMessageAttr $ str "Visibility threshold ("]
   <> L.intersperse (str ", ") [withAttr (if x == app ^. appVisibilityThreshold then visibilityThresholdSelectedAttr else visibilityThresholdNotSelectedAttr) $ str $ show x | x <- (app ^. appVisibilityThresholdSteps)]
   <> [(str ")")]
 
