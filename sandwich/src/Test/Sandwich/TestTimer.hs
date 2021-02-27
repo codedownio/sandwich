@@ -7,6 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Test.Sandwich.TestTimer where
 
@@ -27,6 +28,7 @@ import Data.Time.Clock.POSIX
 import System.Directory
 import System.FilePath
 import System.IO
+import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
@@ -38,17 +40,22 @@ timeActionByProfile profileName eventName action = do
   tt <- asks getTestTimer
   timeAction' tt profileName eventName action
 
-timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context, HasTestTimerProfile context) => T.Text -> m a -> m a
+timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => T.Text -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
-  profileName <- asks getTestTimerProfile
-  timeAction' tt profileName eventName action
+  BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
+  timeAction' tt baseContextTestTimerProfile eventName action
 
-withTimingProfile name = introduce' (defaultNodeOptions { nodeOptionsRecordTime = False }) [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure name) (\_ -> return ())
+withTimingProfile :: (Monad m) => T.Text -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
+withTimingProfile name = introduce' timingNodeOptions [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure $ TestTimerProfile name) (\_ -> return ())
 
-withTimingProfile' getName = introduce' (defaultNodeOptions { nodeOptionsRecordTime = False }) [i|Switch test timer profile to dynamic value|] testTimerProfile getName (\_ -> return ())
+withTimingProfile' :: (Monad m) => ExampleT context m T.Text -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
+withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer profile to dynamic value|] testTimerProfile (TestTimerProfile <$> getName) (\_ -> return ())
 
 -- * Core
+
+timingNodeOptions :: NodeOptions
+timingNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False }
 
 newSpeedScopeTestTimer :: FilePath -> IO TestTimer
 newSpeedScopeTestTimer path = do

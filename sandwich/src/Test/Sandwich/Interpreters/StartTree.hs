@@ -27,6 +27,7 @@ import qualified Data.Set as S
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time.Clock
+import Data.Typeable
 import GHC.Stack
 import System.Directory
 import System.FilePath
@@ -88,7 +89,14 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
                 Left failureReason -> do
                   -- TODO: add note about failure in allocation
                   markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
-                Right intro -> void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
+                Right intro -> do
+                  -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
+                  -- It would be better to track the profile at the type level
+                  let ctxFinal = case cast intro of
+                        Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
+                        Nothing -> ctx
+
+                  void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
             )
     readIORef result
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
@@ -149,7 +157,7 @@ runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
   let timerFn = case runTreeRecordTime of
-        True -> timeAction' (getTestTimer bc) "default" (T.pack runTreeLabel)
+        True -> timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel)
         _ -> id
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar

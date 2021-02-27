@@ -16,6 +16,7 @@ import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Time.Clock
+import Data.Typeable
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
@@ -44,7 +45,7 @@ data RunNodeWithStatus context s l t where
     , runNodeChildren :: [RunNodeWithStatus context s l t]
     , runNodeAfter :: ExampleT context IO ()
     } -> RunNodeWithStatus context s l t
-  RunNodeIntroduce :: {
+  RunNodeIntroduce :: (Typeable intro) => {
     runNodeCommon :: RunNodeCommonWithStatus s l t
     , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
     , runNodeAlloc :: ExampleT context IO intro
@@ -141,10 +142,6 @@ instance HasBaseContext context => HasBaseContext (intro :> context) where
 -- Timing related
 instance HasBaseContext context => HasTestTimer context where
   getTestTimer = baseContextTestTimer <$> getBaseContext
-instance HasTestTimerProfile BaseContext where
-  getTestTimerProfile = baseContextTestTimerProfile
-instance (HasTestTimerProfileLabel intro) => HasTestTimerProfile (intro :> ctx) where
-  getTestTimerProfile (intro :> _) = getLabelValue testTimerProfile intro
 
 type TopSpec = Spec BaseContext IO
 

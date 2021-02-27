@@ -169,7 +169,7 @@ data SpecCommand context m next where
     , next :: next
     } -> SpecCommand context m next
 
-  Introduce'' :: {
+  Introduce'' :: (Typeable intro) => {
     location :: Maybe SrcLoc
     , nodeOptions :: NodeOptions
     , label :: String
@@ -326,7 +326,7 @@ after'' :: (HasCallStack) =>
 -- * ----------------------------------------------------------
 
 -- | Introduce a new value and make it available to the child spec tree.
-introduce :: (HasCallStack) =>
+introduce :: (HasCallStack, Typeable intro) =>
   String
   -- ^ String label for this node
   -> Label l intro
@@ -341,7 +341,7 @@ introduce :: (HasCallStack) =>
 introduce = introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Introduce a new value and make it available to the child spec tree.
-introduce' :: (HasCallStack) =>
+introduce' :: (HasCallStack, Typeable intro) =>
   NodeOptions
   -- ^ Custom options for this node
   -> String
@@ -358,7 +358,7 @@ introduce' :: (HasCallStack) =>
 introduce' = introduce'' (snd <$> headMay (drop 1 $ getCallStack callStack))
 
 -- | Introduce a new value and make it available to the child spec tree.
-introduce'' :: (HasCallStack) =>
+introduce'' :: (HasCallStack, Typeable intro) =>
   Maybe SrcLoc
   -- ^ Location of this call
   -> NodeOptions

@@ -134,10 +134,6 @@ defaultProfileName = "default"
 class HasTestTimer context where
   getTestTimer :: context -> TestTimer
 
-testTimerProfile = Label :: Label "testTimerProfile" T.Text
-type HasTestTimerProfileLabel context = (HasLabel context "testTimerProfile" T.Text)
+testTimerProfile = Label :: Label "testTimerProfile" TestTimerProfile
 
 newtype TestTimerProfile = TestTimerProfile T.Text
-
-class HasTestTimerProfile context where
-  getTestTimerProfile :: context -> T.Text
