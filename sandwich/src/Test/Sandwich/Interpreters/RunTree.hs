@@ -108,6 +108,7 @@ getCommon l srcLoc (NodeOptions {..}) = do
         (True, Just f) -> Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))
         _ -> Nothing
     , runTreeVisibilityLevel = nodeOptionsVisibilityThreshold
+    , runTreeRecordTime = nodeOptionsRecordTime
     , runTreeLogs = mempty
     , runTreeLoc = srcLoc
     }

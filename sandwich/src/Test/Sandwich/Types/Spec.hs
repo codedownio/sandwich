@@ -142,11 +142,13 @@ data NodeOptions = NodeOptions {
   , nodeOptionsCreateFolder :: Bool
   -- ^ Whether to create a folder in the on-disk test results for this node.
   -- Defaults to 'True', but can be turned off to reduce extraneous folders from nodes like 'Parallel'.
+  , nodeOptionsRecordTime :: Bool
+  -- ^ Whether to time this node.
   }
 
 -- | Reasonable default node options.
 defaultNodeOptions :: NodeOptions
-defaultNodeOptions = NodeOptions 100 True
+defaultNodeOptions = NodeOptions 100 True True
 
 data SpecCommand context m next where
   Before'' :: { location :: Maybe SrcLoc
@@ -238,7 +240,7 @@ before :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-before = before' (NodeOptions 100 True)
+before = before' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Perform an action before a given spec tree.
 before' :: (HasCallStack) =>
@@ -278,7 +280,7 @@ after :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-after = after' (NodeOptions 100 True)
+after = after' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Perform an action after a given spec tree.
 after' :: (HasCallStack) =>
@@ -322,7 +324,7 @@ introduce :: (HasCallStack) =>
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduce = introduce' (NodeOptions 100 True)
+introduce = introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Introduce a new value and make it available to the child spec tree.
 introduce' :: (HasCallStack) =>
@@ -372,7 +374,7 @@ introduceWith :: (HasCallStack) =>
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-introduceWith = introduceWith' (NodeOptions 100 True)
+introduceWith = introduceWith' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Introduce a new value in an 'around' fashion, so it can be used with context managers like withFile or bracket.
 introduceWith' :: (HasCallStack) =>
@@ -415,7 +417,7 @@ around :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-around = around' (NodeOptions 100 True)
+around = around' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Run an action around the given child subtree. Useful for context managers like withFile or bracket.
 around' :: (HasCallStack) =>
@@ -454,7 +456,7 @@ describe :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-describe = describe' (NodeOptions 50 True)
+describe = describe' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 })
 
 -- | Make a group of tests.
 describe' :: (HasCallStack) =>
@@ -486,7 +488,7 @@ parallel :: (HasCallStack) =>
   SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-parallel = parallel' (NodeOptions 70 False)
+parallel = parallel' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 })
 
 -- | Run a group of tests in parallel.
 parallel' :: (HasCallStack) =>
@@ -516,7 +518,7 @@ it :: (HasCallStack) =>
   -> ExampleT context m ()
   -- ^ The test example
   -> Free (SpecCommand context m) ()
-it = it' (NodeOptions 0 True)
+it = it' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 0 })
 
 -- | Define a single test example.
 it' :: (HasCallStack) =>
@@ -552,7 +554,7 @@ beforeEach :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-beforeEach = beforeEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+beforeEach = beforeEach' (snd <$> headMay (getCallStack callStack)) (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Perform an action before each example in a given spec tree.
 beforeEach' :: (HasCallStack) =>
@@ -590,7 +592,7 @@ afterEach :: (HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-afterEach = afterEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+afterEach = afterEach' (snd <$> headMay (getCallStack callStack)) (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 -- | Perform an action after each example in a given spec tree.
 afterEach' :: (HasCallStack) =>
@@ -628,7 +630,7 @@ aroundEach :: (Monad m, HasCallStack) =>
   -> SpecFree context m ()
   -- ^ Child spec tree
   -> SpecFree context m ()
-aroundEach = aroundEach' (snd <$> headMay (getCallStack callStack)) (NodeOptions 100 True)
+aroundEach = aroundEach' (snd <$> headMay (getCallStack callStack)) (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
 aroundEach' :: (Monad m, HasCallStack) =>
   Maybe SrcLoc

@@ -25,7 +25,6 @@ module Test.Sandwich.Options (
 
   -- * Timing
   , optionsTestTimerType
-  , optionsTimeEveryNode
 
   -- * Misc
   , optionsProjectRoot
@@ -47,5 +46,4 @@ defaultOptions = Options {
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
   , optionsTestTimerType = SpeedScopeTestTimerType
-  , optionsTimeEveryNode = True
   }

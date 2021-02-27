@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -28,8 +29,6 @@ module Test.Sandwich (
   , aroundEach
 
   -- * Timing
-  , timingNodeByProfile
-  , timingNode
   , timeActionByProfile
   , timeAction
 
@@ -113,7 +112,7 @@ runSandwich' options spec' = do
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of
         NullTestTimer -> spec'
-        _ -> after' defaultNodeOptions "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
+        _ -> after' (defaultNodeOptions { nodeOptionsRecordTime = False }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
   rts <- startSandwichTree' baseContext options spec
 

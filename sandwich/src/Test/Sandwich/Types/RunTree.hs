@@ -70,6 +70,7 @@ data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
   , runTreeVisible :: Bool
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
+  , runTreeRecordTime :: Bool
   , runTreeLogs :: l
   , runTreeLoc :: Maybe SrcLoc
   } deriving (Show, Eq)
@@ -190,8 +191,6 @@ data Options = Options {
   -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
   , optionsTestTimerType :: TestTimerType
   -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
-  , optionsTimeEveryNode :: Bool
-  -- ^ Whether to record test timing for every node by default. Defaults to 'True'. Should be low overhead, but may be turned off if desired.
   }
 
 

@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
--- |
+{-# LANGUAGE OverloadedStrings #-}
 
 module Test.Sandwich.Interpreters.StartTree (
   startTree
@@ -25,6 +25,7 @@ import qualified Data.List as L
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import Data.String.Interpolate.IsString
+import qualified Data.Text as T
 import Data.Time.Clock
 import GHC.Stack
 import System.Directory
@@ -38,8 +39,10 @@ import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
+import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
 
@@ -144,17 +147,21 @@ startTree node@(RunNodeIt {..}) ctx' = do
 runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context -> IO Result -> m (Async Result)
 runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
+  let bc@(BaseContext {..}) = getBaseContext ctx
+  let timerFn = case runTreeRecordTime of
+        True -> timeAction' (getTestTimer bc) "default" (T.pack runTreeLabel)
+        _ -> id
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
       readMVar mvar
-      result <- action
+      result <- timerFn action
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
 
       whenFailure result $ \reason -> do
-        let (BaseContext {..}) = getBaseContext ctx
+
 
         -- Create error symlink when configured to
         case node of

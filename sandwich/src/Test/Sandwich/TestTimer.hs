@@ -27,7 +27,6 @@ import Data.Time.Clock.POSIX
 import System.Directory
 import System.FilePath
 import System.IO
-import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
 
@@ -35,12 +34,6 @@ import Test.Sandwich.Types.TestTimer
 
 defaultProfileName :: T.Text
 defaultProfileName = "default"
-
-timingNodeByProfile :: (MonadIO m, MonadMask m, HasTestTimer context) => T.Text -> T.Text -> SpecFree context m () -> SpecFree context m ()
-timingNodeByProfile profileName eventName = around ("Timer for " <> T.unpack eventName) (void . timeActionByProfile profileName eventName)
-
-timingNode :: (MonadIO m, MonadMask m, HasTestTimer context) => T.Text -> SpecFree context m () -> SpecFree context m ()
-timingNode eventName = around ("Timer for " <> T.unpack eventName) (void . timeAction eventName)
 
 timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> T.Text -> m a -> m a
 timeActionByProfile profileName eventName action = do
@@ -70,7 +63,7 @@ finalizeSpeedScopeTestTimer (TestTimer {..}) = do
 
 timeAction' :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
-timeAction' tt@(TestTimer {..}) profileName eventName = bracket_
+timeAction' (TestTimer {..}) profileName eventName = bracket_
   (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
     now <- getPOSIXTime
     handleStartEvent file now
@@ -82,17 +75,16 @@ timeAction' tt@(TestTimer {..}) profileName eventName = bracket_
   where
     handleStartEvent file time = do
       T.hPutStrLn testTimerHandle [i|#{time} START #{show profileName} #{eventName}|]
-      return $ handleSpeedScopeEvent tt file profileName eventName time SpeedScopeEventTypeOpen
+      return $ handleSpeedScopeEvent file time SpeedScopeEventTypeOpen
 
     handleEndEvent file time = do
       T.hPutStrLn testTimerHandle [i|#{time} END #{show profileName} #{eventName}|]
-      return $ handleSpeedScopeEvent tt file profileName eventName time SpeedScopeEventTypeClose
+      return $ handleSpeedScopeEvent file time SpeedScopeEventTypeClose
 
     -- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
     -- so we don't have to do O(N) L.length and S.findIndexL
-    handleSpeedScopeEvent :: TestTimer -> SpeedScopeFile -> T.Text -> T.Text -> POSIXTime -> SpeedScopeEventType -> SpeedScopeFile
-    handleSpeedScopeEvent NullTestTimer initialFile _ _ _ _ = initialFile
-    handleSpeedScopeEvent (TestTimer {..}) initialFile profileName eventName time typ = flip execState initialFile $ do
+    handleSpeedScopeEvent :: SpeedScopeFile -> POSIXTime -> SpeedScopeEventType -> SpeedScopeFile
+    handleSpeedScopeEvent initialFile time typ = flip execState initialFile $ do
       frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
         Just j -> return j
         Nothing -> do
