@@ -14,10 +14,12 @@ import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
+import qualified Data.Text as T
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
+
 
 data Status = NotStarted
             | Running { statusStartTime :: UTCTime
@@ -104,6 +106,7 @@ data BaseContext = BaseContext {
   , baseContextErrorSymlinksDir :: Maybe FilePath
   , baseContextOptions :: Options
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
+  , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
   }
 

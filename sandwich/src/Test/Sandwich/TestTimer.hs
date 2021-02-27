@@ -27,6 +27,8 @@ import Data.Time.Clock.POSIX
 import System.Directory
 import System.FilePath
 import System.IO
+import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
 
@@ -44,6 +46,9 @@ timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer conte
 timeAction eventName action = do
   tt <- asks getTestTimer
   timeAction' tt defaultProfileName eventName action
+
+withTimingProfile newProfileName = around "Modify test timing profile" $ \action -> do
+  void $ local (flip modifyBaseContext (\bc -> bc { baseContextTestTimerProfile = newProfileName })) action
 
 -- * Core
 

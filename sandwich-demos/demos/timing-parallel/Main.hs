@@ -5,13 +5,15 @@
 module Main where
 
 import Common
+import Control.Monad.Reader
 import Data.Time.Clock
 import Test.Sandwich
+
 
 timingParallelDemo :: TopSpec
 timingParallelDemo = parallel $ do
   withTimingProfile "italian" $
-    describe "Makes Italian dinner" $
+    it "Makes Italian dinner" $ do
       pauseSeconds 1
       timeAction "Makes pasta" $ do
         timeAction "Heats water" $ pauseSeconds 1
@@ -19,7 +21,7 @@ timingParallelDemo = parallel $ do
         timeAction "Decants noodles" $ pauseSeconds 0.7
 
   withTimingProfile "chinese" $
-    describe "Makes Chinese dinner" $
+    it "Makes Chinese dinner" $ do
       pauseSeconds 1
       timeAction "Makes rice" $ do
         timeAction "Washes rice" $ pauseSeconds 1
@@ -31,4 +33,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs testOptions timingDemo
+main = runSandwichWithCommandLineArgs testOptions timingParallelDemo

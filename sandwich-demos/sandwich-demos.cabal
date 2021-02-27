@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8bc0fec3c8e69575a1c6a7d90728e8690546b7499057339a7e090eeb437ab5a5
+-- hash: 050230a78e3a67f58ab294b3e72b19b0f5455b0c27cdae3853b8b6a6dd33f455
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -73,6 +73,48 @@ executable timing-demo
       Paths_sandwich_demos
   hs-source-dirs:
       demos/timing
+  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , async
+    , base >=4.7 && <5
+    , containers
+    , convertible
+    , data-default
+    , directory
+    , exceptions
+    , filepath
+    , http-client
+    , http-conduit
+    , interpolate
+    , lifted-base
+    , monad-control
+    , monad-logger
+    , mtl
+    , network
+    , process
+    , random
+    , retry
+    , safe
+    , safe-exceptions
+    , sandwich
+    , sandwich-demos
+    , temporary
+    , text
+    , time
+    , transformers
+    , transformers-base
+    , unix
+    , unordered-containers
+  default-language: Haskell2010
+
+executable timing-parallel-demo
+  main-is: Main.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      demos/timing-parallel
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:

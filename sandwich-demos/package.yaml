@@ -81,3 +81,10 @@ executables:
     source-dirs: demos/timing
     dependencies:
     - sandwich-demos
+
+  timing-parallel-demo:
+    main: Main.hs
+    source-dirs: demos/timing-parallel
+    dependencies:
+    - sandwich-demos
+

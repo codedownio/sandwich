@@ -24,7 +24,7 @@ simple = parallel $ do
     describe "tests some nested foo" $ do
       it "tests nested #3" $ pauseRandomAndSucceed
 
-  describe "Bar" $ timingNode "Time for Bar" $ do
+  describe "Bar" $ do
     it "tests bar #1" $ pauseRandomAndSucceed >> warn "That was a weird test"
     it "tests bar #2" $ pauseRandomAndSucceed
 

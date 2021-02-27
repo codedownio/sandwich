@@ -31,6 +31,7 @@ module Test.Sandwich (
   -- * Timing
   , timeActionByProfile
   , timeAction
+  , withTimingProfile
 
   -- * The example monad
   , ExampleT
@@ -214,5 +215,6 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextRunRoot = runRoot
     , baseContextErrorSymlinksDir = errorSymlinksDir
     , baseContextOnlyRunIds = Nothing
+    , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
     }
