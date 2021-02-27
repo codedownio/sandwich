@@ -45,12 +45,12 @@ timingNode eventName = around ("Timer for " <> T.unpack eventName) (void . timeA
 timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> T.Text -> m a -> m a
 timeActionByProfile profileName eventName action = do
   tt <- asks getTestTimer
-  testTimer tt profileName eventName action
+  timeAction' tt profileName eventName action
 
 timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
-  testTimer tt defaultProfileName eventName action
+  timeAction' tt defaultProfileName eventName action
 
 -- * Core
 
@@ -68,9 +68,9 @@ finalizeSpeedScopeTestTimer (TestTimer {..}) = do
   hClose testTimerHandle
   readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 
-testTimer :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
-testTimer NullTestTimer _ _ = id
-testTimer tt@(TestTimer {..}) profileName eventName = bracket_
+timeAction' :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
+timeAction' NullTestTimer _ _ = id
+timeAction' tt@(TestTimer {..}) profileName eventName = bracket_
   (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
     now <- getPOSIXTime
     handleStartEvent file now
