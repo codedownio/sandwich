@@ -122,8 +122,13 @@ instance HasBaseContext context => HasBaseContext (intro :> context) where
   getBaseContext (_ :> ctx) = getBaseContext ctx
   modifyBaseContext (intro :> ctx) f = intro :> modifyBaseContext ctx f
 
+-- Timing related
 instance HasBaseContext context => HasTestTimer context where
   getTestTimer = baseContextTestTimer <$> getBaseContext
+instance HasTestTimerProfile BaseContext where
+  getTestTimerProfile = baseContextTestTimerProfile
+instance (HasTestTimerProfileLabel intro) => HasTestTimerProfile (intro :> ctx) where
+  getTestTimerProfile (intro :> ctx) = getLabelValue testTimerProfile intro
 
 type TopSpec = Spec BaseContext IO
 

@@ -27,6 +27,7 @@ import Data.Time.Clock.POSIX
 import System.Directory
 import System.FilePath
 import System.IO
+import Test.Sandwich.Contexts
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
@@ -34,21 +35,20 @@ import Test.Sandwich.Types.TestTimer
 
 -- * User functions
 
-defaultProfileName :: T.Text
-defaultProfileName = "default"
-
 timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> T.Text -> m a -> m a
 timeActionByProfile profileName eventName action = do
   tt <- asks getTestTimer
   timeAction' tt profileName eventName action
 
-timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> m a -> m a
+timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context, HasTestTimerProfile context) => T.Text -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
-  timeAction' tt defaultProfileName eventName action
+  profileName <- asks getTestTimerProfile
+  timeAction' tt profileName eventName action
 
-withTimingProfile newProfileName = around "Modify test timing profile" $ \action -> do
-  void $ local (flip modifyBaseContext (\bc -> bc { baseContextTestTimerProfile = newProfileName })) action
+withTimingProfile name = introduce [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure name) (\_ -> return ())
+
+withTimingProfile' getName = introduce [i|Switch test timer profile to dynamic value|] testTimerProfile getName (\_ -> return ())
 
 -- * Core
 

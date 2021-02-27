@@ -128,9 +128,16 @@ data TestTimer = TestTimer {
 
 -- * Labels and classes
 
-testTimerLabel = Label :: Label "testTimer" TestTimer
+defaultProfileName :: T.Text
+defaultProfileName = "default"
+
 class HasTestTimer context where
   getTestTimer :: context -> TestTimer
 
 testTimerProfile = Label :: Label "testTimerProfile" T.Text
-type HasTestTimerProfile context = (HasTestTimer context, HasLabel context "testTimerProfile" T.Text)
+type HasTestTimerProfileLabel context = (HasLabel context "testTimerProfile" T.Text)
+
+newtype TestTimerProfile = TestTimerProfile T.Text
+
+class HasTestTimerProfile context where
+  getTestTimerProfile :: context -> T.Text

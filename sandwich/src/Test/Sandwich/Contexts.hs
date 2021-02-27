@@ -1,7 +1,6 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
--- |
 
 module Test.Sandwich.Contexts where
 

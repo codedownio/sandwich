@@ -149,7 +149,7 @@ runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
   let timerFn = case runTreeRecordTime of
-        True -> timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel)
+        True -> timeAction' (getTestTimer bc) "default" (T.pack runTreeLabel)
         _ -> id
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
