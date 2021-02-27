@@ -17,9 +17,7 @@ module Test.Sandwich.Formatters.Slack (
 
   , slackFormatterMaxFailures
   , slackFormatterMaxFailureReasonLines
-  , slackFormatterMaxFailureReasonOverflowLines
   , slackFormatterMaxCallStackLines
-  , slackFormatterMaxCallStackOverflowLines
 
   , slackFormatterVisibilityThreshold
 
@@ -41,7 +39,6 @@ import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time
-import qualified Data.Vector as V
 import Safe
 import Test.Sandwich
 import Test.Sandwich.Formatters.Internal.Markdown
@@ -69,18 +66,10 @@ data SlackFormatter = SlackFormatter {
   , slackFormatterMaxFailureReasonLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the failure reason underneath a failure.
   -- Set to 'Just 0' to disable showing failure reasons.
-  , slackFormatterMaxFailureReasonOverflowLines :: Maybe Int
-  -- ^ Maximum number of lines to allow to spill into an overflow section, which requires
-  -- clicking a button to view.
-  -- Set to 'Just 0' to disable overflow for failure reasons.
 
   , slackFormatterMaxCallStackLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the call stack underneath a failure.
   -- Set to 'Just 0' to disable showing call stacks.
-  , slackFormatterMaxCallStackOverflowLines :: Maybe Int
-  -- ^ Maximum number of lines to allow to spill into an overflow section, which requires
-  -- clicking a button to view.
-  -- Set to 'Just 0' to disable overflow for callstacks.
 
   , slackFormatterVisibilityThreshold :: Maybe Int
   -- ^ If present, filter the headings on failures to only include nodes whose visibility
@@ -95,13 +84,9 @@ defaultSlackFormatter = SlackFormatter {
 
   , slackFormatterMaxFailures = Just 30
   , slackFormatterMaxFailureReasonLines = Just 5
-  , slackFormatterMaxFailureReasonOverflowLines = Just 10
   , slackFormatterMaxCallStackLines = Just 5
-  , slackFormatterMaxCallStackOverflowLines = Just 10
 
   , slackFormatterVisibilityThreshold = Nothing
-
-  -- , slackFormatterAttachFailureReport = False
   }
 
 instance Formatter SlackFormatter where
@@ -190,27 +175,27 @@ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
   Just $ markdownSectionWithLines [":red_circle: *" <> label <> "*"]
 
   -- Failure reason info
-  , case (markdownLinesToShow, overflowMarkdownLines) of
+  , case (markdownLinesToShow, _overflowMarkdownLines) of
       ([], _) -> Nothing
       (toShow, []) -> Just $ markdownSectionWithLines toShow
-      (toShow, overflow) -> Just $ sectionsWithTextAndOverflow (markdownBlockWithLines toShow) [markdownBlockWithLines overflow]
+      (toShow, overflow) -> Just $ markdownSectionWithLines $ addToLastLine toShow [i| (+ #{L.length overflow} more lines)|]
 
   -- Callstack info
-  , case (callStackLinesToShow, overflowCallStackLines) of
+  , case (callStackLinesToShow, _overflowCallStackLines) of
       ([], _) -> Nothing
       (toShow, []) -> Just $ markdownSectionWithLines toShow
-      (toShow, overflow) -> Just $ sectionsWithTextAndOverflow (markdownBlockWithLines toShow) [markdownBlockWithLines overflow]
+      (toShow, overflow) -> Just $ markdownSectionWithLines $ addToLastLine toShow [i| (+ #{L.length overflow} more lines)|]
   ]
   where
     allMarkdownLines = T.lines $ toMarkdown reason
-    (markdownLinesToShow, overflowMarkdownLines) = case slackFormatterMaxFailureReasonLines sf of
+    (markdownLinesToShow, _overflowMarkdownLines) = case slackFormatterMaxFailureReasonLines sf of
       Nothing -> (allMarkdownLines, [])
       Just n -> L.splitAt n allMarkdownLines
 
     allCallStackLines = case failureCallStack reason of
       Just cs -> L.filter (not . T.null) $ T.lines $ callStackToMarkdown SlackFormatterFullCallStack cs
       _ -> []
-    (callStackLinesToShow, overflowCallStackLines) = case slackFormatterMaxCallStackLines sf of
+    (callStackLinesToShow, _overflowCallStackLines) = case slackFormatterMaxCallStackLines sf of
       Nothing -> (allCallStackLines, [])
       Just n -> L.splitAt n allCallStackLines
 
@@ -229,11 +214,9 @@ markdownBlockWithLines ls = A.object [("type", A.String "mrkdwn"), ("text", A.St
 
 markdownSectionWithLines ls = A.object [("type", A.String "section"), ("text", markdownBlockWithLines ls)]
 
-sectionsWithTextAndOverflow text overflow = A.object [
-  ("type", A.String "section")
-  , ("text", text)
-  , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList overflow))])
-  ]
+addToLastLine :: [T.Text] -> T.Text -> [T.Text]
+addToLastLine [] _ = []
+addToLastLine xs toAdd = (init xs) <> [last xs <> toAdd]
 
 allIsDone :: [RunNodeFixed context] -> Bool
 allIsDone = all (isDone . runTreeStatus . runNodeCommon)

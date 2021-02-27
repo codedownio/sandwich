@@ -31,10 +31,8 @@ slackFormatter = defaultSlackFormatter {
   , slackFormatterChannel = "test-channel"
 
   , slackFormatterMaxFailures = Just 2
-  , slackFormatterMaxFailureReasonLines = Just 0
-  , slackFormatterMaxFailureReasonOverflowLines = Just 10
-  , slackFormatterMaxCallStackLines = Just 1
-  , slackFormatterMaxCallStackOverflowLines = Just 10
+  , slackFormatterMaxFailureReasonLines = Just 1
+  , slackFormatterMaxCallStackLines = Just 3
 
   , slackFormatterVisibilityThreshold = Just 50
   }
