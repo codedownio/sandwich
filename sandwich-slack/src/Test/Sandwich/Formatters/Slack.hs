@@ -14,9 +14,13 @@ module Test.Sandwich.Formatters.Slack (
   , slackFormatterSlackConfig
   , slackFormatterTopMessage
   , slackFormatterChannel
+
   , slackFormatterMaxFailures
   , slackFormatterMaxFailureReasonLines
+  , slackFormatterMaxFailureReasonOverflowLines
   , slackFormatterMaxCallStackLines
+  , slackFormatterMaxCallStackOverflowLines
+
   , slackFormatterVisibilityThreshold
 
   , SlackFormatterShowCallStacks(..)
@@ -65,10 +69,18 @@ data SlackFormatter = SlackFormatter {
   , slackFormatterMaxFailureReasonLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the failure reason underneath a failure.
   -- Set to 'Just 0' to disable showing failure reasons.
+  , slackFormatterMaxFailureReasonOverflowLines :: Maybe Int
+  -- ^ Maximum number of lines to allow to spill into an overflow section, which requires
+  -- clicking a button to view.
+  -- Set to 'Just 0' to disable overflow for failure reasons.
 
   , slackFormatterMaxCallStackLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the call stack underneath a failure.
   -- Set to 'Just 0' to disable showing call stacks.
+  , slackFormatterMaxCallStackOverflowLines :: Maybe Int
+  -- ^ Maximum number of lines to allow to spill into an overflow section, which requires
+  -- clicking a button to view.
+  -- Set to 'Just 0' to disable overflow for callstacks.
 
   , slackFormatterVisibilityThreshold :: Maybe Int
   -- ^ If present, filter the headings on failures to only include nodes whose visibility
@@ -83,7 +95,9 @@ defaultSlackFormatter = SlackFormatter {
 
   , slackFormatterMaxFailures = Just 30
   , slackFormatterMaxFailureReasonLines = Just 5
+  , slackFormatterMaxFailureReasonOverflowLines = Just 10
   , slackFormatterMaxCallStackLines = Just 5
+  , slackFormatterMaxCallStackOverflowLines = Just 10
 
   , slackFormatterVisibilityThreshold = Nothing
 
@@ -122,7 +136,7 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
       let pbi' = publishTree sf idToLabelAndVisibilityThreshold (diffUTCTime now startTime) newFixedTree
       tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
         Left err -> logError [i|Error updating progress bar: '#{err}'|]
-        Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'|]
+        Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'. Blocks were '#{A.encode $ progressBarInfoBlocks pbi'}'|]
         Right (Right ()) -> return ()
 
       if | allIsDone newFixedTree -> do
@@ -135,33 +149,34 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
 
 publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
   where
-    pbi = ProgressBarInfo { progressBarInfoTopMessage = T.pack <$> (slackFormatterTopMessage sf)
-                          , progressBarInfoBottomMessage = Just fullBottomMessage
-                          , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
-                          , progressBarInfoAttachments = Nothing
-                          , progressBarInfoBlocks = Just $ case slackFormatterMaxFailures sf of
-                              Nothing -> mconcat blocks
-                              Just n -> case L.splitAt n blocks of
-                                (xs, []) -> mconcat xs
-                                (xs, rest) -> mconcat xs <> [extraFailuresBlock (L.length rest)]
-                          }
+    pbi = ProgressBarInfo {
+      progressBarInfoTopMessage = T.pack <$> (slackFormatterTopMessage sf)
+      , progressBarInfoBottomMessage = Just fullBottomMessage
+      , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
+      , progressBarInfoAttachments = Nothing
+      , progressBarInfoBlocks = Just $ case slackFormatterMaxFailures sf of
+          Nothing -> mconcat blocks
+          Just n -> case L.splitAt n blocks of
+            (xs, []) -> mconcat xs
+            (xs, rest) -> mconcat xs <> [extraFailuresBlock (L.length rest)]
+      }
 
-    runningMessage = headMay $ L.sort $ catMaybes $ concatMap (extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)) tree
+    runningMessage = headMay $ L.sort $ catMaybes $ flip concatMap tree $
+      extractValues (\node -> if isRunningItBlock node then Just $ runTreeLabel $ runNodeCommon node else Nothing)
 
     fullBottomMessage = case runningMessage of
       Nothing -> bottomMessage
       Just t -> T.pack t <> "\n" <> bottomMessage
     bottomMessage = [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
 
-    blocks = flip concatMap tree $ extractValuesControlRecurse $ \case
+    blocks = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
       -- Recurse into grouping nodes, because their failures are actually just derived from child failures
-      RunNodeDescribe {} -> (True, [])
-      RunNodeParallel {} -> (True, [])
-      ((runTreeStatus . runNodeCommon) ->
-        (Done {statusResult=(Failure (Pending {}))})) -> (False, [])
+      RunNodeDescribe {} -> (True, Nothing)
+      RunNodeParallel {} -> (True, Nothing)
+      ((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
       node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
-        (False, singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason)
-      _ -> (True, [])
+        (False, Just $ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason)
+      _ -> (True, Nothing)
 
     total = countWhere isItBlock tree
     succeeded = countWhere isSuccessItBlock tree
@@ -178,21 +193,13 @@ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
   , case (markdownLinesToShow, overflowMarkdownLines) of
       ([], _) -> Nothing
       (toShow, []) -> Just $ markdownSectionWithLines toShow
-      (toShow, overflow) -> Just $ A.object [
-        ("type", A.String "section")
-        , ("text", markdownBlockWithLines toShow)
-        , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList [markdownBlockWithLines overflow]))])
-        ]
+      (toShow, overflow) -> Just $ sectionsWithTextAndOverflow (markdownBlockWithLines toShow) [markdownBlockWithLines overflow]
 
   -- Callstack info
   , case (callStackLinesToShow, overflowCallStackLines) of
       ([], _) -> Nothing
       (toShow, []) -> Just $ markdownSectionWithLines toShow
-      (toShow, overflow) -> Just $ A.object [
-        ("type", A.String "section")
-        , ("text", markdownBlockWithLines toShow)
-        , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList [markdownBlockWithLines overflow]))])
-        ]
+      (toShow, overflow) -> Just $ sectionsWithTextAndOverflow (markdownBlockWithLines toShow) [markdownBlockWithLines overflow]
   ]
   where
     allMarkdownLines = T.lines $ toMarkdown reason
@@ -216,12 +223,17 @@ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
         _ -> Just l
     label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
 
-extraFailuresBlock numExtraFailures = markdownSectionWithLines [[i|+ #{numExtraFailures} more|]]
+extraFailuresBlock numExtraFailures = markdownSectionWithLines [[i|+ #{numExtraFailures} more failure|]]
 
 markdownBlockWithLines ls = A.object [("type", A.String "mrkdwn"), ("text", A.String $ T.unlines ls)]
 
 markdownSectionWithLines ls = A.object [("type", A.String "section"), ("text", markdownBlockWithLines ls)]
 
+sectionsWithTextAndOverflow text overflow = A.object [
+  ("type", A.String "section")
+  , ("text", text)
+  , ("accessory", A.object [("type", "overflow"), ("options", A.Array (V.fromList overflow))])
+  ]
 
 allIsDone :: [RunNodeFixed context] -> Bool
 allIsDone = all (isDone . runTreeStatus . runNodeCommon)
