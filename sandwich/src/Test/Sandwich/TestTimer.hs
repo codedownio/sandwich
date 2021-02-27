@@ -27,8 +27,6 @@ import Data.Time.Clock.POSIX
 import System.Directory
 import System.FilePath
 import System.IO
-import Test.Sandwich.Contexts
-import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
@@ -46,9 +44,9 @@ timeAction eventName action = do
   profileName <- asks getTestTimerProfile
   timeAction' tt profileName eventName action
 
-withTimingProfile name = introduce [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure name) (\_ -> return ())
+withTimingProfile name = introduce' (defaultNodeOptions { nodeOptionsRecordTime = False }) [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure name) (\_ -> return ())
 
-withTimingProfile' getName = introduce [i|Switch test timer profile to dynamic value|] testTimerProfile getName (\_ -> return ())
+withTimingProfile' getName = introduce' (defaultNodeOptions { nodeOptionsRecordTime = False }) [i|Switch test timer profile to dynamic value|] testTimerProfile getName (\_ -> return ())
 
 -- * Core
 

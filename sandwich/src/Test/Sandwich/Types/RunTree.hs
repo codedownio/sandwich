@@ -34,28 +34,44 @@ instance Show (Async Result) where
 
 
 data RunNodeWithStatus context s l t where
-  RunNodeBefore :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                   , runNodeChildren :: [RunNodeWithStatus context s l t]
-                   , runNodeBefore :: ExampleT context IO () } -> RunNodeWithStatus context s l t
-  RunNodeAfter :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                  , runNodeChildren :: [RunNodeWithStatus context s l t]
-                  , runNodeAfter :: ExampleT context IO () } -> RunNodeWithStatus context s l t
-  RunNodeIntroduce :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                      , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
-                      , runNodeAlloc :: ExampleT context IO intro
-                      , runNodeCleanup :: intro -> ExampleT context IO () } -> RunNodeWithStatus context s l t
-  RunNodeIntroduceWith :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                          , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
-                          , runNodeIntroduceAction :: (intro -> ExampleT context IO [Result]) -> ExampleT context IO () } -> RunNodeWithStatus context s l t
-  RunNodeAround :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                   , runNodeChildren :: [RunNodeWithStatus context s l t]
-                   , runNodeActionWith :: ExampleT context IO [Result] -> ExampleT context IO () } -> RunNodeWithStatus context s l t
-  RunNodeDescribe :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                     , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
-  RunNodeParallel :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-                     , runNodeChildren :: [RunNodeWithStatus context s l t] } -> RunNodeWithStatus context s l t
-  RunNodeIt :: { runNodeCommon :: RunNodeCommonWithStatus s l t
-               , runNodeExample :: ExampleT context IO () } -> RunNodeWithStatus context s l t
+  RunNodeBefore :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    , runNodeBefore :: ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
+  RunNodeAfter :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    , runNodeAfter :: ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
+  RunNodeIntroduce :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+    , runNodeAlloc :: ExampleT context IO intro
+    , runNodeCleanup :: intro -> ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
+  RunNodeIntroduceWith :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+    , runNodeIntroduceAction :: (intro -> ExampleT context IO [Result]) -> ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
+  RunNodeAround :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    , runNodeActionWith :: ExampleT context IO [Result] -> ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
+  RunNodeDescribe :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    } -> RunNodeWithStatus context s l t
+  RunNodeParallel :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    } -> RunNodeWithStatus context s l t
+  RunNodeIt :: {
+    runNodeCommon :: RunNodeCommonWithStatus s l t
+    , runNodeExample :: ExampleT context IO ()
+    } -> RunNodeWithStatus context s l t
 
 type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
 type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
@@ -128,7 +144,7 @@ instance HasBaseContext context => HasTestTimer context where
 instance HasTestTimerProfile BaseContext where
   getTestTimerProfile = baseContextTestTimerProfile
 instance (HasTestTimerProfileLabel intro) => HasTestTimerProfile (intro :> ctx) where
-  getTestTimerProfile (intro :> ctx) = getLabelValue testTimerProfile intro
+  getTestTimerProfile (intro :> _) = getLabelValue testTimerProfile intro
 
 type TopSpec = Spec BaseContext IO
 

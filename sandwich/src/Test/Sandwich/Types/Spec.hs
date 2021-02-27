@@ -151,54 +151,68 @@ defaultNodeOptions :: NodeOptions
 defaultNodeOptions = NodeOptions 100 True True
 
 data SpecCommand context m next where
-  Before'' :: { location :: Maybe SrcLoc
-              , nodeOptions :: NodeOptions
-              , label :: String
-              , action :: ExampleT context m ()
-              , subspec :: SpecFree context m ()
-              , next :: next } -> SpecCommand context m next
+  Before'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , action :: ExampleT context m ()
+    , subspec :: SpecFree context m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  After'' :: { location :: Maybe SrcLoc
-             , nodeOptions :: NodeOptions
-             , label :: String
-             , action :: ExampleT context m ()
-             , subspec :: SpecFree context m ()
-             , next :: next } -> SpecCommand context m next
+  After'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , action :: ExampleT context m ()
+    , subspec :: SpecFree context m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  Introduce'' :: { location :: Maybe SrcLoc
-                 , nodeOptions :: NodeOptions
-                 , label :: String
-                 , contextLabel :: Label l intro
-                 , allocate :: ExampleT context m intro
-                 , cleanup :: intro -> ExampleT context m ()
-                 , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
-                 , next :: next } -> SpecCommand context m next
+  Introduce'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , contextLabel :: Label l intro
+    , allocate :: ExampleT context m intro
+    , cleanup :: intro -> ExampleT context m ()
+    , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  IntroduceWith'' :: { location :: Maybe SrcLoc
-                     , nodeOptions :: NodeOptions
-                     , label :: String
-                     , contextLabel :: Label l intro
-                     , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
-                     , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
-                     , next :: next } -> SpecCommand context m next
+  IntroduceWith'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , contextLabel :: Label l intro
+    , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
+    , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  Around'' :: { location :: Maybe SrcLoc
-              , nodeOptions :: NodeOptions
-              , label :: String
-              , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
-              , subspec :: SpecFree context m ()
-              , next :: next } -> SpecCommand context m next
+  Around'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , actionWith :: ExampleT context m [Result] -> ExampleT context m ()
+    , subspec :: SpecFree context m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  Describe'' :: { location :: Maybe SrcLoc
-                , nodeOptions :: NodeOptions
-                , label :: String
-                , subspec :: SpecFree context m ()
-                , next :: next } -> SpecCommand context m next
+  Describe'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , label :: String
+    , subspec :: SpecFree context m ()
+    , next :: next
+    } -> SpecCommand context m next
 
-  Parallel'' :: { location :: Maybe SrcLoc
-                , nodeOptions :: NodeOptions
-                , subspec :: SpecFree context m ()
-                , next :: next } -> SpecCommand context m next
+  Parallel'' :: {
+    location :: Maybe SrcLoc
+    , nodeOptions :: NodeOptions
+    , subspec :: SpecFree context m ()
+    , next :: next
+    } -> SpecCommand context m next
 
   It'' :: { location :: Maybe SrcLoc
           , nodeOptions :: NodeOptions
