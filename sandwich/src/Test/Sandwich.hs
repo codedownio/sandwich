@@ -32,6 +32,7 @@ module Test.Sandwich (
   , timeActionByProfile
   , timeAction
   , withTimingProfile
+  , withTimingProfile'
 
   -- * The example monad
   , ExampleT
