@@ -11,15 +11,19 @@ module Test.Sandwich.Formatters.Slack (
   , SlackConfig(..)
 
   , defaultSlackFormatter
+
   , slackFormatterSlackConfig
-  , slackFormatterTopMessage
   , slackFormatterChannel
+
+  , slackFormatterTopMessage
 
   , slackFormatterMaxFailures
   , slackFormatterMaxFailureReasonLines
   , slackFormatterMaxCallStackLines
 
   , slackFormatterVisibilityThreshold
+
+  , slackFormatterMaxMessageSize
 
   , SlackFormatterShowCallStacks(..)
   ) where
@@ -39,6 +43,7 @@ import Data.Maybe
 import Data.String.Interpolate.IsString
 import qualified Data.Text as T
 import Data.Time
+import GHC.Int
 import Safe
 import Test.Sandwich
 import Test.Sandwich.Formatters.Internal.Markdown
@@ -51,22 +56,21 @@ import Test.Sandwich.Internal.Formatters
 data SlackFormatter = SlackFormatter {
   slackFormatterSlackConfig :: SlackConfig
   -- ^ Slack credentials
+  , slackFormatterChannel :: String
+  -- ^ Slack channel on which to create the progress bar.
+
   , slackFormatterTopMessage :: Maybe String
   -- ^ Message to put above the progress bar.
   -- For example, the name of the test suite and a link to the run in the CI system.
-  , slackFormatterChannel :: String
-  -- ^ Slack channel on which to create the progress bar.
 
   , slackFormatterMaxFailures :: Maybe Int
   -- ^ Maximum number of failures to include in a message.
   -- If too many are included, it's possible to hit Slack's request limit of 8KB, which
   -- causes the message to fail to update.
   -- Defaults to 30.
-
   , slackFormatterMaxFailureReasonLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the failure reason underneath a failure.
   -- Set to 'Just 0' to disable showing failure reasons.
-
   , slackFormatterMaxCallStackLines :: Maybe Int
   -- ^ Maximum number of lines to devote to showing the call stack underneath a failure.
   -- Set to 'Just 0' to disable showing call stacks.
@@ -74,6 +78,13 @@ data SlackFormatter = SlackFormatter {
   , slackFormatterVisibilityThreshold :: Maybe Int
   -- ^ If present, filter the headings on failures to only include nodes whose visibility
   -- threshold is less than or equal to the value.
+
+  , slackFormatterMaxMessageSize :: Maybe Int64
+  -- ^ If present, make sure the messages we transmit to Slack default don't exceed this number
+  -- of bytes. When a message does exceed it (probably because there are a ton of failures),
+  -- start dropping blocks from the end of the message until the size is small enough.
+  -- Making use of 'slackFormatterMaxFailures', 'slackFormatterMaxFailureReasonLines', and
+  -- 'slackFormatterMaxCallStackLines' is a good way to avoid hitting the limit.
   }
 
 defaultSlackFormatter :: SlackFormatter
@@ -87,6 +98,9 @@ defaultSlackFormatter = SlackFormatter {
   , slackFormatterMaxCallStackLines = Just 5
 
   , slackFormatterVisibilityThreshold = Nothing
+
+  -- 8KB, although Slack might accept 16KB now?
+  , slackFormatterMaxMessageSize = Just 8192
   }
 
 instance Formatter SlackFormatter where
@@ -103,7 +117,7 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
 
   rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
   let pbi = publishTree sf idToLabelAndVisibilityThreshold 0 rtsFixed
-  pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) pbi) >>= \case
+  pb <- (liftIO $ createProgressBar slackFormatterSlackConfig (T.pack slackFormatterChannel) slackFormatterMaxMessageSize pbi) >>= \case
     Left err -> liftIO $ throwIO $ userError $ T.unpack err
     Right pb -> return pb
 
@@ -119,7 +133,7 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
 
       now <- liftIO getCurrentTime
       let pbi' = publishTree sf idToLabelAndVisibilityThreshold (diffUTCTime now startTime) newFixedTree
-      tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig pb pbi') >>= \case
+      tryAny (liftIO $ updateProgressBar slackFormatterSlackConfig slackFormatterMaxMessageSize pb pbi') >>= \case
         Left err -> logError [i|Error updating progress bar: '#{err}'|]
         Right (Left err) -> logError [i|Inner error updating progress bar: '#{err}'. Blocks were '#{A.encode $ progressBarInfoBlocks pbi'}'|]
         Right (Right ()) -> return ()
