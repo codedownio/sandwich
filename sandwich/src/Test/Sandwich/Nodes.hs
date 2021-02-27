@@ -11,6 +11,7 @@ module Test.Sandwich.Nodes (
   , defaultNodeOptions
   , nodeOptionsVisibilityThreshold
   , nodeOptionsCreateFolder
+  , nodeOptionsRecordTime
 
   -- * Context manager nodes
   , introduce'
