@@ -45,5 +45,5 @@ defaultOptions = Options {
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
-  , optionsTestTimerType = SpeedScopeTestTimerType
+  , optionsTestTimerType = SpeedScopeTestTimerType { speedScopeTestTimerWriteRawTimings = False }
   }

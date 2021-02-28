@@ -205,7 +205,7 @@ baseContextFromOptions options@(Options {..}) = do
       return $ Just dir
 
   testTimer <- case (optionsTestTimerType, runRoot) of
-    (SpeedScopeTestTimerType, Just rr) -> liftIO $ newSpeedScopeTestTimer rr
+    (SpeedScopeTestTimerType {..}, Just rr) -> liftIO $ newSpeedScopeTestTimer rr speedScopeTestTimerWriteRawTimings
     _ -> return NullTestTimer
 
   let errorSymlinksDir = (</> "errors") <$> runRoot

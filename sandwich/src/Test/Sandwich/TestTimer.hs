@@ -31,6 +31,7 @@ import System.IO
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
+import Test.Sandwich.Util (whenJust)
 
 
 -- * User functions
@@ -57,23 +58,29 @@ withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer p
 timingNodeOptions :: NodeOptions
 timingNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False }
 
-newSpeedScopeTestTimer :: FilePath -> IO TestTimer
-newSpeedScopeTestTimer path = do
+newSpeedScopeTestTimer :: FilePath -> Bool -> IO TestTimer
+newSpeedScopeTestTimer path writeRawTimings = do
   createDirectoryIfMissing True path
-  h <- openFile (path </> "timings_raw.txt") AppendMode
-  hSetBuffering h LineBuffering
+
+  maybeHandle <- case writeRawTimings of
+    False -> return Nothing
+    True -> do
+      h <- openFile (path </> "timings_raw.txt") AppendMode
+      hSetBuffering h LineBuffering
+      return $ Just h
+
   speedScopeFile <- newMVar emptySpeedScopeFile
-  return $ TestTimer path h speedScopeFile
+  return $ SpeedScopeTestTimer path maybeHandle speedScopeFile
 
 finalizeSpeedScopeTestTimer :: TestTimer -> IO ()
 finalizeSpeedScopeTestTimer NullTestTimer = return ()
-finalizeSpeedScopeTestTimer (TestTimer {..}) = do
-  hClose testTimerHandle
+finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
+  whenJust testTimerHandle hClose
   readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 
 timeAction' :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
-timeAction' (TestTimer {..}) profileName eventName = bracket_
+timeAction' (SpeedScopeTestTimer {..}) profileName eventName = bracket_
   (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
     now <- getPOSIXTime
     handleStartEvent file now
@@ -84,11 +91,11 @@ timeAction' (TestTimer {..}) profileName eventName = bracket_
   )
   where
     handleStartEvent file time = do
-      T.hPutStrLn testTimerHandle [i|#{time} START #{show profileName} #{eventName}|]
+      whenJust testTimerHandle $ \h -> T.hPutStrLn h [i|#{time} START #{show profileName} #{eventName}|]
       return $ handleSpeedScopeEvent file time SpeedScopeEventTypeOpen
 
     handleEndEvent file time = do
-      T.hPutStrLn testTimerHandle [i|#{time} END #{show profileName} #{eventName}|]
+      whenJust testTimerHandle $ \h -> T.hPutStrLn h [i|#{time} END #{show profileName} #{eventName}|]
       return $ handleSpeedScopeEvent file time SpeedScopeEventTypeClose
 
     -- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,

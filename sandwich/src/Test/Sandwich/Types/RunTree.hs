@@ -187,7 +187,9 @@ defaultLogEntryFormatter _ts a b c d = fromLogStr $ defaultLogStr a b c d
 data TestTimerType =
   NullTestTimerType
   -- ^ Don't run a test timer
-  | SpeedScopeTestTimerType
+  | SpeedScopeTestTimerType { speedScopeTestTimerWriteRawTimings :: Bool
+                              -- ^ Whether to write an additional file with line-by-line timing events, which can be useful for debugging timer issues.
+                            }
   -- ^ Test timer that outputs its results in <https://www.speedscope.app/ SpeedScope> JSON format. Also outputs a file with raw timing data in a simple event-based format.
 
 -- | All the options controlling a test run.
