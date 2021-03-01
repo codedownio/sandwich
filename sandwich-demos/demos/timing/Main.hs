@@ -9,7 +9,7 @@ import Data.Time.Clock
 import Test.Sandwich
 
 timingDemo :: TopSpec
-timingDemo = do
+timingDemo = describe "Dinner tests" $ do
   it "Makes dinner" $ do
     pauseSeconds 1
     timeAction "Makes pasta" $ do

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 050230a78e3a67f58ab294b3e72b19b0f5455b0c27cdae3853b8b6a6dd33f455
+-- hash: 90fe267c75a75151c6f65d36ba14f3f477dbe8f1a771b89cd9508b0798f73a66
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -67,7 +67,49 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-executable timing-demo
+executable basic
+  main-is: Main.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      demos/basic
+  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , async
+    , base >=4.7 && <5
+    , containers
+    , convertible
+    , data-default
+    , directory
+    , exceptions
+    , filepath
+    , http-client
+    , http-conduit
+    , interpolate
+    , lifted-base
+    , monad-control
+    , monad-logger
+    , mtl
+    , network
+    , process
+    , random
+    , retry
+    , safe
+    , safe-exceptions
+    , sandwich
+    , sandwich-demos
+    , temporary
+    , text
+    , time
+    , transformers
+    , transformers-base
+    , unix
+    , unordered-containers
+  default-language: Haskell2010
+
+executable timing
   main-is: Main.hs
   other-modules:
       Paths_sandwich_demos
@@ -109,7 +151,7 @@ executable timing-demo
     , unordered-containers
   default-language: Haskell2010
 
-executable timing-parallel-demo
+executable timing-parallel
   main-is: Main.hs
   other-modules:
       Paths_sandwich_demos
@@ -151,7 +193,7 @@ executable timing-parallel-demo
     , unordered-containers
   default-language: Haskell2010
 
-executable tui-demo
+executable tui
   main-is: Main.hs
   other-modules:
       Paths_sandwich_demos

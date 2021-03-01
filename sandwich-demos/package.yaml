@@ -70,19 +70,25 @@ library:
   source-dirs: lib
 
 executables:
-  tui-demo:
+  basic:
+    main: Main.hs
+    source-dirs: demos/basic
+    dependencies:
+    - sandwich-demos
+
+  tui:
     main: Main.hs
     source-dirs: demos/tui
     dependencies:
     - sandwich-demos
 
-  timing-demo:
+  timing:
     main: Main.hs
     source-dirs: demos/timing
     dependencies:
     - sandwich-demos
 
-  timing-parallel-demo:
+  timing-parallel:
     main: Main.hs
     source-dirs: demos/timing-parallel
     dependencies:

@@ -136,7 +136,6 @@ runSandwich' options spec' = do
   _ <- installHandler sigINT (Catch shutdown) Nothing
 
   -- Wait for all formatters to finish
-  putStrLn [i|Beginning wait for formatterAsync|]
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   let failures = lefts finalResults
   unless (null failures) $
