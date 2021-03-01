@@ -1,8 +1,12 @@
 ---
-id: node_visibility
-title: Node Visibility
-sidebar_label: Node Visibility
+id: node_options
+title: Node Options
+sidebar_label: Node Options
 ---
+
+## Introduction
+
+The basic functions like `describe`, `it`, etc. are aliases to lower-level functions called `describe'`, `it'`, etc. The lower-level versions accept **node options** which you can use to fine-tune how each node behaves.
 
 ## Visibility thresholds
 

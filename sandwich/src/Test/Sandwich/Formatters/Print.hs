@@ -54,7 +54,7 @@ runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
   whenJust (baseContextRunRoot bc) $ \runRoot ->
     putStrLn [i|Run root: #{runRoot}\n|]
 
-  runReaderT (mapM_ runWithIndentation rts) (pf, 1, stdout)
+  runReaderT (mapM_ runWithIndentation rts) (pf, 2, stdout)
   putStrLn "\n"
 
   fixedTree <- atomically $ mapM fixRunTree rts
@@ -89,18 +89,26 @@ runWithIndentation node@(RunNodeIt {..}) = do
 runWithIndentation node = do
   let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
 
-  pin runTreeLabel
+  (PrintFormatter {..}, _, _) <- ask
+
+  childPrintFn <- case runTreeVisibilityLevel <= printFormatterVisibilityThreshold of
+    True -> do
+      pin runTreeLabel
+      return withBumpIndent
+    False -> return id
 
   case node of
-    RunNodeIntroduce {..} -> withBumpIndent $ forM_ runNodeChildrenAugmented runWithIndentation
-    RunNodeIntroduceWith {..} -> withBumpIndent $ forM_ runNodeChildrenAugmented runWithIndentation
-    _ -> withBumpIndent $ forM_ (runNodeChildren node) runWithIndentation
+    RunNodeIntroduce {..} -> childPrintFn $ forM_ runNodeChildrenAugmented runWithIndentation
+    RunNodeIntroduceWith {..} -> childPrintFn $ forM_ runNodeChildrenAugmented runWithIndentation
+    _ -> childPrintFn $ forM_ (runNodeChildren node) runWithIndentation
 
   result <- liftIO $ waitForTree node
 
   -- Print the failure reason
-  case result of
-    Failure r -> withBumpIndent $ printFailureReason r
-    Success -> return ()
-
-  finishPrinting common result
+  case runTreeVisibilityLevel <= printFormatterVisibilityThreshold of
+    True -> do
+      case result of
+        Failure r -> withBumpIndent $ printFailureReason r
+        Success -> return ()
+      finishPrinting common result
+    False -> return () -- TODO: print failure info even though node should be hidden?

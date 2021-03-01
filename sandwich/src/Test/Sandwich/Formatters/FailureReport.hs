@@ -65,6 +65,7 @@ printFailureReport (FailureReportFormatter {..}) rts _bc = do
   let pf = PrintFormatter {
         printFormatterUseColor = failureReportUseColor
         , printFormatterLogLevel = failureReportLogLevel
+        , printFormatterVisibilityThreshold = maxBound
         , printFormatterIncludeCallStacks = failureReportIncludeCallStacks
         , printFormatterIndentSize = failureReportIndentSize
         }

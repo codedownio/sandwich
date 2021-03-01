@@ -2,7 +2,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ExistentialQuantification #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.Types where
 
@@ -13,9 +12,10 @@ import qualified Data.Text as T
 import Data.Time
 import GHC.Stack
 import Lens.Micro.TH
+import Test.Sandwich.Formatters.TerminalUI.OpenInEditor
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Formatters.TerminalUI.OpenInEditor
+
 
 -- | Initial settings for the TUI interface. All of these settings can be changed interactively.
 data TerminalUIFormatter = TerminalUIFormatter {

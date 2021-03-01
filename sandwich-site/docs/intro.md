@@ -21,17 +21,18 @@ module Main where
 import Test.Sandwich
 
 basic :: TopSpec
-basic = describe "Simple tests" $ do
+basic = do
   describe "Arithmetic" $ do
-    it "tests addition" $ do
+    it "adds" $ do
       (2 + 2) `shouldBe` 4
       (2 + 3) `shouldBe` 5
 
-    it "tests subtraction" $
+    it "subtracts" $ do
       (3 - 2) `shouldBe` 1
+      warn 
 
   describe "Strings" $
-    it "concatenates strings" $
+    it "concatenates" $
       ("abc" <> "def") `shouldBe` "abcdef"
 
 main :: IO ()
@@ -46,6 +47,25 @@ Let's run this test from the command line:
 
 In our test file above, we define a `main` function using `runSandwichWithCommandLineArgs`, a convenience function that allows us to configure options via the command line. For example, we can choose between different *formatters*, which control how output is displayed. The video below shows running the tests with both the print and TUI formatters.
 
+
+## On-disk results
+
+Unless configured otherwise, each test tree run produces a *directory tree* which exactly mirrors the tree structure. For example, the test tree above would produce a tree like the following.
+
+```bash
+<test_root>
+├─ results
+│  ├─ Arithmetic
+│  │  ├─ adds
+│  │  └─ subtracts
+│  │     └─ test_logs.txt # contains the log warning message
+│  └─ Strings
+│     └─ concatenates
+└─ errors
+   └─ subracts --> ../results/subtracts # failure symlink
+```
+
+Thus, every test tree node has a place where it can stash logs, screenshots, or other artifacts. This structure makes it easy to browse through your tests and check things. Also, the `errors` folder at the root provides a handy list of symlinks to all failures.
 
 
 ## Contexts

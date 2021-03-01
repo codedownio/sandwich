@@ -2,17 +2,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
--- |
 
 module Test.Sandwich.Formatters.Print.Common where
 
 import Control.Monad.Reader
+import System.IO
 import Test.Sandwich.Formatters.Print.CallStacks
 import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
-import System.IO
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
