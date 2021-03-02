@@ -41,8 +41,11 @@ main = runSandwichWithCommandLineArgs defaultOptions basic
 
 Let's run this test from the command line, using the [Terminal UI interface](/docs/formatters/tui). This will allow us to move around and examine the tests. In particular, we can examine the failure and log message in the subtraction tests.
 
-<img alt="Simple tests" src={useBaseUrl('img/basic_tui.gif')} />
 
+<video width="100%" controls autoplay="true" muted="true">
+  <source src="/img/basic_tui.webm" type="video/webm"></source>
+Your browser does not support the video tag.
+</video>
 
 ## On-disk results
 
