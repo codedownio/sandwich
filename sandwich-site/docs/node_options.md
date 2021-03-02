@@ -34,3 +34,7 @@ If you want to set *custom* visibility thresholds, you can use the primed versio
 -- | A version of 'before' that has a lower visibility threshold
 myBefore = before' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 })
 ```
+
+## Folder creation
+
+By default, every node in the test tree will get an associated folder in the [on-disk results](/docs#on-disk-results).

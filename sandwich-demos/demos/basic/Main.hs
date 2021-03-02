@@ -7,17 +7,16 @@ import Test.Sandwich
 basic :: TopSpec
 basic = describe "Simple tests" $ do
   describe "Arithmetic" $ do
-    it "tests addition" $ do
+    it "adds" $ do
       (2 + 2) `shouldBe` 4
       (2 + 3) `shouldBe` 5
 
-    it "tests subtraction" $ do
-      (3 - 2) `shouldBe` 1
-      liftIO $ threadDelay 3000000
-      warn "TODO: make sure this test is correct"
+    it "subtracts" $ do
+      warn "This might not be right..."
+      (3 - 2) `shouldBe` 0
 
   describe "Strings" $
-    it "concatenates strings" $
+    it "concatenates" $
       ("abc" <> "def") `shouldBe` "abcdef"
 
 main :: IO ()
