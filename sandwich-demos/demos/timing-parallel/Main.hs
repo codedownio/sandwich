@@ -19,10 +19,11 @@ timingParallelDemo = parallel $ do
 
   withTimingProfile "chinese" $
     it "Makes Chinese dinner" $ do
-      pauseSeconds 0.2
+      pauseSeconds 0.1
       timeAction "Makes rice" $ do
         timeAction "Cooks rice" $ pauseSeconds 0.5
         timeAction "Serves rice" $ pauseSeconds 0.2
+      pauseSeconds 0.3
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)

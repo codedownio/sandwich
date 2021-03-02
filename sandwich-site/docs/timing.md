@@ -59,13 +59,17 @@ timingParallelDemo = parallel $ do
 
   withTimingProfile "chinese" $
     it "Makes Chinese dinner" $ do
-      pauseSeconds 0.2
+      pauseSeconds 0.1
       timeAction "Makes rice" $ do
         timeAction "Cooks rice" $ pauseSeconds 0.5
         timeAction "Serves rice" $ pauseSeconds 0.2
+      pauseSeconds 0.3
 ```
 
-<img alt="Parallel timing example" src={useBaseUrl('img/timing_parallel.gif')} />
+<video width="100%" controls autoplay="true" muted="true">
+  <source src="/img/timing_parallel.webm" type="video/webm"></source>
+Your browser does not support the video tag.
+</video>
 
 ## Advanced configuration
 
