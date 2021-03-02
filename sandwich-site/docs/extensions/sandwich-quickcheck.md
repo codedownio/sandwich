@@ -1,6 +1,6 @@
 ---
 id: sandwich-quickcheck
-title: sandwich-quickcheck
+title: QuickCheck integration
 ---
 
 Sandwich quickcheck

@@ -1,6 +1,6 @@
 ---
 id: sandwich-webdriver
-title: Sandwich Selenium integration
+title: Selenium integration
 ---
 
 Setting up Selenium tests normally requires manual work to obtain the Selenium server JAR file and a driver program for your browser, launch the server, and connect to the server with your client library. It can be error-prone to make sure the versions are compatible and everything runs smoothly.

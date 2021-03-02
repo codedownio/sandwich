@@ -1,6 +1,6 @@
 ---
 id: sandwich-slack
-title: sandwich-slack
+title: Slack integration
 ---
 
 Sandwich slack

@@ -17,7 +17,7 @@ You can select a test timer implementation you use in the Sandwich options. The 
 
 The simplest use of timing occurs when we don't have any `parallel` stuff going on, so the tests all run in a single thread. To deal with multiple threads, see the [profiles](#profiles) section.
 
-First of all, every node in the test tree is timed by default. Thus, the "describe" and "it" nodes in the example below will be timed. You can prevent this by changing the [node options](TODO).
+First of all, every node in the test tree is timed by default. Thus, the "describe" and "it" nodes in the example below will be timed. You can prevent this by changing the [node options](/docs/node_options).
 
 In addition, you can time arbitrary blocks of code using the `timeAction` function. This function is a `bracket_` style combinator that can be used to wrap an action. In the example below, we use it to wrap some sub-steps within a test.
 
@@ -67,14 +67,3 @@ timingParallelDemo = parallel $ do
 ```
 
 <img alt="Parallel timing example" src={useBaseUrl('img/timing_parallel.gif')} />
-
-
-## The timing functions
-
-You can introduce timing either at the `Spec` level or at the test/`ExampleT` level. Doing it at the spec level involves introducing a node in your test tree whose entire purpose is to measure the time of its subtree. Doing it at the test level involves wrapping an action in a `bracket_` style function that records the timing. These options are explained in more detail below.
-
-
-
-### Using a custom profile
-
-
