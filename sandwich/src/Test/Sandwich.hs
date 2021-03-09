@@ -114,7 +114,8 @@ runSandwich' options spec' = do
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of
         NullTestTimer -> spec'
-        _ -> after' (defaultNodeOptions { nodeOptionsRecordTime = False }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
+        _ -> after' (defaultNodeOptions { nodeOptionsRecordTime = False
+                                        , nodeOptionsCreateFolder = False }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
   rts <- startSandwichTree' baseContext options spec
 
