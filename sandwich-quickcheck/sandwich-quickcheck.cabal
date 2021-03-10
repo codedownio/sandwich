@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6c7703b99916e0543998d5ecda40940232dc2384f249544ac7cf011165fca1e0
+-- hash: 9785ad550b5f4c9d89437865219abe393c1a0352818b85b624984d9a19d70dac
 
 name:           sandwich-quickcheck
 version:        0.1.0.0
@@ -13,7 +13,7 @@ homepage:       https://github.com/githubuser/sandwich-quickcheck#readme
 bug-reports:    https://github.com/githubuser/sandwich-quickcheck/issues
 author:         Tom McLaughlin
 maintainer:     example@example.com
-copyright:      2020 Tom McLaughlin
+copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -37,7 +37,7 @@ library
       QuickCheck
     , aeson
     , async
-    , base >=4.7 && <5
+    , base
     , containers
     , convertible
     , data-default
@@ -46,7 +46,6 @@ library
     , filepath
     , http-client
     , http-conduit
-    , interpolate
     , lifted-base
     , monad-control
     , monad-logger
@@ -58,6 +57,7 @@ library
     , safe
     , safe-exceptions
     , sandwich
+    , string-interpolate
     , temporary
     , text
     , time
@@ -79,7 +79,7 @@ executable sandwich-quickcheck-exe
       QuickCheck
     , aeson
     , async
-    , base >=4.7 && <5
+    , base
     , containers
     , convertible
     , data-default
@@ -88,7 +88,6 @@ executable sandwich-quickcheck-exe
     , filepath
     , http-client
     , http-conduit
-    , interpolate
     , lifted-base
     , monad-control
     , monad-logger
@@ -101,6 +100,7 @@ executable sandwich-quickcheck-exe
     , safe-exceptions
     , sandwich
     , sandwich-quickcheck
+    , string-interpolate
     , temporary
     , text
     , time
@@ -123,7 +123,7 @@ test-suite sandwich-quickcheck-test
       QuickCheck
     , aeson
     , async
-    , base >=4.7 && <5
+    , base
     , containers
     , convertible
     , data-default
@@ -132,7 +132,6 @@ test-suite sandwich-quickcheck-test
     , filepath
     , http-client
     , http-conduit
-    , interpolate
     , lifted-base
     , monad-control
     , monad-logger
@@ -145,6 +144,7 @@ test-suite sandwich-quickcheck-test
     , safe-exceptions
     , sandwich
     , sandwich-quickcheck
+    , string-interpolate
     , temporary
     , text
     , time
