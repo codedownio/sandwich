@@ -152,4 +152,11 @@ contextNestedDepsDemo = describe "Nested dependencies" $ do
         debug [i|Got server: #{s}|]
 ```
 
+Note that it's usually easiest to let GHC infer the type signature of `introduceServer`. If you do need to write out the type signature, it can be a little bit verbose since it needs to use the underlying context constructors and put appropriate constraints on the base monad. For this example, the signature for this example might look like this:
+
+```haskell
+introduceServer :: (HasDatabase context, MonadIO m, MonadBaseControl IO m)
+  => SpecFree (LabelValue "server" Server :> context) m () -> SpecFree context m ()
+```
+
 The full code for this example can be found [here](https://github.com/thomasjm/sandwich/blob/master/sandwich-demos/demos/context-nested-dependencies/Main.hs).
