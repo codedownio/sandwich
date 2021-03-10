@@ -43,7 +43,7 @@ detectPlatform =  case SI.os of
 
 detectChromeVersion :: IO (Either T.Text ChromeVersion)
 detectChromeVersion = leftOnException $ runExceptT $ do
-  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell [i|google-chrome --version | grep -Eo "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"|]) ""
+  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell "google-chrome --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"") ""
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
@@ -80,7 +80,7 @@ getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Windows = [i|https
 
 detectFirefoxVersion :: IO (Either T.Text FirefoxVersion)
 detectFirefoxVersion = leftOnException $ runExceptT $ do
-  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell [i|firefox --version | grep -Eo "[0-9]+\.[0-9]+(\.[0-9]+)?"|]) ""
+  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell "firefox --version | grep -Eo \"[0-9]+\\.[0-9]+(\\.[0-9]+)?\"") ""
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse firefox version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
