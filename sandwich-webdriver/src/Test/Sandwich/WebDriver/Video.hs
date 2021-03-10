@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, FlexibleContexts, OverloadedStrings, NamedFieldPuns, ViewPatterns #-}
--- |
 
 module Test.Sandwich.WebDriver.Video (
   startVideoRecording

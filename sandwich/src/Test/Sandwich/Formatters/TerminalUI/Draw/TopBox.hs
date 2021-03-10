@@ -27,11 +27,12 @@ topBox app = hBox [columnPadding settingsColumn
                   , columnPadding otherActionsColumn]
   where
     settingsColumn = keybindingBox [keyIndicator (L.intersperse '/' [unKChar nextKey, unKChar previousKey, '↑', '↓']) "Navigate"
-                                   , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
-                                   , keyIndicator (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold nodes"
+                                   , keyIndicatorHasSelected app (showKeys toggleKeys) "Open/close node"
+                                   , keyIndicatorHasSelectedOpen app "Control-v/Meta-v" "Scroll node"
+                                   , keyIndicatorHasSelected app (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold node"
                                    , keyIndicator "Meta + [0-9]" "Unfold top # nodes"
-                                   , keyIndicatorHasSelected app (showKeys toggleKeys) "Toggle selected"
-                                   , keyIndicatorHasSelected app "Control-v/Meta-v" "Scroll item"]
+                                   , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
+                                   ]
 
     actionsColumn = keybindingBox [hBox [str "["
                                          , highlightKeyIfPredicate selectedTestRunning app (str $ showKey cancelSelectedKey)
@@ -144,6 +145,8 @@ keyIndicator' key label = hBox [str "[", withAttr hotkeyAttr $ str key, str "] "
 
 keyIndicatorHasSelected app = keyIndicatorContextual app someTestSelected
 
+keyIndicatorHasSelectedOpen app = keyIndicatorContextual app selectedTestToggled
+
 keyIndicatorContextual app p key msg = case p app of
   True -> hBox [str "[", withAttr hotkeyAttr $ str key, str "] ", withAttr hotkeyMessageAttr $ str msg]
   False -> hBox [str "[", withAttr disabledHotkeyAttr $ str key, str "] ", withAttr disabledHotkeyMessageAttr $ str msg]
@@ -164,6 +167,10 @@ selectedTestHasCallStack s = case L.listSelectedElement (s ^. appMainList) of
   Just (_, MainListElem {..}) -> case status of
     (Done _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
     _ -> False
+
+selectedTestToggled s = case L.listSelectedElement (s ^. appMainList) of
+  Nothing -> False
+  Just (_, MainListElem {..}) -> toggled
 
 noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
