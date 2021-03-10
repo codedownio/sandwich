@@ -4,7 +4,7 @@ github:              "githubuser/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "example@example.com"
-copyright:           "2020 Tom McLaughlin"
+copyright:           "2021 Tom McLaughlin"
 
 extra-source-files:
 - README.md
@@ -20,11 +20,10 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/sandwich#readme>
 
 dependencies:
-- QuickCheck
 - aeson
 - ansi-terminal
 - async
-- base >= 4.7 && < 5
+- base
 - colour
 - containers
 - brick
@@ -44,7 +43,6 @@ dependencies:
 - optparse-applicative
 - pretty-show
 - process
-- random
 - safe
 - safe-exceptions
 - stm

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 90fe267c75a75151c6f65d36ba14f3f477dbe8f1a771b89cd9508b0798f73a66
+-- hash: be2a99b78860b1d0d9651c3bcaf5d7b6d5c3ac5233074f3823cefb35b0b340f2
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -35,36 +35,12 @@ library
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , containers
-    , convertible
-    , data-default
-    , directory
+      base
     , exceptions
-    , filepath
-    , http-client
-    , http-conduit
     , interpolate
-    , lifted-base
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
     , random
-    , retry
-    , safe
-    , safe-exceptions
     , sandwich
-    , temporary
-    , text
     , time
-    , transformers
-    , transformers-base
-    , unix
-    , unordered-containers
   default-language: Haskell2010
 
 executable basic
@@ -76,37 +52,13 @@ executable basic
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , containers
-    , convertible
-    , data-default
-    , directory
+      base
     , exceptions
-    , filepath
-    , http-client
-    , http-conduit
     , interpolate
-    , lifted-base
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
     , random
-    , retry
-    , safe
-    , safe-exceptions
     , sandwich
     , sandwich-demos
-    , temporary
-    , text
     , time
-    , transformers
-    , transformers-base
-    , unix
-    , unordered-containers
   default-language: Haskell2010
 
 executable timing
@@ -118,37 +70,13 @@ executable timing
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , containers
-    , convertible
-    , data-default
-    , directory
+      base
     , exceptions
-    , filepath
-    , http-client
-    , http-conduit
     , interpolate
-    , lifted-base
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
     , random
-    , retry
-    , safe
-    , safe-exceptions
     , sandwich
     , sandwich-demos
-    , temporary
-    , text
     , time
-    , transformers
-    , transformers-base
-    , unix
-    , unordered-containers
   default-language: Haskell2010
 
 executable timing-parallel
@@ -160,37 +88,13 @@ executable timing-parallel
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , containers
-    , convertible
-    , data-default
-    , directory
+      base
     , exceptions
-    , filepath
-    , http-client
-    , http-conduit
     , interpolate
-    , lifted-base
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
     , random
-    , retry
-    , safe
-    , safe-exceptions
     , sandwich
     , sandwich-demos
-    , temporary
-    , text
     , time
-    , transformers
-    , transformers-base
-    , unix
-    , unordered-containers
   default-language: Haskell2010
 
 executable tui
@@ -202,35 +106,11 @@ executable tui
   default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , containers
-    , convertible
-    , data-default
-    , directory
+      base
     , exceptions
-    , filepath
-    , http-client
-    , http-conduit
     , interpolate
-    , lifted-base
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
     , random
-    , retry
-    , safe
-    , safe-exceptions
     , sandwich
     , sandwich-demos
-    , temporary
-    , text
     , time
-    , transformers
-    , transformers-base
-    , unix
-    , unordered-containers
   default-language: Haskell2010

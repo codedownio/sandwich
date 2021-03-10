@@ -4,7 +4,7 @@ github:              "thomasjm/sandwich-slack"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
-copyright:           "2020 Tom McLaughlin"
+copyright:           "2021 Tom McLaughlin"
 
 extra-source-files:
 - README.md
@@ -21,11 +21,9 @@ description:         Please see the README on GitHub at <https://github.com/thom
 
 dependencies:
 - aeson
-- aeson-qq
-- base >= 4.7 && < 5
+- base
 - bytestring
 - containers
-- filepath
 - interpolate
 - lens
 - lens-aeson

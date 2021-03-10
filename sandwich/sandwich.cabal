@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c6a265172f1b18c1be16465ce3bf94849a663d309b0209b2c29108c2cf0b3530
+-- hash: 78349f7c857a46939a00821027fc2b5ca9caad2d9075aaf6f7925e9673bcc27d
 
 name:           sandwich
 version:        0.1.0.0
@@ -13,7 +13,7 @@ homepage:       https://github.com/githubuser/sandwich#readme
 bug-reports:    https://github.com/githubuser/sandwich/issues
 author:         Tom McLaughlin
 maintainer:     example@example.com
-copyright:      2020 Tom McLaughlin
+copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -82,11 +82,10 @@ library
       src
   ghc-options: -W
   build-depends:
-      QuickCheck
-    , aeson
+      aeson
     , ansi-terminal
     , async
-    , base >=4.7 && <5
+    , base
     , brick
     , bytestring
     , colour
@@ -106,7 +105,6 @@ library
     , optparse-applicative
     , pretty-show
     , process
-    , random
     , safe
     , safe-exceptions
     , stm
@@ -128,11 +126,10 @@ executable sandwich-exe
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck
-    , aeson
+      aeson
     , ansi-terminal
     , async
-    , base >=4.7 && <5
+    , base
     , brick
     , bytestring
     , colour
@@ -152,7 +149,6 @@ executable sandwich-exe
     , optparse-applicative
     , pretty-show
     , process
-    , random
     , safe
     , safe-exceptions
     , sandwich
@@ -180,11 +176,10 @@ executable sandwich-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck
-    , aeson
+      aeson
     , ansi-terminal
     , async
-    , base >=4.7 && <5
+    , base
     , brick
     , bytestring
     , colour
@@ -204,7 +199,6 @@ executable sandwich-test
     , optparse-applicative
     , pretty-show
     , process
-    , random
     , safe
     , safe-exceptions
     , sandwich
@@ -233,11 +227,10 @@ test-suite sandwich-test-suite
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      QuickCheck
-    , aeson
+      aeson
     , ansi-terminal
     , async
-    , base >=4.7 && <5
+    , base
     , brick
     , bytestring
     , colour
@@ -257,7 +250,6 @@ test-suite sandwich-test-suite
     , optparse-applicative
     , pretty-show
     , process
-    , random
     , safe
     , safe-exceptions
     , sandwich

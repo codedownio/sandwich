@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f6c2ec1dfd9857804be249118f2eaa56659dd140fb438ae894abd9da41a6bfe2
+-- hash: 84ed7e75ffe455815175f7e7eef70e987766c4ebb1a059eab1c095922d4ce6ee
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -13,7 +13,7 @@ homepage:       https://github.com/thomasjm/sandwich-slack#readme
 bug-reports:    https://github.com/thomasjm/sandwich-slack/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2020 Tom McLaughlin
+copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -39,11 +39,9 @@ library
   ghc-options: -W
   build-depends:
       aeson
-    , aeson-qq
-    , base >=4.7 && <5
+    , base
     , bytestring
     , containers
-    , filepath
     , interpolate
     , lens
     , lens-aeson
@@ -68,11 +66,9 @@ executable sandwich-slack-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , aeson-qq
-    , base >=4.7 && <5
+    , base
     , bytestring
     , containers
-    , filepath
     , interpolate
     , lens
     , lens-aeson
@@ -99,11 +95,9 @@ test-suite sandwich-slack-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , aeson-qq
-    , base >=4.7 && <5
+    , base
     , bytestring
     , containers
-    , filepath
     , interpolate
     , lens
     , lens-aeson

@@ -4,7 +4,7 @@ github:              "githubuser/sandwich-webdriver"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "example@example.com"
-copyright:           "2020 Tom McLaughlin"
+copyright:           "2021 Tom McLaughlin"
 
 extra-source-files:
 - README.md
@@ -21,8 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - aeson
-- async
-- base >= 4.7 && < 5
+- base
 - containers
 - convertible
 - data-default
@@ -50,7 +49,6 @@ dependencies:
 - text
 - time
 - transformers
-- transformers-base
 - unix
 - unordered-containers
 - vector
