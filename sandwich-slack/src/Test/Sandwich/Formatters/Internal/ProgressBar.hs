@@ -13,7 +13,7 @@ import Data.Aeson.Lens
 import qualified Data.ByteString.Lazy as BL
 import Data.Char
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Int
 import Test.Sandwich.Formatters.Internal.Core

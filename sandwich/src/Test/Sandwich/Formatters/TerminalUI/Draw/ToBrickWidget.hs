@@ -10,7 +10,7 @@ import Brick
 import Brick.Widgets.Border
 import Control.Exception.Safe
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Time.Clock
 import GHC.Stack
 import Test.Sandwich.Formatters.Common.Util

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 78349f7c857a46939a00821027fc2b5ca9caad2d9075aaf6f7925e9673bcc27d
+-- hash: 1df75fe624ef558303c0d8be9c31665b4bd2dc30a0eb0f67eb5eae3f64163e66
 
 name:           sandwich
 version:        0.1.0.0
@@ -94,7 +94,6 @@ library
     , exceptions
     , filepath
     , free
-    , interpolate
     , lens
     , lifted-async
     , microlens
@@ -108,6 +107,7 @@ library
     , safe
     , safe-exceptions
     , stm
+    , string-interpolate
     , text
     , time
     , transformers
@@ -138,7 +138,6 @@ executable sandwich-exe
     , exceptions
     , filepath
     , free
-    , interpolate
     , lens
     , lifted-async
     , microlens
@@ -153,6 +152,7 @@ executable sandwich-exe
     , safe-exceptions
     , sandwich
     , stm
+    , string-interpolate
     , text
     , time
     , transformers
@@ -188,7 +188,6 @@ executable sandwich-test
     , exceptions
     , filepath
     , free
-    , interpolate
     , lens
     , lifted-async
     , microlens
@@ -203,6 +202,7 @@ executable sandwich-test
     , safe-exceptions
     , sandwich
     , stm
+    , string-interpolate
     , text
     , time
     , transformers
@@ -239,7 +239,6 @@ test-suite sandwich-test-suite
     , exceptions
     , filepath
     , free
-    , interpolate
     , lens
     , lifted-async
     , microlens
@@ -254,6 +253,7 @@ test-suite sandwich-test-suite
     , safe-exceptions
     , sandwich
     , stm
+    , string-interpolate
     , text
     , time
     , transformers

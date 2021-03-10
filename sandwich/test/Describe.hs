@@ -11,7 +11,7 @@ module Describe where
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich
 import TestUtil

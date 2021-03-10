@@ -22,9 +22,11 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base
 - exceptions
-- interpolate
+- lifted-base
+- monad-control
 - random
 - sandwich
+- string-interpolate
 - time
 
 default-extensions:
@@ -49,6 +51,24 @@ executables:
   basic:
     main: Main.hs
     source-dirs: demos/basic
+    dependencies:
+    - sandwich-demos
+
+  contexts:
+    main: Main.hs
+    source-dirs: demos/contexts
+    dependencies:
+    - sandwich-demos
+
+  context-dependencies:
+    main: Main.hs
+    source-dirs: demos/context-dependencies
+    dependencies:
+    - sandwich-demos
+
+  context-nested-dependencies:
+    main: Main.hs
+    source-dirs: demos/context-nested-dependencies
     dependencies:
     - sandwich-demos
 

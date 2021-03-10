@@ -40,12 +40,16 @@ module.exports = {
           title: 'Docs',
           items: [
             {
-              label: 'Style Guide',
+              label: 'Introduction',
               to: 'docs/',
             },
             {
-              label: 'Second Doc',
-              to: 'docs/doc2/',
+              label: 'Slack integration',
+              to: 'docs/extensions/sandwich-slack',
+            },
+            {
+              label: 'Selenium integration',
+              to: 'docs/extensions/sandwich-webdriver',
             },
           ],
         },

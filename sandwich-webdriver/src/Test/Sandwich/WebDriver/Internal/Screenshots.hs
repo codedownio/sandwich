@@ -8,7 +8,7 @@ import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.Map as M
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Network.HTTP.Client

@@ -24,7 +24,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import qualified Data.List as L
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import Safe
 import System.Directory

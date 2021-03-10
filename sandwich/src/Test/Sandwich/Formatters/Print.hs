@@ -20,7 +20,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Time.Clock
 import System.IO
 import Test.Sandwich.Formatters.Common.Count

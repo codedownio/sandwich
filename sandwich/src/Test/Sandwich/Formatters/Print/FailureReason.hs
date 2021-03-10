@@ -11,7 +11,7 @@ module Test.Sandwich.Formatters.Print.FailureReason (
 import Control.Exception.Safe
 import Control.Monad.Reader
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import System.IO
 import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.PrintPretty

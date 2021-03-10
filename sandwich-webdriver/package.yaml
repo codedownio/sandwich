@@ -31,7 +31,6 @@ dependencies:
 - http-client
 - http-client-tls
 - http-conduit
-- interpolate
 - lifted-base
 - microlens
 - microlens-aeson
@@ -45,6 +44,7 @@ dependencies:
 - safe
 - safe-exceptions
 - sandwich
+- string-interpolate
 - temporary
 - text
 - time

@@ -14,7 +14,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Writer
 import Data.Foldable
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import System.Exit
 import Test.Sandwich
@@ -87,7 +87,7 @@ statusToResult (_, Done _ _ result) = result
 mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y
   | x == y = return ()
-  | otherwise = error [i|Expected #{y} but got #{x}|]
+  | otherwise = error [i|Expected #{show y} but got #{show x}|]
 
 waitUntilRunning status = atomically $ do
   readTVar status >>= \case

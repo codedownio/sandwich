@@ -10,7 +10,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as M
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types

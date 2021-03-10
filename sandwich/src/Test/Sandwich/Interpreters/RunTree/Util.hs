@@ -81,7 +81,7 @@ nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToL
       | numSiblings < 100000000 = 8
       | otherwise = 15
 
-    paddedNumber = printf [i|%0#{paddingNeeded}d|] indexInParent
+    paddedNumber = printf [i|%0#{paddingNeeded :: Int}d|] indexInParent
 
     padding = if | numSiblings == 1 -> ""
                  | otherwise -> paddedNumber <> "_"

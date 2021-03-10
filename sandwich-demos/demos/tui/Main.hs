@@ -8,7 +8,7 @@ import Common
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Time.Clock
 import System.Random
 import Test.Sandwich

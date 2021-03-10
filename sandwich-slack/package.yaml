@@ -24,7 +24,6 @@ dependencies:
 - base
 - bytestring
 - containers
-- interpolate
 - lens
 - lens-aeson
 - monad-logger
@@ -33,6 +32,7 @@ dependencies:
 - safe-exceptions
 - sandwich
 - stm
+- string-interpolate
 - text
 - time
 - vector

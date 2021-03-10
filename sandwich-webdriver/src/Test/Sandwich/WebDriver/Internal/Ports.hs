@@ -7,7 +7,7 @@ module Test.Sandwich.WebDriver.Internal.Ports (
 import Control.Exception
 import Control.Retry
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Network.Socket
 import System.Random (randomRIO)

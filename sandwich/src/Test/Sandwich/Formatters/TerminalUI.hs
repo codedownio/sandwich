@@ -35,7 +35,7 @@ import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Time
 import qualified Data.Vector as Vec
 import GHC.Stack

@@ -72,7 +72,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Either
 import Data.IORef
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import System.Directory
 import System.FilePath
 import System.Posix.Signals

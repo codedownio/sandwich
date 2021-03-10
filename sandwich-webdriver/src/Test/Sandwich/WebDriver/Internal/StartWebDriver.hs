@@ -30,7 +30,7 @@ import Data.Function
 import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V

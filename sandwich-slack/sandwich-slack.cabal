@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 84ed7e75ffe455815175f7e7eef70e987766c4ebb1a059eab1c095922d4ce6ee
+-- hash: 0a7633e468b90cd9a83fbd31f89b52cb2cf3899454b0f18fddd598af01399419
 
 name:           sandwich-slack
 version:        0.1.0.0
@@ -42,7 +42,6 @@ library
     , base
     , bytestring
     , containers
-    , interpolate
     , lens
     , lens-aeson
     , monad-logger
@@ -51,6 +50,7 @@ library
     , safe-exceptions
     , sandwich
     , stm
+    , string-interpolate
     , text
     , time
     , vector
@@ -69,7 +69,6 @@ executable sandwich-slack-exe
     , base
     , bytestring
     , containers
-    , interpolate
     , lens
     , lens-aeson
     , monad-logger
@@ -79,6 +78,7 @@ executable sandwich-slack-exe
     , sandwich
     , sandwich-slack
     , stm
+    , string-interpolate
     , text
     , time
     , vector
@@ -98,7 +98,6 @@ test-suite sandwich-slack-test
     , base
     , bytestring
     , containers
-    , interpolate
     , lens
     , lens-aeson
     , monad-logger
@@ -108,6 +107,7 @@ test-suite sandwich-slack-test
     , sandwich
     , sandwich-slack
     , stm
+    , string-interpolate
     , text
     , time
     , vector

@@ -7,7 +7,7 @@ import Control.Exception
 import Data.Default
 import Data.IORef
 import qualified Data.Map as M
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Network.HTTP.Client (Manager)
 import System.IO

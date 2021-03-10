@@ -15,7 +15,7 @@ import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Reader
 import Data.Bits as B
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import qualified Graphics.X11.Xinerama as X
 import qualified Graphics.X11.Xlib.Display as X

@@ -24,7 +24,7 @@ import Control.Monad.Reader
 import Data.Foldable
 import qualified Data.Map as M
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import System.IO
 import Test.Sandwich.Formatters.Print.Common

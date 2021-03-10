@@ -6,7 +6,7 @@
 module Test.Sandwich.Formatters.TerminalUI.OpenInEditor where
 
 import Control.Monad
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import System.Environment

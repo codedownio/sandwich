@@ -31,7 +31,6 @@ dependencies:
 - filepath
 - http-client
 - http-conduit
-- interpolate
 - lifted-base
 - monad-control
 - monad-logger
@@ -44,6 +43,7 @@ dependencies:
 - safe
 - safe-exceptions
 - sandwich
+- string-interpolate
 - temporary
 - text
 - time

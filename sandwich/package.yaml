@@ -32,7 +32,6 @@ dependencies:
 - exceptions
 - filepath
 - free
-- interpolate
 - lens
 - lifted-async
 - microlens
@@ -46,6 +45,7 @@ dependencies:
 - safe
 - safe-exceptions
 - stm
+- string-interpolate
 - text
 - time
 - transformers

@@ -14,7 +14,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import System.Exit
 import System.FilePath
 import System.IO

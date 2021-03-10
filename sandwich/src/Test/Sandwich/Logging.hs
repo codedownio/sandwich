@@ -11,7 +11,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Text
 import GHC.Stack
 import System.Exit

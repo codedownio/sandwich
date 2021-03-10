@@ -17,7 +17,7 @@ module Test.Sandwich.Expectations (
 import Control.Exception.Safe
 import Control.Monad.IO.Class
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Test.Sandwich.Types.Spec
@@ -109,4 +109,4 @@ shouldThrow action f = do
   liftIO (try action) >>= \case
     Right _ -> expectationFailure [i|Expected exception to be thrown.|]
     Left e | f e -> return ()
-    Left e -> expectationFailure [i|Predicate failed on expected exception: '#{e}'|]
+    Left e -> expectationFailure [i|Predicate failed on expected exception: '#{show e}'|]

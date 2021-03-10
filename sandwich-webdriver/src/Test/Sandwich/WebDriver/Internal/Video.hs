@@ -5,7 +5,7 @@ module Test.Sandwich.WebDriver.Internal.Video where
 
 import Control.Monad.IO.Class
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import System.Environment
 import System.Process
 import Test.Sandwich.WebDriver.Internal.Types

@@ -18,7 +18,7 @@ import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import Data.Convertible
 import qualified Data.HashMap.Strict as HM
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS

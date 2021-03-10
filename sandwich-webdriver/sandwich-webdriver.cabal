@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f44e7ec2b778e2f071bf9e410aec7e355a853a68ec94c3c3e5efd932ebe6ae2c
+-- hash: 5ca9eb9c62bd942d26a5777a457287bb902b4360d48052d9197a13b75ac16b72
 
 name:           sandwich-webdriver
 version:        0.1.0.0
@@ -63,7 +63,6 @@ library
     , http-client
     , http-client-tls
     , http-conduit
-    , interpolate
     , lifted-base
     , microlens
     , microlens-aeson
@@ -77,6 +76,7 @@ library
     , safe
     , safe-exceptions
     , sandwich
+    , string-interpolate
     , temporary
     , text
     , time
@@ -109,7 +109,6 @@ executable sandwich-webdriver-exe
     , http-client
     , http-client-tls
     , http-conduit
-    , interpolate
     , lifted-base
     , microlens
     , microlens-aeson
@@ -124,6 +123,7 @@ executable sandwich-webdriver-exe
     , safe-exceptions
     , sandwich
     , sandwich-webdriver
+    , string-interpolate
     , temporary
     , text
     , time
@@ -156,7 +156,6 @@ test-suite sandwich-webdriver-test
     , http-client
     , http-client-tls
     , http-conduit
-    , interpolate
     , lifted-base
     , microlens
     , microlens-aeson
@@ -171,6 +170,7 @@ test-suite sandwich-webdriver-test
     , safe-exceptions
     , sandwich
     , sandwich-webdriver
+    , string-interpolate
     , temporary
     , text
     , time

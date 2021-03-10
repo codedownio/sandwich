@@ -19,7 +19,7 @@ import Control.Monad.Trans.Writer
 import Data.Either
 import Data.Foldable
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import GHC.Stack
 import System.Exit
 import Test.Sandwich

@@ -7,7 +7,7 @@ module Test.Sandwich.Formatters.Internal.Markdown where
 
 import Data.Function
 import qualified Data.List as L
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Test.Sandwich

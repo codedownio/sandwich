@@ -12,7 +12,7 @@ import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger (LogLevel(..))
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.FailureReport
@@ -85,7 +85,7 @@ cancellingIntroduce = do
 
 manyRows :: TopSpec
 manyRows = do
-  forM_ [0..100] $ \n ->
+  forM_ [(0 :: Int)..100] $ \n ->
     it [i|does the thing #{n}|] (2 `shouldBe` 2)
 
 simple :: TopSpec
@@ -191,7 +191,7 @@ longLogs = do
                             Reason {} -> True
                             _ -> False) (2 `shouldBe` 3)
   it "does thing 3" $ do
-    forM_ [0..200] $ \n -> debug [i|Log entry #{n}|]
+    forM_ [(0 :: Int)..200] $ \n -> debug [i|Log entry #{n}|]
   it "does thing 4" $ return ()
   it "does thing 5" $ return ()
 

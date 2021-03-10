@@ -14,7 +14,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import System.Directory
@@ -137,10 +137,12 @@ getChromeDriverPath toolsDir (ChromeDriverVersion (w, x, y, z)) = [i|#{toolsDir}
 getGeckoDriverPath :: FilePath -> GeckoDriverVersion -> FilePath
 getGeckoDriverPath toolsDir (GeckoDriverVersion (x, y, z)) = [i|#{toolsDir}/geckodrivers/#{x}.#{y}.#{z}/#{geckoDriverExecutable}|]
 
+chromeDriverExecutable :: T.Text
 chromeDriverExecutable = case detectPlatform of
   Windows -> "chromedriver.exe"
   _ -> "chromedriver"
 
+geckoDriverExecutable :: T.Text
 geckoDriverExecutable = case detectPlatform of
   Windows -> "geckodriver.exe"
   _ -> "geckodriver"

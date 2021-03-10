@@ -16,7 +16,7 @@ import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import GHC.Stack

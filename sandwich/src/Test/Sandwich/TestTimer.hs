@@ -21,7 +21,7 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.List as L
 import qualified Data.Sequence as S
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Clock.POSIX

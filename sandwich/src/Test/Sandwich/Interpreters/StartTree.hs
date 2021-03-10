@@ -24,7 +24,7 @@ import Data.IORef
 import qualified Data.List as L
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Data.Time.Clock
 import Data.Typeable
@@ -138,13 +138,13 @@ startTree node@(RunNodeDescribe {..}) ctx' = do
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
       0 -> return Success
-      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
+      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then ("child" :: T.Text) else "children"} failed|])
 startTree node@(RunNodeParallel {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeChildren ctx) >>= \case
       0 -> return Success
-      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then "child" else "children"} failed|])
+      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then ("child" :: T.Text) else "children"} failed|])
 startTree node@(RunNodeIt {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do

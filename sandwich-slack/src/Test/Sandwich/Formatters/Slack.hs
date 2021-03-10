@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Test.Sandwich.Formatters.Slack (
   SlackFormatter
@@ -40,7 +41,7 @@ import Data.Function
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Data.Time
 import GHC.Int

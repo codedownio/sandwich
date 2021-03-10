@@ -46,7 +46,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
-import Data.String.Interpolate.IsString
+import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Class
