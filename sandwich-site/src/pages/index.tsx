@@ -13,32 +13,27 @@ import { Carousel } from "react-responsive-carousel";
 
 const features = [
   {
-    title: 'Easy to Use',
-    imageUrl: 'img/undraw_docusaurus_mountain.svg',
-    description: (
-      <>
-          Docusaurus was designed from the ground up to be easily installed and
-          used to get your website up and running quickly.
-      </>
-    ),
-  },
-  {
-    title: 'Focus on What Matters',
+    title: 'Powerful formatters',
     imageUrl: 'img/undraw_docusaurus_tree.svg',
     description: (
       <>
-          Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-          ahead and move your docs into the <code>docs</code> directory.
+          Use the terminal UI formatter to inspect test results, re-run selected tests, or jump straight to test sources in your editor.
       </>
     ),
-  },
-  {
-    title: 'Powered by React',
+  }, {
+    title: 'Easy profiling',
+    imageUrl: 'img/undraw_docusaurus_mountain.svg',
+    description: (
+      <>
+          Automatically record timing data for every test suite and visualize it as a flamegraph.
+      </>
+    ),
+  }, {
+    title: 'Zero-config Selenium tests',
     imageUrl: 'img/undraw_docusaurus_react.svg',
     description: (
       <>
-          Extend or customize your website layout by reusing React. Docusaurus can
-          be extended while reusing the same header and footer.
+          Automatically obtain Selenium driver binaries to match your Chrome or Firefox version, run tests in graphical or headless mode, and even record videos.
       </>
     ),
   },
