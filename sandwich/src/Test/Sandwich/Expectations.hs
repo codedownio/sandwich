@@ -99,14 +99,14 @@ textShouldNotContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
 t `textShouldNotContain` txt = ((T.unpack t) :: String) `shouldNotContain` (T.unpack txt)
 
 -- | Asserts that an IO action should throw an exception.
-shouldThrow :: (HasCallStack, MonadThrow m, MonadIO m, Exception e) =>
-  IO a
+shouldThrow :: (HasCallStack, MonadThrow m, MonadCatch m, MonadIO m, Exception e) =>
+  m a
   -- ^ The action to run.
   -> (e -> Bool)
   -- ^ A predicate on the exception to determine if it's as expected.
   -> m ()
 shouldThrow action f = do
-  liftIO (try action) >>= \case
+  try action >>= \case
     Right _ -> expectationFailure [i|Expected exception to be thrown.|]
     Left e | f e -> return ()
-    Left e -> expectationFailure [i|Predicate failed on expected exception: '#{show e}'|]
+    Left e -> expectationFailure [i|Exception didn't match predicate: '#{show e}'|]
