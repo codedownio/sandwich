@@ -72,6 +72,12 @@ executables:
     dependencies:
     - sandwich-demos
 
+  discover:
+    main: Main.hs
+    source-dirs: demos/discover
+    dependencies:
+    - sandwich-demos
+
   tui:
     main: Main.hs
     source-dirs: demos/tui
