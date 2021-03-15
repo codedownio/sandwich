@@ -46,7 +46,6 @@ dependencies:
 - safe-exceptions
 - stm
 - string-interpolate
-- template-haskell
 - text
 - time
 - transformers
@@ -55,6 +54,10 @@ dependencies:
 - unix
 - vector
 - vty
+
+# For spec discovery. Move to its own package?
+- template-haskell
+- haskell-src-exts
 
 library:
   source-dirs: src
@@ -73,6 +76,7 @@ library:
     - Test.Sandwich.Formatters.TerminalUI
     - Test.Sandwich.Internal
     - Test.Sandwich.Internal.Formatters
+    - Test.Sandwich.TH
 
 executables:
   sandwich-exe:

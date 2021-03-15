@@ -3,20 +3,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.TH (
   getSpecFromFolder
+  , buildModuleMap
   ) where
 
 import Control.Monad
 import Data.Char
+import Data.Function
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import Safe
 import System.Directory
 import System.FilePath as F
+import Test.Sandwich.TH.HasMainFunction
+import Test.Sandwich.TH.ModuleMap
 import Test.Sandwich.Types.Spec hiding (location)
 
 
@@ -30,24 +38,57 @@ getSpecFromFolder' individualSpecHooks combiner = do
   dir <- runIO getCurrentDirectory
   filename <- loc_filename <$> location
   let folder = dropExtension (dir </> filename)
-  getSpecFromFolder'' folder individualSpecHooks combiner
 
-getSpecFromFolder'' :: F.FilePath -> Name -> Name -> Q Exp
-getSpecFromFolder'' folder individualSpecHooks combiner = do
+  Module _ (ModName moduleName) <- thisModule
+
+  let modulePrefix' = moduleName
+                    & T.pack
+                    & T.splitOn "."
+                    & initMay
+                    & fromMaybe []
+                    & T.intercalate "."
+                    & T.unpack
+  let modulePrefix = if modulePrefix' == "" then "" else modulePrefix' <> "."
+  moduleMap <- runIO $ buildModuleMap folder modulePrefix
+  let reverseModuleMap = M.fromList [(y, x) | (x, y) <- M.toList moduleMap]
+
+  getSpecFromFolder'' folder reverseModuleMap (moduleName <> ".") individualSpecHooks combiner
+
+getSpecFromFolder'' :: F.FilePath -> ReverseModuleMap -> String -> Name -> Name -> Q Exp
+getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks combiner = do
   items <- qRunIO $ L.sort <$> listDirectory folder
   specs <- (catMaybes <$>) $ forM items $ \item -> do
     isDirectory <- qRunIO $ doesDirectoryExist (folder </> item)
 
     if | isDirectory -> do
            qRunIO (doesFileExist (folder </> item <.> "hs")) >>= \case
-             False -> Just <$> getSpecFromFolder'' (folder </> item) individualSpecHooks combiner
+             False -> Just <$> getSpecFromFolder'' (folder </> item) reverseModuleMap (modulePrefix <> item <> ".") individualSpecHooks combiner
              True -> return Nothing -- Do nothing, allow the .hs file to be picked up separately
-       | takeExtension item == ".hs" ->
-           Just <$> [e|$(varE 'alterTopLevelNodeOptions) (\x -> x { nodeOptionsMainFunction = Just ($(conE 'NodeMainFunction) "asdf" (return ())) })
-                       $ $(varE individualSpecHooks) $(stringE item) $(varE $ mkName $ takeBaseName item ++ ".tests")|]
+       | takeExtension item == ".hs" -> do
+           let fullyQualifiedModule = modulePrefix <> takeBaseName item
+           case M.lookup fullyQualifiedModule reverseModuleMap of
+             Nothing -> do
+               reportError [i|Couldn't find module #{fullyQualifiedModule} in #{reverseModuleMap}|]
+               return Nothing
+             Just importedName -> do
+               alterNodeOptionsFn <- fileHasMainFunction (folder </> item) >>= \case
+                 True -> [e|(\x -> x { nodeOptionsMainFunction = Just ($(conE 'NodeMainFunction) fullyQualifiedModule $(varE $ mkName $ importedName <> ".main")) })|]
+                 False -> [e|id|]
+
+               Just <$> [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
+                           $ $(varE individualSpecHooks) $(stringE item) $(varE $ mkName $ importedName <> ".tests")|]
        | otherwise -> return Nothing
 
-  [e|$(varE combiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
+  let currentModule = modulePrefix
+                    & T.pack
+                    & T.stripSuffix "."
+                    & fromMaybe ""
+                    & T.unpack
+  alterNodeOptionsFn <- case M.lookup currentModule reverseModuleMap of
+    Nothing -> [e|id|]
+    Just importedName -> [e|(\x -> x { nodeOptionsMainFunction = Just ($(conE 'NodeMainFunction) currentModule $(varE $ mkName $ importedName <> ".main")) })|]
+  [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
+     $ $(varE combiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
 
 -- * Util
 

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 72a35ee96fa4cb9221b084088dec7edfc9c77fa6401290d2268e1384e0e86c60
+-- hash: a29afe10d3b01e2927d3d421a0a3162df0a7b24fe97a2ae21d8ba79924802823
 
 name:           sandwich
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.Internal.Formatters
+      Test.Sandwich.TH
   other-modules:
       Test.Sandwich.ArgParsing
       Test.Sandwich.Formatters.Common.Count
@@ -72,7 +73,8 @@ library
       Test.Sandwich.RunTree
       Test.Sandwich.Shutdown
       Test.Sandwich.TestTimer
-      Test.Sandwich.TH
+      Test.Sandwich.TH.HasMainFunction
+      Test.Sandwich.TH.ModuleMap
       Test.Sandwich.Types.General
       Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec
@@ -95,6 +97,7 @@ library
     , exceptions
     , filepath
     , free
+    , haskell-src-exts
     , lens
     , lifted-async
     , microlens
@@ -140,6 +143,7 @@ executable sandwich-discover
     , exceptions
     , filepath
     , free
+    , haskell-src-exts
     , lens
     , lifted-async
     , microlens
@@ -186,6 +190,7 @@ executable sandwich-exe
     , exceptions
     , filepath
     , free
+    , haskell-src-exts
     , lens
     , lifted-async
     , microlens
@@ -237,6 +242,7 @@ executable sandwich-test
     , exceptions
     , filepath
     , free
+    , haskell-src-exts
     , lens
     , lifted-async
     , microlens
@@ -289,6 +295,7 @@ test-suite sandwich-test-suite
     , exceptions
     , filepath
     , free
+    , haskell-src-exts
     , lens
     , lifted-async
     , microlens
