@@ -21,14 +21,14 @@ Sandwich gives you the tools to introduce (and gracefully tear down) contexts fo
 
 Sandwich provides some contexts automatically. For example, you can retrieve the on-disk folder for a given node by calling `getCurrentFolder`. This can be useful if you want to save custom logs, screenshots, etc. to the folder.
 
-Note that `getCurrentFolder` returns a `Maybe FilePath`. It will be `Nothing` if your tests are run without an on-disk folder, or if the particular node in question is configured not to create a folder in its [node options](http://localhost:3000/docs/node_options).
-
 ```haskell
 it "saves a picture of the login page using Selenium" $ do
   openPage "/login"
   Just folder <- getCurrentFolder
   screenshot >>= B.writeFile (folder </> "screenshot.png")
 ```
+
+Note that `getCurrentFolder` returns a `Maybe FilePath`. It will be `Nothing` if your tests are run without an on-disk folder, or if the particular node in question is configured not to create a folder in its [node options](http://localhost:3000/docs/node_options).
 
 Another built-in function is `getRunRoot`, which will return the *root* of the on-disk test tree. This can be useful if you want to store test-wide artifacts there. Similar caveats apply when Sandwich is configured to run without on-disk state.
 
@@ -118,7 +118,7 @@ contextDepsDemo = describe "Context dependencies" $ do
   introduceDatabase databaseTest2
 ```
 
-Either way, the type system will make sure your tests have the contexts they need.
+Either way, the type system ensures that your tests have the contexts they need.
 
 ## Contexts depending on other contexts
 

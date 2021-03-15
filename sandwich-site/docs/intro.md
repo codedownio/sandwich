@@ -39,8 +39,19 @@ main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions basic
 ```
 
+## Expectations
+
+
+
+## TUI interface
+
 Let's run this test from the command line, using the [Terminal UI interface](/docs/formatters/tui). This will allow us to move around and examine the tests. In particular, we can examine the failure and log message in the subtraction tests.
 
+Since we used `runSandwichWithCommandLineArgs`, we can pass flags to control the formatter:
+
+```bash
+~/sandwich> stack run basic -- --tui
+```
 
 <video width="100%" controls autoplay="true" muted="true">
   <source src="/img/basic_tui.webm" type="video/webm"></source>

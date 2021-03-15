@@ -15,7 +15,7 @@ You can select a test timer implementation you use in the Sandwich options. The 
 
 ### Non-concurrent
 
-The simplest use of timing occurs when we don't have any `parallel` stuff going on, so the tests all run in a single thread. To deal with multiple threads, see the [profiles](#profiles) section.
+The simplest use of timing occurs when we don't have any `parallel` stuff going on, so the tests all run in a single thread. To deal with multiple threads, see the [concurrency](#dealing-with-concurrency) section.
 
 First of all, **every node in the test tree is timed by default**. Thus, the "describe" and "it" nodes in the example below will be timed automatically. You can prevent this by changing the [node options](/docs/node_options).
 
