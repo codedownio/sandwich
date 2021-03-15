@@ -91,8 +91,9 @@ data SlackFormatter = SlackFormatter {
 defaultSlackFormatter :: SlackFormatter
 defaultSlackFormatter = SlackFormatter {
   slackFormatterSlackConfig = SlackConfig "my-password"
-  , slackFormatterTopMessage = Just "Top message"
   , slackFormatterChannel = "slack-channel"
+
+  , slackFormatterTopMessage = Just "Top message"
 
   , slackFormatterMaxFailures = Just 30
   , slackFormatterMaxFailureReasonLines = Just 5

@@ -135,6 +135,14 @@ infixr :>
 
 type ActionWith a = a -> IO ()
 
+data NodeMainFunction = NodeMainFunction {
+  nodeMainFunctionModuleName :: String
+  , nodeMainFunctionFn :: IO ()
+  }
+
+instance Show NodeMainFunction where
+  show (NodeMainFunction {..}) = nodeMainFunctionModuleName
+
 -- | Options for an individual test node.
 data NodeOptions = NodeOptions {
   nodeOptionsVisibilityThreshold :: Int
@@ -144,11 +152,13 @@ data NodeOptions = NodeOptions {
   -- Defaults to 'True', but can be turned off to reduce extraneous folders from nodes like 'Parallel'.
   , nodeOptionsRecordTime :: Bool
   -- ^ Whether to time this node.
-  }
+  , nodeOptionsMainFunction :: Maybe NodeMainFunction
+  -- ^ A main function run this entire node in isolation.
+  } deriving Show
 
 -- | Reasonable default node options.
 defaultNodeOptions :: NodeOptions
-defaultNodeOptions = NodeOptions 100 True True
+defaultNodeOptions = NodeOptions 100 True True Nothing
 
 data SpecCommand context m next where
   Before'' :: {
@@ -674,3 +684,10 @@ unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [R
 unwrapContext f (ExampleT action) = do
   i :> _ <- ask
   ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i :>) action)
+
+
+-- | Convert a spec to a run tree
+alterTopLevelNodeOptions :: (NodeOptions -> NodeOptions) -> Free (SpecCommand context IO) r -> Free (SpecCommand context IO) r
+alterTopLevelNodeOptions g (Free x) = Free (x { nodeOptions = g (nodeOptions x)
+                                              , next = alterTopLevelNodeOptions g (next x)})
+alterTopLevelNodeOptions _ x@(Pure _) = x

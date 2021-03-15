@@ -36,17 +36,19 @@ commandLineOptionsWithInfo = OA.info (commandLineOptions <**> helper)
 
 -- * FormatterType
 
-data FormatterType = Print | TUI | Auto
+data FormatterType = Print | TUI | Auto | Silent
 
 instance Show FormatterType where
   show Print = "print"
   show TUI = "tui"
   show Auto = "auto"
+  show Silent = "silent"
 
 instance Read FormatterType where
   readsPrec _ "print" = [(Print, "")]
   readsPrec _ "tui" = [(TUI, "")]
   readsPrec _ "auto" = [(Auto, "")]
+  readsPrec _ "silent" = [(Silent, "")]
   readsPrec _ _ = []
 
 -- * DisplayType
@@ -94,6 +96,7 @@ formatter :: Parser FormatterType
 formatter =
   flag' Print (long "print" <> help "Print to stdout")
   <|> flag' TUI (long "tui" <> help "Open terminal UI app")
+  <|> flag' Silent (long "silent" <> help "Run silently (no main formatter)")
   <|> flag Auto Auto (long "auto" <> help "Automatically decide which formatter to use")
 
 logLevel :: Parser (Maybe LogLevel)
@@ -105,8 +108,11 @@ logLevel =
 
 -- * sandwich-webdriver options
 
+data BrowserToUse = UseChrome | UseFirefox
+  deriving Show
+
 data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
-  optFirefox :: Bool
+  optFirefox :: BrowserToUse
   , optPoolSize :: Int
   , optDisplay :: DisplayType
   , optFluxbox :: Bool
@@ -116,12 +122,17 @@ data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
 
 commandLineWebdriverOptions :: Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions = CommandLineWebdriverOptions
-  <$> flag False True (long "firefox" <> help "(sandwich-webdriver) Use Firefox for Selenium tests (instead of the default of Chrome).")
+  <$> browserToUse
   <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "(sandwich-webdriver) WebDriver pool size" <> value 4 <> metavar "INT")
   <*> display
   <*> flag False True (long "fluxbox" <> help "(sandwich-webdriver) Launch fluxbox as window manager when using Xvfb")
-  <*> flag False True (long "individual-videos" <> help "(sandwich-webdriver) Record individual videos of each test.")
+  <*> flag False True (long "individual-videos" <> help "(sandwich-webdriver) Record individual videos of each test")
   <*> flag False True (long "error-videos" <> help "(sandwich-webdriver) Record videos of each test but delete them unless there was an exception")
+
+browserToUse :: Parser BrowserToUse
+browserToUse =
+  flag' UseFirefox (long "firefox" <> help "(sandwich-webdriver) Use Firefox for Selenium tests")
+  <|> flag UseChrome UseChrome (long "chrome" <> help "(sandwich-webdriver) Use Chrome for Selenium tests")
 
 display :: Parser DisplayType
 display =
@@ -134,14 +145,32 @@ display =
 data CommandLineSlackOptions = CommandLineSlackOptions {
   optSlackToken :: Maybe String
   , optSlackChannel :: Maybe String
+
   , optSlackTopMessage :: Maybe String
+
+  , optSlackMaxFailures :: Maybe Int
+  , optSlackMaxFailureReasonLines :: Maybe Int
+  , optSlackMaxCallStackLines :: Maybe Int
+
+  , optSlackVisibilityThreshold :: Maybe Int
+
+  , optSlackMaxMessageSize :: Maybe Int
   } deriving Show
 
 commandLineSlackOptions :: Parser CommandLineSlackOptions
 commandLineSlackOptions = CommandLineSlackOptions
   <$> optional (strOption (long "slack-token" <> help "(sandwich-slack) Slack token to use with the Slack formatter" <> metavar "STRING"))
   <*> optional (strOption (long "slack-channel" <> help "(sandwich-slack) Slack channel to use with the Slack formatter" <> metavar "STRING"))
+
   <*> optional (strOption (long "slack-top-message" <> help "(sandwich-slack) Top message to display on Slack progress bars" <> metavar "STRING"))
+
+  <*> optional (option auto (long "slack-max-failures" <> help "(sandwich-slack) Maximum number of failures to include in a message" <> metavar "INT"))
+  <*> optional (option auto (long "slack-max-failure-reason-lines" <> help "(sandwich-slack) Maximum number of lines for the failure reason underneath a failure" <> metavar "INT"))
+  <*> optional (option auto (long "slack-max-callstack-lines" <> help "(sandwich-slack) Maximum number of lines for the callstack reason underneath a failure" <> metavar "INT"))
+
+  <*> optional (option auto (long "slack-visibility-threshold" <> help "(sandwich-slack) Filter the headings on failures by visibility threshold" <> metavar "INT"))
+
+  <*> optional (option auto (long "slack-max-message-size" <> help "(sandwich-slack) Maximum message size in bytes (default: 8192)" <> metavar "INT"))
 
 -- * Main parsing function
 
@@ -152,13 +181,14 @@ addOptionsFromArgs baseOptions = do
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
   let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
 
-  mainFormatter <- case (optRepeatCount, optFormatter) of
-    (x, _) | x /= 1 -> return printFormatter
+  maybeMainFormatter <- case (optRepeatCount, optFormatter) of
+    (x, _) | x /= 1 -> return $ Just printFormatter
     (_, Auto) -> hIsTerminalDevice stdout >>= \case
-      True -> return printFormatter
-      False -> return tuiFormatter
-    (_, TUI) -> return tuiFormatter
-    (_, Print) -> return printFormatter
+      True -> return $ Just printFormatter
+      False -> return $ Just tuiFormatter
+    (_, TUI) -> return $ Just tuiFormatter
+    (_, Print) -> return $ Just printFormatter
+    (_, Silent) -> return Nothing
 
   -- let slackFormatter = case (optSlackToken, optSlackChannel) of
   --       (Just token, Just channel) -> Just $ SomeFormatter $ defaultSlackFormatter {
@@ -174,7 +204,7 @@ addOptionsFromArgs baseOptions = do
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
-    , optionsFormatters = catMaybes [Just mainFormatter, Just $ SomeFormatter defaultLogSaverFormatter]
+    , optionsFormatters = catMaybes [maybeMainFormatter, Just $ SomeFormatter defaultLogSaverFormatter]
     -- , optionsFormatters = catMaybes [Just mainFormatter, Just $ SomeFormatter defaultLogSaverFormatter, slackFormatter]
     }
 

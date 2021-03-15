@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 54885df623c3cfe6b3c0e61f0e614cdf17ae10b64622d16be241061b9cfacb9a
+-- hash: 72a35ee96fa4cb9221b084088dec7edfc9c77fa6401290d2268e1384e0e86c60
 
 name:           sandwich
 version:        0.1.0.0
@@ -72,6 +72,7 @@ library
       Test.Sandwich.RunTree
       Test.Sandwich.Shutdown
       Test.Sandwich.TestTimer
+      Test.Sandwich.TH
       Test.Sandwich.Types.General
       Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec
@@ -108,6 +109,7 @@ library
     , safe-exceptions
     , stm
     , string-interpolate
+    , template-haskell
     , text
     , time
     , transformers
@@ -153,6 +155,7 @@ executable sandwich-discover
     , sandwich
     , stm
     , string-interpolate
+    , template-haskell
     , text
     , time
     , transformers
@@ -198,6 +201,7 @@ executable sandwich-exe
     , sandwich
     , stm
     , string-interpolate
+    , template-haskell
     , text
     , time
     , transformers
@@ -248,6 +252,7 @@ executable sandwich-test
     , sandwich
     , stm
     , string-interpolate
+    , template-haskell
     , text
     , time
     , transformers
@@ -299,6 +304,7 @@ test-suite sandwich-test-suite
     , sandwich
     , stm
     , string-interpolate
+    , template-haskell
     , text
     , time
     , transformers

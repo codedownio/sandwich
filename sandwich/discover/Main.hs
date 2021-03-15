@@ -49,7 +49,7 @@ main = do
   baseDir <- canonicalizePath baseDir'
 
   -- Build a map from module name (possibly dedupped by adding numbers) to qualified path
-  moduleMap <- traverseDir (const True) (\x y -> return $ addModuleToMap baseDir x y) mempty baseDir
+  moduleMap <- buildModuleMap baseDir
 
   let testImports = [[i|import qualified #{sandwichDiscoverModulePrefix}#{y} as #{x}|] | (x, y) <- M.toList moduleMap]
   let testImportsList = [[i|#{x}.tests|] | (x, _) <- M.toList moduleMap]
@@ -62,6 +62,9 @@ main = do
   T.writeFile outputFileName finalContents
 
 type ModuleMap = M.Map String String
+
+buildModuleMap :: FilePath -> IO ModuleMap
+buildModuleMap baseDir = traverseDir (const True) (\x y -> return $ addModuleToMap baseDir x y) mempty baseDir
 
 addModuleToMap :: FilePath -> ModuleMap -> FilePath -> ModuleMap
 addModuleToMap relativeTo mm path@(takeExtension -> ".hs") = case pathParts of

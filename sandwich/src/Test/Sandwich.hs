@@ -61,6 +61,7 @@ module Test.Sandwich (
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
   , module Test.Sandwich.Options
+  , module Test.Sandwich.TH
   ) where
 
 import Control.Concurrent.Async
@@ -88,6 +89,7 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
+import Test.Sandwich.TH
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree

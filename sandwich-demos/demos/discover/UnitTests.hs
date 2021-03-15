@@ -1,14 +1,15 @@
 {-# OPTIONS_GHC -F -pgmF sandwich-discover #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module UnitTests where
 
-import Data.List
 import Test.Sandwich
 
 #insert_test_imports
 
 tests :: TopSpec
-tests = describe "Unit tests" $ foldl' (>>) (return ()) #test_imports_list
+tests = $(getSpecFromFolder 'describe)
 
--- main = putStrLn "HI"
+-- main :: IO ()
+-- main = runSandwichWithCommandLineArgs defaultOptions tests

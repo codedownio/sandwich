@@ -46,6 +46,7 @@ dependencies:
 - safe-exceptions
 - stm
 - string-interpolate
+- template-haskell
 - text
 - time
 - transformers

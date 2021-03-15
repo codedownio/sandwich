@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 814adbec0fbd28b30e4a5d47384c52456df500bd67d27829897f6ac71f9f8b79
+-- hash: 316dc1b134a61ca206f73d7310ede623f10100468f220797a012950eb4392172
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -37,6 +37,7 @@ library
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -56,6 +57,7 @@ executable basic
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -76,6 +78,7 @@ executable context-dependencies
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -96,6 +99,7 @@ executable context-nested-dependencies
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -116,6 +120,7 @@ executable contexts
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -131,6 +136,8 @@ executable discover
       UnitTests
       UnitTests.Bar
       UnitTests.Foo
+      UnitTests.NestedNoFile.Baz
+      UnitTests.NestedWithFile.Baz
       Paths_sandwich_demos
   hs-source-dirs:
       demos/discover
@@ -139,6 +146,7 @@ executable discover
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -159,6 +167,7 @@ executable timing
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -179,6 +188,7 @@ executable timing-parallel
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
@@ -199,6 +209,7 @@ executable tui
   build-depends:
       base
     , exceptions
+    , filepath
     , lifted-base
     , monad-control
     , random
