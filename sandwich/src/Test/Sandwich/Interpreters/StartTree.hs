@@ -179,7 +179,8 @@ runInAsync node ctx action = do
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
 
       whenFailure result $ \reason -> do
-
+        -- Make sure the folder exists, if configured
+        whenJust baseContextPath $ createDirectoryIfMissing True
 
         -- Create error symlink when configured to
         case node of
