@@ -10,8 +10,7 @@ module Test.Sandwich (
   runSandwich
   , runSandwich'
   , runSandwichWithCommandLineArgs
-  , runSandwichTree
-  , startSandwichTree
+  , runSandwichWithCommandLineArgs'
 
   -- * Basic nodes
   , it
@@ -74,17 +73,15 @@ import Control.Monad.Reader
 import Data.Either
 import Data.IORef
 import Data.String.Interpolate
-import System.Directory
+import Options.Applicative
 import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
-import Test.Sandwich.Interpreters.FilterTree
+import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.RunTree
-import Test.Sandwich.Interpreters.RunTree.Util
-import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
@@ -95,7 +92,6 @@ import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
-import Test.Sandwich.Util
 
 
 -- | Run the spec
@@ -105,8 +101,31 @@ runSandwich options spec = void $ runSandwich' options spec
 -- | Run the spec, configuring the options from the command line
 runSandwichWithCommandLineArgs :: Options -> TopSpec -> IO ()
 runSandwichWithCommandLineArgs baseOptions spec = do
-  (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions
-  void $ runSandwich' options spec
+  (options, _, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions (pure ())
+  runWithRepeat repeatCount $ 
+    runSandwich' options spec
+
+-- | Run the spec, configuring the options from the command line and adding user-configured command line options
+runSandwichWithCommandLineArgs' :: Options -> Parser a -> (a -> TopSpec) -> IO ()
+runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
+  (options, userOptions, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions userOptionsParser
+  runWithRepeat repeatCount $ 
+    runSandwich' options (spec userOptions)
+
+
+-- -- | Gather all node options from a spec
+-- gatherNodeOptions :: Free (SpecCommand context m) r -> [NodeOptions]
+-- gatherNodeOptions (Free x@(It'' {})) = (nodeOptions x) : gatherNodeOptions (next x)
+-- gatherNodeOptions (Free (IntroduceWith'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
+-- gatherNodeOptions (Free (Introduce'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
+-- gatherNodeOptions (Free x) = (nodeOptions x) : (gatherNodeOptions (next x) <> gatherNodeOptions (subspec x))
+-- gatherNodeOptions (Pure _) = []
+
+
+-- mainFunctions = gatherNodeOptions tests
+--               & fmap nodeOptionsMainFunction
+--               & catMaybes
+
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
@@ -156,68 +175,3 @@ runSandwich' options spec' = do
   let failed = countWhere isFailedItBlock fixedTree
   exitReason <- readIORef exitReasonRef
   return (exitReason, failed)
-
-startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-startSandwichTree options spec = do
-  baseContext <- baseContextFromOptions options
-  startSandwichTree' baseContext options spec
-
-startSandwichTree' :: BaseContext -> Options -> TopSpec -> IO [RunNode BaseContext]
-startSandwichTree' baseContext (Options {..}) spec' = do
-  let spec = case optionsFilterTree of
-        Nothing -> spec'
-        Just (TreeFilter match) -> filterTree match spec'
-
-  runTree <- atomically $ specToRunTreeVariable baseContext spec
-
-  unless optionsDryRun $ do
-    void $ async $ void $ runNodesSequentially runTree baseContext
-
-  return runTree
-
-runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-runSandwichTree options spec = do
-  rts <- startSandwichTree options spec
-  mapM_ waitForTree rts
-  return rts
-
-baseContextFromOptions :: Options -> IO BaseContext
-baseContextFromOptions options@(Options {..}) = do
-  runRoot <- case optionsTestArtifactsDirectory of
-    TestArtifactsNone -> return Nothing
-    TestArtifactsFixedDirectory dir' -> do
-      dir <- case isAbsolute dir' of
-        True -> return dir'
-        False -> do
-          here <- getCurrentDirectory
-          return $ here </> dir'
-
-      createDirectoryIfMissing True dir
-      return $ Just dir
-    TestArtifactsGeneratedDirectory base' f -> do
-      base <- case isAbsolute base' of
-        True -> return base'
-        False -> do
-          here <- getCurrentDirectory
-          return $ here </> base'
-
-      name <- f
-      let dir = base </> name
-      createDirectoryIfMissing True dir
-      return $ Just dir
-
-  testTimer <- case (optionsTestTimerType, runRoot) of
-    (SpeedScopeTestTimerType {..}, Just rr) -> liftIO $ newSpeedScopeTestTimer rr speedScopeTestTimerWriteRawTimings
-    _ -> return NullTestTimer
-
-  let errorSymlinksDir = (</> "errors") <$> runRoot
-  whenJust errorSymlinksDir $ createDirectoryIfMissing True
-  return $ BaseContext {
-    baseContextPath = mempty
-    , baseContextOptions = options
-    , baseContextRunRoot = runRoot
-    , baseContextErrorSymlinksDir = errorSymlinksDir
-    , baseContextOnlyRunIds = Nothing
-    , baseContextTestTimerProfile = defaultProfileName
-    , baseContextTestTimer = testTimer
-    }

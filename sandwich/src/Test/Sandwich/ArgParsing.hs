@@ -26,8 +26,8 @@ formatTime = show
 #endif
 
 
-commandLineOptionsWithInfo :: ParserInfo CommandLineOptions
-commandLineOptionsWithInfo = OA.info (commandLineOptions <**> helper)
+commandLineOptionsWithInfo :: Parser a -> ParserInfo (CommandLineOptions a)
+commandLineOptionsWithInfo userOptionsParser = OA.info (commandLineOptions userOptionsParser <**> helper)
   (
     fullDesc
     <> progDesc "Run tests with Sandwich"
@@ -68,7 +68,7 @@ instance Read DisplayType where
 
 -- * CommandLineOptions
 
-data CommandLineOptions = CommandLineOptions {
+data CommandLineOptions a = CommandLineOptions {
   -- sandwich
   optFormatter :: FormatterType
   , optLogLevel :: Maybe LogLevel
@@ -78,10 +78,12 @@ data CommandLineOptions = CommandLineOptions {
 
   , optWebdriverOptions :: CommandLineWebdriverOptions
   , optSlackOptions :: CommandLineSlackOptions
+
+  , optUserOptions :: a
   } deriving Show
 
-commandLineOptions :: Parser CommandLineOptions
-commandLineOptions = CommandLineOptions
+commandLineOptions :: Parser a -> Parser (CommandLineOptions a)
+commandLineOptions userOptionsParser = CommandLineOptions
   -- sandwich
   <$> formatter
   <*> logLevel
@@ -92,6 +94,8 @@ commandLineOptions = CommandLineOptions
   <*> commandLineWebdriverOptions
   <*> commandLineSlackOptions
 
+  <*> userOptionsParser
+  
 formatter :: Parser FormatterType
 formatter =
   flag' Print (long "print" <> help "Print to stdout")
@@ -174,9 +178,9 @@ commandLineSlackOptions = CommandLineSlackOptions
 
 -- * Main parsing function
 
-addOptionsFromArgs :: Options -> IO (Options, Int)
-addOptionsFromArgs baseOptions = do
-  CommandLineOptions {..} <- OA.execParser commandLineOptionsWithInfo
+addOptionsFromArgs :: Options -> Parser a -> IO (Options, a, Int)
+addOptionsFromArgs baseOptions userOptions = do
+  CommandLineOptions {..} <- OA.execParser $ commandLineOptionsWithInfo userOptions
 
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
   let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
@@ -237,4 +241,4 @@ addOptionsFromArgs baseOptions = do
   --   , httpRetryCount = 3
   --   }
 
-  return (options, optRepeatCount)
+  return (options, optUserOptions, optRepeatCount)

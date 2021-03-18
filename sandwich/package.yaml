@@ -76,6 +76,7 @@ library:
     - Test.Sandwich.Formatters.TerminalUI
     - Test.Sandwich.Internal
     - Test.Sandwich.Internal.Formatters
+    - Test.Sandwich.Internal.Running
     - Test.Sandwich.TH
 
 executables:

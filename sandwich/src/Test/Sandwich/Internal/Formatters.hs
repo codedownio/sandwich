@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.Internal.Formatters (
   module Test.Sandwich.Formatters.Common.Count

@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.Types.General where
 

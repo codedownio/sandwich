@@ -19,6 +19,7 @@ import GHC.Stack
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Internal
+import Test.Sandwich.Internal.Running
 
 -- * Main function
 

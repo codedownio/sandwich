@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a29afe10d3b01e2927d3d421a0a3162df0a7b24fe97a2ae21d8ba79924802823
+-- hash: 094b38373879c4d812876950a01fe7da787698a07eed887ec908fac1271d65d7
 
 name:           sandwich
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.Internal.Formatters
+      Test.Sandwich.Internal.Running
       Test.Sandwich.TH
   other-modules:
       Test.Sandwich.ArgParsing
