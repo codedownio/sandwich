@@ -12,9 +12,12 @@ import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.State
+import Data.Char
 import Data.Function
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
 import System.Directory
 import System.Exit
 import System.FilePath
@@ -74,8 +77,8 @@ runWithRepeat n action = do
 
   putStrLn [i|#{successes} runs succeeded out of #{total} repeats|]
 
-  when (successes /= total) $ exitFailure    
-    
+  when (successes /= total) $ exitFailure
+
 baseContextFromOptions :: Options -> IO BaseContext
 baseContextFromOptions options@(Options {..}) = do
   runRoot <- case optionsTestArtifactsDirectory of
@@ -116,7 +119,7 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
     }
-    
+
 
 -- | Gather all node options from a spec
 gatherNodeOptions :: Free (SpecCommand context m) r -> [NodeOptions]
@@ -131,3 +134,41 @@ gatherMainFunctions tests = gatherNodeOptions tests
                             & fmap nodeOptionsModuleInfo
                             & catMaybes
 
+
+takenMainOptions = []
+
+gatherShorthands :: [NodeModuleInfo] -> [(NodeModuleInfo, T.Text)]
+gatherShorthands = gatherShorthands' []
+  where
+    gatherShorthands' :: [T.Text] -> [NodeModuleInfo] -> [(NodeModuleInfo, T.Text)]
+    gatherShorthands' _ [] = []
+    gatherShorthands' taken (x:xs) = (x, newShorthand) : (gatherShorthands' (newShorthand : taken) xs)
+      where newShorthand = getShorthand taken x
+
+    getShorthand :: [T.Text] -> NodeModuleInfo -> T.Text
+    getShorthand taken nmi = head $ filter (\x -> x `notElem` taken && x `notElem` takenMainOptions) $ getCandidates nmi
+
+    getCandidates :: NodeModuleInfo -> [T.Text]
+    getCandidates (NodeModuleInfo {nodeModuleInfoModuleName=modName}) = fmap (("--") <>) candidates
+      where parts = T.splitOn "." (T.pack modName)
+            lastPart = last parts
+            candidates = (toDashed lastPart) : [toDashed [i|#{lastPart}#{n}|] | n <- [(2 :: Integer)..]]
+
+    toDashed :: T.Text -> T.Text
+    toDashed t = t & T.unpack
+                   & splitR isUpper
+                   & fmap (T.toLower . T.pack)
+                   & T.intercalate "-"
+
+    splitR :: (Char -> Bool) -> String -> [String]
+    splitR _ [] = []
+    splitR p s =
+      let
+        go :: Char -> String -> [String]
+        go m s' = case L.break p s' of
+          (b', [])     -> [ m:b' ]
+          (b', x:xs) -> ( m:b' ) : go x xs
+      in case L.break p s of
+        (b,  [])    -> [ b ]
+        ([], h:t) -> go h t
+        (b,  h:t) -> b : go h t

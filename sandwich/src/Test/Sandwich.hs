@@ -113,9 +113,10 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
     ListTests -> do
       let mainFunctions = gatherMainFunctions (spec undefined)
                         & L.sortOn nodeModuleInfoModuleName
-      forM_ mainFunctions $ \(NodeModuleInfo {..}) -> do
+      let modulesAndShorthands = gatherShorthands mainFunctions
+      forM_ modulesAndShorthands $ \(NodeModuleInfo {..}, shorthand) -> do
         let hasMain = if isJust nodeModuleInfoFn then " (*)" else ("" :: String)
-        putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}|]
+        putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}: #{shorthand}|]
     RunOptions clo -> do
       (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
       runWithRepeat repeatCount $ 
