@@ -74,6 +74,7 @@ import Data.Either
 import Data.IORef
 import Data.String.Interpolate
 import Options.Applicative
+import qualified Options.Applicative as OA
 import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.ArgParsing
@@ -100,32 +101,19 @@ runSandwich options spec = void $ runSandwich' options spec
 
 -- | Run the spec, configuring the options from the command line
 runSandwichWithCommandLineArgs :: Options -> TopSpec -> IO ()
-runSandwichWithCommandLineArgs baseOptions spec = do
-  (options, _, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions (pure ())
-  runWithRepeat repeatCount $ 
-    runSandwich' options spec
+runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs' baseOptions (pure ()) (const spec)
 
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
 runSandwichWithCommandLineArgs' :: Options -> Parser a -> (a -> TopSpec) -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  (options, userOptions, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions userOptionsParser
-  runWithRepeat repeatCount $ 
-    runSandwich' options (spec userOptions)
-
-
--- -- | Gather all node options from a spec
--- gatherNodeOptions :: Free (SpecCommand context m) r -> [NodeOptions]
--- gatherNodeOptions (Free x@(It'' {})) = (nodeOptions x) : gatherNodeOptions (next x)
--- gatherNodeOptions (Free (IntroduceWith'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
--- gatherNodeOptions (Free (Introduce'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
--- gatherNodeOptions (Free x) = (nodeOptions x) : (gatherNodeOptions (next x) <> gatherNodeOptions (subspec x))
--- gatherNodeOptions (Pure _) = []
-
-
--- mainFunctions = gatherNodeOptions tests
---               & fmap nodeOptionsMainFunction
---               & catMaybes
-
+  OA.execParser (commandLineOptionsWithInfo userOptionsParser) >>= \case
+    ListTests -> do
+      let mainFunctions = gatherMainFunctions (spec undefined)
+      putStrLn [i|Got main functions: '#{mainFunctions}'|]
+    RunOptions clo -> do
+      (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
+      runWithRepeat repeatCount $ 
+        runSandwich' options (spec (optUserOptions clo))
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)

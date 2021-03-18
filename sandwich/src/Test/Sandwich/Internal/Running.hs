@@ -10,7 +10,10 @@ module Test.Sandwich.Internal.Running where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
+import Control.Monad.Free
 import Control.Monad.State
+import Data.Function
+import Data.Maybe
 import Data.String.Interpolate
 import System.Directory
 import System.Exit
@@ -23,6 +26,7 @@ import Test.Sandwich.Options
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
@@ -113,3 +117,17 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextTestTimer = testTimer
     }
     
+
+-- | Gather all node options from a spec
+gatherNodeOptions :: Free (SpecCommand context m) r -> [NodeOptions]
+gatherNodeOptions (Free x@(It'' {})) = (nodeOptions x) : gatherNodeOptions (next x)
+gatherNodeOptions (Free (IntroduceWith'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
+gatherNodeOptions (Free (Introduce'' {..})) = nodeOptions : (gatherNodeOptions next <> gatherNodeOptions subspecAugmented)
+gatherNodeOptions (Free x) = (nodeOptions x) : (gatherNodeOptions (next x) <> gatherNodeOptions (subspec x))
+gatherNodeOptions (Pure _) = []
+
+gatherMainFunctions :: Free (SpecCommand context m) r -> [NodeMainFunction]
+gatherMainFunctions tests = gatherNodeOptions tests
+                            & fmap nodeOptionsMainFunction
+                            & catMaybes
+
