@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module Test.Sandwich (
 
@@ -78,6 +79,7 @@ import Data.Maybe
 import Data.String.Interpolate
 import Options.Applicative
 import qualified Options.Applicative as OA
+import System.Environment
 import System.FilePath
 import System.Posix.Signals
 import Test.Sandwich.ArgParsing
@@ -109,18 +111,25 @@ runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
 runSandwichWithCommandLineArgs' :: Options -> Parser a -> (a -> TopSpec) -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  OA.execParser (commandLineOptionsWithInfo userOptionsParser) >>= \case
-    ListTests -> do
-      let mainFunctions = gatherMainFunctions (spec undefined)
-                        & L.sortOn nodeModuleInfoModuleName
-      let modulesAndShorthands = gatherShorthands mainFunctions
-      forM_ modulesAndShorthands $ \(NodeModuleInfo {..}, shorthand) -> do
-        let hasMain = if isJust nodeModuleInfoFn then " (*)" else ("" :: String)
-        putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}: #{shorthand}|]
-    RunOptions clo -> do
-      (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
-      runWithRepeat repeatCount $ 
-        runSandwich' options (spec (optUserOptions clo))
+  clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser)
+  (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
+
+  if | optPrintSlackFlags clo == Just True -> do
+         void $ withArgs ["--help"] $
+           OA.execParser slackOptionsWithInfo
+     | optPrintWebDriverFlags clo == Just True -> do
+         void $ withArgs ["--help"] $
+           OA.execParser webDriverOptionsWithInfo
+     | optListAvailableTests clo == Just True -> do
+         let mainFunctions = gatherMainFunctions (spec undefined)
+                             & L.sortOn nodeModuleInfoModuleName
+         let modulesAndShorthands = gatherShorthands mainFunctions
+         forM_ modulesAndShorthands $ \(NodeModuleInfo {..}, shorthand) -> do
+           let hasMain = if isJust nodeModuleInfoFn then " (*)" else ("" :: String)
+           putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}: #{shorthand}|]
+     | otherwise -> do
+         runWithRepeat repeatCount $
+           runSandwich' options (spec (optUserOptions clo))
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)

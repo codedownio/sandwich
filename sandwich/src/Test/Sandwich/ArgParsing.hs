@@ -27,13 +27,27 @@ formatTime = show
 #endif
 
 
-commandLineOptionsWithInfo :: Parser a -> ParserInfo (FullOptions a)
-commandLineOptionsWithInfo userOptionsParser = OA.info (commandLineOptions userOptionsParser <**> helper) (fullDesc <> progDesc "Run tests with Sandwich" <> header "Sandwich test runner")
+commandLineOptionsWithInfo :: Parser a -> ParserInfo (CommandLineOptions a)
+commandLineOptionsWithInfo userOptionsParser = OA.info (mainCommandLineOptions userOptionsParser <**> helper)
+  (
+    fullDesc
+    <> progDesc "Run tests with Sandwich"
+    <> header "Sandwich test runner"
+  )
 
-commandLineOptions :: Parser a -> Parser (FullOptions a)
-commandLineOptions userOptionsParser = hsubparser (
-  command "run" (OA.info (RunOptions <$> mainCommandLineOptions userOptionsParser) (progDesc "Run the tests"))
-  <> command "list-tests" (OA.info (pure ListTests) (progDesc "List available individual tests"))
+slackOptionsWithInfo :: ParserInfo CommandLineSlackOptions
+slackOptionsWithInfo = OA.info (commandLineSlackOptions mempty <**> helper)
+  (
+    briefDesc
+    <> header "Special options passed to the Slack formatter.\n\nIf a flag is passed, it will override the value in the SlackFormatter configured in the code."
+  )
+
+webDriverOptionsWithInfo :: ParserInfo CommandLineWebdriverOptions
+webDriverOptionsWithInfo = OA.info (commandLineWebdriverOptions mempty <**> helper)
+  (
+    fullDesc
+    <> progDesc "Special options passed to the WebDriver formatter, if present.\n\nIf a flag is passed, it will override the value in the WdOptions configured in the code."
+    <> header "WebDriver flags"
   )
 
 -- * FormatterType
@@ -78,6 +92,10 @@ data CommandLineOptions a = CommandLineOptions {
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
 
+  , optListAvailableTests :: Maybe Bool
+  , optPrintSlackFlags :: Maybe Bool
+  , optPrintWebDriverFlags :: Maybe Bool
+
   , optWebdriverOptions :: CommandLineWebdriverOptions
   , optSlackOptions :: CommandLineSlackOptions
 
@@ -96,6 +114,10 @@ mainCommandLineOptions userOptionsParser = CommandLineOptions
   <*> optional (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
+
+  <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
+  <*> optional (flag False True (long "print-slack-flags" <> help "Print the additional Slack flags"))
+  <*> optional (flag False True (long "print-webdriver-flags" <> help "Print the additional Slack flags"))
 
   <*> commandLineWebdriverOptions internal
   <*> commandLineSlackOptions internal
@@ -133,22 +155,22 @@ data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
 commandLineWebdriverOptions :: (forall f a. Mod f a) -> Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
   <$> browserToUse maybeInternal
-  <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "(sandwich-webdriver) WebDriver pool size" <> value 4 <> metavar "INT" <> maybeInternal)
+  <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "WebDriver pool size" <> value 4 <> metavar "INT" <> maybeInternal)
   <*> display maybeInternal
-  <*> flag False True (long "fluxbox" <> help "(sandwich-webdriver) Launch fluxbox as window manager when using Xvfb" <> maybeInternal)
-  <*> flag False True (long "individual-videos" <> help "(sandwich-webdriver) Record individual videos of each test" <> maybeInternal)
-  <*> flag False True (long "error-videos" <> help "(sandwich-webdriver) Record videos of each test but delete them unless there was an exception" <> maybeInternal)
+  <*> flag False True (long "fluxbox" <> help "Launch fluxbox as window manager when using Xvfb" <> maybeInternal)
+  <*> flag False True (long "individual-videos" <> help "Record individual videos of each test (requires ffmpeg and Xvfb)" <> maybeInternal)
+  <*> flag False True (long "error-videos" <> help "Record videos of each test but delete them unless there was an exception" <> maybeInternal)
 
 browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
 browserToUse maybeInternal =
-  flag' UseFirefox (long "firefox" <> help "(sandwich-webdriver) Use Firefox for Selenium tests" <> maybeInternal)
-  <|> flag UseChrome UseChrome (long "chrome" <> help "(sandwich-webdriver) Use Chrome for Selenium tests" <> maybeInternal)
+  flag' UseFirefox (long "firefox" <> help "Use Firefox" <> maybeInternal)
+  <|> flag UseChrome UseChrome (long "chrome" <> help "Use Chrome (default)" <> maybeInternal)
 
 display :: (forall f a. Mod f a) -> Parser DisplayType
 display maybeInternal =
-  flag' Current (long "current" <> help "(sandwich-webdriver) Open browser in current display" <> maybeInternal)
-  <|> flag' Headless (long "headless" <> help "(sandwich-webdriver) Run browser in headless mode" <> maybeInternal)
-  <|> flag Current Xvfb (long "xvfb" <> help "(sandwich-webdriver) Run browser in Xvfb session" <> maybeInternal)
+  flag' Current (long "current" <> help "Open browser in current display (default)" <> maybeInternal)
+  <|> flag' Headless (long "headless" <> help "Open browser in headless mode" <> maybeInternal)
+  <|> flag Current Xvfb (long "xvfb" <> help "Open browser in Xvfb session" <> maybeInternal)
 
 -- * sandwich-slack options
 
@@ -169,18 +191,18 @@ data CommandLineSlackOptions = CommandLineSlackOptions {
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions
-  <$> optional (strOption (long "slack-token" <> help "(sandwich-slack) Slack token to use with the Slack formatter" <> metavar "STRING" <> maybeInternal))
-  <*> optional (strOption (long "slack-channel" <> help "(sandwich-slack) Slack channel to use with the Slack formatter" <> metavar "STRING" <> maybeInternal))
+  <$> optional (strOption (long "slack-token" <> help "Slack token to use with the Slack formatter" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "slack-channel" <> help "Slack channel to use with the Slack formatter" <> metavar "STRING" <> maybeInternal))
 
-  <*> optional (strOption (long "slack-top-message" <> help "(sandwich-slack) Top message to display on Slack progress bars" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "slack-top-message" <> help "Top message to display on Slack progress bars" <> metavar "STRING" <> maybeInternal))
 
-  <*> optional (option auto (long "slack-max-failures" <> help "(sandwich-slack) Maximum number of failures to include in a message" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "slack-max-failure-reason-lines" <> help "(sandwich-slack) Maximum number of lines for the failure reason underneath a failure" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "slack-max-callstack-lines" <> help "(sandwich-slack) Maximum number of lines for the callstack reason underneath a failure" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "slack-max-failures" <> help "Maximum number of failures to include in a message" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "slack-max-failure-reason-lines" <> help "Maximum number of lines for the failure reason underneath a failure" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "slack-max-callstack-lines" <> help "Maximum number of lines for the callstack reason underneath a failure" <> metavar "INT" <> maybeInternal))
 
-  <*> optional (option auto (long "slack-visibility-threshold" <> help "(sandwich-slack) Filter the headings on failures by visibility threshold" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "slack-visibility-threshold" <> help "Filter the headings on failures by visibility threshold" <> metavar "INT" <> maybeInternal))
 
-  <*> optional (option auto (long "slack-max-message-size" <> help "(sandwich-slack) Maximum message size in bytes (default: 8192)" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "slack-max-message-size" <> help "Maximum message size in bytes (default: 8192)" <> metavar "INT" <> maybeInternal))
 
 -- * Main parsing function
 
