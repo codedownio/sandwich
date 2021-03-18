@@ -71,9 +71,11 @@ getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks com
                reportError [i|Couldn't find module #{fullyQualifiedModule} in #{reverseModuleMap}|]
                return Nothing
              Just importedName -> do
-               alterNodeOptionsFn <- fileHasMainFunction (folder </> item) >>= \case
-                 True -> [e|(\x -> x { nodeOptionsMainFunction = Just ($(conE 'NodeMainFunction) fullyQualifiedModule $(varE $ mkName $ importedName <> ".main")) })|]
-                 False -> [e|id|]
+               maybeMainFunction <- fileHasMainFunction (folder </> item) >>= \case
+                 True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
+                 False -> [e|Nothing|]
+
+               alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) fullyQualifiedModule $(return maybeMainFunction)) })|]
 
                Just <$> [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
                            $ $(varE individualSpecHooks) $(stringE item) $(varE $ mkName $ importedName <> ".tests")|]
@@ -84,9 +86,12 @@ getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks com
                     & T.stripSuffix "."
                     & fromMaybe ""
                     & T.unpack
-  alterNodeOptionsFn <- case M.lookup currentModule reverseModuleMap of
-    Nothing -> [e|id|]
-    Just importedName -> [e|(\x -> x { nodeOptionsMainFunction = Just ($(conE 'NodeMainFunction) currentModule $(varE $ mkName $ importedName <> ".main")) })|]
+  maybeMainFunction <- case M.lookup currentModule reverseModuleMap of
+    Nothing -> [e|Nothing|]
+    Just importedName -> fileHasMainFunction (folder <> ".hs") >>= \case
+      True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
+      False -> [e|Nothing|]
+  alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) currentModule $(return maybeMainFunction)) })|]
   [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
      $ $(varE combiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
 

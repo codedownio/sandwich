@@ -126,8 +126,8 @@ gatherNodeOptions (Free (Introduce'' {..})) = nodeOptions : (gatherNodeOptions n
 gatherNodeOptions (Free x) = (nodeOptions x) : (gatherNodeOptions (next x) <> gatherNodeOptions (subspec x))
 gatherNodeOptions (Pure _) = []
 
-gatherMainFunctions :: Free (SpecCommand context m) r -> [NodeMainFunction]
+gatherMainFunctions :: Free (SpecCommand context m) r -> [NodeModuleInfo]
 gatherMainFunctions tests = gatherNodeOptions tests
-                            & fmap nodeOptionsMainFunction
+                            & fmap nodeOptionsModuleInfo
                             & catMaybes
 

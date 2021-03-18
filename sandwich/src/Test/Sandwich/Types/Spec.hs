@@ -30,6 +30,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
 import Data.Functor.Classes
+import Data.Maybe
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
@@ -135,13 +136,13 @@ infixr :>
 
 type ActionWith a = a -> IO ()
 
-data NodeMainFunction = NodeMainFunction {
-  nodeMainFunctionModuleName :: String
-  , nodeMainFunctionFn :: IO ()
+data NodeModuleInfo = NodeModuleInfo {
+  nodeModuleInfoModuleName :: String
+  , nodeModuleInfoFn :: Maybe (IO ())
   }
 
-instance Show NodeMainFunction where
-  show (NodeMainFunction {..}) = nodeMainFunctionModuleName
+instance Show NodeModuleInfo where
+  show (NodeModuleInfo {..}) = [i|#{nodeModuleInfoModuleName}<Has main? #{isJust nodeModuleInfoFn}>|]
 
 -- | Options for an individual test node.
 data NodeOptions = NodeOptions {
@@ -152,7 +153,7 @@ data NodeOptions = NodeOptions {
   -- Defaults to 'True', but can be turned off to reduce extraneous folders from nodes like 'Parallel'.
   , nodeOptionsRecordTime :: Bool
   -- ^ Whether to time this node.
-  , nodeOptionsMainFunction :: Maybe NodeMainFunction
+  , nodeOptionsModuleInfo :: Maybe NodeModuleInfo
   -- ^ A main function run this entire node in isolation.
   } deriving Show
 

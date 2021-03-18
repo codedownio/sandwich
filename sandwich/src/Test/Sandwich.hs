@@ -71,7 +71,10 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Either
+import Data.Function
 import Data.IORef
+import qualified Data.List as L
+import Data.Maybe
 import Data.String.Interpolate
 import Options.Applicative
 import qualified Options.Applicative as OA
@@ -109,7 +112,10 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   OA.execParser (commandLineOptionsWithInfo userOptionsParser) >>= \case
     ListTests -> do
       let mainFunctions = gatherMainFunctions (spec undefined)
-      putStrLn [i|Got main functions: '#{mainFunctions}'|]
+                        & L.sortOn nodeModuleInfoModuleName
+      forM_ mainFunctions $ \(NodeModuleInfo {..}) -> do
+        let hasMain = if isJust nodeModuleInfoFn then " (*)" else ("" :: String)
+        putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}|]
     RunOptions clo -> do
       (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
       runWithRepeat repeatCount $ 
