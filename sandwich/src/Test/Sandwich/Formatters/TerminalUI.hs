@@ -42,6 +42,7 @@ import GHC.Stack
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Safe
+import System.Directory
 import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
@@ -322,6 +323,7 @@ updateFilteredTree s = s
   & appMainList %~ listReplace elems (listSelected $ s ^. appMainList)
   where filteredTree = filterRunTree (s ^. appVisibilityThreshold) (s ^. appRunTree)
         elems :: Vec.Vector MainListElem = Vec.fromList $ concatMap treeToList (zip filteredTree (s ^. appRunTreeBase))
+
 -- * Clearing
 
 clearRecursively :: RunNode context -> IO ()
@@ -331,9 +333,20 @@ clearRecursivelyWhere :: (RunNodeCommon -> Bool) -> RunNode context -> IO ()
 clearRecursivelyWhere f = mapM_ clearCommon . filter f . getCommons
 
 clearCommon :: RunNodeCommon -> IO ()
-clearCommon (RunNodeCommonWithStatus {..}) = atomically $ do
-  writeTVar runTreeStatus NotStarted
-  writeTVar runTreeLogs mempty
+clearCommon (RunNodeCommonWithStatus {..}) = do
+  atomically $ do
+    writeTVar runTreeStatus NotStarted
+    writeTVar runTreeLogs mempty
+
+  whenJust runTreeFolder $ \folder -> do
+    doesDirectoryExist folder >>= \case
+      False -> return ()
+      True -> clearDirectoryContents folder
+
+clearDirectoryContents :: FilePath -> IO ()
+clearDirectoryContents path = do
+  paths <- listDirectory path
+  forM_ paths removePathForcibly
 
 findRunNodeChildrenById :: Int -> [RunNodeFixed context] -> Maybe (S.Set Int)
 findRunNodeChildrenById ident rts = headMay $ mapMaybe (findRunNodeChildrenById' ident) rts
