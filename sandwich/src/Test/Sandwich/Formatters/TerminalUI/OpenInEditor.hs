@@ -6,6 +6,7 @@
 module Test.Sandwich.Formatters.TerminalUI.OpenInEditor where
 
 import Control.Monad
+import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
@@ -14,16 +15,20 @@ import System.Process
 
 autoOpenInEditor :: SrcLoc -> IO ()
 autoOpenInEditor loc = do
-  lookupEnv "EDITOR" >>= \case
-    Nothing -> return ()
-    Just s | "emacs" `T.isInfixOf` (T.toLower $ T.pack s) -> openInEmacs loc
-    Just _ -> return () -- TODO: support vim, VSCode, etc.
+  editor <- lookupEnv "EDITOR"
+  display <- lookupEnv "DISPLAY"
+  case (editor, display) of
+    (Nothing, _) -> return ()
+    (Just s, display) | "emacs" `T.isInfixOf` (T.toLower $ T.pack s) -> openInEmacs loc (isJust display)
+    (Just _, _) -> return () -- TODO: support vim, VSCode, etc.
 
-openInEmacs :: SrcLoc -> IO ()
-openInEmacs (SrcLoc {..}) = do
-  void $ createProcess $ (proc "emacsclient" [[i|+#{srcLocStartLine}:#{srcLocStartCol}|], srcLocFile, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
-  void $ createProcess $ (proc "emacsclient" ["--eval", elisp, "--no-wait"]) {std_out=CreatePipe, std_err=CreatePipe}
+openInEmacs :: SrcLoc -> Bool -> IO ()
+openInEmacs (SrcLoc {..}) hasDisplay = do
+  void $ createProcess $ (proc "emacsclient" (nwArg <> [[i|+#{srcLocStartLine}:#{srcLocStartCol}|], srcLocFile, "--no-wait"])) {std_out=CreatePipe, std_err=CreatePipe}
+  void $ createProcess $ (proc "emacsclient" (nwArg <> ["--eval", elisp, "--no-wait"])) {std_out=CreatePipe, std_err=CreatePipe}
     where
+      nwArg = if hasDisplay then [] else ["-nw"]
+
       elisp = [i|(progn
                    (x-focus-frame (selected-frame))
                    (raise-frame)
