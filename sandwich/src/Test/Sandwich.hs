@@ -75,8 +75,8 @@ import Data.Either
 import Data.Function
 import Data.IORef
 import qualified Data.List as L
-import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.Environment
@@ -87,6 +87,7 @@ import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Internal.Running
+import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Options
@@ -111,7 +112,14 @@ runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
 runSandwichWithCommandLineArgs' :: Options -> Parser a -> (a -> TopSpec) -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser)
+  let mainFunctions = gatherMainFunctions (spec undefined)
+                      & L.sortOn nodeModuleInfoModuleName
+  let modulesAndShorthands = gatherShorthands mainFunctions
+  let individualTestParser maybeInternal = foldr (<|>) (pure Nothing)
+                                                       [flag' (Just nodeModuleInfoModuleName) (long (T.unpack shorthand) <> help nodeModuleInfoModuleName <> maybeInternal)
+                                                       | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
+
+  clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser (individualTestParser internal))
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
 
   if | optPrintSlackFlags clo == Just True -> do
@@ -121,15 +129,14 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          void $ withArgs ["--help"] $
            OA.execParser webDriverOptionsWithInfo
      | optListAvailableTests clo == Just True -> do
-         let mainFunctions = gatherMainFunctions (spec undefined)
-                             & L.sortOn nodeModuleInfoModuleName
-         let modulesAndShorthands = gatherShorthands mainFunctions
-         forM_ modulesAndShorthands $ \(NodeModuleInfo {..}, shorthand) -> do
-           let hasMain = if isJust nodeModuleInfoFn then " (*)" else ("" :: String)
-           putStrLn [i|#{nodeModuleInfoModuleName}#{hasMain}: #{shorthand}|]
-     | otherwise -> do
+         void $ withArgs ["--help"] $
+           OA.execParser $ OA.info (individualTestParser mempty <**> helper) $
+             fullDesc <> header "Pass one of these flags to run an individual test module."
+     | otherwise ->
          runWithRepeat repeatCount $
-           runSandwich' options (spec (optUserOptions clo))
+           case optIndividualTestModule clo of
+             Nothing -> runSandwich' options (spec (optUserOptions clo))
+             Just x -> runSandwich' options $ filterTreeToModule x $ spec (optUserOptions clo)
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)

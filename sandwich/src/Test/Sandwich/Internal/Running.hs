@@ -149,7 +149,7 @@ gatherShorthands = gatherShorthands' []
     getShorthand taken nmi = head $ filter (\x -> x `notElem` taken && x `notElem` takenMainOptions) $ getCandidates nmi
 
     getCandidates :: NodeModuleInfo -> [T.Text]
-    getCandidates (NodeModuleInfo {nodeModuleInfoModuleName=modName}) = fmap (("--") <>) candidates
+    getCandidates (NodeModuleInfo {nodeModuleInfoModuleName=modName}) = candidates
       where parts = T.splitOn "." (T.pack modName)
             lastPart = last parts
             candidates = (toDashed lastPart) : [toDashed [i|#{lastPart}#{n}|] | n <- [(2 :: Integer)..]]

@@ -27,8 +27,8 @@ formatTime = show
 #endif
 
 
-commandLineOptionsWithInfo :: Parser a -> ParserInfo (CommandLineOptions a)
-commandLineOptionsWithInfo userOptionsParser = OA.info (mainCommandLineOptions userOptionsParser <**> helper)
+commandLineOptionsWithInfo :: Parser a -> Parser (Maybe String) -> ParserInfo (CommandLineOptions a)
+commandLineOptionsWithInfo userOptionsParser individualTestParser = OA.info (mainCommandLineOptions userOptionsParser individualTestParser <**> helper)
   (
     fullDesc
     <> progDesc "Run tests with Sandwich"
@@ -96,6 +96,8 @@ data CommandLineOptions a = CommandLineOptions {
   , optPrintSlackFlags :: Maybe Bool
   , optPrintWebDriverFlags :: Maybe Bool
 
+  , optIndividualTestModule :: Maybe String
+
   , optWebdriverOptions :: CommandLineWebdriverOptions
   , optSlackOptions :: CommandLineSlackOptions
 
@@ -106,8 +108,8 @@ data FullOptions a = RunOptions (CommandLineOptions a)
                    | ListTests
   deriving Show
 
-mainCommandLineOptions :: Parser a -> Parser (CommandLineOptions a)
-mainCommandLineOptions userOptionsParser = CommandLineOptions
+mainCommandLineOptions :: Parser a -> Parser (Maybe String) -> Parser (CommandLineOptions a)
+mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptions
   -- sandwich
   <$> formatter
   <*> logLevel
@@ -118,6 +120,8 @@ mainCommandLineOptions userOptionsParser = CommandLineOptions
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "print-slack-flags" <> help "Print the additional Slack flags"))
   <*> optional (flag False True (long "print-webdriver-flags" <> help "Print the additional Slack flags"))
+
+  <*> individualTestParser
 
   <*> commandLineWebdriverOptions internal
   <*> commandLineSlackOptions internal
