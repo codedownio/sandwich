@@ -338,15 +338,19 @@ clearCommon (RunNodeCommonWithStatus {..}) = do
     writeTVar runTreeStatus NotStarted
     writeTVar runTreeLogs mempty
 
-  whenJust runTreeFolder $ \folder -> do
-    doesDirectoryExist folder >>= \case
-      False -> return ()
-      True -> clearDirectoryContents folder
-
-clearDirectoryContents :: FilePath -> IO ()
-clearDirectoryContents path = do
-  paths <- listDirectory path
-  forM_ paths removePathForcibly
+  -- TODO: clearing the folders might be better for reproducibility, but it might be more surprising than not doing it.
+  -- Also, we'd want to be a little judicious about which folders get cleared -- clearing entire "describe" folders would
+  -- blow away unrelated test results. So maybe it's better to not clear, and for tests to just do idempotent things in
+  -- their folders.
+  -- whenJust runTreeFolder $ \folder -> do
+  --   doesDirectoryExist folder >>= \case
+  --     False -> return ()
+  --     True -> clearDirectoryContents folder
+  -- where
+  --   clearDirectoryContents :: FilePath -> IO ()
+  --   clearDirectoryContents path = do
+  --     paths <- listDirectory path
+  --     forM_ paths removePathForcibly
 
 findRunNodeChildrenById :: Int -> [RunNodeFixed context] -> Maybe (S.Set Int)
 findRunNodeChildrenById ident rts = headMay $ mapMaybe (findRunNodeChildrenById' ident) rts
