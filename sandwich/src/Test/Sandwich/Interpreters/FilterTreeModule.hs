@@ -8,16 +8,9 @@ import Test.Sandwich.Types.Spec
 
 
 filterTreeToModule :: String -> Free (SpecCommand context m) () -> Free (SpecCommand context m) ()
-filterTreeToModule match (Free (Before'' loc no l f subspec next))
-  | no `matches` match = Free (Before'' loc no l f subspec (filterTreeToModule match next))
-  | otherwise = case filterTreeToModule match subspec of
-      (Pure _) -> filterTreeToModule match next
-      x -> Free (Before'' loc no l f x (filterTreeToModule match next))
-filterTreeToModule match (Free (After'' loc no l f subspec next))
-  | no `matches` match = Free (After'' loc no l f subspec (filterTreeToModule match next))
-  | otherwise = case filterTreeToModule match subspec of
-      (Pure _) -> filterTreeToModule match next
-      x -> Free (After'' loc no l f x (filterTreeToModule match next))
+filterTreeToModule match (Free (It'' loc no l ex next))
+  | no `matches` match = Free (It'' loc no l ex (filterTreeToModule match next))
+  | otherwise = filterTreeToModule match (filterTreeToModule match next)
 filterTreeToModule match (Free (Introduce'' loc no l cl alloc cleanup subspec next))
   | no `matches` match = Free (Introduce'' loc no l cl alloc cleanup subspec (filterTreeToModule match next))
   | otherwise = case filterTreeToModule match subspec of
@@ -28,24 +21,12 @@ filterTreeToModule match (Free (IntroduceWith'' loc no l cl action subspec next)
   | otherwise = case filterTreeToModule match subspec of
       (Pure _) -> filterTreeToModule match next
       x -> Free (IntroduceWith'' loc no l cl action x (filterTreeToModule match next))
-filterTreeToModule match (Free (Around'' loc no l f subspec next))
-  | no `matches` match = Free (Around'' loc no l f subspec (filterTreeToModule match next))
-  | otherwise = case filterTreeToModule match subspec of
-      (Pure _) -> filterTreeToModule match next
-      x -> Free (Around'' loc no l f x (filterTreeToModule match next))
-filterTreeToModule match (Free (Describe'' loc no l subspec next))
-  | no `matches` match = Free (Describe'' loc no l subspec (filterTreeToModule match next))
-  | otherwise = case filterTreeToModule match subspec of
-      (Pure _) -> filterTreeToModule match next
-      x -> Free (Describe'' loc no l x (filterTreeToModule match next))
-filterTreeToModule match (Free (Parallel'' loc no subspec next))
-  | no `matches` match = Free (Parallel'' loc no subspec (filterTreeToModule match next))
-  | otherwise = case filterTreeToModule match subspec of
-      (Pure _) -> filterTreeToModule match next
-      x -> Free (Parallel'' loc no x (filterTreeToModule match next))
-filterTreeToModule match (Free (It'' loc no l ex next))
-  | no `matches` match = Free (It'' loc no l ex (filterTreeToModule match next))
-  | otherwise = filterTreeToModule match (filterTreeToModule match next)
+filterTreeToModule match (Free x)
+  | nodeOptions x `matches` match = Free (x { next = (filterTreeToModule match (next x)) })
+  | otherwise = case filterTreeToModule match (subspec x) of
+      (Pure _) -> filterTreeToModule match (next x)
+      subspec' -> Free (x { subspec = subspec'
+                          , next = (filterTreeToModule match (next x)) })
 filterTreeToModule _ (Pure x) = Pure x
 
 
