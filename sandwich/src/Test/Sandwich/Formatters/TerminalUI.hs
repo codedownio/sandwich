@@ -42,7 +42,6 @@ import GHC.Stack
 import qualified Graphics.Vty as V
 import Lens.Micro
 import Safe
-import System.Directory
 import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
