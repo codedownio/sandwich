@@ -128,12 +128,11 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
              Just fn -> Just $ flag' (Just $ IndividualTestMainFn fn)
                                      (long (T.unpack (shorthand <> "-main"))
                                        <> help nodeModuleInfoModuleName
-                                       <> mempty
+                                       <> internal
                                      )
          ]
         | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
   let individualTestParser maybeInternal = foldr (<|>) (pure Nothing) (catMaybes $ mconcat $ individualTestFlags maybeInternal)
-
 
   clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser (individualTestParser internal))
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
@@ -154,9 +153,16 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
            case optIndividualTestModule clo of
              Nothing -> runSandwich' options (spec (optUserOptions clo))
              Just (IndividualTestModuleName x) -> runSandwich' options $ filterTreeToModule x $ spec (optUserOptions clo)
-             Just (IndividualTestMainFn x) -> tryAny x >>= \case
-               Left _ -> return (NormalExit, 1)
-               Right _ -> return (NormalExit, 0)
+             Just (IndividualTestMainFn x) -> do
+               let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
+                                               | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
+                                             & mconcat
+                                             & catMaybes
+               baseArgs <- getArgs
+               withArgs (baseArgs L.\\ (fmap T.unpack individualTestFlagStrings)) $
+                 tryAny x >>= \case
+                   Left _ -> return (NormalExit, 1)
+                   Right _ -> return (NormalExit, 0)
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
