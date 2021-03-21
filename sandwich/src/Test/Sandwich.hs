@@ -67,6 +67,7 @@ module Test.Sandwich (
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
+import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -75,6 +76,7 @@ import Data.Either
 import Data.Function
 import Data.IORef
 import qualified Data.List as L
+import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import Options.Applicative
@@ -115,9 +117,23 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   let mainFunctions = gatherMainFunctions (spec undefined)
                       & L.sortOn nodeModuleInfoModuleName
   let modulesAndShorthands = gatherShorthands mainFunctions
-  let individualTestParser maybeInternal = foldr (<|>) (pure Nothing)
-                                                       [flag' (Just nodeModuleInfoModuleName) (long (T.unpack shorthand) <> help nodeModuleInfoModuleName <> maybeInternal)
-                                                       | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
+  let individualTestFlags maybeInternal =
+        [[ Just $ flag' (Just $ IndividualTestModuleName nodeModuleInfoModuleName)
+                        (long (T.unpack shorthand)
+                          <> help (nodeModuleInfoModuleName
+                          <> (if isJust nodeModuleInfoFn then "*" else ""))
+                          <> maybeInternal)
+         , case nodeModuleInfoFn of
+             Nothing -> Nothing
+             Just fn -> Just $ flag' (Just $ IndividualTestMainFn fn)
+                                     (long (T.unpack (shorthand <> "-main"))
+                                       <> help nodeModuleInfoModuleName
+                                       <> mempty
+                                     )
+         ]
+        | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
+  let individualTestParser maybeInternal = foldr (<|>) (pure Nothing) (catMaybes $ mconcat $ individualTestFlags maybeInternal)
+
 
   clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser (individualTestParser internal))
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
@@ -132,11 +148,15 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          void $ withArgs ["--help"] $
            OA.execParser $ OA.info (individualTestParser mempty <**> helper) $
              fullDesc <> header "Pass one of these flags to run an individual test module."
+                      <> progDesc "If a module has a \"*\" next to its name, then we detected that it has its own main function. If you pass the option name suffixed by -main then we'll just directly invoke the main function."
      | otherwise ->
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' options (spec (optUserOptions clo))
-             Just x -> runSandwich' options $ filterTreeToModule x $ spec (optUserOptions clo)
+             Just (IndividualTestModuleName x) -> runSandwich' options $ filterTreeToModule x $ spec (optUserOptions clo)
+             Just (IndividualTestMainFn x) -> tryAny x >>= \case
+               Left _ -> return (NormalExit, 1)
+               Right _ -> return (NormalExit, 0)
 
 -- | Run the spec and return the number of failures
 runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)

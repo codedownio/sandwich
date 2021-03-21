@@ -27,7 +27,7 @@ formatTime = show
 #endif
 
 
-commandLineOptionsWithInfo :: Parser a -> Parser (Maybe String) -> ParserInfo (CommandLineOptions a)
+commandLineOptionsWithInfo :: Parser a -> Parser (Maybe IndividualTestModule) -> ParserInfo (CommandLineOptions a)
 commandLineOptionsWithInfo userOptionsParser individualTestParser = OA.info (mainCommandLineOptions userOptionsParser individualTestParser <**> helper)
   (
     fullDesc
@@ -96,7 +96,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optPrintSlackFlags :: Maybe Bool
   , optPrintWebDriverFlags :: Maybe Bool
 
-  , optIndividualTestModule :: Maybe String
+  , optIndividualTestModule :: Maybe IndividualTestModule
 
   , optWebdriverOptions :: CommandLineWebdriverOptions
   , optSlackOptions :: CommandLineSlackOptions
@@ -104,11 +104,14 @@ data CommandLineOptions a = CommandLineOptions {
   , optUserOptions :: a
   } deriving Show
 
-data FullOptions a = RunOptions (CommandLineOptions a)
-                   | ListTests
-  deriving Show
+data IndividualTestModule = IndividualTestModuleName String
+                          | IndividualTestMainFn (IO ())
 
-mainCommandLineOptions :: Parser a -> Parser (Maybe String) -> Parser (CommandLineOptions a)
+instance Show IndividualTestModule where
+  show (IndividualTestModuleName moduleName) = moduleName
+  show (IndividualTestMainFn _) = "<main function>"
+
+mainCommandLineOptions :: Parser a -> Parser (Maybe IndividualTestModule) -> Parser (CommandLineOptions a)
 mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptions
   -- sandwich
   <$> formatter
