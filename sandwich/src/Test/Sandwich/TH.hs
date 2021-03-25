@@ -7,6 +7,7 @@
 
 module Test.Sandwich.TH (
   getSpecFromFolder
+  , getSpecFromFolder'
   , buildModuleMap
   ) where
 
