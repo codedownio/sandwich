@@ -29,6 +29,7 @@ module Test.Sandwich.Formatters.Slack (
   , SlackFormatterShowCallStacks(..)
   ) where
 
+import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Exception.Safe
@@ -52,6 +53,8 @@ import Test.Sandwich.Formatters.Internal.ProgressBar
 import Test.Sandwich.Formatters.Internal.Types
 import Test.Sandwich.Internal
 import Test.Sandwich.Internal.Formatters
+import Test.Sandwich.Types.ArgParsing
+import Test.Sandwich.Types.RunTree
 
 
 data SlackFormatter = SlackFormatter {
@@ -107,8 +110,23 @@ defaultSlackFormatter = SlackFormatter {
 
 instance Formatter SlackFormatter where
   formatterName _ = "slack-formatter"
-  runFormatter = runApp
+  runFormatter baseFormatter rts bc@(BaseContext {baseContextCommandLineOptions=(Just clo)}) =
+    runApp (addCommandLineOptions clo baseFormatter) rts bc
+  runFormatter baseFormatter rts bc@(BaseContext {baseContextCommandLineOptions=Nothing}) =
+    runApp baseFormatter rts bc
   finalizeFormatter _ _ _ = return ()
+
+addCommandLineOptions :: CommandLineOptions a -> SlackFormatter -> SlackFormatter
+addCommandLineOptions (CommandLineOptions {optSlackOptions=(CommandLineSlackOptions {..})}) baseFormatter@(SlackFormatter {..}) = baseFormatter {
+  slackFormatterSlackConfig = maybe slackFormatterSlackConfig (SlackConfig . T.pack) optSlackToken
+  , slackFormatterChannel = fromMaybe slackFormatterChannel optSlackChannel
+  , slackFormatterTopMessage = optSlackTopMessage <|> slackFormatterTopMessage
+  , slackFormatterMaxFailures = optSlackMaxFailures <|> slackFormatterMaxFailures
+  , slackFormatterMaxFailureReasonLines = optSlackMaxFailureReasonLines <|> slackFormatterMaxFailureReasonLines
+  , slackFormatterMaxCallStackLines = optSlackMaxCallStackLines <|> slackFormatterMaxCallStackLines
+  , slackFormatterVisibilityThreshold = optSlackVisibilityThreshold <|> slackFormatterVisibilityThreshold
+  , slackFormatterMaxMessageSize = optSlackMaxMessageSize <|> slackFormatterMaxMessageSize
+  }
 
 runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp sf@(SlackFormatter {..}) rts _bc = do

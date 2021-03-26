@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.WebDriver.Config (
   -- * Main options

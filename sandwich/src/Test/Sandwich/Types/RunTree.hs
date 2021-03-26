@@ -18,6 +18,7 @@ import qualified Data.Text as T
 import Data.Time.Clock
 import Data.Typeable
 import GHC.Stack
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
@@ -125,6 +126,7 @@ data BaseContext = BaseContext {
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
+  , baseContextCommandLineOptions :: Maybe (CommandLineOptions ())
   }
 
 class HasBaseContext a where

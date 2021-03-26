@@ -98,6 +98,7 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.TH
 import Test.Sandwich.TestTimer
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -106,7 +107,7 @@ import Test.Sandwich.Types.TestTimer
 
 -- | Run the spec
 runSandwich :: Options -> TopSpec -> IO ()
-runSandwich options spec = void $ runSandwich' options spec
+runSandwich options spec = void $ runSandwich' Nothing options spec
 
 -- | Run the spec, configuring the options from the command line
 runSandwichWithCommandLineArgs :: Options -> TopSpec -> IO ()
@@ -152,8 +153,8 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
      | otherwise ->
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
-             Nothing -> runSandwich' options (spec (optUserOptions clo))
-             Just (IndividualTestModuleName x) -> runSandwich' options $ filterTreeToModule x $ spec (optUserOptions clo)
+             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options (spec (optUserOptions clo))
+             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $ spec (optUserOptions clo)
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
@@ -166,9 +167,9 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
                    Right _ -> return (NormalExit, 0)
 
 -- | Run the spec and return the number of failures
-runSandwich' :: Options -> TopSpec -> IO (ExitReason, Int)
-runSandwich' options spec' = do
-  baseContext <- baseContextFromOptions options
+runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> TopSpec -> IO (ExitReason, Int)
+runSandwich' maybeCommandLineOptions options spec' = do
+  baseContext <- baseContextFromOptions maybeCommandLineOptions options
 
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of

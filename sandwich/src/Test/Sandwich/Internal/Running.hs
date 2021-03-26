@@ -27,6 +27,7 @@ import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Options
 import Test.Sandwich.TestTimer
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -34,9 +35,9 @@ import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
 
-startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-startSandwichTree options spec = do
-  baseContext <- baseContextFromOptions options
+startSandwichTree :: Maybe (CommandLineOptions ()) -> Options -> TopSpec -> IO [RunNode BaseContext]
+startSandwichTree maybeCommandLineOptions options spec = do
+  baseContext <- baseContextFromOptions maybeCommandLineOptions options
   startSandwichTree' baseContext options spec
 
 startSandwichTree' :: BaseContext -> Options -> TopSpec -> IO [RunNode BaseContext]
@@ -52,9 +53,9 @@ startSandwichTree' baseContext (Options {..}) spec' = do
 
   return runTree
 
-runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
-runSandwichTree options spec = do
-  rts <- startSandwichTree options spec
+runSandwichTree :: Maybe (CommandLineOptions ()) -> Options -> TopSpec -> IO [RunNode BaseContext]
+runSandwichTree maybeCommandLineOptions options spec = do
+  rts <- startSandwichTree maybeCommandLineOptions options spec
   mapM_ waitForTree rts
   return rts
 
@@ -79,8 +80,8 @@ runWithRepeat n action = do
 
   when (successes /= total) $ exitFailure
 
-baseContextFromOptions :: Options -> IO BaseContext
-baseContextFromOptions options@(Options {..}) = do
+baseContextFromOptions :: Maybe (CommandLineOptions ()) -> Options -> IO BaseContext
+baseContextFromOptions maybeCommandLineOptions options@(Options {..}) = do
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
     TestArtifactsFixedDirectory dir' -> do
@@ -118,6 +119,7 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextOnlyRunIds = Nothing
     , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
+    , baseContextCommandLineOptions = maybeCommandLineOptions
     }
 
 

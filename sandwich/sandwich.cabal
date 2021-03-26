@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5b86833df375cdea910f2628072acfe0b98f680e4682c6b111153ff54b0eab1
+-- hash: 1a9857470a28cca9b9a7cad7ba6d25ba1cbde9a90a65384f12bb70a422a4e90b
 
 name:           sandwich
 version:        0.1.0.0
@@ -77,6 +77,7 @@ library
       Test.Sandwich.TestTimer
       Test.Sandwich.TH.HasMainFunction
       Test.Sandwich.TH.ModuleMap
+      Test.Sandwich.Types.ArgParsing
       Test.Sandwich.Types.General
       Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec

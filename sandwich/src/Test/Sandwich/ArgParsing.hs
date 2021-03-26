@@ -18,6 +18,7 @@ import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Options
+import Test.Sandwich.Types.ArgParsing
 
 #if MIN_VERSION_time(1,9,0)
 import Data.Time.Format.ISO8601
@@ -50,67 +51,6 @@ webDriverOptionsWithInfo = OA.info (commandLineWebdriverOptions mempty <**> help
     <> header "WebDriver flags"
   )
 
--- * FormatterType
-
-data FormatterType = Print | TUI | Auto | Silent
-
-instance Show FormatterType where
-  show Print = "print"
-  show TUI = "tui"
-  show Auto = "auto"
-  show Silent = "silent"
-
-instance Read FormatterType where
-  readsPrec _ "print" = [(Print, "")]
-  readsPrec _ "tui" = [(TUI, "")]
-  readsPrec _ "auto" = [(Auto, "")]
-  readsPrec _ "silent" = [(Silent, "")]
-  readsPrec _ _ = []
-
--- * DisplayType
-
-data DisplayType = Current | Headless | Xvfb
-
-instance Show DisplayType where
-  show Current = "current"
-  show Headless = "headless"
-  show Xvfb = "xvfb"
-
-instance Read DisplayType where
-  readsPrec _ "current" = [(Current, "")]
-  readsPrec _ "headless" = [(Headless, "")]
-  readsPrec _ "xvfb" = [(Xvfb, "")]
-  readsPrec _ _ = []
-
--- * CommandLineOptions
-
-data CommandLineOptions a = CommandLineOptions {
-  -- sandwich
-  optFormatter :: FormatterType
-  , optLogLevel :: Maybe LogLevel
-  , optTreeFilter :: Maybe String
-  , optRepeatCount :: Int
-  , optFixedRoot :: Maybe String
-
-  , optListAvailableTests :: Maybe Bool
-  , optPrintSlackFlags :: Maybe Bool
-  , optPrintWebDriverFlags :: Maybe Bool
-
-  , optIndividualTestModule :: Maybe IndividualTestModule
-
-  , optWebdriverOptions :: CommandLineWebdriverOptions
-  , optSlackOptions :: CommandLineSlackOptions
-
-  , optUserOptions :: a
-  } deriving Show
-
-data IndividualTestModule = IndividualTestModuleName String
-                          | IndividualTestMainFn (IO ())
-
-instance Show IndividualTestModule where
-  show (IndividualTestModuleName moduleName) = moduleName
-  show (IndividualTestMainFn _) = "<main function>"
-
 mainCommandLineOptions :: Parser a -> Parser (Maybe IndividualTestModule) -> Parser (CommandLineOptions a)
 mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptions
   -- sandwich
@@ -130,7 +70,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> commandLineSlackOptions internal
 
   <*> userOptionsParser
-  
+
 formatter :: Parser FormatterType
 formatter =
   flag' Print (long "print" <> help "Print to stdout")
@@ -144,20 +84,6 @@ logLevel =
   <|> flag' (Just LevelInfo) (long "info" <> help "Log level INFO")
   <|> flag' (Just LevelWarn) (long "warn" <> help "Log level WARN")
   <|> flag (Just LevelWarn) (Just LevelError) (long "error" <> help "Log level ERROR")
-
--- * sandwich-webdriver options
-
-data BrowserToUse = UseChrome | UseFirefox
-  deriving Show
-
-data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
-  optFirefox :: BrowserToUse
-  , optPoolSize :: Int
-  , optDisplay :: DisplayType
-  , optFluxbox :: Bool
-  , optIndividualVideos :: Bool
-  , optErrorVideos :: Bool
-  } deriving Show
 
 commandLineWebdriverOptions :: (forall f a. Mod f a) -> Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
@@ -178,23 +104,6 @@ display maybeInternal =
   flag' Current (long "current" <> help "Open browser in current display (default)" <> maybeInternal)
   <|> flag' Headless (long "headless" <> help "Open browser in headless mode" <> maybeInternal)
   <|> flag Current Xvfb (long "xvfb" <> help "Open browser in Xvfb session" <> maybeInternal)
-
--- * sandwich-slack options
-
-data CommandLineSlackOptions = CommandLineSlackOptions {
-  optSlackToken :: Maybe String
-  , optSlackChannel :: Maybe String
-
-  , optSlackTopMessage :: Maybe String
-
-  , optSlackMaxFailures :: Maybe Int
-  , optSlackMaxFailureReasonLines :: Maybe Int
-  , optSlackMaxCallStackLines :: Maybe Int
-
-  , optSlackVisibilityThreshold :: Maybe Int
-
-  , optSlackMaxMessageSize :: Maybe Int
-  } deriving Show
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions
