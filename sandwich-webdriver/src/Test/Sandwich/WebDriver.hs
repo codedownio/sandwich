@@ -50,7 +50,6 @@ import Data.Maybe
 import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Internal
-import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action

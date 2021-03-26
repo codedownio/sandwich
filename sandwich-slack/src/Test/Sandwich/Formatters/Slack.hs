@@ -53,7 +53,6 @@ import Test.Sandwich.Formatters.Internal.ProgressBar
 import Test.Sandwich.Formatters.Internal.Types
 import Test.Sandwich.Internal
 import Test.Sandwich.Internal.Formatters
-import Test.Sandwich.Types.ArgParsing
 
 
 data SlackFormatter = SlackFormatter {

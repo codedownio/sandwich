@@ -44,6 +44,13 @@ module Test.Sandwich (
   , SpecFree
   , TopSpec
 
+  -- * Command line options
+  , CommandLineOptions(..)
+  , CommandLineSlackOptions(..)
+  , CommandLineWebdriverOptions(..)
+  , BrowserToUse(..)
+  , DisplayType(..)
+
   , BaseContext
   , HasBaseContext
 
