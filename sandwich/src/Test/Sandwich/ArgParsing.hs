@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
@@ -87,9 +86,9 @@ logLevel =
 
 commandLineWebdriverOptions :: (forall f a. Mod f a) -> Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
-  <$> browserToUse maybeInternal
+  <$> optional (browserToUse maybeInternal)
   <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "WebDriver pool size" <> value 4 <> metavar "INT" <> maybeInternal)
-  <*> display maybeInternal
+  <*> optional (display maybeInternal)
   <*> flag False True (long "fluxbox" <> help "Launch fluxbox as window manager when using Xvfb" <> maybeInternal)
   <*> flag False True (long "individual-videos" <> help "Record individual videos of each test (requires ffmpeg and Xvfb)" <> maybeInternal)
   <*> flag False True (long "error-videos" <> help "Record videos of each test but delete them unless there was an exception" <> maybeInternal)
@@ -136,51 +135,12 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     (_, Print) -> return $ Just printFormatter
     (_, Silent) -> return Nothing
 
-  -- let slackFormatter = case (optSlackToken, optSlackChannel) of
-  --       (Just token, Just channel) -> Just $ SomeFormatter $ defaultSlackFormatter {
-  --         slackFormatterSlackConfig = SlackConfig (convert token)
-  --         , slackFormatterTopMessage = optSlackTopMessage
-  --         , slackFormatterChannel = channel
-  --         , slackFormatterVisibilityThreshold = Just 50
-  --         }
-  --       _ -> Nothing
-
   let options = baseOptions {
     optionsTestArtifactsDirectory = case optFixedRoot of
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
     , optionsFormatters = catMaybes [maybeMainFormatter, Just $ SomeFormatter defaultLogSaverFormatter]
-    -- , optionsFormatters = catMaybes [Just mainFormatter, Just $ SomeFormatter defaultLogSaverFormatter, slackFormatter]
     }
-
-  -- let runMode = case optDisplay of
-  --       Headless -> RunHeadless defaultHeadlessConfig
-  --       Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
-  --       Current -> Normal
-
-  -- let toolsRoot = "/tmp/tools"
-  -- seleniumPath <- (runStdoutLoggingT $ obtainSelenium toolsRoot DownloadSeleniumDefault) >>= \case
-  --   Left err -> error [i|Failed to get selenium JAR: #{err}|]
-  --   Right x -> return x
-  -- chromeDriverPath <- (runStdoutLoggingT $ obtainChromeDriver toolsRoot DownloadChromeDriverAutodetect) >>= \case
-  --   Left err -> error [i|Failed to get chromedriver: #{err}|]
-  --   Right x -> return x
-  -- geckoDriverPath <- (runStdoutLoggingT $ obtainGeckoDriver toolsRoot DownloadGeckoDriverAutodetect) >>= \case
-  --   Left err -> error [i|Failed to get geckodriver: #{err}|]
-  --   Right x -> return x
-
-  -- httpManager <- newManager (defaultManagerSettings { managerResponseTimeout = responseTimeoutMicro 60000000 })
-
-  -- let wdOptions = (defaultWdOptions "/tmp/tools") {
-  --   capabilities = if optFirefox then firefoxCapabilities else chromeCapabilities
-  --   , saveSeleniumMessageHistory = Always
-  --   , seleniumToUse = UseSeleniumAt seleniumPath
-  --   , chromeDriverToUse = UseChromeDriverAt chromeDriverPath
-  --   , geckoDriverToUse = UseGeckoDriverAt geckoDriverPath
-  --   , runMode = runMode
-  --   , httpManager = Just httpManager
-  --   , httpRetryCount = 3
-  --   }
 
   return (options, optRepeatCount)

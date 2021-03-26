@@ -1,6 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
@@ -46,7 +43,6 @@ instance Read DisplayType where
 -- * CommandLineOptions
 
 data CommandLineOptions a = CommandLineOptions {
-  -- sandwich
   optFormatter :: FormatterType
   , optLogLevel :: Maybe LogLevel
   , optTreeFilter :: Maybe String
@@ -95,9 +91,9 @@ data BrowserToUse = UseChrome | UseFirefox
   deriving Show
 
 data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
-  optFirefox :: BrowserToUse
+  optFirefox :: Maybe BrowserToUse
   , optPoolSize :: Int
-  , optDisplay :: DisplayType
+  , optDisplay :: Maybe DisplayType
   , optFluxbox :: Bool
   , optIndividualVideos :: Bool
   , optErrorVideos :: Bool

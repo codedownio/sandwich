@@ -11,6 +11,7 @@
 module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
+  , addCommandLineOptionsToWdOptions
 
   -- * Running an example in a given session
   , withSession
@@ -49,6 +50,7 @@ import Data.Maybe
 import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Internal
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
@@ -125,3 +127,16 @@ getSessions :: (WebDriverMonad m context, MonadReader context m, HasLabel contex
 getSessions = do
   WebDriver {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
+
+addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptions
+addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
+  capabilities = case optFirefox of
+    Nothing -> capabilities
+    Just UseFirefox -> firefoxCapabilities
+    Just UseChrome -> chromeCapabilities
+  , runMode = case optDisplay of
+      Nothing -> runMode
+      Just Headless -> RunHeadless defaultHeadlessConfig
+      Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
+      Just Current -> Normal
+  }
