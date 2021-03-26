@@ -118,11 +118,11 @@ runSandwich :: Options -> TopSpec -> IO ()
 runSandwich options spec = void $ runSandwich' Nothing options spec
 
 -- | Run the spec, configuring the options from the command line
-runSandwichWithCommandLineArgs :: Options -> TopSpec -> IO ()
-runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs' baseOptions (pure ()) (const spec)
+runSandwichWithCommandLineArgs :: Options -> (CommandLineOptions () -> TopSpec) -> IO ()
+runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs' baseOptions (pure ()) spec
 
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
-runSandwichWithCommandLineArgs' :: Options -> Parser a -> (a -> TopSpec) -> IO ()
+runSandwichWithCommandLineArgs' :: Options -> Parser a -> (CommandLineOptions a -> TopSpec) -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   let mainFunctions = gatherMainFunctions (spec undefined)
                       & L.sortOn nodeModuleInfoModuleName
@@ -161,8 +161,8 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
      | otherwise ->
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
-             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options (spec (optUserOptions clo))
-             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $ spec (optUserOptions clo)
+             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options (spec clo)
+             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $ spec clo
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
