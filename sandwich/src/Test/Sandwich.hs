@@ -60,9 +60,6 @@ module Test.Sandwich (
   , DisplayType(..)
   , commandLineOptionsWithInfo
 
-  , BaseContext
-  , HasBaseContext
-
   , Label(..)
   , LabelValue(..)
   , HasLabel

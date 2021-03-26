@@ -1,8 +1,13 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
 
-module Test.Sandwich.Contexts where
+module Test.Sandwich.Contexts (
+  module Test.Sandwich.Contexts
+
+  , BaseContext
+  , HasBaseContext
+  , HasCommandLineOptions
+  ) where
 
 import Control.Monad.Reader
 import GHC.Stack
