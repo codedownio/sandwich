@@ -33,7 +33,7 @@ fileHasMainFunction path = runIO (parseFileWithExts [x | x@(EnableExtension _) <
         return $ any isMainDecl decls
       _ -> return False
   ParseOk _ -> do
-    reportWarning [i|Sucessfully parsed #{path} but no module head found|]
+    reportWarning [i|Successfully parsed #{path} but no module head found|]
     return False
 
 isMainFunction :: ExportSpec l -> Bool
