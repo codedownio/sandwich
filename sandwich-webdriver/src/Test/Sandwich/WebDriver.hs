@@ -69,7 +69,7 @@ introduceWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBas
 introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
-introduceWebDriverOptions :: forall context m a. (HasBaseContext context, HasCommandLineOptions context a, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
+introduceWebDriverOptions :: forall a context m. (HasBaseContext context, HasCommandLineOptions context a, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
   => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver (do
                                                                                             clo <- getCommandLineOptions
