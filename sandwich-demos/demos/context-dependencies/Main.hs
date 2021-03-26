@@ -26,13 +26,13 @@ type HasDatabase context = HasLabel context "database" DatabaseContext
 
 type DatabaseSpec = forall context. (HasDatabase context) => SpecFree context IO ()
 
-contextDepsDemo :: TopSpec
+contextDepsDemo :: CoreSpec
 contextDepsDemo = describe "Context dependencies" $ do
   introduceDatabase $ do
     databaseTest1
     databaseTest2
 
-contextDepsDemo2 :: TopSpec
+contextDepsDemo2 :: CoreSpec
 contextDepsDemo2 = describe "Context dependencies" $ do
   introduceDatabase databaseTest1
   introduceDatabase databaseTest2

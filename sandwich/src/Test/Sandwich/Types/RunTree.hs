@@ -146,8 +146,9 @@ instance HasBaseContext context => HasBaseContext (intro :> context) where
 instance HasBaseContext context => HasTestTimer context where
   getTestTimer = baseContextTestTimer <$> getBaseContext
 
-type TopSpec = Spec BaseContext IO
-type TopSpec' = forall context. HasBaseContext context => SpecFree context IO ()
+type CoreSpec = Spec BaseContext IO
+
+type TopSpec = forall context. HasBaseContext context => SpecFree context IO ()
 
 -- * Specs with command line options provided
 

@@ -4,7 +4,7 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import Test.Sandwich
 
-basic :: TopSpec
+basic :: CoreSpec
 basic = describe "Simple tests" $ do
   describe "Arithmetic" $ do
     it "adds" $ do

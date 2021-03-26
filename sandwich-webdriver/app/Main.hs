@@ -16,7 +16,7 @@ import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver
 
-simple :: TopSpec
+simple :: CoreSpec
 simple = introduceWebDriver wdOptions $ do
   it "does the thing 1" $ withSession1 $ do
     openPage "http://www.google.com"
@@ -36,7 +36,7 @@ simple = introduceWebDriver wdOptions $ do
   --   setWindowRightSide
   --   liftIO $ threadDelay 1000000
 
--- concurrent :: TopSpec
+-- concurrent :: CoreSpec
 -- concurrent = introduceWebDriver wdOptions $ parallel $ do
 --   it "does the thing 1" $ withSession1 $ do
 --     openPage "http://www.google.com"
@@ -47,7 +47,7 @@ simple = introduceWebDriver wdOptions $ do
 --     setWindowRightSide
 --     liftIO $ threadDelay 10000000
 
--- pooled :: TopSpec
+-- pooled :: CoreSpec
 -- pooled = do
 --   introduce "WebDriver pool" webdriverPool doCreatePool (liftIO . purgePool) $ parallel $ do
 --     it "works" (2 `shouldBe` 2)

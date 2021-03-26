@@ -35,12 +35,12 @@ import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
 
-startSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
+startSandwichTree :: Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree options spec = do
   baseContext <- baseContextFromOptions options
   startSandwichTree' baseContext options spec
 
-startSandwichTree' :: BaseContext -> Options -> TopSpec -> IO [RunNode BaseContext]
+startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree' baseContext (Options {..}) spec' = do
   let spec = case optionsFilterTree of
         Nothing -> spec'
@@ -53,7 +53,7 @@ startSandwichTree' baseContext (Options {..}) spec' = do
 
   return runTree
 
-runSandwichTree :: Options -> TopSpec -> IO [RunNode BaseContext]
+runSandwichTree :: Options -> CoreSpec -> IO [RunNode BaseContext]
 runSandwichTree options spec = do
   rts <- startSandwichTree options spec
   mapM_ waitForTree rts

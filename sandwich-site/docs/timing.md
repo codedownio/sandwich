@@ -22,7 +22,7 @@ First of all, **every node in the test tree is timed by default**. Thus, the "de
 In addition, you can time arbitrary blocks of code using the `timeAction` function. This function is a `bracket_` style combinator that can be used to wrap an action. In the example below, we use it to wrap some sub-steps within a test.
 
 ``` haskell title="https://github.com/thomasjm/sandwich/blob/master/sandwich-demos/demos/timing/Main.hs"
-timingDemo :: TopSpec
+timingDemo :: CoreSpec
 timingDemo = describe "Dinner tests" $ do
   it "Makes dinner" $ do
     pauseSeconds 1
@@ -47,7 +47,7 @@ Flame graphs need to be properly *nested* to be valid. If Frame A starts before 
 The solution is to introduce "profiles" within the test timer to correspond to execution threads, and make sure you run in a single-threaded way *within each profile*. Below is a simple example of this in action. Note that we use the `parallel` keyword at the top level, to cause the two test trees underneath it to run in their own threads. Immediately underneath the `parallel` keyword, we use `withTimingProfile` to switch the profile for the rest of the sub-tree.
 
 ```haskell
-timingParallelDemo :: TopSpec
+timingParallelDemo :: CoreSpec
 timingParallelDemo = parallel $ do
   withTimingProfile "italian" $
     it "Makes Italian dinner" $ do

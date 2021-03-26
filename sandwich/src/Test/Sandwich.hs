@@ -46,8 +46,8 @@ module Test.Sandwich (
   -- * Spec types
   , Spec
   , SpecFree
+  , CoreSpec
   , TopSpec
-  , TopSpec'
   , TopSpecWithOptions
   , TopSpecWithOptions'
 
@@ -121,7 +121,7 @@ import Test.Sandwich.Types.TestTimer
 
 
 -- | Run the spec
-runSandwich :: Options -> TopSpec -> IO ()
+runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = void $ runSandwich' Nothing options spec
 
 -- | Run the spec, configuring the options from the command line
@@ -184,7 +184,7 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
                    Right _ -> return (NormalExit, 0)
 
 -- | Run the spec and return the number of failures
-runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> TopSpec -> IO (ExitReason, Int)
+runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
 

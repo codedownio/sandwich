@@ -14,7 +14,7 @@ import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.QuickCheck
 
-simple :: TopSpec
+simple :: CoreSpec
 simple = do
   it "does the thing 1" $ do
     2 `shouldBe` 2

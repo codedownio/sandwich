@@ -47,7 +47,7 @@ introduceServer = introduceWith "Introduce server" server $ \action -> do
 
 -- * Tests
 
-contextNestedDepsDemo :: TopSpec
+contextNestedDepsDemo :: CoreSpec
 contextNestedDepsDemo = describe "Nested dependencies" $ do
   introduceDatabase $
     introduceServer $

@@ -8,7 +8,7 @@ import Test.Sandwich
 import UnitTests
 
 
-discoverDemo :: TopSpec
+discoverDemo :: CoreSpec
 discoverDemo = describe "Discover" $ do
   UnitTests.tests
 

@@ -54,13 +54,13 @@ run test = (liftIO $ tryAny test) >>= \case
 throwSomeUserError :: (MonadIO m) => m ()
 throwSomeUserError = liftIO $ throwIO someUserError
 
-runAndGetResults :: (HasCallStack) => TopSpec -> IO [Result]
+runAndGetResults :: (HasCallStack) => CoreSpec -> IO [Result]
 runAndGetResults spec = do
   finalTree <- runSandwichTree defaultOptions spec
   fixedTree <- atomically $ mapM fixRunTree finalTree
   return $ fmap statusToResult $ concatMap getStatuses fixedTree
 
-runAndGetResultsAndLogs :: TopSpec -> IO ([Result], [[LogStr]])
+runAndGetResultsAndLogs :: CoreSpec -> IO ([Result], [[LogStr]])
 runAndGetResultsAndLogs spec = do
   finalTree <- runSandwichTree defaultOptions spec
   getResultsAndMessages <$> fixTree finalTree
