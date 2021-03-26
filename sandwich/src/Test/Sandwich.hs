@@ -5,6 +5,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich (
 
@@ -43,6 +47,9 @@ module Test.Sandwich (
   , Spec
   , SpecFree
   , TopSpec
+  , TopSpec'
+  , TopSpecWithOptions
+  , TopSpecWithOptions'
 
   -- * Command line options
   , CommandLineOptions(..)
@@ -118,13 +125,13 @@ runSandwich :: Options -> TopSpec -> IO ()
 runSandwich options spec = void $ runSandwich' Nothing options spec
 
 -- | Run the spec, configuring the options from the command line
-runSandwichWithCommandLineArgs :: Options -> (CommandLineOptions () -> TopSpec) -> IO ()
+runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
 runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs' baseOptions (pure ()) spec
 
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
-runSandwichWithCommandLineArgs' :: Options -> Parser a -> (CommandLineOptions a -> TopSpec) -> IO ()
+runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => Options -> Parser a -> TopSpecWithOptions' a -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  let modulesAndShorthands = gatherMainFunctions (spec undefined)
+  let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
                            & L.sortOn nodeModuleInfoModuleName
                            & gatherShorthands
   let individualTestFlags maybeInternal =
@@ -161,8 +168,10 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
      | otherwise ->
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
-             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options (spec clo)
-             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $ spec clo
+             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
+               introduce "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
+               introduce "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]

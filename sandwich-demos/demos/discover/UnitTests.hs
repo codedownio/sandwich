@@ -10,8 +10,5 @@ import Test.Sandwich
 #insert_test_imports
 
 
-tests :: TopSpec
+tests :: TopSpec'
 tests = $(getSpecFromFolder 'describe)
-
--- main :: IO ()
--- main = runSandwichWithCommandLineArgs defaultOptions tests
