@@ -7,7 +7,7 @@ import Data.Time.Clock
 import Test.Sandwich
 
 
-timingParallelDemo :: CoreSpec
+timingParallelDemo :: TopSpec
 timingParallelDemo = parallel $ do
   withTimingProfile "italian" $
     it "Makes Italian dinner" $ do

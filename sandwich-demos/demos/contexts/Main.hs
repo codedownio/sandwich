@@ -20,7 +20,7 @@ introduceDatabase = introduceWith "Introduce database" database $ \action ->
           (\db -> debug "Tearing down DB..." >> return ())
           (void . action)
 
-contextsDemo :: CoreSpec
+contextsDemo :: TopSpec
 contextsDemo = describe "Contexts" $ do
   introduceDatabase $ do
     it "Uses the database" $ do

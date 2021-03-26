@@ -11,7 +11,7 @@ import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.Slack
 import Test.Sandwich.Formatters.TerminalUI
 
-simple :: CoreSpec
+simple :: TopSpec
 simple = parallel $ do
   it "does the thing 1" sleepThenSucceed
   it "does the thing 2" sleepThenSucceed

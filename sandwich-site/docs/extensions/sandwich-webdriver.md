@@ -12,7 +12,7 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver
 import Test.WebDriver
 
-spec :: CoreSpec
+spec :: TopSpec
 spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   it "opens Google and searches" $ withBrowser1 $ do
     openPage "http://www.google.com"
@@ -60,7 +60,7 @@ The library provides `withBrowser1`/`withBrowser2` as convenience functions for 
 For example, the code below open two windows, positions them on the left and right side of the screen respectively, and opens a different site in each.
 
 ```haskell
-spec :: CoreSpec
+spec :: TopSpec
 spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withBrowser1 $ openPage "http://www.google.com"
@@ -74,7 +74,7 @@ You can use the functions in [Test.Sandwich.WebDriver.Windows](TODO) to arrange 
 The code below extends the previous example with window positioning.
 
 ```haskell
-spec :: CoreSpec
+spec :: TopSpec
 spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withBrowser "browser1" $ do

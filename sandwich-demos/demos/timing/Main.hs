@@ -8,7 +8,7 @@ import Common
 import Data.Time.Clock
 import Test.Sandwich
 
-timingDemo :: CoreSpec
+timingDemo :: TopSpec
 timingDemo = describe "Dinner tests" $ do
   it "Makes dinner" $ do
     pauseSeconds 1

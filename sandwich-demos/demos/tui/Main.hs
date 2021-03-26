@@ -15,7 +15,7 @@ import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
 
-simple :: CoreSpec
+simple :: TopSpec
 simple = parallel $ do
   describe "Foo" $ do
     it "tests foo #1" $ pauseRandomAndSucceed

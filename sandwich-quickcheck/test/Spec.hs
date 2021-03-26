@@ -9,7 +9,7 @@ data Baz = Baz Int String Bar deriving (Show, Eq)
 data Simple = Simple { simpleInt :: Int } deriving (Show, Eq)
 
 
-verySimple :: CoreSpec
+verySimple :: TopSpec
 verySimple = do
   it "succeeds" (return ())
 

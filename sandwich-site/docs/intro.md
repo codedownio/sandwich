@@ -20,7 +20,7 @@ module Main where
 
 import Test.Sandwich
 
-basic :: CoreSpec
+basic :: TopSpec
 basic = do
   describe "Arithmetic" $ do
     it "adds" $ do

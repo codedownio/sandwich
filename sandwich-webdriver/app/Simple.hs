@@ -10,7 +10,7 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
   , runMode = RunHeadless defaultHeadlessConfig
   }
 
-spec :: CoreSpec
+spec :: TopSpec
 spec = introduceWebDriver wdOptions $ do
   it "opens Google and searches" $ withSession1 $ do
     openPage "http://www.google.com"

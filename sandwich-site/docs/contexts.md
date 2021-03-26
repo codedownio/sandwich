@@ -58,7 +58,7 @@ introduceDatabase = introduceWith "Introduce database" database $ \action ->
 Inside the test, we can use `getContext` to get the context and do things with it. 
 
 ```haskell
-contextsDemo :: CoreSpec
+contextsDemo :: TopSpec
 contextsDemo = describe "Contexts" $ do
   introduceDatabase $ do
     it "Uses the database" $ do
@@ -102,7 +102,7 @@ databaseTest2 = do
 Now, in your main test file, you can import both of these tests and run them in the same test tree.
 
 ```haskell
-contextDepsDemo :: CoreSpec
+contextDepsDemo :: TopSpec
 contextDepsDemo = describe "Context dependencies" $ do
   introduceDatabase $ do
     databaseTest1
@@ -112,7 +112,7 @@ contextDepsDemo = describe "Context dependencies" $ do
 Or, if you want better isolation, you can rearrange this to create a separate database for each subtree.
 
 ```haskell
-contextDepsDemo :: CoreSpec
+contextDepsDemo :: TopSpec
 contextDepsDemo = describe "Context dependencies" $ do
   introduceDatabase databaseTest1
   introduceDatabase databaseTest2
@@ -143,7 +143,7 @@ introduceServer = introduceWith "Introduce server" server $ \action -> do
 Now, we need to write `introduceServer` nested inside a `introduceDatabase` node:
 
 ```haskell
-contextNestedDepsDemo :: CoreSpec
+contextNestedDepsDemo :: TopSpec
 contextNestedDepsDemo = describe "Nested dependencies" $ do
   introduceDatabase $
     introduceServer $

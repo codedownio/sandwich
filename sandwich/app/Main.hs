@@ -31,7 +31,7 @@ data Simple = Simple { simpleInt :: Int } deriving (Show, Eq)
 database = Label :: Label "database" Database
 otherDatabase = Label :: Label "otherDatabase" Database
 
-documentation :: CoreSpec
+documentation :: TopSpec
 documentation = describe "arithmetic" $ do
   it "tests addition" $ do
     (2 + 2) `shouldBe` 4
@@ -42,7 +42,7 @@ documentation = describe "arithmetic" $ do
 
 
 
-verySimple :: CoreSpec
+verySimple :: TopSpec
 verySimple = do
   it "succeeds" (return ())
   it "tries shouldBe" (2 `shouldBe` 3)
@@ -65,7 +65,7 @@ verySimple = do
     warn "warn message"
     logError "error message"
 
-cancelling :: CoreSpec
+cancelling :: TopSpec
 cancelling = do
   before "succeeds" (debug "before called") $ do
     it "sleeps forever" $ do
@@ -74,7 +74,7 @@ cancelling = do
       liftIO $ threadDelay 1000000
       return ()
 
-cancellingIntroduce :: CoreSpec
+cancellingIntroduce :: TopSpec
 cancellingIntroduce = do
   introduce "alloc sleeps forever" database ((forever $ liftIO $ threadDelay 1000000) >> return (Database "foo")) (const $ return ()) $ do
     it "sleeps forever" $ do
@@ -83,12 +83,12 @@ cancellingIntroduce = do
       liftIO $ threadDelay 1000000
       return ()
 
-manyRows :: CoreSpec
+manyRows :: TopSpec
 manyRows = do
   forM_ [(0 :: Int)..100] $ \n ->
     it [i|does the thing #{n}|] (2 `shouldBe` 2)
 
-simple :: CoreSpec
+simple :: TopSpec
 simple = do
   it "does the thing 1" sleepThenSucceed
   it "does the thing 2" sleepThenSucceed
@@ -101,7 +101,7 @@ simple = do
   it "does the thing 5" sleepThenSucceed
   it "does the thing 6" sleepThenSucceed
 
-medium :: CoreSpec
+medium :: TopSpec
 medium = do
   it "does the first thing" sleepThenSucceed
   it "does the 1.5 thing" sleepThenFail
@@ -159,7 +159,7 @@ medium = do
   after "after" (debug "doing after") $ do
     it "has a thing after it" $ sleepThenSucceed
 
-introduceFailure :: CoreSpec
+introduceFailure :: TopSpec
 introduceFailure = do
   introduceWith "Database around" database (\action -> liftIO $ throwIO $ userError "Failed to get DB") $ do
     introduce "Database" database (debug "making DB" >> (return $ Database "outer")) (const $ return ()) $ do
@@ -167,14 +167,14 @@ introduceFailure = do
         db <- getContext database
         debug [i|Got db: #{db}|]
 
-introduceWithInterrupt :: CoreSpec
+introduceWithInterrupt :: TopSpec
 introduceWithInterrupt = do
   introduceWith "Database around" database (\action -> liftIO $ threadDelay 999999999999999) $ do
     it "uses the DB 1" $ do
       db <- getContext database
       debug [i|Got db: #{db}|]
 
-beforeExceptionSafetyNested :: CoreSpec
+beforeExceptionSafetyNested :: TopSpec
 beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userError "OH NO") $ do
   it "does thing 1" $ return ()
   it "does thing 2" $ return ()
@@ -182,7 +182,7 @@ beforeExceptionSafetyNested = before "before label" (liftIO $ throwIO $ userErro
     it "does nested thing 1" $ return ()
     it "does nested thing 2" $ return ()
 
-longLogs :: CoreSpec
+longLogs :: TopSpec
 longLogs = do
   it "does thing 1" $
     shouldFail (2 `shouldBe` 3)
