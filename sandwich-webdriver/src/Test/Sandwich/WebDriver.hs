@@ -7,10 +7,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
+  , introduceWebDriverOptions
   , addCommandLineOptionsToWdOptions
 
   -- * Running an example in a given session
@@ -64,6 +67,14 @@ import qualified Test.WebDriver.Session as W
 -- | This is the main 'introduce' method for creating a WebDriver.
 introduceWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
+
+-- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
+introduceWebDriverOptions :: forall context m a. (HasBaseContext context, HasCommandLineOptions context a, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
+  => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver (do
+                                                                                            clo <- getCommandLineOptions
+                                                                                            allocateWebDriver (addCommandLineOptionsToWdOptions @a clo wdOptions)
+                                                                                        ) cleanupWebDriver
 
 -- | Allocate a WebDriver using the given options
 allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WebDriver
