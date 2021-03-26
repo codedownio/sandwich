@@ -124,9 +124,9 @@ runSandwichWithCommandLineArgs baseOptions spec = runSandwichWithCommandLineArgs
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
 runSandwichWithCommandLineArgs' :: Options -> Parser a -> (CommandLineOptions a -> TopSpec) -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  let mainFunctions = gatherMainFunctions (spec undefined)
-                      & L.sortOn nodeModuleInfoModuleName
-  let modulesAndShorthands = gatherShorthands mainFunctions
+  let modulesAndShorthands = gatherMainFunctions (spec undefined)
+                           & L.sortOn nodeModuleInfoModuleName
+                           & gatherShorthands
   let individualTestFlags maybeInternal =
         [[ Just $ flag' (Just $ IndividualTestModuleName nodeModuleInfoModuleName)
                         (long (T.unpack shorthand)

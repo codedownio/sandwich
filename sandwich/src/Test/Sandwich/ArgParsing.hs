@@ -87,7 +87,6 @@ logLevel =
 commandLineWebdriverOptions :: (forall f a. Mod f a) -> Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
   <$> optional (browserToUse maybeInternal)
-  <*> option auto (long "pool-size" <> short 'p' <> showDefault <> help "WebDriver pool size" <> value 4 <> metavar "INT" <> maybeInternal)
   <*> optional (display maybeInternal)
   <*> flag False True (long "fluxbox" <> help "Launch fluxbox as window manager when using Xvfb" <> maybeInternal)
   <*> flag False True (long "individual-videos" <> help "Record individual videos of each test (requires ffmpeg and Xvfb)" <> maybeInternal)

@@ -131,10 +131,11 @@ gatherNodeOptions (Pure _) = []
 
 gatherMainFunctions :: Free (SpecCommand context m) r -> [NodeModuleInfo]
 gatherMainFunctions tests = gatherNodeOptions tests
-                            & fmap nodeOptionsModuleInfo
-                            & catMaybes
+                          & fmap nodeOptionsModuleInfo
+                          & catMaybes
 
-
+-- | TODO: fill in common sandwich options
+takenMainOptions :: [T.Text]
 takenMainOptions = []
 
 gatherShorthands :: [NodeModuleInfo] -> [(NodeModuleInfo, T.Text)]

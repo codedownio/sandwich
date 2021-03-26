@@ -92,7 +92,6 @@ data BrowserToUse = UseChrome | UseFirefox
 
 data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
   optFirefox :: Maybe BrowserToUse
-  , optPoolSize :: Int
   , optDisplay :: Maybe DisplayType
   , optFluxbox :: Bool
   , optIndividualVideos :: Bool
