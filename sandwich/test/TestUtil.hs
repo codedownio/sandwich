@@ -56,13 +56,13 @@ throwSomeUserError = liftIO $ throwIO someUserError
 
 runAndGetResults :: (HasCallStack) => TopSpec -> IO [Result]
 runAndGetResults spec = do
-  finalTree <- runSandwichTree Nothing defaultOptions spec
+  finalTree <- runSandwichTree defaultOptions spec
   fixedTree <- atomically $ mapM fixRunTree finalTree
   return $ fmap statusToResult $ concatMap getStatuses fixedTree
 
 runAndGetResultsAndLogs :: TopSpec -> IO ([Result], [[LogStr]])
 runAndGetResultsAndLogs spec = do
-  finalTree <- runSandwichTree Nothing defaultOptions spec
+  finalTree <- runSandwichTree defaultOptions spec
   getResultsAndMessages <$> fixTree finalTree
 
 fixTree rts = atomically $ mapM fixRunTree rts

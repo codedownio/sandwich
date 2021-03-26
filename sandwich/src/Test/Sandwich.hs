@@ -169,7 +169,7 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 -- | Run the spec and return the number of failures
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> TopSpec -> IO (ExitReason, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
-  baseContext <- baseContextFromOptions maybeCommandLineOptions options
+  baseContext <- baseContextFromOptions options
 
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of
@@ -185,7 +185,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
 
     loggingFn $
-      runFormatter f rts baseContext
+      runFormatter f rts maybeCommandLineOptions baseContext
 
   exitReasonRef <- newIORef NormalExit
 

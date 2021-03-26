@@ -19,10 +19,12 @@ import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS8
 import System.FilePath
 import System.IO
-import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.RunTree.Logging
+import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Util
+
 
 -- | Used to save test all logs from the tests to a given path.
 data LogSaverFormatter = LogSaverFormatter {
@@ -53,8 +55,8 @@ instance Formatter LogSaverFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-runApp lsf@(LogSaverFormatter {..}) rts bc = do
+runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp lsf@(LogSaverFormatter {..}) rts _maybeCommandLineOptions bc = do
   let maybePath = case logSaverPath of
         LogPathAbsolute p -> Just p
         LogPathRelativeToRunRoot p -> case baseContextRunRoot bc of

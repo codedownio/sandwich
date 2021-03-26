@@ -53,6 +53,7 @@ import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
@@ -63,8 +64,8 @@ instance Formatter TerminalUIFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m) => TerminalUIFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-runApp (TerminalUIFormatter {..}) rts baseContext = liftIO $ do
+runApp :: (MonadIO m, MonadLogger m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = liftIO $ do
   startTime <- getCurrentTime
 
   liftIO $ setInitialFolding terminalUIInitialFolding rts

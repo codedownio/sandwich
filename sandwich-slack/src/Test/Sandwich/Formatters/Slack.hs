@@ -54,7 +54,6 @@ import Test.Sandwich.Formatters.Internal.Types
 import Test.Sandwich.Internal
 import Test.Sandwich.Internal.Formatters
 import Test.Sandwich.Types.ArgParsing
-import Test.Sandwich.Types.RunTree
 
 
 data SlackFormatter = SlackFormatter {
@@ -110,10 +109,8 @@ defaultSlackFormatter = SlackFormatter {
 
 instance Formatter SlackFormatter where
   formatterName _ = "slack-formatter"
-  runFormatter baseFormatter rts bc@(BaseContext {baseContextCommandLineOptions=(Just clo)}) =
-    runApp (addCommandLineOptions clo baseFormatter) rts bc
-  runFormatter baseFormatter rts bc@(BaseContext {baseContextCommandLineOptions=Nothing}) =
-    runApp baseFormatter rts bc
+  runFormatter baseFormatter rts (Just clo) bc = runApp (addCommandLineOptions clo baseFormatter) rts bc
+  runFormatter baseFormatter rts Nothing bc = runApp baseFormatter rts bc
   finalizeFormatter _ _ _ = return ()
 
 addCommandLineOptions :: CommandLineOptions a -> SlackFormatter -> SlackFormatter

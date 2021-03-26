@@ -65,7 +65,7 @@ introduceCleansUpOnCancelDuringTest :: (HasCallStack) => IO ()
 introduceCleansUpOnCancelDuringTest = do
   mvar <- newEmptyMVar
 
-  rts <- startSandwichTree Nothing defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
+  rts <- startSandwichTree defaultOptions $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
     it "does thing 1" $ do
       liftIO $ putMVar mvar ()
       liftIO $ threadDelay 999999999999999

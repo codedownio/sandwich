@@ -32,6 +32,7 @@ import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
@@ -42,8 +43,8 @@ instance Formatter PrintFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-runApp pf@(PrintFormatter {..}) rts bc = liftIO $ do
+runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp pf@(PrintFormatter {..}) rts _maybeCommandLineOptions bc = liftIO $ do
   let total = countWhere isItBlock rts
 
   startTime <- getCurrentTime
