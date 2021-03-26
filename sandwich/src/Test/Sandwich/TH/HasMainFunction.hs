@@ -17,7 +17,8 @@ import Language.Haskell.TH (runIO, reportWarning)
 
 
 -- | Use haskell-src-exts to determine if a give Haskell file has an exported main function
-fileHasMainFunction path = runIO (parseFile path) >>= \case
+-- Parse with all extensions enabled, which will hopefully parse anything
+fileHasMainFunction path = runIO (parseFileWithExts [x | x@(EnableExtension _) <- knownExtensions] path) >>= \case
   x@(ParseFailed {}) -> do
     reportWarning [i|Failed to parse #{path}: #{x}|]
     return False
