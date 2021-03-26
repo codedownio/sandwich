@@ -50,6 +50,7 @@ module Test.Sandwich (
   , CommandLineWebdriverOptions(..)
   , BrowserToUse(..)
   , DisplayType(..)
+  , commandLineOptionsWithInfo
 
   , BaseContext
   , HasBaseContext
