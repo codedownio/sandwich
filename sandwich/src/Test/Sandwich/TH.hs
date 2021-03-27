@@ -4,10 +4,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Test.Sandwich.TH (
   getSpecFromFolder
   , getSpecFromFolder'
+
+  , GetSpecFromFolderOptions
+  , getSpecIndividualSpecHooks
+  , getSpecWarnOnParseError
+
   , buildModuleMap
   ) where
 
@@ -31,11 +37,18 @@ import Test.Sandwich.Types.Spec hiding (location)
 
 constId = const id
 
-getSpecFromFolder :: Name -> Q Exp
-getSpecFromFolder = getSpecFromFolder' 'constId
+data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
+  getSpecIndividualSpecHooks :: Name
+  , getSpecWarnOnParseError :: ShouldWarnOnParseError
+  }
 
-getSpecFromFolder' :: Name -> Name -> Q Exp
-getSpecFromFolder' individualSpecHooks combiner = do
+defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions 'constId WarnOnParseError
+
+getSpecFromFolder :: Name -> Q Exp
+getSpecFromFolder = getSpecFromFolder' defaultGetSpecFromFolderOptions
+
+getSpecFromFolder' :: GetSpecFromFolderOptions -> Name -> Q Exp
+getSpecFromFolder' getSpecFromFolderOptions combiner = do
   dir <- runIO getCurrentDirectory
   filename <- loc_filename <$> location
   let folder = dropExtension (dir </> filename)
@@ -53,17 +66,17 @@ getSpecFromFolder' individualSpecHooks combiner = do
   moduleMap <- runIO $ buildModuleMap folder modulePrefix
   let reverseModuleMap = M.fromList [(y, x) | (x, y) <- M.toList moduleMap]
 
-  getSpecFromFolder'' folder reverseModuleMap (moduleName <> ".") individualSpecHooks combiner
+  getSpecFromFolder'' folder reverseModuleMap (moduleName <> ".") getSpecFromFolderOptions combiner
 
-getSpecFromFolder'' :: F.FilePath -> ReverseModuleMap -> String -> Name -> Name -> Q Exp
-getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks combiner = do
+getSpecFromFolder'' :: F.FilePath -> ReverseModuleMap -> String -> GetSpecFromFolderOptions -> Name -> Q Exp
+getSpecFromFolder'' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderOptions {..}) combiner = do
   items <- qRunIO $ L.sort <$> listDirectory folder
   specs <- (catMaybes <$>) $ forM items $ \item -> do
     isDirectory <- qRunIO $ doesDirectoryExist (folder </> item)
 
     if | isDirectory -> do
            qRunIO (doesFileExist (folder </> item <.> "hs")) >>= \case
-             False -> Just <$> getSpecFromFolder'' (folder </> item) reverseModuleMap (modulePrefix <> item <> ".") individualSpecHooks combiner
+             False -> Just <$> getSpecFromFolder'' (folder </> item) reverseModuleMap (modulePrefix <> item <> ".") gsfo combiner
              True -> return Nothing -- Do nothing, allow the .hs file to be picked up separately
        | takeExtension item == ".hs" -> do
            let fullyQualifiedModule = modulePrefix <> takeBaseName item
@@ -72,14 +85,14 @@ getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks com
                reportError [i|Couldn't find module #{fullyQualifiedModule} in #{reverseModuleMap}|]
                return Nothing
              Just importedName -> do
-               maybeMainFunction <- fileHasMainFunction (folder </> item) >>= \case
+               maybeMainFunction <- fileHasMainFunction (folder </> item) getSpecWarnOnParseError >>= \case
                  True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
                  False -> [e|Nothing|]
 
                alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) fullyQualifiedModule $(return maybeMainFunction)) })|]
 
                Just <$> [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
-                           $ $(varE individualSpecHooks) $(stringE item) $(varE $ mkName $ importedName <> ".tests")|]
+                           $ $(varE getSpecIndividualSpecHooks) $(stringE item) $(varE $ mkName $ importedName <> ".tests")|]
        | otherwise -> return Nothing
 
   let currentModule = modulePrefix
@@ -89,7 +102,7 @@ getSpecFromFolder'' folder reverseModuleMap modulePrefix individualSpecHooks com
                     & T.unpack
   maybeMainFunction <- case M.lookup currentModule reverseModuleMap of
     Nothing -> [e|Nothing|]
-    Just importedName -> fileHasMainFunction (folder <> ".hs") >>= \case
+    Just importedName -> fileHasMainFunction (folder <> ".hs") getSpecWarnOnParseError >>= \case
       True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
       False -> [e|Nothing|]
   alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) currentModule $(return maybeMainFunction)) })|]

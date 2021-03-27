@@ -7,8 +7,10 @@
 
 module Test.Sandwich.TH.HasMainFunction (
   fileHasMainFunction
+  , ShouldWarnOnParseError(..)
   ) where
 
+import Control.Monad
 import Data.String.Interpolate
 import Language.Haskell.Exts
 import Language.Haskell.TH (runIO, reportWarning)
@@ -16,11 +18,15 @@ import Language.Haskell.TH (runIO, reportWarning)
 -- import Debug.Trace
 
 
+data ShouldWarnOnParseError = WarnOnParseError | NoWarnOnParseError
+  deriving (Eq)
+
 -- | Use haskell-src-exts to determine if a give Haskell file has an exported main function
 -- Parse with all extensions enabled, which will hopefully parse anything
-fileHasMainFunction path = runIO (parseFileWithExts [x | x@(EnableExtension _) <- knownExtensions] path) >>= \case
+fileHasMainFunction path shouldWarnOnParseError = runIO (parseFileWithExts [x | x@(EnableExtension _) <- knownExtensions] path) >>= \case
   x@(ParseFailed {}) -> do
-    reportWarning [i|Failed to parse #{path}: #{x}|]
+    when (shouldWarnOnParseError == WarnOnParseError) $
+      reportWarning [i|Failed to parse #{path}: #{x}|]
     return False
   ParseOk (Module _ (Just moduleHead) _ _ decls) -> do
     -- traceM [i|Sucessfully parsed #{path}: #{moduleHead}|]
