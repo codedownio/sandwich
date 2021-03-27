@@ -135,9 +135,21 @@ gatherMainFunctions tests = gatherNodeOptions tests
                           & fmap nodeOptionsModuleInfo
                           & catMaybes
 
--- | TODO: fill in common sandwich options
+-- | TODO: get these automatically from mainCommandLineOptions
 takenMainOptions :: [T.Text]
-takenMainOptions = []
+takenMainOptions = [
+  "print", "tui", "silent", "auto"
+  , "debug", "info", "warn", "error"
+  , "filter"
+  , "repeat"
+  , "fixed-root"
+  , "list-tests"
+
+  , "print-slack-flags"
+
+  , "print-webdriver-flags"
+  , "headless"
+  ]
 
 gatherShorthands :: [NodeModuleInfo] -> [(NodeModuleInfo, T.Text)]
 gatherShorthands = gatherShorthands' []

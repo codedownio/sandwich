@@ -45,6 +45,7 @@ data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
   , getSpecWarnOnParseError :: ShouldWarnOnParseError
   }
 
+defaultGetSpecFromFolderOptions :: GetSpecFromFolderOptions
 defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions {
   getSpecCombiner = 'describe
   , getSpecIndividualSpecHooks = 'constId
