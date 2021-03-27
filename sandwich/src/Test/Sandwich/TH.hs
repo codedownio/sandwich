@@ -10,6 +10,7 @@ module Test.Sandwich.TH (
   getSpecFromFolder
   , getSpecFromFolder'
 
+  , defaultGetSpecFromFolderOptions
   , GetSpecFromFolderOptions
   , getSpecIndividualSpecHooks
   , getSpecWarnOnParseError
