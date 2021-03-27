@@ -14,6 +14,7 @@ module Test.Sandwich.TH (
   , GetSpecFromFolderOptions
   , getSpecIndividualSpecHooks
   , getSpecWarnOnParseError
+  , ShouldWarnOnParseError(..)
 
   , buildModuleMap
   ) where
