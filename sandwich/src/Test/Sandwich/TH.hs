@@ -11,6 +11,7 @@ module Test.Sandwich.TH (
 
   , defaultGetSpecFromFolderOptions
   , GetSpecFromFolderOptions
+  , getSpecCombiner
   , getSpecIndividualSpecHooks
   , getSpecWarnOnParseError
   , ShouldWarnOnParseError(..)
