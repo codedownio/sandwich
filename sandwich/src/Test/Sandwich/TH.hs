@@ -8,7 +8,6 @@
 
 module Test.Sandwich.TH (
   getSpecFromFolder
-  , getSpecFromFolder'
 
   , defaultGetSpecFromFolderOptions
   , GetSpecFromFolderOptions
@@ -40,17 +39,19 @@ import Test.Sandwich.Types.Spec hiding (location)
 constId = const id
 
 data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
-  getSpecIndividualSpecHooks :: Name
+  getSpecCombiner :: Name
+  , getSpecIndividualSpecHooks :: Name
   , getSpecWarnOnParseError :: ShouldWarnOnParseError
   }
 
-defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions 'constId WarnOnParseError
+defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions {
+  getSpecCombiner = 'describe
+  , getSpecIndividualSpecHooks = 'constId
+  , getSpecWarnOnParseError = WarnOnParseError
+  }
 
-getSpecFromFolder :: Name -> Q Exp
-getSpecFromFolder = getSpecFromFolder' defaultGetSpecFromFolderOptions
-
-getSpecFromFolder' :: GetSpecFromFolderOptions -> Name -> Q Exp
-getSpecFromFolder' getSpecFromFolderOptions combiner = do
+getSpecFromFolder :: GetSpecFromFolderOptions -> Q Exp
+getSpecFromFolder getSpecFromFolderOptions = do
   dir <- runIO getCurrentDirectory
   filename <- loc_filename <$> location
   let folder = dropExtension (dir </> filename)
@@ -68,17 +69,17 @@ getSpecFromFolder' getSpecFromFolderOptions combiner = do
   moduleMap <- runIO $ buildModuleMap folder modulePrefix
   let reverseModuleMap = M.fromList [(y, x) | (x, y) <- M.toList moduleMap]
 
-  getSpecFromFolder'' folder reverseModuleMap (moduleName <> ".") getSpecFromFolderOptions combiner
+  getSpecFromFolder' folder reverseModuleMap (moduleName <> ".") getSpecFromFolderOptions
 
-getSpecFromFolder'' :: F.FilePath -> ReverseModuleMap -> String -> GetSpecFromFolderOptions -> Name -> Q Exp
-getSpecFromFolder'' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderOptions {..}) combiner = do
+getSpecFromFolder' :: F.FilePath -> ReverseModuleMap -> String -> GetSpecFromFolderOptions -> Q Exp
+getSpecFromFolder' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderOptions {..}) = do
   items <- qRunIO $ L.sort <$> listDirectory folder
   specs <- (catMaybes <$>) $ forM items $ \item -> do
     isDirectory <- qRunIO $ doesDirectoryExist (folder </> item)
 
     if | isDirectory -> do
            qRunIO (doesFileExist (folder </> item <.> "hs")) >>= \case
-             False -> Just <$> getSpecFromFolder'' (folder </> item) reverseModuleMap (modulePrefix <> item <> ".") gsfo combiner
+             False -> Just <$> getSpecFromFolder' (folder </> item) reverseModuleMap (modulePrefix <> item <> ".") gsfo
              True -> return Nothing -- Do nothing, allow the .hs file to be picked up separately
        | takeExtension item == ".hs" -> do
            let fullyQualifiedModule = modulePrefix <> takeBaseName item
@@ -109,7 +110,7 @@ getSpecFromFolder'' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolder
       False -> [e|Nothing|]
   alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) currentModule $(return maybeMainFunction)) })|]
   [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
-     $ $(varE combiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
+     $ $(varE getSpecCombiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
 
 -- * Util
 

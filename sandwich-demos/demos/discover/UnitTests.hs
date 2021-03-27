@@ -11,4 +11,4 @@ import Test.Sandwich
 
 
 tests :: TopSpec
-tests = $(getSpecFromFolder 'describe)
+tests = $(getSpecFromFolder defaultGetSpecFromFolderOptions)
