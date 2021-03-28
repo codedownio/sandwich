@@ -22,6 +22,10 @@ filterTreeToModule match (Free (IntroduceWith'' loc no l cl action subspec next)
   | otherwise = case filterTreeToModule match subspec of
       (Pure _) -> filterTreeToModule match next
       x -> Free (IntroduceWith'' loc no l cl action x (filterTreeToModule match next))
+filterTreeToModule match (Free (Parallel'' loc no subspec next))
+  | otherwise = case filterTreeToModule match subspec of
+      (Pure _) -> filterTreeToModule match next
+      x -> Free (Parallel'' loc no x (filterTreeToModule match next))
 filterTreeToModule match (Free x)
   | nodeOptions x `matches` match = Free (x { next = (filterTreeToModule match (next x)) })
   | otherwise = case filterTreeToModule match (subspec x) of

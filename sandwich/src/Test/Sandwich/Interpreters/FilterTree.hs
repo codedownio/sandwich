@@ -21,6 +21,10 @@ filterTree match (Free (IntroduceWith'' loc no l cl action subspec next))
   | otherwise = case filterTree match subspec of
       (Pure _) -> filterTree match next
       x -> Free (IntroduceWith'' loc no l cl action x (filterTree match next))
+filterTree match (Free (Parallel'' loc no subspec next))
+  | otherwise = case filterTree match subspec of
+      (Pure _) -> filterTree match next
+      x -> Free (Parallel'' loc no x (filterTree match next))
 filterTree match (Free x)
   | label x `matches` match = Free (x { next = (filterTree match (next x)) })
   | otherwise = case filterTree match (subspec x) of
