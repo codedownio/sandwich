@@ -123,12 +123,12 @@ runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = void $ runSandwich' Nothing options spec
 
 -- | Run the spec, configuring the options from the command line
-runSandwichWithCommandLineArgs :: [SomeFormatter] -> Options -> TopSpecWithOptions -> IO ()
-runSandwichWithCommandLineArgs extraFormatters baseOptions = runSandwichWithCommandLineArgs' extraFormatters baseOptions (pure ())
+runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
+runSandwichWithCommandLineArgs baseOptions = runSandwichWithCommandLineArgs' baseOptions (pure ())
 
 -- | Run the spec, configuring the options from the command line and adding user-configured command line options
-runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => [SomeFormatter] -> Options -> Parser a -> TopSpecWithOptions' a -> IO ()
-runSandwichWithCommandLineArgs' extraFormatters baseOptions userOptionsParser spec = do
+runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => Options -> Parser a -> TopSpecWithOptions' a -> IO ()
+runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
                            & L.sortOn nodeModuleInfoModuleName
                            & gatherShorthands
@@ -150,7 +150,7 @@ runSandwichWithCommandLineArgs' extraFormatters baseOptions userOptionsParser sp
   let individualTestParser maybeInternal = foldr (<|>) (pure Nothing) (catMaybes $ mconcat $ individualTestFlags maybeInternal)
 
   clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser (individualTestParser internal))
-  (options, repeatCount) <- liftIO $ addOptionsFromArgs extraFormatters baseOptions clo
+  (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
 
   if | optPrintSlackFlags clo == Just True -> do
          void $ withArgs ["--help"] $

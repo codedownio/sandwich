@@ -8,7 +8,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI (
   defaultTerminalUIFormatter
@@ -18,6 +17,7 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUILogLevel
   , terminalUIInitialFolding
   , InitialFolding(..)
+  , TerminalUIFormatter
   ) where
 
 import Brick as B

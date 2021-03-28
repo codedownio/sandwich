@@ -7,13 +7,14 @@
 module Test.Sandwich.ArgParsing where
 
 import Control.Monad.Logger
+import Data.Function
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX
+import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.IO
-import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Options
@@ -120,8 +121,8 @@ commandLineSlackOptions maybeInternal = CommandLineSlackOptions
 
 -- * Main parsing function
 
-addOptionsFromArgs :: [SomeFormatter] -> Options -> CommandLineOptions a -> IO (Options, Int)
-addOptionsFromArgs extraFormatters baseOptions (CommandLineOptions {..}) = do
+addOptionsFromArgs :: Options -> CommandLineOptions a -> IO (Options, Int)
+addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
   let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
 
@@ -134,12 +135,24 @@ addOptionsFromArgs extraFormatters baseOptions (CommandLineOptions {..}) = do
     (_, Print) -> return $ Just printFormatter
     (_, Silent) -> return Nothing
 
+  -- Strip out any "main" formatters since the options control that
+  let baseFormatters = optionsFormatters baseOptions
+                     & filter (not . isMainFormatter)
+
   let options = baseOptions {
     optionsTestArtifactsDirectory = case optFixedRoot of
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
-    , optionsFormatters = catMaybes [maybeMainFormatter, Just $ SomeFormatter defaultLogSaverFormatter] <> extraFormatters
+    , optionsFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
     }
 
   return (options, optRepeatCount)
+
+  where
+    isMainFormatter :: SomeFormatter -> Bool
+    isMainFormatter (SomeFormatter x) = case cast x of
+      Just (_ :: PrintFormatter) -> True
+      Nothing -> case cast x of
+        Just (_ :: TerminalUIFormatter) -> True
+        Nothing -> False

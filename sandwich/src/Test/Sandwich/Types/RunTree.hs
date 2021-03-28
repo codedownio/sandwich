@@ -177,7 +177,7 @@ class Formatter f where
   -- ^ Called after the test tree is completed, can be used to print final results
 
 -- | An existential wrapper around 'Formatter's
-data SomeFormatter = forall f. (Formatter f) => SomeFormatter f
+data SomeFormatter = forall f. (Formatter f, Typeable f) => SomeFormatter f
 
 -- * Options
 
