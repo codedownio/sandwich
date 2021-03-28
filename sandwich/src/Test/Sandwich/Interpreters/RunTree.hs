@@ -59,28 +59,28 @@ specToRunTreeM baseContext spec = do
 specToRunTree' :: (Monad m) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
 specToRunTree'  (Free (Before'' loc no l f subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeBefore <$> pure common <*> recurse l no common subspec <*> pure f
+  continueWith next =<< RunNodeBefore common <$> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (After'' loc no l f subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeAfter <$> pure common <*> recurse l no common subspec <*> pure f
+  continueWith next =<< RunNodeAfter common <$> recurse l no common subspec <*> pure f
 specToRunTree'  (Free (Introduce'' loc no l _cl alloc cleanup subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeIntroduce <$> pure common <*> recurse l no common subspec <*> pure alloc <*> pure cleanup
+  continueWith next =<< RunNodeIntroduce common <$> recurse l no common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith'' loc no l _cl action subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeIntroduceWith <$> pure common <*> recurse l no common subspec <*> pure action
+  continueWith next =<< RunNodeIntroduceWith common <$> recurse l no common subspec <*> pure action
 specToRunTree'  (Free (Around'' loc no l actionWith subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeAround <$> pure common <*> recurse l no common subspec <*> pure actionWith
+  continueWith next =<< RunNodeAround common <$> recurse l no common subspec <*> pure actionWith
 specToRunTree'  (Free (Describe'' loc no l subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeDescribe <$> pure common <*> recurse l no common subspec
+  continueWith next =<< RunNodeDescribe common <$> recurse l no common subspec
 specToRunTree'  (Free (Parallel'' loc no subspec next)) = do
   common <- getCommon "Parallel" loc no
-  continueWith next =<< RunNodeParallel <$> pure common <*> recurse "Parallel" no common subspec
+  continueWith next =<< RunNodeParallel common <$> recurse "Parallel" no common subspec
 specToRunTree'  (Free (It'' loc no l example next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeIt <$> pure common <*> pure example
+  continueWith next =<< RunNodeIt common <$> pure example
 specToRunTree'  (Pure _) = return []
 
 
