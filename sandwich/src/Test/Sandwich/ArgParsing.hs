@@ -120,8 +120,8 @@ commandLineSlackOptions maybeInternal = CommandLineSlackOptions
 
 -- * Main parsing function
 
-addOptionsFromArgs :: Options -> CommandLineOptions a -> IO (Options, Int)
-addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
+addOptionsFromArgs :: [SomeFormatter] -> Options -> CommandLineOptions a -> IO (Options, Int)
+addOptionsFromArgs extraFormatters baseOptions (CommandLineOptions {..}) = do
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
   let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
 
@@ -139,7 +139,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
-    , optionsFormatters = catMaybes [maybeMainFormatter, Just $ SomeFormatter defaultLogSaverFormatter]
+    , optionsFormatters = catMaybes [maybeMainFormatter, Just $ SomeFormatter defaultLogSaverFormatter] <> extraFormatters
     }
 
   return (options, optRepeatCount)

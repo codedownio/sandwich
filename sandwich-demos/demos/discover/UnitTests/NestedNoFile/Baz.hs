@@ -8,4 +8,4 @@ tests :: TopSpec
 tests = it "tests baz nested no file" $ do
   2 `shouldBe` 2
 
-main = runSandwichWithCommandLineArgs defaultOptions tests
+main = runSandwichWithCommandLineArgs [] defaultOptions tests
