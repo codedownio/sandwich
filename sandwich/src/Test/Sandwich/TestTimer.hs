@@ -56,7 +56,8 @@ withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer p
 -- * Core
 
 timingNodeOptions :: NodeOptions
-timingNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False }
+timingNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False
+                                       , nodeOptionsCreateFolder = False }
 
 newSpeedScopeTestTimer :: FilePath -> Bool -> IO TestTimer
 newSpeedScopeTestTimer path writeRawTimings = do
