@@ -155,9 +155,9 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
-               introduce "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 150 }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
-               introduce "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 150 }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
@@ -178,6 +178,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
   let spec = case baseContextTestTimer baseContext of
         NullTestTimer -> spec'
         _ -> after' (defaultNodeOptions { nodeOptionsRecordTime = False
+                                        , nodeOptionsVisibilityThreshold = 150
                                         , nodeOptionsCreateFolder = False }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
   rts <- startSandwichTree' baseContext options spec
