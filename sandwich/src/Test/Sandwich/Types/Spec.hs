@@ -692,3 +692,6 @@ alterTopLevelNodeOptions :: (NodeOptions -> NodeOptions) -> Free (SpecCommand co
 alterTopLevelNodeOptions g (Free x) = Free (x { nodeOptions = g (nodeOptions x)
                                               , next = alterTopLevelNodeOptions g (next x)})
 alterTopLevelNodeOptions _ x@(Pure _) = x
+
+systemVisibilityThreshold :: Int
+systemVisibilityThreshold = 150

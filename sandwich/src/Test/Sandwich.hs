@@ -61,6 +61,7 @@ module Test.Sandwich (
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
   , module Test.Sandwich.Misc
+  , module Test.Sandwich.Nodes
   , module Test.Sandwich.Options
   , module Test.Sandwich.TH
   ) where
@@ -94,6 +95,7 @@ import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Logging
 import Test.Sandwich.Misc
+import Test.Sandwich.Nodes
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
@@ -155,9 +157,9 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          runWithRepeat repeatCount $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 150 }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 150 }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
@@ -178,7 +180,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
   let spec = case baseContextTestTimer baseContext of
         NullTestTimer -> spec'
         _ -> after' (defaultNodeOptions { nodeOptionsRecordTime = False
-                                        , nodeOptionsVisibilityThreshold = 150
+                                        , nodeOptionsVisibilityThreshold = systemVisibilityThreshold
                                         , nodeOptionsCreateFolder = False }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
   rts <- startSandwichTree' baseContext options spec
