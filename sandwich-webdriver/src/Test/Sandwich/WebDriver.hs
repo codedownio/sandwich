@@ -42,11 +42,9 @@ module Test.Sandwich.WebDriver (
   ) where
 
 import Control.Concurrent.MVar.Lifted
-import Control.Exception.Safe as ES
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
@@ -65,18 +63,18 @@ import qualified Test.WebDriver.Session as W
 
 
 -- | This is the main 'introduce' method for creating a WebDriver.
-introduceWebDriver :: (HasBaseContext context, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+introduceWebDriver :: (BaseMonadContext m context) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
-introduceWebDriverOptions :: forall a context m. (HasBaseContext context, HasCommandLineOptions context a, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
+introduceWebDriverOptions :: forall a context m. (BaseMonadContext m context, HasCommandLineOptions context a)
   => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
-introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver (do
-                                                                                            clo <- getCommandLineOptions
-                                                                                            allocateWebDriver (addCommandLineOptionsToWdOptions @a clo wdOptions)
-                                                                                        ) cleanupWebDriver
+introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
+  where alloc = do
+          clo <- getCommandLineOptions
+          allocateWebDriver (addCommandLineOptionsToWdOptions @a clo wdOptions)
 
--- | Allocate a WebDriver using the given options
+-- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WebDriver
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
@@ -84,18 +82,18 @@ allocateWebDriver wdOptions = do
   let runRoot = fromMaybe "/tmp" maybeRunRoot
   startWebDriver wdOptions runRoot
 
--- | Allocate a WebDriver using the given options and putting logs under the given path
+-- | Allocate a WebDriver using the given options and putting logs under the given path.
 allocateWebDriver' :: FilePath -> WdOptions -> IO WebDriver
 allocateWebDriver' runRoot wdOptions = do
   runNoLoggingT $ startWebDriver wdOptions runRoot
 
--- | Clean up the given WebDriver
+-- | Clean up the given WebDriver.
 cleanupWebDriver :: (HasBaseContext context, BaseMonad m) => WebDriver -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
 
--- | Clean up the given WebDriver without logging
+-- | Clean up the given WebDriver without logging.
 cleanupWebDriver' :: WebDriver -> IO ()
 cleanupWebDriver' sess = do
   runNoLoggingT $ do
@@ -138,6 +136,7 @@ getSessions = do
   WebDriver {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
 
+-- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.
 addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptions
 addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
   capabilities = case optFirefox of

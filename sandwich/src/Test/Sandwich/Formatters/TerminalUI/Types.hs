@@ -31,8 +31,20 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- ^ Whether to show or hide visibility thresholds next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
   -- ^ Log level for test log displays.
-  , terminalUIOpenInEditor :: SrcLoc -> IO ()
-  -- ^ Callback to open a source location in your editor.
+  , terminalUIDefaultEditor :: Maybe String
+  -- ^ Default value to use for the EDITOR environment variable when one is not provided.
+  -- If 'Nothing' and EDITOR can't be found, edit commands will do nothing.
+  --
+  -- Here are some recommended values, depending on your preferred editor:
+  --
+  -- * Emacs: @export EDITOR="emacsclient --eval '(progn (find-file FILE) (goto-line LINE) (forward-char (- COLUMN 1)) (recenter))'"@
+  -- * Terminal Emacs: @export EDITOR="emacsclient -nw --eval '(progn (find-file FILE) (goto-line LINE) (forward-char (- COLUMN 1)) (recenter))'"@
+  -- * Vim: @export EDITOR="vim +LINE"@
+  , terminalUIOpenInEditor :: Maybe String -> (T.Text -> IO ()) -> SrcLoc -> IO ()
+  -- ^ Callback to open a source location in your editor. By default, finds the command in the EDITOR environment variable
+  -- and invokes it with the strings LINE, COLUMN, and FILE replaced with the line number, column, and file path.
+  -- If FILE is not found in the string, it will be appended to the command after a space.
+  -- It's also passed a debug callback that accepts a 'T.Text'; messages logged with this function will go into the formatter logs.
   }
 
 data InitialFolding =
@@ -49,6 +61,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowFileLocations = False
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
+  , terminalUIDefaultEditor = Just "emacsclient +LINE:COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
   }
 
@@ -93,6 +106,7 @@ data AppState = AppState {
   , _appShowVisibilityThresholds :: Bool
 
   , _appOpenInEditor :: SrcLoc -> IO ()
+  , _appDebug :: T.Text -> IO ()
   }
 
 makeLenses ''AppState

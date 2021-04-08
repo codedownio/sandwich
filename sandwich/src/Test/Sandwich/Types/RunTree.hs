@@ -13,6 +13,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
@@ -176,7 +177,7 @@ type TopSpecWithOptions' a = forall context. (
 class Formatter f where
   formatterName :: f -> String
   -- ^ Name of the formatter
-  runFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+  runFormatter :: (MonadIO m, MonadLogger m, MonadUnliftIO m, MonadCatch m) => f -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
   -- ^ The main function, executed while the test tree is running
   finalizeFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
   -- ^ Called after the test tree is completed, can be used to print final results

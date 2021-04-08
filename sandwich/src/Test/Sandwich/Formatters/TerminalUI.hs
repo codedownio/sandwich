@@ -16,6 +16,8 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIShowVisibilityThresholds
   , terminalUILogLevel
   , terminalUIInitialFolding
+  , terminalUIDefaultEditor
+  , terminalUIOpenInEditor
   , InitialFolding(..)
   , TerminalUIFormatter
   ) where
@@ -29,6 +31,7 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Foldable
 import qualified Data.List as L
@@ -64,8 +67,8 @@ instance Formatter TerminalUIFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
-runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = liftIO $ do
+runApp :: (MonadIO m, MonadLogger m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = withRunInIO $ \runInIO -> do
   startTime <- getCurrentTime
 
   liftIO $ setInitialFolding terminalUIInitialFolding rts
@@ -90,7 +93,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = lif
           , _appShowFileLocations = terminalUIShowFileLocations
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
 
-          , _appOpenInEditor = terminalUIOpenInEditor
+          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (runInIO . logDebugN)
+          , _appDebug = runInIO . logDebugN
         }
 
   eventChan <- newBChan 10
@@ -235,25 +239,28 @@ appEvent s (VtyEvent e) =
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openTestRootKey -> withContinueS $
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
-    V.EvKey c [] | c == openTestInEditorKey -> withContinueS $
-      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) ->
-        whenJust (runTreeLoc node) $ openSrcLoc s
-    V.EvKey c [] | c == openLogsInEditorKey -> withContinueS $
-      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {node}) -> do
-        whenJust (runTreeFolder node) $ \dir -> do
-          liftIO $ (s ^. appOpenInEditor) $ SrcLoc {
-            srcLocPackage = ""
-            , srcLocModule = ""
-            , srcLocFile = dir </> "test_logs.txt"
-            , srcLocStartLine = 0
-            , srcLocStartCol = 0
-            , srcLocEndLine = 0
-            , srcLocEndCol = 0
-            }
-    V.EvKey c [] | c == openFailureInEditorKey -> withContinueS $
-      whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {status}) -> case status of
-        Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
-        _ -> return ()
+    V.EvKey c [] | c == openTestInEditorKey -> case listSelectedElement (s ^. appMainList) of
+      Just (_i, MainListElem {node=(runTreeLoc -> Just loc)}) -> openSrcLoc s loc
+      _ -> continue s
+    V.EvKey c [] | c == openLogsInEditorKey -> case listSelectedElement (s ^. appMainList) of
+      Just (_i, MainListElem {node=(runTreeFolder -> Just dir)}) -> do
+        let srcLoc = SrcLoc {
+          srcLocPackage = ""
+          , srcLocModule = ""
+          , srcLocFile = dir </> "test_logs.txt"
+          , srcLocStartLine = 0
+          , srcLocStartCol = 0
+          , srcLocEndLine = 0
+          , srcLocEndCol = 0
+          }
+        suspendAndResume ((s ^. appOpenInEditor) srcLoc >> return s)
+      _ -> continue s
+    V.EvKey c [] | c == openFailureInEditorKey -> do
+      case (listSelectedElement (s ^. appMainList)) of
+        Nothing -> continue s
+        Just (_i, MainListElem {status}) -> case status of
+          Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
+          _ -> continue s
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
@@ -382,4 +389,4 @@ openSrcLoc s loc' = do
 
   -- TODO: check if the path exists and show a warning message if not
   -- Maybe choose the first callstack location we can find?
-  liftIO $ (s ^. appOpenInEditor) loc
+  suspendAndResume (((s ^. appOpenInEditor) loc) >> return s)

@@ -195,22 +195,13 @@ longLogs = do
   it "does thing 4" $ return ()
   it "does thing 5" $ return ()
 
--- mainFilter :: IO ()
--- mainFilter = putStrLn $ prettyShow $ filterTree "also" topSpec
-
--- mainPretty :: IO ()
--- mainPretty = putStrLn $ prettyShow topSpec
-
--- mainFormatter = SomeFormatter (defaultTerminalUIFormatter {terminalUILogLevel=(Just LevelWarn), terminalUIInitialFolding=(InitialFoldingTopNOpen 2)})
-mainFormatter = SomeFormatter (defaultPrintFormatter {printFormatterLogLevel=(Just LevelWarn)})
-
 main :: IO ()
-main = runSandwich options documentation
+main = runSandwichWithCommandLineArgs options documentation
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-      , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter, SomeFormatter defaultFailureReportFormatter]
-      -- , optionsFormatters = [mainFormatter, SomeFormatter defaultLogSaverFormatter]
+      , optionsFormatters = [SomeFormatter defaultLogSaverFormatter, SomeFormatter defaultFailureReportFormatter]
+      , optionsProjectRoot = Just "sandwich"
       }
 
 
