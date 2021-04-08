@@ -16,6 +16,12 @@ module Test.Sandwich (
   --
   -- | These functions will read command line arguments when setting up your tests.
   -- These flags allow you filter the test tree, configure formatters, and pass your own custom options.
+  --
+  -- @
+  -- # Run using the terminal UI formatter, webdriver headless mode, filtering to nodes matching \"Login\"
+  -- stack run my-tests -- --tui --headless -f Login
+  -- @
+  --
   runSandwichWithCommandLineArgs
   , runSandwichWithCommandLineArgs'
 
@@ -94,7 +100,6 @@ import Test.Sandwich.Shutdown
 import Test.Sandwich.TH
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.ArgParsing
-import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
