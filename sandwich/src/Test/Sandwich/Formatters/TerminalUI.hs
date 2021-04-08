@@ -68,7 +68,7 @@ instance Formatter TerminalUIFormatter where
   finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
-runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = withRunInIO $ \runInIO -> do
+runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = liftIO $ do
   startTime <- getCurrentTime
 
   liftIO $ setInitialFolding terminalUIInitialFolding rts
@@ -93,8 +93,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = wit
           , _appShowFileLocations = terminalUIShowFileLocations
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
 
-          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (runInIO . logDebugN)
-          , _appDebug = runInIO . logDebugN
+          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (const $ return ())
+          , _appDebug = (const $ return ())
         }
 
   eventChan <- newBChan 10
