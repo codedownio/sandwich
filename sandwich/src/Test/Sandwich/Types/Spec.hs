@@ -474,7 +474,7 @@ around'' :: (HasCallStack) =>
 
 -- * ----------------------------------------------------------
 
--- | Make a group of tests.
+-- | Define a group of tests.
 describe :: (HasCallStack) =>
   String
   -- ^ Label for this group
@@ -483,7 +483,7 @@ describe :: (HasCallStack) =>
   -> SpecFree context m ()
 describe = describe' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 })
 
--- | Make a group of tests.
+-- | Define a group of tests.
 describe' :: (HasCallStack) =>
   NodeOptions
   -- ^ Custom options for this node
@@ -494,7 +494,7 @@ describe' :: (HasCallStack) =>
   -> SpecFree context m ()
 describe' = describe'' (snd <$> headMay (drop 1 $ getCallStack callStack))
 
--- | Make a group of tests.
+-- | Define a group of tests.
 describe'' :: (HasCallStack) =>
   Maybe SrcLoc
   -- ^ Location of this call

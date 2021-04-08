@@ -34,23 +34,30 @@ import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
 
 
+type EventName = T.Text
+type ProfileName = T.Text
+
 -- * User functions
 
-timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => T.Text -> T.Text -> m a -> m a
-timeActionByProfile profileName eventName action = do
-  tt <- asks getTestTimer
-  timeAction' tt profileName eventName action
-
-timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => T.Text -> m a -> m a
+-- | Time a given action with a given event name. This name will be the "stack frame" of the given action in the profiling results. This function will use the current timing profile name.
+timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => EventName -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
   BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
   timeAction' tt baseContextTestTimerProfile eventName action
 
-withTimingProfile :: (Monad m) => T.Text -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
+-- | Time a given action with a given profile name and event name. Use when you want to manually specify the profile name.
+timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => ProfileName -> EventName -> m a -> m a
+timeActionByProfile profileName eventName action = do
+  tt <- asks getTestTimer
+  timeAction' tt profileName eventName action
+
+-- | Introduce a new timing profile name.
+withTimingProfile :: (Monad m) => ProfileName -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
 withTimingProfile name = introduce' timingNodeOptions [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure $ TestTimerProfile name) (\_ -> return ())
 
-withTimingProfile' :: (Monad m) => ExampleT context m T.Text -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
+-- | Introduce a new timing profile name dynamically. The given 'ExampleT' should come up with the name and return it.
+withTimingProfile' :: (Monad m) => ExampleT context m ProfileName -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
 withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer profile to dynamic value|] testTimerProfile (TestTimerProfile <$> getName) (\_ -> return ())
 
 -- * Core

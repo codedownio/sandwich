@@ -1,13 +1,9 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Test.Sandwich.Contexts (
-  module Test.Sandwich.Contexts
+-- | Functions for retrieving context information from within tests.
 
-  , BaseContext
-  , HasBaseContext
-  , HasCommandLineOptions
-  ) where
+module Test.Sandwich.Contexts where
 
 import Control.Monad.Reader
 import GHC.Stack
@@ -15,11 +11,12 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
+
 -- | Get a context by its label.
 getContext :: (Monad m, HasLabel context l a, HasCallStack, MonadReader context m) => Label l a -> m a
 getContext = asks . getLabelValue
 
--- | Get the run root, i.e. the root folder of the on-disk test tree for the current run.
+-- | Get the root folder of the on-disk test tree for the current run.
 -- Will be 'Nothing' if the run isn't configured to use the disk.
 getRunRoot :: (Monad m, HasBaseContext context, MonadReader context m) => m (Maybe FilePath)
 getRunRoot = asks (baseContextRunRoot . getBaseContext)
@@ -31,7 +28,7 @@ getCurrentFolder :: (HasBaseContext context, MonadReader context m, MonadIO m) =
 getCurrentFolder = asks (baseContextPath . getBaseContext)
 
 -- | Get the command line options, if configured.
--- Using the runSandwichWithCommandLineArgs family of main functions will introduce these, or you can
+-- Using the 'runSandwichWithCommandLineArgs' family of main functions will introduce these, or you can
 -- introduce them manually
 getCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m (CommandLineOptions a)
 getCommandLineOptions = getContext commandLineOptions

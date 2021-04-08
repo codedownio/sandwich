@@ -68,6 +68,7 @@ library:
     - Test.Sandwich.Contexts
     - Test.Sandwich.Expectations
     - Test.Sandwich.Logging
+    - Test.Sandwich.Misc
     - Test.Sandwich.Nodes
     - Test.Sandwich.Options
     - Test.Sandwich.Formatters.FailureReport

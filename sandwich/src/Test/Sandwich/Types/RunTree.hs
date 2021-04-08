@@ -121,6 +121,8 @@ data RunTreeContext = RunTreeContext {
 
 -- * Base context
 
+-- | The base context available to every test node.
+-- Contains various paths and timing information.
 data BaseContext = BaseContext {
   baseContextPath :: Maybe FilePath
   , baseContextRunRoot :: Maybe FilePath
@@ -131,6 +133,7 @@ data BaseContext = BaseContext {
   , baseContextTestTimer :: TestTimer
   }
 
+-- | Has-* class for asserting a 'BaseContext' is available.
 class HasBaseContext a where
   getBaseContext :: a -> BaseContext
   modifyBaseContext :: a -> (BaseContext -> BaseContext) -> a
@@ -154,6 +157,8 @@ type TopSpec = forall context. HasBaseContext context => SpecFree context IO ()
 -- * Specs with command line options provided
 
 commandLineOptions = Label :: Label "commandLineOptions" (CommandLineOptions a)
+
+-- | Has-* class for asserting a 'CommandLineOptions a' is available.
 type HasCommandLineOptions context a = HasLabel context "commandLineOptions" (CommandLineOptions a)
 
 type TopSpecWithOptions = forall context. (

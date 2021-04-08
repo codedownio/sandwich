@@ -3,16 +3,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
--- |
 
-module Test.Sandwich.Expectations (
-  module Test.Sandwich.Expectations
+-- | Functions for making assertions about test behavior.
 
-  -- * Result types
-  , Result(..)
-  , FailureReason(..)
-  , SomeExceptionWithEq(..)
-  ) where
+module Test.Sandwich.Expectations where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Class
@@ -24,26 +18,32 @@ import Test.Sandwich.Types.Spec
 
 -- * Manually fail a test or mark as pending
 
+-- | General-purpose function to throw a test exception with a 'String'.
 expectationFailure :: (HasCallStack, MonadThrow m) => String -> m a
 expectationFailure = throwIO . Reason (Just callStack)
 
+-- | Throws a 'Pending' exception, which will cause the test to be marked as pending.
 pending :: (HasCallStack, MonadThrow m) => m ()
 pending = throwIO $ Pending (Just callStack) Nothing
 
+-- | Throws a 'Pending' exception with a message to add additional details.
 pendingWith :: (HasCallStack, MonadThrow m) => String -> m ()
 pendingWith msg = throwIO $ Pending (Just callStack) (Just msg)
 
+-- | Shorthand for a pending test example. You can quickly mark an 'it' node as pending by putting an "x" in front of it.
 xit :: (HasCallStack, Monad m, MonadThrow m) => String -> ExampleT context m1 () -> SpecFree context m ()
 xit name _ex = it name (throwIO $ Pending (Just callStack) Nothing)
 
 -- * Expecting failures
 
+-- | Assert that a given action should fail with some 'FailureReason'.
 shouldFail :: (HasCallStack, MonadCatch m, MonadThrow m) => m () -> m ()
 shouldFail action = do
   try action >>= \case
     Left (_ :: FailureReason) -> return ()
     Right () -> expectationFailure [i|Expected test to fail|]
 
+-- | Assert that a given action should fail with some 'FailureReason' matching a predicate.
 shouldFailPredicate :: (HasCallStack, MonadCatch m, MonadThrow m) => (FailureReason -> Bool) -> m () -> m ()
 shouldFailPredicate pred action = do
   try action >>= \case
@@ -51,6 +51,19 @@ shouldFailPredicate pred action = do
       True -> return ()
       False -> expectationFailure [i|Expected test to fail with a failure matching the predicate, but got a different failure: '#{err}'|]
     Right () -> expectationFailure [i|Expected test to fail, but it succeeded|]
+
+-- | Asserts that an action should throw an exception. Accepts a predicate to determine if the exception matches.
+shouldThrow :: (HasCallStack, MonadThrow m, MonadCatch m, MonadIO m, Exception e) =>
+  m a
+  -- ^ The action to run.
+  -> (e -> Bool)
+  -- ^ A predicate on the exception to determine if it's as expected.
+  -> m ()
+shouldThrow action f = do
+  try action >>= \case
+    Right _ -> expectationFailure [i|Expected exception to be thrown.|]
+    Left e | f e -> return ()
+    Left e -> expectationFailure [i|Exception didn't match predicate: '#{show e}'|]
 
 -- * Assertions
 
@@ -97,16 +110,3 @@ t `textShouldContain` txt = ((T.unpack t) :: String) `shouldContain` (T.unpack t
 -- | Asserts that the given text does not contain a substring.
 textShouldNotContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
 t `textShouldNotContain` txt = ((T.unpack t) :: String) `shouldNotContain` (T.unpack txt)
-
--- | Asserts that an IO action should throw an exception.
-shouldThrow :: (HasCallStack, MonadThrow m, MonadCatch m, MonadIO m, Exception e) =>
-  m a
-  -- ^ The action to run.
-  -> (e -> Bool)
-  -- ^ A predicate on the exception to determine if it's as expected.
-  -> m ()
-shouldThrow action f = do
-  try action >>= \case
-    Right _ -> expectationFailure [i|Expected exception to be thrown.|]
-    Left e | f e -> return ()
-    Left e -> expectationFailure [i|Exception didn't match predicate: '#{show e}'|]

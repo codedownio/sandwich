@@ -12,19 +12,27 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Test.Sandwich (
-
-  -- * Running tests
-  runSandwich
-  , runSandwich'
-  , runSandwichWithCommandLineArgs
+  -- * Running tests with command line args
+  --
+  -- | These functions will read command line arguments when setting up your tests.
+  -- These flags allow you filter the test tree, configure formatters, and pass your own custom options.
+  runSandwichWithCommandLineArgs
   , runSandwichWithCommandLineArgs'
 
+  -- * Running tests
+  , runSandwich
+  , runSandwich'
+
   -- * Basic nodes
+  --
+  -- | The basic building blocks of tests.
   , it
   , describe
   , parallel
 
   -- * Context manager nodes
+  --
+  -- | For introducing new contexts into tests and doing setup/teardown.
   , introduce
   , introduceWith
   , before
@@ -35,45 +43,18 @@ module Test.Sandwich (
   , aroundEach
 
   -- * Timing
+  --
+  -- | For timing actions within your tests. Test tree nodes are timed by default.
   , timeActionByProfile
   , timeAction
   , withTimingProfile
   , withTimingProfile'
 
-  -- * The example monad
-  , ExampleT
-  , ExampleM
-
-  -- * Spec types
-  , Spec
-  , SpecFree
-  , CoreSpec
-  , TopSpec
-  , TopSpecWithOptions
-  , TopSpecWithOptions'
-
-  -- * Command line options
-  , CommandLineOptions(..)
-  , CommandLineSlackOptions(..)
-  , CommandLineWebdriverOptions(..)
-  , BrowserToUse(..)
-  , DisplayType(..)
-  , commandLineOptionsWithInfo
-
-  , Label(..)
-  , LabelValue(..)
-  , HasLabel
-  , (:>)
-
-  , isEmptySpec
-
-  , SomeExceptionWithCallStack(..)
-
-  , ExitReason(..)
-
+  -- * Exports
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
   , module Test.Sandwich.Logging
+  , module Test.Sandwich.Misc
   , module Test.Sandwich.Options
   , module Test.Sandwich.TH
   ) where
@@ -106,6 +87,7 @@ import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Logging
+import Test.Sandwich.Misc
 import Test.Sandwich.Options
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
@@ -118,15 +100,16 @@ import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 
 
--- | Run the spec
+-- | Run the spec with the given 'Options'.
 runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = void $ runSandwich' Nothing options spec
 
--- | Run the spec, configuring the options from the command line
+-- | Run the spec, configuring the options from the command line.
 runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
 runSandwichWithCommandLineArgs baseOptions = runSandwichWithCommandLineArgs' baseOptions (pure ())
 
--- | Run the spec, configuring the options from the command line and adding user-configured command line options
+-- | Run the spec, configuring the options from the command line and adding user-configured command line options.
+-- The options will become available as a test context, which you can access by calling 'getCommandLineOptions'.
 runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => Options -> Parser a -> TopSpecWithOptions' a -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
@@ -181,7 +164,7 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
                    Left _ -> return (NormalExit, 1)
                    Right _ -> return (NormalExit, 0)
 
--- | Run the spec and return the number of failures
+-- | Run the spec with optional custom 'CommandLineOptions'. When finished, return the exit reason and number of failures.
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
