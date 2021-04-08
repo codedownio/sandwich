@@ -53,6 +53,7 @@ data InitialFolding =
   | InitialFoldingTopNOpen Int
   deriving (Show, Eq)
 
+-- | Default settings for the terminal UI formatter.
 defaultTerminalUIFormatter :: TerminalUIFormatter
 defaultTerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold = 50
