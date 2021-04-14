@@ -72,15 +72,15 @@ function Home() {
                     <Carousel>
                         <div>
                             asdfasdfadsf
-                            <img src="/img/basic.gif" />
+                            <img src={useBaseUrl("/img/basic.gif")} />
                             <p className="legend">Terminal UI interface</p>
                         </div>
                         <div>
-                            <img src="/img/timing_parallel.gif" />
+                            <img src={useBaseUrl("/img/timing_parallel.gif")} />
                             <p className="legend">Slack integration</p>
                         </div>
                         <div>
-                            <img src="/img/timing_parallel.gif" />
+                            <img src={useBaseUrl("/img/timing_parallel.gif")} />
                             <p className="legend">Timing and flamegraphs</p>
                         </div>
                         <div>

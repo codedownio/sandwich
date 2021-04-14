@@ -3,4 +3,4 @@ id: print
 title: Print Formatter
 ---
 
-# Print Formatter
+The print formatter gives traditional print output.

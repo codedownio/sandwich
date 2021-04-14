@@ -2,7 +2,7 @@ module.exports = {
   title: 'Sandwich',
   tagline: 'Yet another testing framework for Haskell',
   url: 'https://github.com/codedownio/sandwich',
-  baseUrl: '/',
+  baseUrl: '/sandwich/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
