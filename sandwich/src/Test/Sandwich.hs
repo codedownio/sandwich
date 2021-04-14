@@ -12,6 +12,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Test.Sandwich (
+  -- | Sandwich is a test framework for Haskell. See the <https://codedownio.github.io/sandwich/docs/ documentation> for details and usage examples.
+
   -- * Running tests with command line args
   --
   -- | These functions will read command line arguments when setting up your tests.
