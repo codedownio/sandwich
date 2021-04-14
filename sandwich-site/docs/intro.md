@@ -60,7 +60,7 @@ Your browser does not support the video tag.
 
 ## On-disk results
 
-Unless configured otherwise, each test tree run produces a *directory tree* which exactly mirrors the tree structure. For example, the test tree above would produce a tree like the following.
+Unless configured otherwise, each test tree run produces a *directory tree* which exactly mirrors the test tree structure. For example, the test tree above would produce a tree like the following.
 
 ```bash
 <test_root>

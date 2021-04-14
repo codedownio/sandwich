@@ -11,7 +11,7 @@ One of Sandwich's most powerful features is the ability to introduce *contexts* 
 
 ```haskell
 it "tests the database" $ do
-  db <- getContext database -- Retrieve the database
+  db <- getContext database
   queryUser db "user1" >>= (`shouldBe` mockUser1)
 ```
 

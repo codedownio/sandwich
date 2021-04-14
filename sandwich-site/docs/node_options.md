@@ -10,7 +10,7 @@ The basic functions like `describe`, `it`, etc. are aliases to lower-level funct
 
 ## Visibility thresholds
 
-In a given test tree, some nodes are usually more "interesting" for reporting purposes than others. Nodes like `before` and `parallel` are more about controlling setup and semantics, so you may not care about them as much as `describe` and `it` nodes. (Which is not to say these nodes can't fail; if a `before` node throws an exception, you still want the ability to examine it.)
+In a given test tree, some nodes are usually more "interesting" for reporting purposes than others. Nodes like `before` and `parallel` are more about controlling setup and semantics, so you may not care about them as much as `describe` and `it` nodes. (Which is not to say these nodes are never interesting; if a `before` node throws an exception, you still want the ability to examine it.)
 
 For example, consider some tests that initialize a server and a database, then run some tests in parallel. Which of the following failure reports is more useful?
 
