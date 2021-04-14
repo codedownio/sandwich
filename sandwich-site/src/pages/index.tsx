@@ -71,17 +71,16 @@ function Home() {
                 }}>
                     <Carousel>
                         <div>
-                            asdfasdfadsf
+                            Terminal UI interface
                             <img src={useBaseUrl("/img/basic.gif")} />
-                            <p className="legend">Terminal UI interface</p>
                         </div>
                         <div>
+                            Slack integration
                             <img src={useBaseUrl("/img/timing_parallel.gif")} />
-                            <p className="legend">Slack integration</p>
                         </div>
                         <div>
+                            Timing and flamegraphs
                             <img src={useBaseUrl("/img/timing_parallel.gif")} />
-                            <p className="legend">Timing and flamegraphs</p>
                         </div>
                         <div>
                             <p className="legend">Legend 3</p>
