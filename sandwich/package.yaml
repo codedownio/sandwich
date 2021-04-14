@@ -1,6 +1,6 @@
 name:                sandwich
 version:             0.1.0.0
-github:              "thomasjm/sandwich"
+github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"

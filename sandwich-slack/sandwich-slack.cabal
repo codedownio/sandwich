@@ -4,15 +4,15 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e9631a8c89bb911640c0ecca234c8bc84fb53a6245625babd60e833bac83e1c3
+-- hash: 900bdb13da64ea4ea2aa006e2c0dcbd6ec6b3842ae339bd1064d0f1890a53bb0
 
 name:           sandwich-slack
 version:        0.1.0.0
 synopsis:       Slack integration for Sandwich
-description:    Please see the README on GitHub at <https://github.com/thomasjm/sandwich-slack#readme>
+description:    Please see the README on GitHub at <https://github.com/codedownio/sandwich-slack#readme>
 category:       Testing
-homepage:       https://github.com/thomasjm/sandwich-slack#readme
-bug-reports:    https://github.com/thomasjm/sandwich-slack/issues
+homepage:       https://github.com/codedownio/sandwich-slack#readme
+bug-reports:    https://github.com/codedownio/sandwich-slack/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
 copyright:      2021 Tom McLaughlin
@@ -25,7 +25,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/thomasjm/sandwich-slack
+  location: https://github.com/codedownio/sandwich-slack
 
 library
   exposed-modules:

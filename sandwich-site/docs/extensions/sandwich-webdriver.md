@@ -24,7 +24,7 @@ main :: IO ()
 main = runSandwich defaultOptions spec
 ```
 
-Check out the [WdOptions](TODO) and [RunMode](TODO) options for more on what this package can do, or look at the sections below.
+Check out the [WdOptions](#) and [RunMode](#) options for more on what this package can do, or look at the sections below.
 
 ## Launching browsers in the background
 
@@ -69,7 +69,7 @@ spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
 
 ## Window positioning
 
-You can use the functions in [Test.Sandwich.WebDriver.Windows](TODO) to arrange browser windows on the screen. This is useful when you want to watch two browsers simultaneously accessing a collaborative app.
+You can use the functions in [Test.Sandwich.WebDriver.Windows](#) to arrange browser windows on the screen. This is useful when you want to watch two browsers simultaneously accessing a collaborative app.
 
 The code below extends the previous example with window positioning.
 

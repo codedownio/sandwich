@@ -1,12 +1,12 @@
 module.exports = {
   title: 'Sandwich',
   tagline: 'Yet another testing framework for Haskell',
-  url: 'https://github.com/thomasjm/sandwich',
+  url: 'https://github.com/codedownio/sandwich',
   baseUrl: '/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
-  organizationName: 'thomasjm', // Usually your GitHub org/user name.
+  organizationName: 'codedownio', // Usually your GitHub org/user name.
   projectName: 'sandwich', // Usually your repo name.
   themeConfig: {
     prism: {
@@ -27,7 +27,7 @@ module.exports = {
         },
         {to: 'blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/thomasjm/sandwich',
+          href: 'https://github.com/codedownio/sandwich',
           label: 'GitHub',
           position: 'right',
         },
@@ -79,7 +79,7 @@ module.exports = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/thomasjm/sandwich',
+              href: 'https://github.com/codedownio/sandwich',
             },
           ],
         },

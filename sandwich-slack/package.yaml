@@ -1,6 +1,6 @@
 name:                sandwich-slack
 version:             0.1.0.0
-github:              "thomasjm/sandwich-slack"
+github:              "codedownio/sandwich-slack"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
@@ -17,7 +17,7 @@ category:            Testing
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/thomasjm/sandwich-slack#readme>
+description:         Please see the README on GitHub at <https://github.com/codedownio/sandwich-slack#readme>
 
 dependencies:
 - aeson

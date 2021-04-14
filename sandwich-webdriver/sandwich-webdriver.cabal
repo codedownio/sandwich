@@ -4,13 +4,13 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 65044280e34f853b7c1af6a96ddeaeeb8464caf93fb1a4c4a5aae679497eb410
+-- hash: e0cc69d7afb49fc9b45615b01d66701b4bc013c8205330c94d2dd679a649c4ad
 
 name:           sandwich-webdriver
 version:        0.1.0.0
 description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-webdriver#readme>
-homepage:       https://github.com/thomasjm/sandwich-webdriver#readme
-bug-reports:    https://github.com/thomasjm/sandwich-webdriver/issues
+homepage:       https://github.com/codedownio/sandwich-webdriver#readme
+bug-reports:    https://github.com/codedownio/sandwich-webdriver/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
 copyright:      2021 Tom McLaughlin
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/thomasjm/sandwich-webdriver
+  location: https://github.com/codedownio/sandwich-webdriver
 
 library
   exposed-modules:
