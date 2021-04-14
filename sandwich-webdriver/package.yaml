@@ -1,27 +1,22 @@
 name:                sandwich-webdriver
-version:             0.1.0.0
-github:              "codedownio/sandwich-webdriver"
+version:             0.1.0.1
+github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
 copyright:           "2021 Tom McLaughlin"
+category:            Testing
+homepage:            https://codedownio.github.io/sandwich
+synopsis:            Sandwich integration with Selenium WebDriver
+description:         Please see the documentation at <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver>
 
 extra-source-files:
 - README.md
-- ChangeLog.md
-
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/sandwich-webdriver#readme>
+- CHANGELOG.md
 
 dependencies:
 - aeson
-- base
+- base <= 4.14
 - containers
 - convertible
 - data-default

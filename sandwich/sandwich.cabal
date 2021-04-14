@@ -4,12 +4,14 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c52c43eff3ec09b25edfa54ef6e152787b12b59181b672040925ea0b6b111ca2
+-- hash: 051e0a3136fc22e2cf0e40f976c23333d46c6cf3010c98662c72c14ded3bf8ab
 
 name:           sandwich
-version:        0.1.0.0
+version:        0.1.0.2
+synopsis:       Yet another test framework for Haskell
 description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich#readme>
-homepage:       https://github.com/codedownio/sandwich#readme
+category:       Testing
+homepage:       https://codedownio.github.io/sandwich
 bug-reports:    https://github.com/codedownio/sandwich/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
@@ -92,7 +94,7 @@ library
       aeson
     , ansi-terminal
     , async
-    , base
+    , base <=4.14
     , brick
     , bytestring
     , colour
@@ -138,7 +140,7 @@ executable sandwich-discover
       aeson
     , ansi-terminal
     , async
-    , base
+    , base <=4.14
     , brick
     , bytestring
     , colour
@@ -185,7 +187,7 @@ executable sandwich-exe
       aeson
     , ansi-terminal
     , async
-    , base
+    , base <=4.14
     , brick
     , bytestring
     , colour
@@ -237,7 +239,7 @@ executable sandwich-test
       aeson
     , ansi-terminal
     , async
-    , base
+    , base <=4.14
     , brick
     , bytestring
     , colour
@@ -290,7 +292,7 @@ test-suite sandwich-test-suite
       aeson
     , ansi-terminal
     , async
-    , base
+    , base <=4.14
     , brick
     , bytestring
     , colour
