@@ -218,8 +218,8 @@ defaultLogEntryFormatter ts loc src level msg = fromLogStr $
   <> "] ("
   <> toLogStr src
   <> ") "
+  <> (if isDefaultLoc loc then "" else "@(" <> toLogStr (BS8.pack $ fileLocStr loc) <> ") ")
   <> msg
-  <> (if isDefaultLoc loc then "\n" else " @(" <> toLogStr (BS8.pack $ fileLocStr loc) <> ")\n")
 
   where
     defaultLogLevelStr :: LogLevel -> LogStr
