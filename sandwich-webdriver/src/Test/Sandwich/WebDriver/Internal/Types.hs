@@ -1,4 +1,12 @@
-{-# LANGUAGE TypeFamilies, InstanceSigs, RecordWildCards, ScopedTypeVariables, QuasiQuotes, Rank2Types, NamedFieldPuns, DataKinds, ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Test.Sandwich.WebDriver.Internal.Types where
 
@@ -8,7 +16,6 @@ import Data.Default
 import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
-import qualified Data.Text as T
 import Network.HTTP.Client (Manager)
 import System.IO
 import System.Process
@@ -56,9 +63,6 @@ data WdOptions = WdOptions {
   -- ^ The WebDriver capabilities to use
 
   , saveSeleniumMessageHistory :: WhenToSave
-  -- ^ When to save a record of Selenium requests and responses
-
-  , saveLogSettings :: SaveLogSettings
   -- ^ When to save a record of Selenium requests and responses
 
   , seleniumToUse :: SeleniumToUse
@@ -142,7 +146,6 @@ defaultWdOptions toolsRoot = WdOptions {
   toolsRoot = toolsRoot
   , capabilities = def
   , saveSeleniumMessageHistory = OnException
-  , saveLogSettings = mempty
   , seleniumToUse = DownloadSeleniumDefault
   , chromeDriverToUse = DownloadChromeDriverAutodetect
   , geckoDriverToUse = DownloadGeckoDriverAutodetect
@@ -151,13 +154,13 @@ defaultWdOptions toolsRoot = WdOptions {
   , httpRetryCount = 0
   }
 
-type SaveLogSettings = M.Map W.LogType (W.LogEntry -> Bool, W.LogEntry -> T.Text, W.LogEntry -> Bool)
-
-data WebDriver = WebDriver { wdName :: String
-                           , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
-                           , wdOptions :: WdOptions
-                           , wdSessionMap :: MVar (M.Map Session W.WDSession)
-                           , wdConfig :: W.WDConfig }
+data WebDriver = WebDriver {
+  wdName :: String
+  , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
+  , wdOptions :: WdOptions
+  , wdSessionMap :: MVar (M.Map Session W.WDSession)
+  , wdConfig :: W.WDConfig
+  }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]
   deriving (Show)
