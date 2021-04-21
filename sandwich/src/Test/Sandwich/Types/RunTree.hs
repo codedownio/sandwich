@@ -6,6 +6,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Test.Sandwich.Types.RunTree where
 
@@ -19,7 +20,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Data.Time.Clock
+import Data.Time
 import Data.Typeable
 import GHC.Stack
 import Test.Sandwich.Types.ArgParsing
@@ -208,8 +209,33 @@ newtype TreeFilter = TreeFilter String
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
 
+-- The defaultLogStr formatter weirdly puts information after the message. Use our own
 defaultLogEntryFormatter :: LogEntryFormatter
-defaultLogEntryFormatter _ts a b c d = fromLogStr $ defaultLogStr a b c d
+defaultLogEntryFormatter ts loc src level msg = fromLogStr $
+  toLogStr (BS8.pack $ formatTime defaultTimeLocale "%F %X%4Q %Z" ts)
+  <> " ["
+  <> defaultLogLevelStr level
+  <> "] ("
+  <> toLogStr src
+  <> ") "
+  <> msg
+  <> (if isDefaultLoc loc then "\n" else " @(" <> toLogStr (BS8.pack $ fileLocStr loc) <> ")\n")
+
+  where
+    defaultLogLevelStr :: LogLevel -> LogStr
+    defaultLogLevelStr level = case level of
+      LevelOther t -> toLogStr t
+      _ -> toLogStr $ BS8.pack $ Prelude.drop 5 $ show level
+
+    isDefaultLoc :: Loc -> Bool
+    isDefaultLoc (Loc "<unknown>" "<unknown>" "<unknown>" (0,0) (0,0)) = True
+    isDefaultLoc _ = False
+
+    fileLocStr loc = (loc_package loc) ++ ':' : (loc_module loc) ++
+      ' ' : (loc_filename loc) ++ ':' : (line loc) ++ ':' : (char loc)
+      where
+        line = show . fst . loc_start
+        char = show . snd . loc_start
 
 data TestTimerType =
   NullTestTimerType
