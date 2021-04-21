@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.Interpreters.RunTree.Logging (
   logToMemory

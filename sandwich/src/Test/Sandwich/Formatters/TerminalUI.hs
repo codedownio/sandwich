@@ -108,7 +108,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = lif
       writeTVar currentFixedTree newFixed
       return newFixed
     writeBChan eventChan (RunTreeUpdated newFixedTree)
-    threadDelay 100000 -- Sleep 100ms
+    threadDelay terminalUIRefreshPeriod
 
   let buildVty = do
         v <- V.mkVty V.defaultConfig

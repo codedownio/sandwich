@@ -31,6 +31,8 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- ^ Whether to show or hide visibility thresholds next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
   -- ^ Log level for test log displays.
+  , terminalUIRefreshPeriod :: Int
+  -- ^ Time in microseconds between UI refreshes. Defaults to 100ms. Can be increased if CPU usage of the UI is too high.
   , terminalUIDefaultEditor :: Maybe String
   -- ^ Default value to use for the EDITOR environment variable when one is not provided.
   -- If 'Nothing' and EDITOR can't be found, edit commands will do nothing.
@@ -62,6 +64,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowFileLocations = False
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
+  , terminalUIRefreshPeriod = 100000
   , terminalUIDefaultEditor = Just "emacsclient +LINE:COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
   }
