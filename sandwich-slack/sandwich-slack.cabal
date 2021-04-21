@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0f40b2ac87cae77e36b49a7f3ef08c52bf94434e353249064fddaad2707d7a52
+-- hash: 7915e2758404e8f68d86c272d49b7b7519bbb8a4847ab86eaf877fb155112720
 
 name:           sandwich-slack
 version:        0.1.0.1
@@ -21,7 +21,7 @@ license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
-    ChangeLog.md
+    CHANGELOG.md
 
 source-repository head
   type: git
@@ -41,7 +41,7 @@ library
   ghc-options: -W
   build-depends:
       aeson
-    , base <=4.14
+    , base <4.15
     , bytestring
     , containers
     , lens
@@ -68,7 +68,7 @@ executable sandwich-slack-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , base <=4.14
+    , base <4.15
     , bytestring
     , containers
     , lens
@@ -97,7 +97,7 @@ test-suite sandwich-slack-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , base <=4.14
+    , base <4.15
     , bytestring
     , containers
     , lens
