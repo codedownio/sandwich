@@ -54,7 +54,7 @@ Since we used `runSandwichWithCommandLineArgs`, we can pass flags to control the
 ```
 
 <video width="100%" controls autoplay="true" muted="true">
-  <source src="/img/basic_tui.webm" type="video/webm"></source>
+  <source src={useBaseUrl('img/basic_tui.webm')} type="video/webm"></source>
 Your browser does not support the video tag.
 </video>
 

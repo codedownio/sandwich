@@ -67,7 +67,7 @@ timingParallelDemo = parallel $ do
 ```
 
 <video width="100%" controls autoplay="true" muted="true">
-  <source src="/img/timing_parallel.webm" type="video/webm"></source>
+  <source src={useBaseUrl('img/timing_parallel.webm')} type="video/webm"></source>
 Your browser does not support the video tag.
 </video>
 
