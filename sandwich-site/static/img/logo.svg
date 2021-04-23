@@ -9,10 +9,15 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    id="Layer_1"
    data-name="Layer 1"
-   viewBox="0 0 512 512"
+   viewBox="0 0 364.47455 364.47455"
    version="1.1"
    sodipodi:docname="logo.svg"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
+   width="364.47455"
+   height="364.47455"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   inkscape:export-filename="/home/tom/Pictures/export_test.png"
+   inkscape:export-xdpi="92.8125"
+   inkscape:export-ydpi="92.8125">
   <metadata
      id="metadata15">
     <rdf:RDF>
@@ -36,51 +41,50 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1222"
-     inkscape:window-height="733"
+     inkscape:window-width="1894"
+     inkscape:window-height="1301"
      id="namedview11"
      showgrid="false"
      inkscape:zoom="0.921875"
-     inkscape:cx="237.63619"
-     inkscape:cy="248.68023"
-     inkscape:window-x="3273"
-     inkscape:window-y="281"
+     inkscape:cx="163.87348"
+     inkscape:cy="174.91749"
+     inkscape:window-x="2861"
+     inkscape:window-y="27"
      inkscape:window-maximized="0"
-     inkscape:current-layer="Layer_1" />
+     inkscape:current-layer="Layer_1"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
   <title
      id="title2">sandwich</title>
-  <rect
-     width="512"
-     height="512"
-     fill="#696969"
-     id="rect4"
-     style="fill:#ffffff" />
   <path
-     d="M430.17,222.54c10.77-33.27-34.82-68.49-112.34-93.59s-135.11-23.28-145.88,10c-5,15.45,2.23,29.69,2.23,29.69,5.15,10.15,6.49,27.32,3,38.14L141.09,318.19a20.74,20.74,0,0,0,13.32,26l169.64,54.93a20.76,20.76,0,0,0,26.06-13.3l36.08-111.42c3.5-10.83,14.65-23.94,24.77-29.15C411,245.3,425.17,238,430.17,222.54Z"
+     d="m 356.40729,148.77729 c 10.77,-33.27 -34.82,-68.490001 -112.34,-93.590001 -77.52,-25.1 -135.11,-23.28 -145.880001,10 -5,15.45 2.230001,29.69 2.230001,29.69 5.15,10.150001 6.49,27.320001 3,38.140001 l -36.090001,111.41 a 20.74,20.74 0 0 0 13.32,26 l 169.640001,54.93 a 20.76,20.76 0 0 0 26.06,-13.3 l 36.08,-111.42 c 3.5,-10.83 14.65,-23.94 24.77,-29.15 0.04,0.05 14.21,-7.25 19.21,-22.71 z"
      id="path6"
-     fill="#fff"
-     style="fill:#fffcad;fill-opacity:1" />
+     style="fill:#fffcad;fill-opacity:1"
+     inkscape:connector-curvature="0" />
   <path
-     d="M151.22,354.07a31.09,31.09,0,0,1-20-39.07l36.08-111.42c2.65-8.18,1.52-22.6-2.37-30.26-.38-.74-9.1-18.29-2.85-37.57a42.5,42.5,0,0,1,17-22.44c-60.57,5.15-98.87,23.58-98.87,53,0,16.23,11.28,27.57,11.28,27.57,8,8.07,14.59,24,14.59,35.35V346.31A20.75,20.75,0,0,0,126.81,367H191.1Z"
-     fill="#fff"
+     d="m 77.457289,280.30729 a 31.09,31.09 0 0 1 -20,-39.07 l 36.08,-111.42 c 2.65,-8.18 1.52,-22.6 -2.37,-30.260001 -0.38,-0.74 -9.1,-18.29 -2.85,-37.57 a 42.5,42.5 0 0 1 17.000001,-22.44 c -60.570001,5.15 -98.8700006,23.58 -98.8700006,53 0,16.230001 11.2799996,27.570001 11.2799996,27.570001 8,8.07 14.59,24 14.59,35.35 v 117.08 a 20.75,20.75 0 0 0 20.73,20.69 h 64.290001 z"
      id="path8"
-     style="fill:#ffdbad;fill-opacity:1" />
+     style="fill:#ffdbad;fill-opacity:1"
+     inkscape:connector-curvature="0" />
   <text
      xml:space="preserve"
      style="font-style:normal;font-weight:normal;font-size:174.20730591px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff5555;fill-opacity:1;stroke:none;stroke-width:4.35518265"
-     x="289.68536"
-     y="223.23923"
+     x="196.57417"
+     y="176.20538"
      id="text827"
      transform="rotate(18.2)"><tspan
        sodipodi:role="line"
        id="tspan825"
-       x="289.68536"
-       y="223.23923"
+       x="196.57417"
+       y="176.20538"
        style="fill:#ff5555;fill-opacity:1;stroke-width:4.35518265">λ</tspan></text>
   <flowRoot
      xml:space="preserve"
      id="flowRoot829"
-     style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"><flowRegion
+     style="font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none"
+     transform="translate(-73.762711,-73.762711)"><flowRegion
        id="flowRegion831"><rect
          id="rect833"
          width="60.745762"
