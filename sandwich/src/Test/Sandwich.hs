@@ -95,6 +95,7 @@ import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Logging
 import Test.Sandwich.Misc
 import Test.Sandwich.Nodes
@@ -203,6 +204,9 @@ runSandwich' maybeCommandLineOptions options spec' = do
         forM_ rts cancelNode
 
   _ <- installHandler sigINT (Catch shutdown) Nothing
+
+  -- Wait for the tree to finish
+  mapM_ waitForTree rts
 
   -- Wait for all formatters to finish
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
