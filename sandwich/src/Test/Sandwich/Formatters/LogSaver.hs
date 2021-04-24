@@ -36,6 +36,9 @@ data LogSaverFormatter = LogSaverFormatter {
   -- ^ Formatter function for log entries.
   }
 
+instance Show LogSaverFormatter where
+  show _ = "<LogSaverFormatter>"
+
 -- | A path under which to save logs.
 data LogPath =
   LogPathRelativeToRunRoot FilePath

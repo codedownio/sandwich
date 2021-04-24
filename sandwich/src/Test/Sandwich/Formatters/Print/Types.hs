@@ -9,7 +9,7 @@ data PrintFormatter = PrintFormatter {
   , printFormatterVisibilityThreshold :: Int
   , printFormatterIncludeCallStacks :: Bool
   , printFormatterIndentSize :: Int
-  }
+  } deriving (Show)
 
 defaultPrintFormatter :: PrintFormatter
 defaultPrintFormatter = PrintFormatter {

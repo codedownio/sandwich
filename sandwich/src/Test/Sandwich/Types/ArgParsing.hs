@@ -10,10 +10,11 @@ import GHC.Int
 
 -- * FormatterType
 
-data FormatterType = Print | TUI | Auto | Silent
+data FormatterType = Print | PrintFailures | TUI | Auto | Silent
 
 instance Show FormatterType where
   show Print = "print"
+  show PrintFailures = "print-failures"
   show TUI = "tui"
   show Auto = "auto"
   show Silent = "silent"

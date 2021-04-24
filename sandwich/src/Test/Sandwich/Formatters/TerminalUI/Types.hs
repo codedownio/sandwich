@@ -49,6 +49,9 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- It's also passed a debug callback that accepts a 'T.Text'; messages logged with this function will go into the formatter logs.
   }
 
+instance Show TerminalUIFormatter where
+  show (TerminalUIFormatter {}) = "<TerminalUIFormatter>"
+
 data InitialFolding =
   InitialFoldingAllOpen
   | InitialFoldingAllClosed

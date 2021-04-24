@@ -43,7 +43,7 @@ data FailureReportFormatter = FailureReportFormatter {
   , failureReportLogLevel :: Maybe LogLevel
   , failureReportIncludeCallStacks :: Bool
   , failureReportIndentSize :: Int
-  }
+  } deriving (Show)
 
 defaultFailureReportFormatter :: FailureReportFormatter
 defaultFailureReportFormatter = FailureReportFormatter {

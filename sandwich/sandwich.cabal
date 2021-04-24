@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dafc0d430b62985e6470bd64597adb7947665b8d43fc94fc965d785b8d6d64bf
+-- hash: 78a7d26adba89426f6da9d46e1184241dc4bc13a521ff9628c61e7d1c0b998e6
 
 name:           sandwich
 version:        0.1.0.3
@@ -57,6 +57,7 @@ library
       Test.Sandwich.Formatters.Print.PrintPretty
       Test.Sandwich.Formatters.Print.Types
       Test.Sandwich.Formatters.Print.Util
+      Test.Sandwich.Formatters.Silent
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
@@ -129,12 +130,12 @@ library
     , vty
   default-language: Haskell2010
 
-executable sandwich-discover
+executable sandwich-demo
   main-is: Main.hs
   other-modules:
       Paths_sandwich
   hs-source-dirs:
-      discover
+      app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -176,12 +177,12 @@ executable sandwich-discover
     , vty
   default-language: Haskell2010
 
-executable sandwich-exe
+executable sandwich-discover
   main-is: Main.hs
   other-modules:
       Paths_sandwich
   hs-source-dirs:
-      app
+      discover
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

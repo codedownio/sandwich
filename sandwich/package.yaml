@@ -76,7 +76,7 @@ library:
     - Test.Sandwich.TH
 
 executables:
-  sandwich-exe:
+  sandwich-demo:
     main: Main.hs
     source-dirs:
     - app

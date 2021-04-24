@@ -7,6 +7,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 
 module Test.Sandwich.Types.RunTree where
 
@@ -184,7 +185,9 @@ class Formatter f where
   -- ^ Called after the test tree is completed, can be used to print final results
 
 -- | An existential wrapper around 'Formatter's
-data SomeFormatter = forall f. (Formatter f, Typeable f) => SomeFormatter f
+data SomeFormatter = forall f. (Formatter f, Show f, Typeable f) => SomeFormatter f
+
+deriving instance Show SomeFormatter
 
 -- * Options
 

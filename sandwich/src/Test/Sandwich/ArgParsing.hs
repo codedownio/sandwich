@@ -16,7 +16,9 @@ import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.IO
+import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.Print.Types
+import Test.Sandwich.Formatters.Silent
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Options
 import Test.Sandwich.Types.ArgParsing
@@ -54,7 +56,6 @@ webDriverOptionsWithInfo = OA.info (commandLineWebdriverOptions mempty <**> help
 
 mainCommandLineOptions :: Parser a -> Parser (Maybe IndividualTestModule) -> Parser (CommandLineOptions a)
 mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptions
-  -- sandwich
   <$> formatter
   <*> logLevel
   <*> optional (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
@@ -75,8 +76,9 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
 formatter :: Parser FormatterType
 formatter =
   flag' Print (long "print" <> help "Print to stdout")
+  <|> flag' PrintFailures (long "print-failures" <> help "Print failures only to stdout")
   <|> flag' TUI (long "tui" <> help "Open terminal UI app")
-  <|> flag' Silent (long "silent" <> help "Run silently (no main formatter)")
+  <|> flag' Silent (long "silent" <> help "Run silently (print the run root only)")
   <|> flag Auto Auto (long "auto" <> help "Automatically decide which formatter to use")
 
 logLevel :: Parser (Maybe LogLevel)
@@ -125,7 +127,9 @@ commandLineSlackOptions maybeInternal = CommandLineSlackOptions
 addOptionsFromArgs :: Options -> CommandLineOptions a -> IO (Options, Int)
 addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
+  let failureReportFormatter = SomeFormatter $ defaultFailureReportFormatter { failureReportLogLevel = optLogLevel }
   let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
+  let silentFormatter = SomeFormatter defaultSilentFormatter
 
   maybeMainFormatter <- case (optRepeatCount, optFormatter) of
     (x, _) | x /= 1 -> return $ Just printFormatter
@@ -134,7 +138,10 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       False -> return $ Just tuiFormatter
     (_, TUI) -> return $ Just tuiFormatter
     (_, Print) -> return $ Just printFormatter
-    (_, Silent) -> return Nothing
+    (_, PrintFailures) -> return $ Just failureReportFormatter
+    (_, Silent) -> return $ Just silentFormatter
+
+  putStrLn ("maybeMainFormatter: " <> show maybeMainFormatter)
 
   -- Strip out any "main" formatters since the options control that
   let baseFormatters = optionsFormatters baseOptions

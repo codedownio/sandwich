@@ -200,7 +200,7 @@ main = runSandwichWithCommandLineArgs options documentation
   where
     options = defaultOptions {
       optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
-      , optionsFormatters = [SomeFormatter defaultLogSaverFormatter, SomeFormatter defaultFailureReportFormatter]
+      , optionsFormatters = [SomeFormatter defaultLogSaverFormatter]
       , optionsProjectRoot = Just "sandwich"
       }
 
