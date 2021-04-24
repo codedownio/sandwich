@@ -148,13 +148,13 @@ startTree node@(RunNodeDescribe {..}) ctx' = do
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
       0 -> return Success
-      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then ("child" :: T.Text) else "children"} failed|])
+      n -> return $ Failure (ChildrenFailed Nothing n)
 startTree node@(RunNodeParallel {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeChildren ctx) >>= \case
       0 -> return Success
-      n -> return $ Failure (Reason Nothing [i|#{n} #{if n == 1 then ("child" :: T.Text) else "children"} failed|])
+      n -> return $ Failure (ChildrenFailed Nothing n)
 startTree node@(RunNodeIt {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do

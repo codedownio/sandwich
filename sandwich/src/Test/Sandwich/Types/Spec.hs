@@ -92,6 +92,8 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                    | GotAsyncException { failureCallStack :: Maybe CallStack
                                        , failureMessage :: Maybe String
                                        , failureAsyncException :: SomeAsyncExceptionWithEq }
+                   | ChildrenFailed { failureCallStack :: Maybe CallStack
+                                    , failureNumChildren :: Int }
   deriving (Show, Typeable, Eq)
 
 instance Exception FailureReason

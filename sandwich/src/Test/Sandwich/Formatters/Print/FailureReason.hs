@@ -25,6 +25,8 @@ import Text.Show.Pretty as P
 printFailureReason :: FailureReason -> ReaderT (PrintFormatter, Int, Handle) IO ()
 printFailureReason (Reason _ s) = do
   printShowBoxPrettyWithTitle "Reason: " (SEB s)
+printFailureReason (ChildrenFailed _ n) = do
+  picn midWhite ([i|#{n} #{if n == 1 then ("child" :: String) else "children"} failed|] :: String)
 printFailureReason (ExpectedButGot _ seb1 seb2) = do
   printShowBoxPrettyWithTitle "Expected: " seb1
   printShowBoxPrettyWithTitle "But got: " seb2

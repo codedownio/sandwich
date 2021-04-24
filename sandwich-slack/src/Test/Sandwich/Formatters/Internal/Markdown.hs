@@ -16,6 +16,7 @@ import Test.Sandwich.Formatters.Internal.Types
 
 toMarkdown :: FailureReason -> T.Text
 toMarkdown (Reason {..}) = T.pack failureReason
+toMarkdown (ChildrenFailed {failureNumChildren=n}) = [i|#{n} #{if n == 1 then ("child" :: T.Text) else "children"} failed|]
 toMarkdown (ExpectedButGot {..}) = [i|Expected *#{failureValue1}* but got *#{failureValue2}*|]
 toMarkdown (DidNotExpectButGot {..}) = [i|Did not expect *#{failureValue1}*|]
 toMarkdown (GotException {..}) = case failureMessage of

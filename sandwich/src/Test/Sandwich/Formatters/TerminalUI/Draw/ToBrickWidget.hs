@@ -19,6 +19,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Show.Pretty as P
 
+
 class ToBrickWidget a where
   toBrickWidget :: a -> Widget n
 
@@ -54,6 +55,7 @@ instance ToBrickWidget FailureReason where
     Just msg -> hBox [withAttr pendingAttr $ str "Pending"
                      , str (": " <> msg)]
   toBrickWidget (Reason _ msg) = boxWithTitle "Failure reason:" (strWrap msg)
+  toBrickWidget (ChildrenFailed _ n) = boxWithTitle [i|Reason: #{n} #{if n == 1 then ("child" :: String) else "children"} failed|] (strWrap "")
   toBrickWidget (GotException _ maybeMessage e@(SomeExceptionWithEq baseException)) = case fromException baseException of
     Just (fr :: FailureReason) -> boxWithTitle heading (toBrickWidget fr)
     _ -> boxWithTitle heading (reifyWidget e)
@@ -69,6 +71,7 @@ instance ToBrickWidget FailureReason where
     _ -> boxWithTitle "Get context exception:" (reifyWidget e)
 
 
+boxWithTitle :: String -> Widget n -> Widget n
 boxWithTitle heading inside = hBox [
   border $
     padAll 1 $
