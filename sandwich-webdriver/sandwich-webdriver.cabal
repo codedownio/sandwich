@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e3f76f01390946b9c285ff10be6e4d9678162aaefd674a951f50b239806388da
+-- hash: 48607d2e4674c46fdff451b60b31ca742f166a2a6e40a4281876401f2ceae9cb
 
 name:           sandwich-webdriver
-version:        0.1.0.3
+version:        0.1.0.4
 synopsis:       Sandwich integration with Selenium WebDriver
 description:    Please see the documentation at <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver>
 category:       Testing
@@ -77,7 +77,7 @@ library
     , retry
     , safe
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.3
     , string-interpolate
     , temporary
     , text
@@ -123,7 +123,7 @@ executable sandwich-webdriver-exe
     , retry
     , safe
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate
     , temporary
@@ -170,7 +170,7 @@ test-suite sandwich-webdriver-test
     , retry
     , safe
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate
     , temporary
