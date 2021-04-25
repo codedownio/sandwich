@@ -15,36 +15,38 @@ import Test.Sandwich.Formatters.Slack
 
 landingDemo :: TopSpec
 landingDemo = describe "Arithmetic tests" $ parallel $ do
-  describe "Addition" $ do
-    it "basic addition" $ do
-      (2 + 2) `shouldBe` 4
-      sleepRandom
+  withTimingProfile "Addition" $
+    describe "Addition" $ do
+      it "basic addition" $ do
+        (2 + 2) `shouldBe` 4
+        sleepRandom
 
-    it "adding zero" $ do
-      (2 + 0) `shouldBe` 2
-      sleepRandom
+      it "adding zero" $ do
+        (2 + 0) `shouldBe` 2
+        sleepRandom
 
-    it "adding one" $ do
-      sleepRandom
-      warn "Having some trouble getting this test to pass..."
-      (0 + 1) `shouldBe` 0
+      it "adding one" $ do
+        sleepRandom
+        warn "Having some trouble getting this test to pass..."
+        (0 + 1) `shouldBe` 0
 
-  describe "Multiplication" $ do
-    it "small numbers" $ do
-      (2 * 3) `shouldBe` 6
-      sleepRandom
+  withTimingProfile "Multiplication" $
+    describe "Multiplication" $ do
+      it "small numbers" $ do
+        (2 * 3) `shouldBe` 6
+        sleepRandom
 
-    it "multiplying by zero" $ do
-      (2 * 0) `shouldBe` 0
-      sleepRandom
+      it "multiplying by zero" $ do
+        (2 * 0) `shouldBe` 0
+        sleepRandom
 
-    it "multiplying by one" $ do
-      (2 * 1) `shouldBe` 2
-      sleepRandom
+      it "multiplying by one" $ do
+        (2 * 1) `shouldBe` 2
+        sleepRandom
 
-    it "squaring" $ do
-      (2 * 2) `shouldBe` 4
-      sleepRandom
+      it "squaring" $ do
+        (2 * 2) `shouldBe` 4
+        sleepRandom
 
 
 sleepRandom :: ExampleM context ()
