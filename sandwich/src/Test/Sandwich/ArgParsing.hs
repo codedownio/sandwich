@@ -141,8 +141,6 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     (_, PrintFailures) -> return $ Just failureReportFormatter
     (_, Silent) -> return $ Just silentFormatter
 
-  putStrLn ("maybeMainFormatter: " <> show maybeMainFormatter)
-
   -- Strip out any "main" formatters since the options control that
   let baseFormatters = optionsFormatters baseOptions
                      & filter (not . isMainFormatter)
