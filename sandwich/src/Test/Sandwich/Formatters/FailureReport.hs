@@ -14,6 +14,7 @@ module Test.Sandwich.Formatters.FailureReport (
   , failureReportLogLevel
   , failureReportIncludeCallStacks
   , failureReportIndentSize
+  , failureReportVisibilityThreshold
   ) where
 
 import Control.Monad
@@ -22,8 +23,10 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Foldable
+import Data.Function
 import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.Sequence as Seq
 import Data.String.Interpolate
 import qualified Data.Text as T
 import System.IO
@@ -43,6 +46,7 @@ data FailureReportFormatter = FailureReportFormatter {
   , failureReportLogLevel :: Maybe LogLevel
   , failureReportIncludeCallStacks :: Bool
   , failureReportIndentSize :: Int
+  , failureReportVisibilityThreshold :: Int
   } deriving (Show)
 
 defaultFailureReportFormatter :: FailureReportFormatter
@@ -51,6 +55,7 @@ defaultFailureReportFormatter = FailureReportFormatter {
   , failureReportLogLevel = Just LevelWarn
   , failureReportIncludeCallStacks = True
   , failureReportIndentSize = 4
+  , failureReportVisibilityThreshold = 50
   }
 
 instance Formatter FailureReportFormatter where
@@ -59,7 +64,7 @@ instance Formatter FailureReportFormatter where
   finalizeFormatter = printFailureReport
 
 printFailureReport :: (MonadIO m, MonadLogger m, MonadCatch m) => FailureReportFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-printFailureReport (FailureReportFormatter {..}) rts _bc = do
+printFailureReport frf@(FailureReportFormatter {..}) rts _bc = do
   liftIO $ putStrLn [i|\n\nFailure report:|]
 
   let pf = PrintFormatter {
@@ -70,20 +75,20 @@ printFailureReport (FailureReportFormatter {..}) rts _bc = do
         , printFormatterIndentSize = failureReportIndentSize
         }
 
-  let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, T.pack runTreeLabel)
+  let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, (T.pack runTreeLabel, runTreeVisibilityLevel))
   let idToLabel = M.fromList $ mconcat [extractValues extractFromNode node | node <- rts]
 
-  liftIO $ runReaderT (mapM_ (runWithIndentation idToLabel) rts) (pf, 0, stdout)
+  liftIO $ runReaderT (mapM_ (runWithIndentation frf idToLabel) rts) (pf, 0, stdout)
 
-runWithIndentation :: M.Map Int T.Text -> RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
-runWithIndentation idToLabel node = do
+runWithIndentation :: FailureReportFormatter -> M.Map Int (T.Text, Int) -> RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
+runWithIndentation frf@(FailureReportFormatter {..}) idToLabel node = do
   let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
 
   case node of
     RunNodeIt {} -> return ()
-    RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented (runWithIndentation idToLabel)
-    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation idToLabel)
-    _ -> forM_ (runNodeChildren node) (runWithIndentation idToLabel)
+    RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
+    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
+    _ -> forM_ (runNodeChildren node) (runWithIndentation frf idToLabel)
 
   result <- liftIO $ waitForTree node
 
@@ -95,7 +100,9 @@ runWithIndentation idToLabel node = do
       p "\n"
 
       let ancestorIds = runTreeAncestors
-      let ancestorNames = fmap (\k -> fromMaybe "?" $ M.lookup k idToLabel) ancestorIds
+      let ancestorNames = fmap (\k -> fromMaybe ("?", 0) $ M.lookup k idToLabel) ancestorIds
+                        & Seq.filter (\(_, visibilityLevel) -> visibilityLevel <= failureReportVisibilityThreshold)
+                        & fmap fst
       let label = T.unpack $ T.intercalate ", " (toList ancestorNames)
 
       case reason of
