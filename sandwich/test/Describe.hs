@@ -31,7 +31,7 @@ describeFailsWhenChildFails = do
     it "does thing 1" $ throwSomeUserError
     it "does thing 2" $ return ()
 
-  (results !! 0) `mustBe` (Failure (Reason {failureCallStack = Nothing, failureReason = "1 child failed"}))
+  (results !! 0) `mustBe` (Failure (ChildrenFailed {failureCallStack = Nothing, failureNumChildren = 1}))
   case results !! 1 of
     Failure (GotException {..}) -> do
       failureException `mustBe` someUserErrorWrapped

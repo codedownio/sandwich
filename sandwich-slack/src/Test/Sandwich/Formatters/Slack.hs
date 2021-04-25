@@ -87,7 +87,7 @@ data SlackFormatter = SlackFormatter {
   -- start dropping blocks from the end of the message until the size is small enough.
   -- Making use of 'slackFormatterMaxFailures', 'slackFormatterMaxFailureReasonLines', and
   -- 'slackFormatterMaxCallStackLines' is a good way to avoid hitting the limit.
-  }
+  } deriving (Show)
 
 defaultSlackFormatter :: SlackFormatter
 defaultSlackFormatter = SlackFormatter {
