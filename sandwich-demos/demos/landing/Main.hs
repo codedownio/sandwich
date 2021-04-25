@@ -53,6 +53,7 @@ sleepRandom = liftIO $ do
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  , optionsProjectRoot = Just "sandwich-demos"
   }
 
 main :: IO ()
