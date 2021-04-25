@@ -80,6 +80,13 @@ executables:
     - free
     - sandwich-demos
 
+  landing:
+    main: Main.hs
+    source-dirs: demos/landing
+    dependencies:
+    - free
+    - sandwich-demos
+
   tui:
     main: Main.hs
     source-dirs: demos/tui
