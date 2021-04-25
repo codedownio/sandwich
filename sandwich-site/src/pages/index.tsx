@@ -71,15 +71,15 @@ function Home() {
                 }}>
                     <Carousel>
                         <div>
-                            Terminal UI interface
+                            <div className={styles.carouselHeading}>Terminal UI interface</div>
                             <img src={useBaseUrl("/img/basic.gif")} />
                         </div>
                         <div>
-                            Slack integration
+                            <div className={styles.carouselHeading}>Slack integration</div>
                             <img src={useBaseUrl("/img/slack.gif")} />
                         </div>
                         <div>
-                            Timing and flamegraphs
+                            <div className={styles.carouselHeading}>Timing and flamegraphs</div>
                             <img src={useBaseUrl("/img/timing_parallel.gif")} />
                         </div>
                         <div>

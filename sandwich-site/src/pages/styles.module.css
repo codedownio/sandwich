@@ -35,3 +35,9 @@
   height: 200px;
   width: auto;
 }
+
+.carouselHeading {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: white;
+}
