@@ -82,9 +82,6 @@ function Home() {
                             <div className={styles.carouselHeading}>Timing and flamegraphs</div>
                             <img src={useBaseUrl("/img/timing_parallel.gif")} />
                         </div>
-                        <div>
-                            <p className="legend">Legend 3</p>
-                        </div>
                     </Carousel>
                 </div>
 
