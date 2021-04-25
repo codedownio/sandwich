@@ -53,7 +53,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           let infoWidgets = getInfoWidgets x
           guard (not $ L.null infoWidgets)
           return $ padLeft (Pad 4) $
-            fixedHeightOrViewportPercent (InnerViewport [i|viewport_#{ident}|]) 30 $
+            fixedHeightOrViewportPercent (InnerViewport [i|viewport_#{ident}|]) 33 $
               vBox infoWidgets
       ]
 
