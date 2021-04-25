@@ -76,7 +76,7 @@ function Home() {
                         </div>
                         <div>
                             Slack integration
-                            <img src={useBaseUrl("/img/timing_parallel.gif")} />
+                            <img src={useBaseUrl("/img/slack.gif")} />
                         </div>
                         <div>
                             Timing and flamegraphs

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 07355ab6ea7758910428e1220a0eb631a0b142734806bff00e5bceb1ee3d4e5a
+-- hash: aef55425e2359de6367f0a3aa412083c2b87ed0d30bb3d97fce6c9d56f24c2f7
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -42,6 +42,7 @@ library
     , monad-control
     , random
     , sandwich
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -63,6 +64,7 @@ executable basic
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -84,6 +86,7 @@ executable context-dependencies
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -105,6 +108,7 @@ executable context-nested-dependencies
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -126,6 +130,7 @@ executable contexts
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -153,6 +158,7 @@ executable discover
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -175,6 +181,7 @@ executable landing
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -196,6 +203,7 @@ executable timing
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -217,6 +225,7 @@ executable timing-parallel
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -238,6 +247,7 @@ executable tui
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , string-interpolate
     , time
   default-language: Haskell2010

@@ -27,6 +27,7 @@ dependencies:
 - monad-control
 - random
 - sandwich
+- sandwich-slack
 - string-interpolate
 - time
 
