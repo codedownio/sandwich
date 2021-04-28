@@ -14,38 +14,14 @@ extra-source-files:
 - ChangeLog.md
 
 dependencies:
-- aeson
-- async
-- base
-- containers
-- convertible
-- data-default
-- directory
-- exceptions
-- filepath
+- base < 4.15
 - free
-- http-client
-- http-conduit
-- lifted-base
 - monad-control
-- monad-logger
-- mtl
-- network
-- process
 - QuickCheck
-- random
-- retry
-- safe
 - safe-exceptions
 - sandwich
 - string-interpolate
-- temporary
-- text
 - time
-- transformers
-- transformers-base
-- unix
-- unordered-containers
 
 default-extensions:
 - OverloadedStrings
@@ -70,7 +46,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - sandwich-quickcheck
-    - time
 
 tests:
   sandwich-quickcheck-test:

@@ -1,27 +1,22 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Main where
 
-import Control.Concurrent
-import Control.Monad.IO.Class
-import Data.Maybe
-import Data.String.Interpolate
 import Data.Time.Clock
 import Test.Sandwich
-import Test.Sandwich.Formatters.Print
-import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.QuickCheck
 
-simple :: TopSpec
-simple = do
-  it "does the thing 1" $ do
-    2 `shouldBe` 2
+quickcheckDemo :: TopSpec
+quickcheckDemo = introduceQuickCheck $ do
+  prop "List reversal" $ \(xs :: [Int]) -> reverse (reverse xs) == xs
+
+  prop "Failing list reversal" $ \(xs :: [Int]) -> (reverse xs) == xs
+
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
   }
 
 main :: IO ()
-main = runSandwich testOptions simple
+main = runSandwichWithCommandLineArgs testOptions quickcheckDemo

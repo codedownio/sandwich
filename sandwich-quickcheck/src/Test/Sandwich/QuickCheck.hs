@@ -59,8 +59,8 @@ introduceQuickCheck'' :: (MonadIO m, MonadBaseControl IO m)
 introduceQuickCheck'' msg args = introduce msg quickCheckContext (return $ QuickCheckContext args) (const $ return ())
 
 -- | Similar to 'it'. Runs the given prop with QuickCheck using the currently introduced 'Args'. Throws an appropriate exception on failure.
-prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => prop -> Free (SpecCommand context m) ()
-prop p = it "prop" $ do
+prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
+prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
   liftIO (quickCheckWithResult args p) >>= \case
     QC.Success {..} -> do

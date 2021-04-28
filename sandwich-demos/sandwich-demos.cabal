@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8e859353189ff65c953ac8194d98eb38b41d7f1beb0f159e342f14e80911bf70
+-- hash: 931f8c6475af0de281540c02c43899afbb8c1f89472d3ba80128edba958a2796
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -152,12 +152,10 @@ executable discover
       base
     , exceptions
     , filepath
-    , free
     , lifted-base
     , monad-control
     , random
     , sandwich
-    , sandwich-demos
     , sandwich-slack
     , string-interpolate
     , time
@@ -175,7 +173,6 @@ executable landing
       base
     , exceptions
     , filepath
-    , free
     , lifted-base
     , monad-control
     , random
@@ -199,7 +196,6 @@ executable quickcheck
     , base
     , exceptions
     , filepath
-    , free
     , lifted-base
     , monad-control
     , random

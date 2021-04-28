@@ -77,22 +77,17 @@ executables:
   discover:
     main: Main.hs
     source-dirs: demos/discover
-    dependencies:
-    - free
-    - sandwich-demos
 
   landing:
     main: Main.hs
     source-dirs: demos/landing
     dependencies:
-    - free
     - sandwich-demos
 
   quickcheck:
     main: Main.hs
     source-dirs: demos/quickcheck
     dependencies:
-    - free
     - QuickCheck
 
   tui:
