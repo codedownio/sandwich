@@ -17,7 +17,7 @@ You can select a test timer implementation you use in the Sandwich options. The 
 
 The simplest use of timing occurs when we don't have any `parallel` stuff going on, so the tests all run in a single thread. To deal with multiple threads, see the [concurrency](#dealing-with-concurrency) section.
 
-First of all, **every node in the test tree is timed by default**. Thus, the "describe" and "it" nodes in the example below will be timed automatically. You can prevent this by changing the [node options](/docs/node_options).
+First of all, **every node in the test tree is timed by default**. Thus, the "describe" and "it" nodes in the example below will be timed automatically. You can prevent this by changing the [node options](/docs/node_options#timing).
 
 In addition, you can time arbitrary blocks of code using the `timeAction` function. This function is a `bracket_` style combinator that can be used to wrap an action. In the example below, we use it to wrap some sub-steps within a test.
 
@@ -37,7 +37,8 @@ timingDemo = describe "Dinner tests" $ do
 
 When you run this code using the default implementation, it will output a file `speedscope.json` in the root of the test results. If you drag and drop this file onto SpeedScope, you get a picture like the following. Note that the profile (in the center of the top bar) is "default." In the next section we'll explore using multiple threads (and thus multiple profiles).
 
-<img alt="Simple timing example" src={useBaseUrl('img/dinner_timing.png')} />
+<img alt="Simple timing example" src={useBaseUrl('img/dinner_timing.png')}
+                                 style={{border: "solid 1px lightgray"}} />
 
 
 ## Dealing with concurrency

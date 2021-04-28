@@ -7,6 +7,13 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 The [Slack formatter](http://hackage.haskell.org/package/sandwich-slack) allows you to send live test results to a Slack channel. It shows the overall progress through the tests as a progress bar, and also shows failures as they occur.
 
+When applied to the arithmetic example from the landing page, it looks like this:
+
+<img alt="Simple timing example" src={useBaseUrl('img/slack.gif')} />
+
+
+## Usage
+
 To enable it, add `sandwich-slack` to your project and add the formatter to the [optionsFormatters](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Options.html#v:optionsFormatters) of your Sandwich options.
 
 ```haskell
@@ -23,13 +30,9 @@ main = runSandwich options myTests
       }
 ```
 
-If you're using the [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) family of functions, you can also control the Slack formatter settings using command line args. For example, you can pass `--slack-token $SLACK_TOKEN`, which makes it easy to inject a token from a secret within your CI system. Pass `--print-slack-flags` to see all the command line options.
+If you're using [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs), you can control the Slack formatter settings using command line args. For example, you can pass `--slack-token $SLACK_TOKEN`, which makes it easy to inject a token from a secret within your CI system. Pass `--print-slack-flags` to see all the command line options.
 
 > Note that you need to set up a Slack token first. Nowadays this is done by creating a [Slack App](https://api.slack.com/apps). Make sure your app has "bot" permissions to interact in channels, and permission to make Slack API requests. To allow your app to send messages to a private channel, you'll want to add the app to the channel by typing `/invite app-name` in the channel.
-
-When applied to the arithmetic example from the landing page, you get a live-updating message like this:
-
-<img alt="Simple timing example" src={useBaseUrl('img/slack.gif')} />
 
 ## Customizing the message
 

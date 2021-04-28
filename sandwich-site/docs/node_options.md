@@ -4,9 +4,7 @@ title: Node Options
 sidebar_label: Node Options
 ---
 
-## Introduction
-
-The basic functions like `describe`, `it`, etc. are aliases to lower-level functions called `describe'`, `it'`, etc. The lower-level versions accept **node options** which you can use to fine-tune how each node behaves.
+The basic functions like [describe](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:describe), [it](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:it), etc. are aliases to lower-level functions called [describe'](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:describe-39-), [it'](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:it-39-), etc. The lower-level versions accept [node options](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#t:NodeOptions) which you can use to fine-tune how each node behaves.
 
 ## Visibility thresholds
 
@@ -19,7 +17,7 @@ For example, consider some tests that initialize a server and a database, then r
 
 The latter makes it easier to quickly pick out which test failed.
 
-To allow this kind of filtering, every test node has a number associated with it called its *visibility threshold*. This is a number from `0` to `Infinity` representing the visual "priority" of a node. Sandwich formatters are designed so that you can set or toggle a threshold such that only nodes whose value falls under the threshold are displayed. This gives us the ability to have deeply nested and complex test trees, but prune away the complexity when desired.
+To allow this kind of filtering, every test node has a number associated with it called its *visibility threshold*. This is a number from `0` to `Infinity` representing the visual "priority" of a node. Sandwich formatters are designed so that you can set a threshold such that only nodes whose value falls under the threshold are displayed. This gives us the ability to have deeply nested and complex test trees, but prune away the complexity when desired.
 
 The default visibility thresholds for each node is as follows:
 
@@ -27,6 +25,7 @@ The default visibility thresholds for each node is as follows:
 - `50`: `describe`
 - `70`: `parallel`
 - `100`: `introduce`, `before`, `after`, `around` (and their `*each` and `*with` versions)
+- `150`: various automatically-introduced nodes, like those added for timing
 
 If you want to set *custom* visibility thresholds, you can use the primed versions of the node functions to do it. For example:
 
@@ -35,6 +34,12 @@ If you want to set *custom* visibility thresholds, you can use the primed versio
 myBefore = before' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 })
 ```
 
-## Folder creation
+## Folders
 
-By default, every node in the test tree will get an associated folder in the [on-disk results](/docs#on-disk-results).
+By default, every node in the test tree will get an associated folder in the [on-disk results](/docs#on-disk-results). This folder is where logs and other artifacts related to the node will be stored.
+
+You can disable this by setting [nodeOptionsCreateFolder](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:nodeOptionsCreateFolder) to `False`.
+
+## Timing
+
+By default, every node in the test tree will be timed using the configured test timer. To turn this off for an individual node, you can set [nodeOptionsRecordTime](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:nodeOptionsRecordTime) to `False`. (Most often, you would want to do this if you're working with parallel tests and want to prevent a racy node from recording a stack frame in the test timings.)
