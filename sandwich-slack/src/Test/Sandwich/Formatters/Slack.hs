@@ -7,12 +7,12 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+-- | The Slack formatter shows live-updating test progress and failures by sending messages to a Slack channel.
+
 module Test.Sandwich.Formatters.Slack (
-  SlackFormatter
-  , SlackConfig(..)
+  defaultSlackFormatter
 
-  , defaultSlackFormatter
-
+  -- * Options
   , slackFormatterSlackConfig
   , slackFormatterChannel
 
@@ -26,6 +26,8 @@ module Test.Sandwich.Formatters.Slack (
 
   , slackFormatterMaxMessageSize
 
+  -- * Auxiliary types
+  , SlackConfig(..)
   , SlackFormatterShowCallStacks(..)
   ) where
 
