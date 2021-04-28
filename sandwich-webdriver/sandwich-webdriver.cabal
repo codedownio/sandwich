@@ -4,12 +4,12 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 48607d2e4674c46fdff451b60b31ca742f166a2a6e40a4281876401f2ceae9cb
+-- hash: f3e56f0cf8ab83ec1798f82f19ec2ddb50de883f77787bd446b668cb1a895d86
 
 name:           sandwich-webdriver
 version:        0.1.0.4
 synopsis:       Sandwich integration with Selenium WebDriver
-description:    Please see the documentation at <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver>
+description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver documentation>.
 category:       Testing
 homepage:       https://codedownio.github.io/sandwich
 bug-reports:    https://github.com/codedownio/sandwich/issues
@@ -20,7 +20,6 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
     CHANGELOG.md
 
 source-repository head

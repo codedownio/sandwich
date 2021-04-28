@@ -1,23 +1,17 @@
 name:                sandwich-quickcheck
-version:             0.1.0.0
-github:              "githubuser/sandwich-quickcheck"
+version:             0.1.0.3
+github:              "codedownio/sandwich-quickcheck"
 license:             BSD3
 author:              "Tom McLaughlin"
-maintainer:          "example@example.com"
+maintainer:          "tom@codedown.io"
 copyright:           "2021 Tom McLaughlin"
+category:            Testing
+homepage:            https://codedownio.github.io/sandwich
+synopsis:            Sandwich integration with QuickCheck
+description:         Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck documentation>.
 
 extra-source-files:
-- README.md
 - ChangeLog.md
-
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/sandwich-quickcheck#readme>
 
 dependencies:
 - aeson

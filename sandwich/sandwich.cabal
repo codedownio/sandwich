@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 93f26ca40efb92522602e6e0e41db4b6db4dbb075d298f97278b62c1e3761d99
+-- hash: b58baae21ca0dc99c2b752748e5eec388af9a99ff167d3517356fb29d71fd36d
 
 name:           sandwich
 version:        0.1.0.3
@@ -20,7 +20,6 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
     CHANGELOG.md
 
 source-repository head

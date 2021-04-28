@@ -8,10 +8,9 @@ copyright:           "2021 Tom McLaughlin"
 category:            Testing
 homepage:            https://codedownio.github.io/sandwich
 synopsis:            Sandwich integration with Selenium WebDriver
-description:         Please see the documentation at <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver>
+description:         Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver documentation>.
 
 extra-source-files:
-- README.md
 - CHANGELOG.md
 
 dependencies:

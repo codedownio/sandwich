@@ -4,26 +4,27 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 623fc01093b41c5792a1b42b04df4ca703d57165d0ec7f9fc2c5e31fc56e7981
+-- hash: b452e49b1a77ac3e4feeb336380f9a395d4ffb374a78cf006bb8dd38dbb2319b
 
 name:           sandwich-quickcheck
-version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/sandwich-quickcheck#readme>
-homepage:       https://github.com/githubuser/sandwich-quickcheck#readme
-bug-reports:    https://github.com/githubuser/sandwich-quickcheck/issues
+version:        0.1.0.3
+synopsis:       Sandwich integration with QuickCheck
+description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck documentation>.
+category:       Testing
+homepage:       https://codedownio.github.io/sandwich
+bug-reports:    https://github.com/codedownio/sandwich-quickcheck/issues
 author:         Tom McLaughlin
-maintainer:     example@example.com
+maintainer:     tom@codedown.io
 copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
     ChangeLog.md
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/sandwich-quickcheck
+  location: https://github.com/codedownio/sandwich-quickcheck
 
 library
   exposed-modules:
