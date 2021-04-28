@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d446a77761b7441448561836b119c54e0f5f6fb6eb49a42e8d04b74a9ae208d1
+-- hash: 5cb8df83298ec23b32444f1b74625b4c7bb8e700bb9ff3098e7f567d7dfcbd66
 
 name:           sandwich-slack
 version:        0.1.0.3
@@ -29,12 +29,13 @@ source-repository head
 
 library
   exposed-modules:
-      Test.Sandwich.Formatters.Internal.Core
-      Test.Sandwich.Formatters.Internal.Markdown
-      Test.Sandwich.Formatters.Internal.ProgressBar
-      Test.Sandwich.Formatters.Internal.Types
       Test.Sandwich.Formatters.Slack
+      Test.Sandwich.Formatters.Slack.Internal
   other-modules:
+      Test.Sandwich.Formatters.Slack.Internal.Core
+      Test.Sandwich.Formatters.Slack.Internal.Markdown
+      Test.Sandwich.Formatters.Slack.Internal.ProgressBar
+      Test.Sandwich.Formatters.Slack.Internal.Types
       Paths_sandwich_slack
   hs-source-dirs:
       src

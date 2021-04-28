@@ -37,6 +37,9 @@ library:
   source-dirs: src
   ghc-options:
   - -W
+  exposed-modules:
+  - Test.Sandwich.Formatters.Slack
+  - Test.Sandwich.Formatters.Slack.Internal
 
 executables:
   sandwich-slack-exe:

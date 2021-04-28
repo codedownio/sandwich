@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Sandwich.Formatters.Internal.Core where
+module Test.Sandwich.Formatters.Slack.Internal.Core where
 
 import Control.Lens hiding ((??))
 import Control.Monad.Except
@@ -14,7 +14,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import qualified Network.Wreq as W
-import Test.Sandwich.Formatters.Internal.Types
+import Test.Sandwich.Formatters.Slack.Internal.Types
 
 postMessage :: (MonadError T.Text m, MonadIO m) => SlackConfig -> ChannelName -> T.Text -> [A.Value] -> Maybe [A.Value] -> m Value
 postMessage conf cid msg as maybeBlocks =

@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Test.Sandwich.Formatters.Internal.Markdown where
+module Test.Sandwich.Formatters.Slack.Internal.Markdown where
 
 import Data.Function
 import qualified Data.List as L
@@ -11,7 +11,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Test.Sandwich
-import Test.Sandwich.Formatters.Internal.Types
+import Test.Sandwich.Formatters.Slack.Internal.Types
 
 
 toMarkdown :: FailureReason -> T.Text

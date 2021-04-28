@@ -48,9 +48,9 @@ import Data.Time
 import GHC.Int
 import Safe
 import Test.Sandwich
-import Test.Sandwich.Formatters.Internal.Markdown
-import Test.Sandwich.Formatters.Internal.ProgressBar
-import Test.Sandwich.Formatters.Internal.Types
+import Test.Sandwich.Formatters.Slack.Internal.Markdown
+import Test.Sandwich.Formatters.Slack.Internal.ProgressBar
+import Test.Sandwich.Formatters.Slack.Internal.Types
 import Test.Sandwich.Internal
 
 

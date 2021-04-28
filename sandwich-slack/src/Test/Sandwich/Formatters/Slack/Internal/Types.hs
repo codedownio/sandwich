@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Test.Sandwich.Formatters.Internal.Types where
+module Test.Sandwich.Formatters.Slack.Internal.Types where
 
 import qualified Data.Aeson as A
 import qualified Data.Text as T

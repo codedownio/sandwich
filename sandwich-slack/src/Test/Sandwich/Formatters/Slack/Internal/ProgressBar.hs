@@ -3,7 +3,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Test.Sandwich.Formatters.Internal.ProgressBar where
+module Test.Sandwich.Formatters.Slack.Internal.ProgressBar where
 
 
 import Control.Lens hiding ((??))
@@ -16,8 +16,8 @@ import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Int
-import Test.Sandwich.Formatters.Internal.Core
-import Test.Sandwich.Formatters.Internal.Types
+import Test.Sandwich.Formatters.Slack.Internal.Core
+import Test.Sandwich.Formatters.Slack.Internal.Types
 
 -- | Create a progress bar message on the given channel.
 -- Returns a 'ProgressBar' which can be used to update the message by calling 'updateProgressBar'.
