@@ -1,13 +1,19 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+
 -- | A simple formatter that saves all logs from the test to a file.
+--
+-- This is a "secondary formatter," i.e. one that can run in the background while a "primary formatter" (such as the TerminalUI or Print formatters) monopolize the foreground.
 
 module Test.Sandwich.Formatters.LogSaver (
   defaultLogSaverFormatter
+
+  -- * Options
   , logSaverPath
   , logSaverLogLevel
 
+  -- * Auxiliary types
   , LogPath(..)
   ) where
 

@@ -7,8 +7,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
 
+-- | The print formatter prints all results from the test tree from top to bottom, as they become available.
+
 module Test.Sandwich.Formatters.Print (
-  -- | The print formatter prints all results from the test tree from top to bottom, as they become available.
   defaultPrintFormatter
 
   -- * Options

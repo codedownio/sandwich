@@ -8,8 +8,12 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | The failure report formatter is like the print formatter, but it only shows failures.
+
 module Test.Sandwich.Formatters.FailureReport (
   defaultFailureReportFormatter
+
+  -- * Options
   , failureReportUseColor
   , failureReportLogLevel
   , failureReportIncludeCallStacks

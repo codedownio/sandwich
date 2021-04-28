@@ -20,6 +20,7 @@ import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
 import Test.Sandwich.Formatters.TerminalUI
+import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Options
 import Test.Sandwich.Types.ArgParsing
 

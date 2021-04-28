@@ -10,7 +10,10 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.Formatters.TerminalUI (
+  -- | The terminal UI formatter produces an interactive UI for running tests and inspecting their results.
   defaultTerminalUIFormatter
+
+  -- * Options
   , terminalUIVisibilityThreshold
   , terminalUIShowRunTimes
   , terminalUIShowVisibilityThresholds
@@ -18,8 +21,9 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIInitialFolding
   , terminalUIDefaultEditor
   , terminalUIOpenInEditor
+
+  -- * Auxiliary types
   , InitialFolding(..)
-  , TerminalUIFormatter
   ) where
 
 import Brick as B

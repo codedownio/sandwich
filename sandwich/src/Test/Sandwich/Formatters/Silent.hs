@@ -8,8 +8,14 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | The silent formatter does nothing except print the test root folder path, if present.
+--
+-- This is provided as an explicit formatter so it can print that single line. If you don't want anything at all to be printed, you can just run with no formatters.
+
 module Test.Sandwich.Formatters.Silent (
   defaultSilentFormatter
+
+  -- * Options
   , silentFormatterPrintRunRoot
   ) where
 

@@ -17,7 +17,6 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 
 
--- | Initial settings for the TUI interface. All of these settings can be changed interactively.
 data TerminalUIFormatter = TerminalUIFormatter {
   terminalUIVisibilityThreshold :: Int
   -- ^ The initial visibility threshold to use when the formatter starts.
