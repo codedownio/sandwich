@@ -3,6 +3,7 @@
 module Test.Sandwich.Internal (
   Spec
   , SpecFree
+  , SpecCommand
   , HasBaseContext
   , HasLabel
   , LabelValue(..)
@@ -24,6 +25,9 @@ module Test.Sandwich.Internal (
   , waitForTree
   , SomeAsyncExceptionWithEq(..)
   , logEntryStr
+
+  , module Test.Sandwich.Internal.Formatters
+  , module Test.Sandwich.Internal.Running
   ) where
 
 import Test.Sandwich.Interpreters.RunTree.Util
@@ -31,3 +35,6 @@ import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+
+import Test.Sandwich.Internal.Formatters
+import Test.Sandwich.Internal.Running

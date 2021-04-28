@@ -29,6 +29,7 @@ dependencies:
 - directory
 - exceptions
 - filepath
+- free
 - http-client
 - http-conduit
 - lifted-base

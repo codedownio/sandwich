@@ -88,6 +88,13 @@ executables:
     - free
     - sandwich-demos
 
+  quickcheck:
+    main: Main.hs
+    source-dirs: demos/quickcheck
+    dependencies:
+    - free
+    - QuickCheck
+
   tui:
     main: Main.hs
     source-dirs: demos/tui

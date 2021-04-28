@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9785ad550b5f4c9d89437865219abe393c1a0352818b85b624984d9a19d70dac
+-- hash: 623fc01093b41c5792a1b42b04df4ca703d57165d0ec7f9fc2c5e31fc56e7981
 
 name:           sandwich-quickcheck
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
     , directory
     , exceptions
     , filepath
+    , free
     , http-client
     , http-conduit
     , lifted-base
@@ -86,6 +87,7 @@ executable sandwich-quickcheck-exe
     , directory
     , exceptions
     , filepath
+    , free
     , http-client
     , http-conduit
     , lifted-base
@@ -130,6 +132,7 @@ test-suite sandwich-quickcheck-test
     , directory
     , exceptions
     , filepath
+    , free
     , http-client
     , http-conduit
     , lifted-base
