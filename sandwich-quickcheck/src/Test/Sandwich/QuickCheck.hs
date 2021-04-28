@@ -1,14 +1,35 @@
+
+-- | Functions for introducing QuickCheck tests into a Sandwich test tree. Modelled after Hspec's version.
+
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-module Test.Sandwich.QuickCheck where
+module Test.Sandwich.QuickCheck (
+  -- * Introducing QuickCheck args
+  -- Any tests that use QuickCheck should be wrapped in one of these.
+  introduceQuickCheck
+  , introduceQuickCheck'
+  , introduceQuickCheck''
 
+  -- * Prop
+  , prop
+
+  -- * Modifying QuickCheck args
+  , modifyArgs
+  , modifyMaxSuccess
+  , modifyMaxDiscardRatio
+  , modifyMaxSize
+  , modifyMaxShrinks
+  ) where
+
+import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.String.Interpolate
 import GHC.Stack
-import Test.QuickCheck
+import Test.QuickCheck as QC
 import Test.Sandwich
 import Test.Sandwich.Internal
 
@@ -18,13 +39,55 @@ data QuickCheckContext = QuickCheckContext Args
 quickCheckContext = Label :: Label "quickCheckContext" QuickCheckContext
 type HasQuickCheckContext context = HasLabel context "quickCheckContext" QuickCheckContext
 
-introduceQuickCheck :: (HasQuickCheckContext context, MonadIO m, MonadBaseControl IO m)
+data QuickCheckException = QuickCheckException QC.Result
+  deriving (Show)
+instance Exception QuickCheckException
+
+-- | Same as 'introduceQuickCheck'' but with default args.
+introduceQuickCheck :: (MonadIO m, MonadBaseControl IO m)
   => SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
-introduceQuickCheck = introduce "Introduce QuickCheck context" quickCheckContext (return $ QuickCheckContext stdArgs) (const $ return ())
+introduceQuickCheck = introduceQuickCheck'' "Introduce QuickCheck context" stdArgs
 
-introduceQuickCheck' :: (HasQuickCheckContext context, MonadIO m, MonadBaseControl IO m)
+-- | Same as 'introduceQuickCheck''' but with a default message.
+introduceQuickCheck' :: (MonadIO m, MonadBaseControl IO m)
   => Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
-introduceQuickCheck' args = introduce "Introduce QuickCheck context" quickCheckContext (return $ QuickCheckContext args) (const $ return ())
+introduceQuickCheck' = introduceQuickCheck'' "Introduce QuickCheck context"
 
-prop :: (HasCallStack) => prop -> ExampleT context m () -> Free (SpecCommand context m) ()
-prop = undefined
+-- | Introduce QuickCheck args with configurable message.
+introduceQuickCheck'' :: (MonadIO m, MonadBaseControl IO m)
+  => String -> Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+introduceQuickCheck'' msg args = introduce msg quickCheckContext (return $ QuickCheckContext args) (const $ return ())
+
+-- | Similar to 'it'. Runs the given prop with QuickCheck using the currently introduced 'Args'. Throws an appropriate exception on failure.
+prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => prop -> Free (SpecCommand context m) ()
+prop p = it "prop" $ do
+  QuickCheckContext args <- getContext quickCheckContext
+  liftIO (quickCheckWithResult args p) >>= \case
+    QC.Success {..} -> do
+      info [i|Success (#{numTests} tests, #{numDiscarded} skipped)|]
+      return ()
+    x -> throwIO (QuickCheckException x)
+
+-- | Modify the 'Args' for the given spec.
+modifyArgs :: (HasQuickCheckContext context, Monad m) => (Args -> Args) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+modifyArgs f = introduce "Modified QuickCheck context" quickCheckContext acquire (const $ return ())
+  where
+    acquire = do
+       QuickCheckContext args <- getContext quickCheckContext
+       return $ QuickCheckContext (f args)
+
+-- | Modify the 'maxSuccess' for given spec.
+modifyMaxSuccess :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+modifyMaxSuccess f = modifyArgs $ \args -> args { maxSuccess = f (maxSuccess args) }
+
+-- | Modify the 'maxDiscardRatio' for given spec.
+modifyMaxDiscardRatio :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+modifyMaxDiscardRatio f = modifyArgs $ \args -> args { maxDiscardRatio = f (maxDiscardRatio args) }
+
+-- | Modify the 'maxSize' for given spec.
+modifyMaxSize :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+modifyMaxSize f = modifyArgs $ \args -> args { maxSize = f (maxSize args) }
+
+-- | Modify the 'maxShrinks' for given spec.
+modifyMaxShrinks :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
+modifyMaxShrinks f = modifyArgs $ \args -> args { maxShrinks = f (maxShrinks args) }
