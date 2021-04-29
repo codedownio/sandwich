@@ -4,11 +4,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | The failure report formatter is like the print formatter, but it only shows failures.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/formatters/failure_report here>.
 
 module Test.Sandwich.Formatters.FailureReport (
   defaultFailureReportFormatter

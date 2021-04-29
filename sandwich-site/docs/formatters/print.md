@@ -32,6 +32,6 @@ main = runSandwich options myTests
 
 ## Configuration
 
-Like other formatters, you can adjust the [visibility threshold](#). You can also change the [log level](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html#v:printFormatterLogLevel) and set whether or not to include [callstacks](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html#v:printFormatterIncludeCallStacks).
+Like other formatters, you can adjust the [visibility threshold](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html#v:printFormatterVisibilityThreshold). You can also change the [log level](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html#v:printFormatterLogLevel) and set whether or not to include [callstacks](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html#v:printFormatterIncludeCallStacks).
 
 You can see the configuration options in the [documentation](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-Print.html).

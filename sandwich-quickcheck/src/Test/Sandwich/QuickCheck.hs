@@ -1,5 +1,7 @@
 
 -- | Functions for introducing QuickCheck tests into a Sandwich test tree. Modelled after Hspec's version.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck here>.
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
