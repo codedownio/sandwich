@@ -8,6 +8,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- | The Slack formatter shows live-updating test progress and failures by sending messages to a Slack channel.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/formatters/slack here>.
 
 module Test.Sandwich.Formatters.Slack (
   defaultSlackFormatter
