@@ -1,6 +1,6 @@
 ---
-id: sandwich-slack
-title: Slack integration
+id: slack
+title: Slack Formatter
 ---
 
 import useBaseUrl from '@docusaurus/useBaseUrl';

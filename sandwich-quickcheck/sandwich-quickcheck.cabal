@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 550a21dbc3c29a2558180bd59d81d07e61dba1483adee2d466cb5d1d5a1e2adf
+-- hash: 572a016d330aa814e9cf2e6518553d3299e91380d98c4d1b0a6036abec5e2eb0
 
 name:           sandwich-quickcheck
-version:        0.1.0.3
+version:        0.1.0.4
 synopsis:       Sandwich integration with QuickCheck
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck documentation>.
 category:       Testing
@@ -40,7 +40,7 @@ library
     , free
     , monad-control
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.4
     , string-interpolate
     , time
   default-language: Haskell2010
@@ -59,7 +59,7 @@ executable sandwich-quickcheck-exe
     , free
     , monad-control
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.4
     , sandwich-quickcheck
     , string-interpolate
     , time
@@ -80,7 +80,7 @@ test-suite sandwich-quickcheck-test
     , free
     , monad-control
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.1.0.4
     , sandwich-quickcheck
     , string-interpolate
     , time

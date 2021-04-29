@@ -1,5 +1,5 @@
 name:                sandwich-quickcheck
-version:             0.1.0.3
+version:             0.1.0.4
 github:              "codedownio/sandwich-quickcheck"
 license:             BSD3
 author:              "Tom McLaughlin"
@@ -19,7 +19,7 @@ dependencies:
 - monad-control
 - QuickCheck
 - safe-exceptions
-- sandwich
+- sandwich >= 0.1.0.4
 - string-interpolate
 - time
 

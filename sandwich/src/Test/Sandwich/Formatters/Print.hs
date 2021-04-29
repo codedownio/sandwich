@@ -8,6 +8,8 @@
 {-# LANGUAGE MultiWayIf #-}
 
 -- | The print formatter prints all results from the test tree from top to bottom, as they become available.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/formatters/print here>.
 
 module Test.Sandwich.Formatters.Print (
   defaultPrintFormatter
@@ -17,6 +19,7 @@ module Test.Sandwich.Formatters.Print (
   , printFormatterLogLevel
   , printFormatterIncludeCallStacks
   , printFormatterIndentSize
+  , printFormatterVisibilityThreshold
   ) where
 
 import Control.Concurrent.STM
