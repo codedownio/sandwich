@@ -45,7 +45,7 @@ module.exports = {
             },
             {
               label: 'Slack integration',
-              to: 'docs/extensions/sandwich-slack',
+              to: 'docs/formatters/slack',
             },
             {
               label: 'Selenium integration',
