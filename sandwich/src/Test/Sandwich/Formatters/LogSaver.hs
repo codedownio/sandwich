@@ -5,6 +5,8 @@
 -- | A simple formatter that saves all logs from the test to a file.
 --
 -- This is a "secondary formatter," i.e. one that can run in the background while a "primary formatter" (such as the TerminalUI or Print formatters) monopolize the foreground.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/formatters/log_saver here>.
 
 module Test.Sandwich.Formatters.LogSaver (
   defaultLogSaverFormatter
@@ -12,9 +14,11 @@ module Test.Sandwich.Formatters.LogSaver (
   -- * Options
   , logSaverPath
   , logSaverLogLevel
+  , logSaverFormatter
 
   -- * Auxiliary types
   , LogPath(..)
+  , LogEntryFormatter
   ) where
 
 import Control.Concurrent.STM

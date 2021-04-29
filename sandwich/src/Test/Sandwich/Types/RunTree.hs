@@ -210,6 +210,8 @@ data TestArtifactsDirectory =
 newtype TreeFilter = TreeFilter String
 
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
+
+-- | A callback for formatting a log entry to a 'BS8.ByteString'.
 type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
 
 -- The defaultLogStr formatter weirdly puts information after the message. Use our own
