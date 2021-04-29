@@ -7,7 +7,7 @@ slug: /contexts
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-One of Sandwich's most powerful features is the ability to introduce *contexts* in tests. A context is simply a labeled dependency with a name, which can be obtained in a test using the `getContext` function:
+One of Sandwich's most powerful features is the ability to introduce *contexts* in tests. A context is simply a labeled dependency, which can be obtained in a test using the `getContext` function:
 
 ```haskell
 it "tests the database" $ do
@@ -15,7 +15,7 @@ it "tests the database" $ do
   queryUser db "user1" >>= (`shouldBe` mockUser1)
 ```
 
-Sandwich gives you the tools to introduce (and gracefully tear down) contexts for use in your tests while keeping the plumbing nicely hidden. You can use the type system to enforce at compile-time that a test has all the contexts it needs.
+Sandwich gives you the tools to introduce (and gracefully tear down) contexts for use in your tests while keeping the plumbing nicely hidden.  The type system enforces that a test has all the contexts it needs.
 
 ## Built-in contexts
 
@@ -46,7 +46,7 @@ data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
 database = Label :: Label "database" DatabaseContext
 ```
 
-Next, we write the introduce node. We choose to use `introduceWith`, because it allows us to use the `bracket` pattern to create and then tear down our database. You can imagine IO actions happening here.
+Next, we write the introduce node. We choose to use [introduceWith](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:introduceWith), because it allows us to use the `bracket` pattern to create and then tear down our database. You can imagine IO actions happening here.
 
 ```haskell
 introduceDatabase = introduceWith "Introduce database" database $ \action ->

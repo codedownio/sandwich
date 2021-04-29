@@ -30,7 +30,7 @@ Most of the hotkeys are documented at the top of the UI and should be self-expla
 
 Each node of the test tree can be **opened/closed** by pressing enter or tab. Opening a node shows details about what happened when it was executed. In the picture below, the "adding one" node is opened, allowing the test failure to be examined.
 
-Each node can also be **folded/unfolded** by pressing the left and right arrows. This is like folding a tree in your file manager; if a node is folded then its children will become invisible.
+Each node can also be **folded/unfolded** by pressing the left and right arrows. This is like folding a tree in your file manager; if a node is folded then its children will be hidden.
 
 The tree is pruned by [visibility threshold](../node_options#visibility-thresholds). If you press the `v` button, it will cycle through different thresholds so you can show or hide the "less important" nodes.
 
@@ -54,9 +54,10 @@ Thus, you could do
 * `export EDITOR="vim +LINE FILE"` (same as previous)
 * `export EDITOR="emacs -nw --eval '(progn (find-file FILE) (goto-line LINE) (forward-char (- COLUMN 1)) (recenter))'"`
   * This one recenters the view after jumping to the given location. You can put arbitrary Emacs Lisp here.
+* `export EDITOR="code -g FILE:LINE:COLUMN"` (For VSCode)
 
 ## Configuration
 
 Several aspects of the UI can be configured in your test code when you introduce the formatter. For example, you can set the initial value of the [visibility threshold](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Formatters-TerminalUI.html#v:terminalUIVisibilityThreshold) or settings like [terminalUIShowRunTimes](http://hackage.haskell.org/package/sandwich-0.1.0.3/docs/Test-Sandwich-Formatters-TerminalUI.html#v:terminalUIShowRunTimes).
 
-You can also set a default value to use for the `EDITOR` command if the variable is not set. If you want even more control over opening editors, you can provide a custom callback which will be used instead of the default to do this.
+You can also set a default value to use for the `EDITOR` command if the variable is not set. If you want even more control over opening editors, you can provide a custom callback which will be used instead of the default to open them.
