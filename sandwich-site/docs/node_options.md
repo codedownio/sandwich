@@ -38,7 +38,7 @@ myBefore = before' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 })
 
 By default, every node in the test tree will get an associated folder in the [on-disk results](/docs#on-disk-results). This folder is where logs and other artifacts related to the node will be stored.
 
-You can disable this by setting [nodeOptionsCreateFolder](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:nodeOptionsCreateFolder) to `False`.
+You can disable this by setting [nodeOptionsCreateFolder](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Nodes.html#v:nodeOptionsCreateFolder) to `False`. This is useful to do for nodes that don't produce any useful artifacts on disk. For example, this is done for test nodes related to internal timing functionality so that they don't clutter the on-disk results. Be careful -- if you disable the on-disk folder for a node and that node throws an exception, it could be harder to debug.
 
 ## Timing
 

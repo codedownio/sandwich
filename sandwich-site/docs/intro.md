@@ -41,7 +41,11 @@ main = runSandwichWithCommandLineArgs defaultOptions basic
 
 ## Expectations
 
+The tests above assert things using expectation functions like `shouldBe`. There are a variety of these in [Test.Sandwich.Expectations](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Expectations.html) and they are similar to other test frameworks, such as `shouldNotBe`, `shouldContain`, etc.
 
+These functions simply throw an exception of type [FailureReason](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Misc.html#t:FailureReason) which the Sandwich machinery catches and displays. Don't worry, you can throw other exceptions too. You can even write instances for your [custom exception types](extensions/advanced#formatting-custom-exceptions) so that they display nicely in Sandwich [formatters](formatters/tui).
+
+To fail a test with a string message, just call [expectationFailure](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Expectations.html#v:expectationFailure). You can also mark a test as "pending" by calling the [pending](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Expectations.html#v:pending) function anywhere in the test, or by changing `it` to `xit`.
 
 ## TUI interface
 

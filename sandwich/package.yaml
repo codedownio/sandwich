@@ -68,6 +68,7 @@ library:
     - Test.Sandwich.Formatters.FailureReport
     - Test.Sandwich.Formatters.LogSaver
     - Test.Sandwich.Formatters.Print
+    - Test.Sandwich.Formatters.Silent
     - Test.Sandwich.Formatters.TerminalUI
     - Test.Sandwich.Internal
     - Test.Sandwich.TH

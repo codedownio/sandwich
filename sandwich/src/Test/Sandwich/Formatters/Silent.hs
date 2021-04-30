@@ -5,6 +5,8 @@
 -- | The silent formatter does nothing except print the test root folder path, if present.
 --
 -- This is provided as an explicit formatter so it can print that single line. If you don't want anything at all to be printed, you can just run with no formatters.
+--
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/formatters/silent here>.
 
 module Test.Sandwich.Formatters.Silent (
   defaultSilentFormatter
