@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: be7336c594ada4bcef8397fdf7cff33d35d98fe5d9ac689990febebb4cd3f566
+-- hash: 244c3e7999c4afac51c061a4e2ca5575aeb323ac3ee3c20b70f36df7a861a50d
 
 name:           sandwich
-version:        0.1.0.4
+version:        0.1.0.5
 synopsis:       Yet another test framework for Haskell
 description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 category:       Testing
