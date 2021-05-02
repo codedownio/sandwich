@@ -29,7 +29,7 @@ import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.String.Interpolate
+import qualified Data.Text as T
 import GHC.Stack
 import Test.QuickCheck as QC
 import Test.Sandwich
@@ -41,7 +41,7 @@ data QuickCheckContext = QuickCheckContext Args
 quickCheckContext = Label :: Label "quickCheckContext" QuickCheckContext
 type HasQuickCheckContext context = HasLabel context "quickCheckContext" QuickCheckContext
 
-data QuickCheckException = QuickCheckException QC.Result
+data QuickCheckException = QuickCheckException
   deriving (Show)
 instance Exception QuickCheckException
 
@@ -65,10 +65,10 @@ prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Te
 prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
   liftIO (quickCheckWithResult args p) >>= \case
-    QC.Success {..} -> do
-      info [i|Success (#{numTests} tests, #{numDiscarded} skipped)|]
-      return ()
-    x -> throwIO (QuickCheckException x)
+    QC.Success {..} -> info (T.pack output)
+    x -> do
+      logError (T.pack $ output x)
+      throwIO QuickCheckException
 
 -- | Modify the 'Args' for the given spec.
 modifyArgs :: (HasQuickCheckContext context, Monad m) => (Args -> Args) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()

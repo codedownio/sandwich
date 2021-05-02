@@ -22,6 +22,7 @@ dependencies:
 - safe-exceptions
 - sandwich >= 0.1.0.4
 - string-interpolate
+- text
 - time
 
 default-extensions:
