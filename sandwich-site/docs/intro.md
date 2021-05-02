@@ -7,13 +7,13 @@ slug: /
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-Sandwich is a test framework for Haskell, heavily inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/). This section will show some of its features.
+Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/). This section will show some of its features.
 
 ## Basic tests
 
 Let's start with a basic test suite and add more features as we go along. As with other test frameworks, tests are structured as a **tree**, defined using a simple free monad with nodes like `describe` and `it`. There are a total of 8 such basic nodes and we'll see others as we go along.
 
-The meat of the tests occurs in "it" nodes at the leaves of the tree. Every test runs in a special monad called `ExampleT`, which is essentially a `ReaderT context LoggingT`. The `LoggingT` part gives test the ability to log information, and the `ReaderT` gives tests access to *context*. More on this later. The monad also implements some other useful classes like `MonadIO`, so you can run arbitrary IO actions.
+The meat of the tests occurs in "it" nodes at the leaves of the tree. Every test runs in a special monad called `ExampleT`, which is essentially a `ReaderT context LoggingT`. The `LoggingT` part gives tests the ability to log information, and the `ReaderT` gives tests access to *context*. More on this later. The monad also implements some other useful classes like `MonadIO`, so you can run arbitrary IO actions.
 
 ```haskell title="https://github.com/thomasjm/sandwich/blob/master/sandwich-demos/demos/basic/Main.hs"
 module Main where

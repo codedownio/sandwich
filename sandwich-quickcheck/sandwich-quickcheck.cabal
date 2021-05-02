@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 572a016d330aa814e9cf2e6518553d3299e91380d98c4d1b0a6036abec5e2eb0
+-- hash: 40d8988a41f1d6ef818c345b58330dcfc9746f530d935e166d59d91829944782
 
 name:           sandwich-quickcheck
 version:        0.1.0.4
@@ -30,6 +30,7 @@ library
   exposed-modules:
       Test.Sandwich.QuickCheck
   other-modules:
+      Test.Sandwich.QuickCheck.ToBrickWidget
       Paths_sandwich_quickcheck
   hs-source-dirs:
       src
@@ -37,6 +38,7 @@ library
   build-depends:
       QuickCheck
     , base <4.15
+    , brick
     , free
     , monad-control
     , safe-exceptions
@@ -56,6 +58,7 @@ executable sandwich-quickcheck-exe
   build-depends:
       QuickCheck
     , base <4.15
+    , brick
     , free
     , monad-control
     , safe-exceptions
@@ -77,6 +80,7 @@ test-suite sandwich-quickcheck-test
   build-depends:
       QuickCheck
     , base <4.15
+    , brick
     , free
     , monad-control
     , safe-exceptions

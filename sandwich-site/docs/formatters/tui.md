@@ -28,7 +28,9 @@ main = runSandwich options myTests
 
 Most of the hotkeys are documented at the top of the UI and should be self-explanatory. The UI shows the state of the entire test tree, with each entry color-coded by its status (not started, pending, running, failed, or succeeded). You can use the arrow keys to scroll up and down through the focused nodes.
 
-Each node of the test tree can be **opened/closed** by pressing enter or tab. Opening a node shows details about what happened when it was executed. In the picture below, the "adding one" node is opened, allowing the test failure to be examined.
+Each node of the test tree can be **opened/closed** by pressing enter or tab. Opening a node shows details about what happened when it was executed. In the picture below, the "adding one" node is opened, allowing the test failure to be examined. 
+
+Once a node is open, its contents can be **scrolled** up and down by pressing `Control-v`/`Meta-v`. This allows you to page through failure results and logs.
 
 Each node can also be **folded/unfolded** by pressing the left and right arrows. This is like folding a tree in your file manager; if a node is folded then its children will be hidden.
 

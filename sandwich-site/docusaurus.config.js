@@ -1,6 +1,6 @@
 module.exports = {
   title: 'Sandwich',
-  tagline: 'Yet another testing framework for Haskell',
+  tagline: 'Yet another test framework for Haskell',
   url: 'https://github.com/codedownio/sandwich',
   baseUrl: '/sandwich/',
   onBrokenLinks: 'throw',

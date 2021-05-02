@@ -15,6 +15,7 @@ extra-source-files:
 
 dependencies:
 - base < 4.15
+- brick
 - free
 - monad-control
 - QuickCheck
@@ -35,6 +36,8 @@ default-extensions:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Test.Sandwich.QuickCheck
 
 executables:
   sandwich-quickcheck-exe:
