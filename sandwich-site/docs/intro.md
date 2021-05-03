@@ -15,7 +15,7 @@ Let's start with a basic test suite and add more features as we go along. As wit
 
 The meat of the tests occurs in "it" nodes at the leaves of the tree. Every test runs in a special monad called `ExampleT`, which is essentially a `ReaderT context LoggingT`. The `LoggingT` part gives tests the ability to log information, and the `ReaderT` gives tests access to *context*. More on this later. The monad also implements some other useful classes like `MonadIO`, so you can run arbitrary IO actions.
 
-```haskell title="https://github.com/thomasjm/sandwich/blob/master/sandwich-demos/demos/basic/Main.hs"
+```haskell title="https://github.com/codedownio/sandwich/blob/master/sandwich-demos/demos/basic/Main.hs"
 module Main where
 
 import Test.Sandwich
@@ -41,7 +41,7 @@ main = runSandwichWithCommandLineArgs defaultOptions basic
 
 ## Expectations
 
-The tests above assert things using expectation functions like `shouldBe`. There are a variety of these in [Test.Sandwich.Expectations](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Expectations.html) and they are similar to other test frameworks, such as `shouldNotBe`, `shouldContain`, etc.
+The tests above assert things using expectation functions like `shouldBe`. There are a variety of these in [Test.Sandwich.Expectations](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Expectations.html) such as `shouldNotBe`, `shouldContain`, etc., and they are similar to other test frameworks.
 
 These functions simply throw an exception of type [FailureReason](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Misc.html#t:FailureReason) which the Sandwich machinery catches and displays. Don't worry, you can throw other exceptions too. You can even write instances for your [custom exception types](extensions/advanced#formatting-custom-exceptions) so that they display nicely in Sandwich [formatters](formatters/tui).
 
@@ -51,7 +51,7 @@ To fail a test with a string message, just call [expectationFailure](http://hack
 
 Let's run this test from the command line, using the [Terminal UI interface](/docs/formatters/tui). This will allow us to move around and examine the tests. In particular, we can examine the failure and log message in the subtraction tests.
 
-Since we used `runSandwichWithCommandLineArgs`, we can pass flags to control the formatter:
+Since we used [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs), we can pass flags to control the formatter:
 
 ```bash
 ~/sandwich> stack run basic -- --tui

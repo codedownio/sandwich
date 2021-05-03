@@ -21,7 +21,7 @@ First of all, **every node in the test tree is timed by default**. Thus, the "de
 
 In addition, you can time arbitrary blocks of code using the `timeAction` function. This function is a `bracket_` style combinator that can be used to wrap an action. In the example below, we use it to wrap some sub-steps within a test.
 
-``` haskell title="https://github.com/thomasjm/sandwich/blob/master/sandwich-demos/demos/timing/Main.hs"
+``` haskell title="https://github.com/codedownio/sandwich/blob/master/sandwich-demos/demos/timing/Main.hs"
 timingDemo :: TopSpec
 timingDemo = describe "Dinner tests" $ do
   it "Makes dinner" $ do
