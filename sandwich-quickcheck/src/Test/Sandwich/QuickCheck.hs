@@ -64,7 +64,7 @@ introduceQuickCheck'' msg args = introduce msg quickCheckContext (return $ Quick
 prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
 prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
-  liftIO (quickCheckWithResult args p) >>= \case
+  liftIO (quickCheckWithResult (args { QC.chatty = False }) p) >>= \case
     QC.Success {..} -> info (T.pack output)
     x -> throwIO $ Reason (Just callStack) (output x)
 

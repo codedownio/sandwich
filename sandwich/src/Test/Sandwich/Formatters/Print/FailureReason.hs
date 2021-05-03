@@ -24,7 +24,7 @@ import Text.Show.Pretty as P
 
 printFailureReason :: FailureReason -> ReaderT (PrintFormatter, Int, Handle) IO ()
 printFailureReason (Reason _ s) = do
-  printShowBoxPrettyWithTitle "Reason: " (SEB s)
+  printShowBoxPrettyWithTitleString "Reason: " s
 printFailureReason (ChildrenFailed _ n) = do
   picn midWhite ([i|#{n} #{if n == 1 then ("child" :: String) else "children"} failed|] :: String)
 printFailureReason (ExpectedButGot _ seb1 seb2) = do
@@ -70,6 +70,9 @@ printShowBoxPrettyWithTitle title (SEB v) = case P.reify v of
         picn midWhite title
         printPretty True x >> p "\n"
 
--- printShowBoxPretty (SEB v) = case P.reify v of
---   Nothing -> forM_ (L.lines $ show v) pin
---   Just x -> printPretty True x >> p "\n"
+printShowBoxPrettyWithTitleString :: String -> String -> ReaderT (PrintFormatter, Int, Handle) IO ()
+printShowBoxPrettyWithTitleString title s = do
+  picn midWhite title
+  withBumpIndent $ do
+    forM_ (L.lines s) pin
+  p "\n"
