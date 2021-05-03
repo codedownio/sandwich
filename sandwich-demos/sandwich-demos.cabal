@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 83f4a6d08b47396cffa9355c680a1ef82ca0b708e8c9d3851bb21fcf382fa319
+-- hash: da617de01aa16165858071af05b781d4c683cbcd5d050ba9965f28b651ea3a72
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -206,6 +206,7 @@ executable quickcheck
     , monad-control
     , random
     , sandwich
+    , sandwich-quickcheck
     , sandwich-slack
     , string-interpolate
     , time

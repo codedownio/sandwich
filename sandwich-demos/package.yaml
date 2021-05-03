@@ -91,6 +91,7 @@ executables:
     main: Main.hs
     source-dirs: demos/quickcheck
     dependencies:
+    - sandwich-quickcheck
     - QuickCheck
 
   tui:
