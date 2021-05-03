@@ -76,18 +76,18 @@ modifyArgs f = introduce "Modified QuickCheck context" quickCheckContext acquire
        QuickCheckContext args <- getContext quickCheckContext
        return $ QuickCheckContext (f args)
 
--- | Modify the 'maxSuccess' for given spec.
+-- | Modify the 'maxSuccess' for the given spec.
 modifyMaxSuccess :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 modifyMaxSuccess f = modifyArgs $ \args -> args { maxSuccess = f (maxSuccess args) }
 
--- | Modify the 'maxDiscardRatio' for given spec.
+-- | Modify the 'maxDiscardRatio' for the given spec.
 modifyMaxDiscardRatio :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 modifyMaxDiscardRatio f = modifyArgs $ \args -> args { maxDiscardRatio = f (maxDiscardRatio args) }
 
--- | Modify the 'maxSize' for given spec.
+-- | Modify the 'maxSize' for the given spec.
 modifyMaxSize :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 modifyMaxSize f = modifyArgs $ \args -> args { maxSize = f (maxSize args) }
 
--- | Modify the 'maxShrinks' for given spec.
+-- | Modify the 'maxShrinks' for the given spec.
 modifyMaxShrinks :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 modifyMaxShrinks f = modifyArgs $ \args -> args { maxShrinks = f (maxShrinks args) }
