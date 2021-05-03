@@ -66,9 +66,7 @@ prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
   liftIO (quickCheckWithResult args p) >>= \case
     QC.Success {..} -> info (T.pack output)
-    x -> do
-      logError (T.pack $ output x)
-      throwIO QuickCheckException
+    x -> throwIO $ Reason (Just callStack) (output x)
 
 -- | Modify the 'Args' for the given spec.
 modifyArgs :: (HasQuickCheckContext context, Monad m) => (Args -> Args) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
