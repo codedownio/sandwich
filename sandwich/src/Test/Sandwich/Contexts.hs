@@ -32,3 +32,8 @@ getCurrentFolder = asks (baseContextPath . getBaseContext)
 -- introduce them manually
 getCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m (CommandLineOptions a)
 getCommandLineOptions = getContext commandLineOptions
+
+-- | Get the user command line options, if configured.
+-- This just calls 'getCommandLineOptions' and pulls out the user options.
+getUserCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m a
+getUserCommandLineOptions = optUserOptions <$> getContext commandLineOptions

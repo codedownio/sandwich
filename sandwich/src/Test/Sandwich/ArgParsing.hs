@@ -65,7 +65,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "print-slack-flags" <> help "Print the additional Slack flags"))
-  <*> optional (flag False True (long "print-webdriver-flags" <> help "Print the additional Slack flags"))
+  <*> optional (flag False True (long "print-webdriver-flags" <> help "Print the additional Webdriver flags"))
 
   <*> individualTestParser
 

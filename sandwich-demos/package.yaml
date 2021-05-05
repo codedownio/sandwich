@@ -56,6 +56,13 @@ executables:
     dependencies:
     - sandwich-demos
 
+  command-line-args:
+    main: Main.hs
+    source-dirs: demos/command-line-args
+    dependencies:
+    - optparse-applicative
+    - sandwich-demos
+
   contexts:
     main: Main.hs
     source-dirs: demos/contexts
