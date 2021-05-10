@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 67356bf7a3c5379b23a3aa5424a5642190d8cb9ea816333b653d3e43f689a83f
+-- hash: 2cf7edab89a8138b52c76c4634f4cd9cd2015d917fe10476c4639486ae0f9604
 
 name:           sandwich-quickcheck
 version:        0.1.0.5
@@ -33,7 +33,15 @@ library
       Paths_sandwich_quickcheck
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
   build-depends:
       QuickCheck
     , base <4.15
@@ -54,7 +62,15 @@ test-suite sandwich-quickcheck-test
       Paths_sandwich_quickcheck
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck

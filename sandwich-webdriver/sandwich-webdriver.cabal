@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f3e56f0cf8ab83ec1798f82f19ec2ddb50de883f77787bd446b668cb1a895d86
+-- hash: 5a2ff02a2510108cbb823c321001d0278c9c21b4876a64acca2c3803024084f4
 
 name:           sandwich-webdriver
 version:        0.1.0.4
@@ -49,7 +49,15 @@ library
       Paths_sandwich_webdriver
   hs-source-dirs:
       src
-  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
   ghc-options: -W
   build-depends:
       X11
@@ -95,7 +103,15 @@ executable sandwich-webdriver-exe
       Paths_sandwich_webdriver
   hs-source-dirs:
       app
-  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       X11
@@ -142,7 +158,15 @@ test-suite sandwich-webdriver-test
       Paths_sandwich_webdriver
   hs-source-dirs:
       test
-  default-extensions: OverloadedStrings QuasiQuotes NamedFieldPuns RecordWildCards ScopedTypeVariables FlexibleContexts FlexibleInstances LambdaCase
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       X11
