@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -F -pgmF sandwich-discover #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE PartialTypeSignatures #-}
 
 module SeleniumTests where
 
