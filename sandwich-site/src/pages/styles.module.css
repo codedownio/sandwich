@@ -18,6 +18,12 @@
   }
 }
 
+.carouselContainer {
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .buttons {
   display: flex;
   align-items: center;
@@ -41,3 +47,40 @@
   font-weight: bold;
   color: white;
 }
+
+.section {
+  padding: 1em 0;
+  background-color: #9794e0;
+}
+
+html[data-theme='light'] .sectionLink {
+  color: #67ea00;
+}
+html[data-theme='dark'] .sectionLink {
+  color: #67ea00;
+}
+
+.container {
+  margin-left: 20%;
+  margin-right: 20%;
+}
+
+.heading {
+  font-size: 1.3em;
+}
+
+.code {
+  font-family: monospace;
+  background-color: #2a0321;
+  color: white;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 3px;
+  border-radius: 3px;
+  border: solid 1px lightgray;
+}
+
+.backticks {
+  font-family: monospace;  
+}
+
