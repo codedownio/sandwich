@@ -93,6 +93,14 @@ function Home() {
                       to={useBaseUrl("docs/")}>
                         Read the docs
                     </Link>
+
+                    <span className={styles.indexCtasGitHubButtonWrapper}>
+                        <iframe className={styles.indexCtasGitHubButton}
+                                src="https://ghbtns.com/github-btn.html?user=codedownio&amp;repo=sandwich&amp;type=star&amp;count=true&amp;size=large"
+                                width={160}
+                                height={30}
+                                title="GitHub Stars" />
+                    </span>
                 </div>
             </div>
         </header>
@@ -100,7 +108,7 @@ function Home() {
         <div className={styles.section}>
             <div className={styles.container}>
                 <span className={styles.heading}>
-                    Run the demo from the landing page
+                    Run the demo from the landing page:
                 </span>
 
                 <div className={styles.code}>

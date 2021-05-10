@@ -84,3 +84,13 @@ html[data-theme='dark'] .sectionLink {
   font-family: monospace;  
 }
 
+
+.indexCtasGitHubButtonWrapper {
+  display: flex;
+}
+
+.indexCtasGitHubButton {
+  border: none;
+  margin-left: 24px;
+  overflow: hidden;
+}
