@@ -132,7 +132,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
     let wrappedAction = do
           let failureResult e = case fromException e of
                 Just fr@(Pending {}) -> Failure fr
-                _ -> Failure $ Reason Nothing [i|around #{runTreeLabel} handler threw exception|]
+                _ -> Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
             runNodeActionWith $ do
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
@@ -140,7 +140,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
               return results
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
-            Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]
+            Left () -> return $ Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler didn't call action|]
             Right _ -> return Success
     runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
 startTree node@(RunNodeDescribe {..}) ctx' = do
