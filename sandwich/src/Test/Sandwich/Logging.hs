@@ -65,22 +65,7 @@ createProcessWithLogging cp = do
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
 
--- | Same as 'createProcessWithLogging', but using 'readCreateProcess'.
-readCreateProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> String -> m String
-readCreateProcessWithLogging cp input = do
-  (hRead, hWrite) <- liftIO createPipe
-
-  let name = case cmdspec cp of
-        ShellCommand {} -> "shell"
-        RawCommand path _ -> path
-
-  _ <- async $ forever $ do
-    line <- liftIO $ hGetLine hRead
-    debug [i|#{name}: #{line}|]
-
-  liftIO $ readCreateProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite }) input
-
--- | Higher level version of 'readCreateProcessWithLogging', accepting a shell command.
+-- | Higher level version of 'createProcessWithLogging', accepting a shell command.
 callCommandWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
 callCommandWithLogging cmd = do
   (hRead, hWrite) <- liftIO createPipe
