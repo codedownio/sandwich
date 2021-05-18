@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b5a0ae6a11425040310c07b3d4e11624f7b8d34e42f6a2d040c204ced245787c
+-- hash: dc160b0ec554f9b329a7889638ec5866edd0d9179809dc013017eb7ce4745a53
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -252,6 +252,36 @@ executable landing
       Paths_sandwich_demos
   hs-source-dirs:
       demos/landing
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , exceptions
+    , filepath
+    , lifted-base
+    , monad-control
+    , random
+    , sandwich
+    , sandwich-demos
+    , sandwich-slack
+    , string-interpolate
+    , time
+  default-language: Haskell2010
+
+executable paralleln
+  main-is: Main.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      demos/paralleln
   default-extensions:
       OverloadedStrings
       QuasiQuotes

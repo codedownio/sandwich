@@ -37,6 +37,7 @@ module Test.Sandwich (
   , it
   , describe
   , parallel
+  , parallelN
 
   -- * Context manager nodes
   --
@@ -100,6 +101,7 @@ import Test.Sandwich.Logging
 import Test.Sandwich.Misc
 import Test.Sandwich.Nodes
 import Test.Sandwich.Options
+import Test.Sandwich.ParallelN
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.TH

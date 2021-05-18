@@ -94,6 +94,12 @@ executables:
     dependencies:
     - sandwich-demos
 
+  paralleln:
+    main: Main.hs
+    source-dirs: demos/paralleln
+    dependencies:
+    - sandwich-demos
+
   quickcheck:
     main: Main.hs
     source-dirs: demos/quickcheck
