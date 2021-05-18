@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 047785c7ed735aa90bbb7081db76babde4817ff6cb3dbf30cc70582c50b17ea4
+-- hash: 5a2ff02a2510108cbb823c321001d0278c9c21b4876a64acca2c3803024084f4
 
 name:           sandwich-webdriver
-version:        0.1.0.5
+version:        0.1.0.4
 synopsis:       Sandwich integration with Selenium WebDriver
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver documentation>.
 category:       Testing
