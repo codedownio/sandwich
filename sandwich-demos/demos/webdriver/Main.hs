@@ -4,30 +4,27 @@
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
-import Control.Concurrent
-import Control.Monad.IO.Class
-import Data.String.Interpolate
 import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.WebDriver
+import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands
 
 
-simple :: TopSpec
-simple = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
-  it "opens Google and searches" $ withSession1 $ do
-    openPage [i|https://www.google.com|]
-    search <- findElem (ByCSS [i|input[title="Search"]|])
-    click search
-    sendKeys "Haskell Sandwich" search
+positioning :: TopSpec
+positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+  describe "two windows side by side" $ do
+    it "opens Google" $ withSession1 $ do
+      setWindowLeftSide
+      openPage "http://www.google.com"
 
-    findElem (ByCSS [i|input[type="submit"]|]) >>= click
-
-    liftIO $ threadDelay 999999999
+    it "opens Google" $ withSession2 $ do
+      setWindowRightSide
+      openPage "http://www.yahoo.com"
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
   }
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs testOptions simple
+main = runSandwichWithCommandLineArgs testOptions positioning

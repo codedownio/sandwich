@@ -1,4 +1,11 @@
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, FlexibleContexts, OverloadedStrings, NamedFieldPuns, ViewPatterns #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Test.Sandwich.WebDriver.Video (
   startVideoRecording
@@ -27,7 +34,9 @@ import Test.WebDriver.Class as W
 import Test.WebDriver.Commands
 
 
-startFullScreenVideoRecording :: (MonadIO m, MonadReader context m, MonadLogger m, HasWebDriverContext context, MonadBaseControl IO m, MonadMask m) =>
+type BaseVideoConstraints context m = (MonadLoggerIO m, MonadReader context m, HasWebDriverContext context, MonadBaseControl IO m)
+
+startFullScreenVideoRecording :: (BaseVideoConstraints context m, MonadMask m) =>
   FilePath -> VideoSettings -> Bool -> m ProcessHandle
 startFullScreenVideoRecording path videoSettings logToDisk = do
   sess <- getContext webdriver
@@ -39,14 +48,15 @@ startFullScreenVideoRecording path videoSettings logToDisk = do
       return (fromIntegral w, fromIntegral h)
   startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings logToDisk
 
-startBrowserVideoRecording :: (MonadIO m, MonadThrow m, MonadReader context m, MonadLogger m, HasWebDriverContext context, HasWebDriverSessionContext context, MonadBaseControl IO m, W.WebDriver m) =>
+startBrowserVideoRecording :: (BaseVideoConstraints context m, MonadThrow m, HasWebDriverSessionContext context, W.WebDriver m) =>
   FilePath -> VideoSettings -> Bool -> m ProcessHandle
 startBrowserVideoRecording path videoSettings logToDisk = do
   (x, y) <- getWindowPos
   (w, h) <- getWindowSize
   startVideoRecording path (w, h, x, y) videoSettings logToDisk
 
-startVideoRecording :: (MonadIO m, MonadReader context m, MonadLogger m, HasWebDriverContext context, MonadBaseControl IO m) =>
+-- | Record video to a given path, for a given rectangle specified as (width, height, x, y).
+startVideoRecording :: (BaseVideoConstraints context m) =>
   FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Bool -> m ProcessHandle
 startVideoRecording path (width, height, x, y) vs logToDisk = do
   sess <- getContext webdriver
@@ -67,7 +77,8 @@ startVideoRecording path (width, height, x, y) vs logToDisk = do
           (_, _, _, p) <- createProcess (cp { std_out = UseHandle hout, std_err = UseHandle herr })
           return p
 
-endVideoRecording :: (MonadIO m, MonadLogger m, MonadCatch m) => ProcessHandle -> m ()
+-- | Gracefully stop the 'ProcessHandle' returned by 'startVideoRecording'.
+endVideoRecording :: (MonadLoggerIO m, MonadCatch m) => ProcessHandle -> m ()
 endVideoRecording p = do
   catchAny (liftIO $ interruptProcessGroupOf p)
            (\e -> logError [i|Exception in interruptProcessGroupOf in endVideoRecording: #{e}|])

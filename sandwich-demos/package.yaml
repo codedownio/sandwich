@@ -129,6 +129,15 @@ executables:
     main: Main.hs
     source-dirs: demos/webdriver
     dependencies:
+    - bytestring
+    - sandwich-demos
+    - sandwich-webdriver
+    - webdriver
+
+  webdriver-positioning:
+    main: Main.hs
+    source-dirs: demos/webdriver-positioning
+    dependencies:
     - sandwich-demos
     - sandwich-webdriver
     - webdriver

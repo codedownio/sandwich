@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dc160b0ec554f9b329a7889638ec5866edd0d9179809dc013017eb7ce4745a53
+-- hash: 1695fd5eed9f3467957611e5d32fbf3067aceb4995ba0d74956770867a4a6537
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -433,6 +433,39 @@ executable webdriver
       Paths_sandwich_demos
   hs-source-dirs:
       demos/webdriver
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , bytestring
+    , exceptions
+    , filepath
+    , lifted-base
+    , monad-control
+    , random
+    , sandwich
+    , sandwich-demos
+    , sandwich-slack
+    , sandwich-webdriver
+    , string-interpolate
+    , time
+    , webdriver
+  default-language: Haskell2010
+
+executable webdriver-positioning
+  main-is: Main.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      demos/webdriver-positioning
   default-extensions:
       OverloadedStrings
       QuasiQuotes

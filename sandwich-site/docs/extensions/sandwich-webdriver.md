@@ -24,7 +24,7 @@ main :: IO ()
 main = runSandwich defaultOptions spec
 ```
 
-Check out the [WdOptions](#) and [RunMode](#) options for more on what this package can do, or look at the sections below.
+To see a demo, try running `stack run webdriver` in the Sandwich repo.
 
 ## Launching browsers in the background
 
@@ -91,7 +91,8 @@ spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
 Because every Sandwich test tree has an associated directory in the filesystem, it's easy to capture screenshots during a test.
 
 ```haskell
-TODO
+Just dir <- getCurrentFolder
+screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
 ```
 
 ## Custom Selenium and driver binaries
