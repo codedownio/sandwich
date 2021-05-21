@@ -199,6 +199,7 @@ instance Show XvfbSession where
 
 -- * Video stuff
 
+-- | Default options for fast X11 video recording.
 fastX11VideoOptions = ["-an"
                       , "-r", "30"
                       , "-vcodec"
@@ -206,6 +207,7 @@ fastX11VideoOptions = ["-an"
                       , "-qscale:v", "1"
                       , "-threads", "0"]
 
+-- | Default options for quality X11 video recording.
 qualityX11VideoOptions = ["-an"
                          , "-r", "30"
                          , "-vcodec", "libx264"
@@ -213,12 +215,14 @@ qualityX11VideoOptions = ["-an"
                          , "-crf", "0"
                          , "-threads", "0"]
 
+-- | Default options for AVFoundation recording (for Darwin).
 defaultAvfoundationOptions = ["-r", "30"
                              , "-an"
                              , "-vcodec", "libxvid"
                              , "-qscale:v", "1"
                              , "-threads", "0"]
 
+-- | Default options for gdigrab recording (for Windows).
 defaultGdigrabOptions = ["-framerate", "30"]
 
 data VideoSettings = VideoSettings {
@@ -230,12 +234,15 @@ data VideoSettings = VideoSettings {
   -- ^ Arguments to gdigrab, used with Windows.
   , hideMouseWhenRecording :: Bool
   -- ^ Hide the mouse while recording video. Linux and Windows only.
+  , logToDisk :: Bool
+  -- ^ Log ffmpeg stdout and stderr to disk.
   }
 
-instance Default VideoSettings where
-  def = VideoSettings {
-    x11grabOptions = fastX11VideoOptions
-    , avfoundationOptions = defaultAvfoundationOptions
-    , gdigrabOptions = defaultGdigrabOptions
-    , hideMouseWhenRecording = False
-    }
+-- | Default video settings.
+defaultVideoSettings = VideoSettings {
+  x11grabOptions = fastX11VideoOptions
+  , avfoundationOptions = defaultAvfoundationOptions
+  , gdigrabOptions = defaultGdigrabOptions
+  , hideMouseWhenRecording = False
+  , logToDisk = True
+  }

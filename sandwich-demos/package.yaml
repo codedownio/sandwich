@@ -141,3 +141,11 @@ executables:
     - sandwich-demos
     - sandwich-webdriver
     - webdriver
+
+  webdriver-video:
+    main: Main.hs
+    source-dirs: demos/webdriver-video
+    dependencies:
+    - sandwich-demos
+    - sandwich-webdriver
+    - webdriver

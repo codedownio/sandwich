@@ -1,30 +1,38 @@
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Main where
 
+import Control.Concurrent
+import Control.Monad.IO.Class
+import qualified Data.ByteString.Lazy as BL
+import Data.String.Interpolate
 import Data.Time.Clock
+import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.WebDriver
-import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands
 
 
-positioning :: TopSpec
-positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
-  describe "two windows side by side" $ do
-    it "opens Google" $ withSession1 $ do
-      setWindowLeftSide
-      openPage "http://www.google.com"
+simple :: TopSpecWithOptions
+simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
+  it "opens Google and searches" $ withSession1 $ do
+    openPage [i|https://www.google.com|]
+    search <- findElem (ByCSS [i|input[title="Search"]|])
+    click search
+    sendKeys "Haskell Sandwich" search
+    findElem (ByCSS [i|input[type="submit"]|]) >>= click
 
-    it "opens Google" $ withSession2 $ do
-      setWindowRightSide
-      openPage "http://www.yahoo.com"
+    Just dir <- getCurrentFolder
+    screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
+
+    liftIO $ threadDelay 3000000
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
   }
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs testOptions positioning
+main = runSandwichWithCommandLineArgs testOptions simple
