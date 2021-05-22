@@ -75,7 +75,7 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
   }
 ```
 
-If you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), you can use headless mode by passing `--headless`.
+Alternatively, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), you can enable headless mode by passing `--headless`.
 
 ### Xvfb
 
@@ -96,9 +96,13 @@ Or, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskel
 Xvfb and ffmpeg must be installed in the test environment to use these features.
 :::
 
-#### Recording videos manually
+## Recording videos
 
-Using the methods in [Test.Sandwich.WebDriver.Video](#), you can wrap arbitrary sections of a test in video. The example below can be found in the `webdriver-video` demo. You could also wrap video around multiple tests by using the [around](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:around) node, or around individual test using [aroundEach](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:aroundEach), etc.
+As discussed above, recording video doesn't work in headless (`--headless`) mode. It requires normal (`--current`) or Xvfb (`--xvfb`) mode.
+
+### Manually
+
+Using the methods in [Test.Sandwich.WebDriver.Video](#), you can wrap arbitrary sections of a test in video recording. The example below can be found in the `webdriver-video` demo.
 
 ```haskell
 manualVideo :: TopSpec
@@ -116,11 +120,13 @@ manualVideo = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
         findElem (ByCSS [i|input[type="submit"]|]) >>= click
 ```
 
-#### Built-in command line options
+You can also wrap video around multiple tests by using the [around](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:around) node, or around individual tests using [aroundEach](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:aroundEach), etc.
+
+### With command line options
 
 If you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), then you can take advantage of the built-in command line arguments `--individual-videos` and `--error-videos`. The former will record videos of every individual test and store them in the corresponding folder on disk. The latter will do the same, but will delete the videos if the test ran successfully, so you only end up with error videos.
 
-You can try this out like this:
+You can try this out by running:
 
 ```bash
 stack run webdriver -- --individual-videos
@@ -152,7 +158,7 @@ Alternatively, you can pass [DownloadSeleniumFrom](#) with a URL to download, an
 
 ## Running tests in parallel with a webdriver pool
 
-If you have a lot of test files, you probably want to run them in parallel so the test suite finishes faster. However, you probably don't want to run them **all** in parallel, since running that many browser sessions could bog down your CI machine. A good solution is to use [Data.Pool](https://hackage.haskell.org/package/resource-pool) to introduce a pool of reusable WebDriver contexts.
+If you have a lot of test files, you probably want to run them in parallel so the test suite finishes faster. However, you probably don't want to run them **all** in parallel, since running that many browser sessions could bog down your CI machine. A good solution is to use [Data.Pool](https://hackage.haskell.org/package/resource-pool) to introduce a fixed-size pool of reusable WebDriver contexts.
 
 You can follow along with this example in the `webdriver-pool` demo.
 
@@ -190,7 +196,7 @@ claimWebdriver spec = introduceWith' (
         (void $ action sess) `finally` closeAllSessions sess
 ```
 
-This code obtains the pool context, then claims a WebDriver to pass to its sub-nodes. It also cleans up at the end by calling `closeAllSessions`.
+There's also some plumbing here where we tweak the node options of this to play better with [test timing](../timing). This code obtains the pool context, then claims a WebDriver to pass to its sub-nodes. It also cleans up at the end by calling `closeAllSessions`.
 
 Having written these functions, we can finally write our tests. The following will run all the tests, up to four at a time, re-using the WebDrivers among them.
 
@@ -200,7 +206,9 @@ tests =
   introduceWebDriverPool 4 (defaultWdOptions "/tmp/tools") $
     parallel $
       replicateM_ 20 $
-        claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
+        claimWebdriver $
+          it "opens Google" $ withSession1 $
+            openPage "http://www.google.com"
 ```
 
 Of course, in real use you probably want to introduce different tests to run in parallel. You can use [Test Discovery](../discovery) to automatically generate them.

@@ -18,6 +18,5 @@ module.exports = {
     ] },
     { type: "doc", id: "extensions/sandwich-webdriver" },
     { type: "doc", id: "extensions/sandwich-quickcheck" },
-    { type: "doc", id: "extensions/advanced" }
   ],
 };
