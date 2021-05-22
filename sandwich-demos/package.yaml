@@ -134,6 +134,15 @@ executables:
     - sandwich-webdriver
     - webdriver
 
+  webdriver-pool:
+    main: Main.hs
+    source-dirs: demos/webdriver-pool
+    dependencies:
+    - resource-pool
+    - sandwich-demos
+    - sandwich-webdriver
+    - webdriver
+
   webdriver-positioning:
     main: Main.hs
     source-dirs: demos/webdriver-positioning

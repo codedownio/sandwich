@@ -1,5 +1,6 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Functions for retrieving context information from within tests.
 
@@ -30,7 +31,7 @@ getCurrentFolder = asks (baseContextPath . getBaseContext)
 -- | Get the command line options, if configured.
 -- Using the 'runSandwichWithCommandLineArgs' family of main functions will introduce these, or you can
 -- introduce them manually
-getCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m (CommandLineOptions a)
+getCommandLineOptions :: forall a context m. (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m (CommandLineOptions a)
 getCommandLineOptions = getContext commandLineOptions
 
 -- | Get the user command line options, if configured.

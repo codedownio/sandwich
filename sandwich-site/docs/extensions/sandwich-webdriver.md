@@ -155,3 +155,52 @@ Alternatively, you can pass [DownloadSeleniumFrom](#) with a URL to download, an
 If you have a lot of test files, you probably want to run them in parallel so the test suite finishes faster. However, you probably don't want to run them **all** in parallel, since running that many browser sessions could bog down your CI machine. A good solution is to use [Data.Pool](https://hackage.haskell.org/package/resource-pool) to introduce a pool of reusable WebDriver contexts.
 
 You can follow along with this example in the `webdriver-pool` demo.
+
+The first thing we need to do is come up with a label and introduce a pool of the desired size.
+
+```haskell
+webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
+type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
+
+introduceWebDriverPool poolSize wdOptions' =
+  introduce "Introduce webdriver pool" webDriverPool alloc cleanup
+  where
+    alloc = do
+      wdOptions <- addCommandLineOptionsToWdOptions
+                   <$> (getCommandLineOptions @())
+                   <*> pure wdOptions'
+      runRoot <- fromMaybe "/tmp" <$> getRunRoot
+      liftIO $ createPool
+        (allocateWebDriver' runRoot wdOptions) cleanupWebDriver' 1 30 poolSize
+    cleanup = liftIO . destroyAllResources
+```
+
+There's some plumbing here because we want to pipe the command line options through. The important part is at the end, whre we make a pool that knows how to allocate and deallocate WebDrivers using the lower-level `allocateWebDriver'` and `cleanupWebDriver'` functions.
+
+Next, we make another introduce node to *claim* a WebDriver from the pool.
+
+```haskell
+claimWebdriver spec = introduceWith' (
+  defaultNodeOptions {nodeOptionsRecordTime=False, nodeOptionsCreateFolder=False}
+  ) "Claim webdriver" webdriver wrappedAction spec
+  where
+    wrappedAction action = do
+      pool <- getContext webDriverPool
+      withResource pool $ \sess ->
+        (void $ action sess) `finally` closeAllSessions sess
+```
+
+This code obtains the pool context, then claims a WebDriver to pass to its sub-nodes. It also cleans up at the end by calling `closeAllSessions`.
+
+Having written these functions, we can finally write our tests. The following will run all the tests, up to four at a time, re-using the WebDrivers among them.
+
+```haskell
+tests :: TopSpecWithOptions
+tests =
+  introduceWebDriverPool 4 (defaultWdOptions "/tmp/tools") $
+    parallel $
+      replicateM_ 20 $
+        claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
+```
+
+Of course, in real use you probably want to introduce different tests to run in parallel. You can use [Test Discovery](../discovery) to automatically generate them.
