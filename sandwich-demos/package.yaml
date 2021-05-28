@@ -4,7 +4,7 @@ github:              "githubuser/sandwich-demos"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "example@example.com"
-copyright:           "2020 Tom McLaughlin"
+copyright:           "2021 Tom McLaughlin"
 
 extra-source-files:
 - README.md

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2cf7edab89a8138b52c76c4634f4cd9cd2015d917fe10476c4639486ae0f9604
+-- hash: ce9e2a6c92502ebb12f50d6209ad0f6fa9f6a970316660d4b5324e1e7c9635ad
 
 name:           sandwich-quickcheck
 version:        0.1.0.5
@@ -44,7 +44,7 @@ library
       LambdaCase
   build-depends:
       QuickCheck
-    , base <4.15
+    , base <5
     , brick
     , free
     , monad-control
@@ -74,7 +74,7 @@ test-suite sandwich-quickcheck-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
-    , base <4.15
+    , base <5
     , brick
     , free
     , monad-control

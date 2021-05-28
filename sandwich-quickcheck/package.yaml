@@ -14,7 +14,7 @@ extra-source-files:
 - ChangeLog.md
 
 dependencies:
-- base < 4.15
+- base < 5
 - brick
 - free
 - monad-control

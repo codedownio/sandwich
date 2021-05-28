@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: aa45aa821e6aa80865e26cf2911cf666e76b4e5ce6ba1a0ef5b08a4ff626640d
+-- hash: 85c95926cb9323ee61c483d4a1a3d7a4c073ffa4ea756c6f7cdabd4d1d196309
 
 name:           sandwich
 version:        0.1.0.6
@@ -95,7 +95,7 @@ library
       aeson
     , ansi-terminal
     , async
-    , base <4.15
+    , base <5
     , brick
     , bytestring
     , colour
@@ -141,7 +141,7 @@ executable sandwich-demo
       aeson
     , ansi-terminal
     , async
-    , base <4.15
+    , base <5
     , brick
     , bytestring
     , colour
@@ -188,7 +188,7 @@ executable sandwich-discover
       aeson
     , ansi-terminal
     , async
-    , base <4.15
+    , base <5
     , brick
     , bytestring
     , colour
@@ -240,7 +240,7 @@ executable sandwich-test
       aeson
     , ansi-terminal
     , async
-    , base <4.15
+    , base <5
     , brick
     , bytestring
     , colour
@@ -293,7 +293,7 @@ test-suite sandwich-test-suite
       aeson
     , ansi-terminal
     , async
-    , base <4.15
+    , base <5
     , brick
     , bytestring
     , colour

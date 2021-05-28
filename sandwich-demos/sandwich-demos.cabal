@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bb13a4467a8eb5c5f9434cfa18432ebf8a9063f9fa39dcebf90020321f28a210
+-- hash: c29f3d062276ddf7f8d98193d47f26656905a3c4495b4602ad15f474a505b9e1
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -13,7 +13,7 @@ homepage:       https://github.com/githubuser/sandwich-demos#readme
 bug-reports:    https://github.com/githubuser/sandwich-demos/issues
 author:         Tom McLaughlin
 maintainer:     example@example.com
-copyright:      2020 Tom McLaughlin
+copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
