@@ -87,8 +87,8 @@ jobs:
 
     - name: apt
       run: |
-        apt-get update
-        apt-get install -y libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxss-dev
+        sudo apt-get update
+        sudo apt-get install -y libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxss-dev
 
     - name: Build
       run: |
