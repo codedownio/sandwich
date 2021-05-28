@@ -85,6 +85,11 @@ jobs:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
 
+    - name: apt
+      run: |
+        apt-get update
+        apt-get install -y libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxss-dev
+
     - name: Build
       run: |
         cd sandwich
