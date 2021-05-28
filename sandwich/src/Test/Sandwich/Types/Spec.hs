@@ -15,6 +15,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE CPP #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
 
@@ -35,6 +36,10 @@ import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
 import Safe
+
+#if !MIN_VERSION_base(4,13,0)
+import Control.Monad.Fail
+#endif
 
 -- * ExampleM monad
 
