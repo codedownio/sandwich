@@ -68,7 +68,7 @@ instance ToBrickWidget FailureReason where
     Nothing -> do
       customExceptionFormatters <- ask
       case headMay $ catMaybes [x baseException | x <- customExceptionFormatters] of
-        Just (CustomTUIExceptionMessageAndCallStack msg maybeCallStack) -> return $ strWrap $ T.unpack msg
+        Just (CustomTUIExceptionMessageAndCallStack msg _) -> return $ strWrap $ T.unpack msg
         Just (CustomTUIExceptionBrick widget) -> return $ boxWithTitle heading widget
         Nothing -> boxWithTitle heading <$> (reifyWidget e)
     where heading = case maybeMessage of

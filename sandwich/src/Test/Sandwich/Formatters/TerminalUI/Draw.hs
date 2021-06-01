@@ -23,6 +23,7 @@ import Data.Time.Clock
 import GHC.Stack
 import qualified Graphics.Vty as V
 import Lens.Micro
+import Safe
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
@@ -31,8 +32,8 @@ import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
 import Test.Sandwich.Formatters.TerminalUI.Draw.Util
 import Test.Sandwich.Formatters.TerminalUI.Types
-import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 
 
 drawUI :: AppState -> [Widget ClickableName]
@@ -97,7 +98,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     getInfoWidgets mle@(MainListElem {..}) = catMaybes [Just $ runReader (toBrickWidget status) (app ^. appCustomExceptionFormatters), callStackWidget mle, logWidget mle]
 
     callStackWidget (MainListElem {..}) = do
-      cs <- getCallStackFromStatus status
+      cs <- getCallStackFromStatus (app ^. appCustomExceptionFormatters) status
       return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ runReader (toBrickWidget cs) (app ^. appCustomExceptionFormatters)
 
     logWidget (MainListElem {..}) = do
@@ -153,3 +154,11 @@ borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [
     totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
     totalNotStartedTests = countWhere isNotStartedItBlock (app ^. appRunTree)
+
+getCallStackFromStatus :: CustomExceptionFormatters -> Status -> Maybe CallStack
+getCallStackFromStatus cef (Done {statusResult=(Failure reason@(GotException _ _ (SomeExceptionWithEq baseException)))}) =
+  case headMay $ catMaybes [x baseException | x <- cef] of
+    Just (CustomTUIExceptionMessageAndCallStack _ maybeCs) -> maybeCs
+    _ -> failureCallStack reason
+getCallStackFromStatus _ (Done {statusResult=(Failure reason)}) = failureCallStack reason
+getCallStackFromStatus _ _ = Nothing

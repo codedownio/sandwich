@@ -6,7 +6,6 @@
 module Test.Sandwich.RunTree where
 
 import Control.Concurrent.STM
-import GHC.Stack
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
@@ -112,10 +111,6 @@ unFixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
     RunNodeIt {..} -> do
       return $ RunNodeIt { runNodeCommon=common', .. }
 
-
-getCallStackFromStatus :: Status -> Maybe CallStack
-getCallStackFromStatus Done {statusResult=(Failure reason)} = failureCallStack reason
-getCallStackFromStatus _ = Nothing
 
 isDone :: Status -> Bool
 isDone (Done {}) = True

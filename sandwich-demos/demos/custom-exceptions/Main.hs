@@ -6,6 +6,8 @@
 module Main where
 
 import Brick
+import Control.Exception
+import Control.Monad.IO.Class
 import Data.Text as T
 import Data.Time.Clock
 import GHC.Stack
@@ -25,10 +27,13 @@ instance Exception MyColoredException
 customExceptionsDemo :: TopSpec
 customExceptionsDemo = describe "Custom exceptions" $ do
   it "formats a custom exception with message and callstack" $ do
-    throwIO $ MyException "My message" callStack
+    throwMyException
 
   it "formats a custom exception with its own widget rendering function" $ do
-    throwIO $ MyColoredException "My widget message"
+    liftIO $ throwIO $ MyColoredException "My widget message"
+
+throwMyException :: (MonadIO m, HasCallStack) => ExampleT context m ()
+throwMyException = liftIO $ throwIO $ MyException "My message" callStack
 
 formatMyException :: SomeException -> Maybe CustomTUIException
 formatMyException e = case fromException e of
