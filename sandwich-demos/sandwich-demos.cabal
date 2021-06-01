@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c29f3d062276ddf7f8d98193d47f26656905a3c4495b4602ad15f474a505b9e1
+-- hash: 93510d1d5e46064e42fe47349778df65b5eb38d16b8114ef4541fbca101c3a38
 
 name:           sandwich-demos
 version:        0.1.0.0
@@ -204,6 +204,39 @@ executable contexts
     , sandwich-slack
     , string-interpolate
     , time
+  default-language: Haskell2010
+
+executable custom-exceptions
+  main-is: Main.hs
+  other-modules:
+      Paths_sandwich_demos
+  hs-source-dirs:
+      demos/custom-exceptions
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , brick
+    , exceptions
+    , filepath
+    , lifted-base
+    , monad-control
+    , random
+    , sandwich
+    , sandwich-demos
+    , sandwich-slack
+    , string-interpolate
+    , text
+    , time
+    , vty
   default-language: Haskell2010
 
 executable discover

@@ -81,6 +81,15 @@ executables:
     dependencies:
     - sandwich-demos
 
+  custom-exceptions:
+    main: Main.hs
+    source-dirs: demos/custom-exceptions
+    dependencies:
+    - brick
+    - sandwich-demos
+    - text
+    - vty
+
   discover:
     main: Main.hs
     source-dirs: demos/discover

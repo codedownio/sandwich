@@ -79,7 +79,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
 type CustomExceptionFormatters = [SomeException -> Maybe CustomTUIException]
 
 data CustomTUIException = CustomTUIExceptionMessageAndCallStack T.Text (Maybe CallStack)
-                        | CustomTUIExceptionBrick (B.Widget ())
+                        | CustomTUIExceptionBrick (forall n. B.Widget n)
 
 newtype AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
 

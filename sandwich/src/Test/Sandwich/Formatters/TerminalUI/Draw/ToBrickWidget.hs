@@ -12,9 +12,12 @@ import Brick.Widgets.Border
 import Control.Exception.Safe
 import Control.Monad.Reader
 import qualified Data.List as L
+import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Data.Time.Clock
 import GHC.Stack
+import Safe
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Types
@@ -62,7 +65,12 @@ instance ToBrickWidget FailureReason where
   toBrickWidget (ChildrenFailed _ n) = return $ boxWithTitle [i|Reason: #{n} #{if n == 1 then ("child" :: String) else "children"} failed|] (strWrap "")
   toBrickWidget (GotException _ maybeMessage e@(SomeExceptionWithEq baseException)) = case fromException baseException of
     Just (fr :: FailureReason) -> boxWithTitle heading <$> (toBrickWidget fr)
-    _ -> boxWithTitle heading <$> (reifyWidget e)
+    Nothing -> do
+      customExceptionFormatters <- ask
+      case headMay $ catMaybes [x baseException | x <- customExceptionFormatters] of
+        Just (CustomTUIExceptionMessageAndCallStack msg maybeCallStack) -> return $ strWrap $ T.unpack msg
+        Just (CustomTUIExceptionBrick widget) -> return $ boxWithTitle heading widget
+        Nothing -> boxWithTitle heading <$> (reifyWidget e)
     where heading = case maybeMessage of
             Nothing -> "Got exception: "
             Just msg -> [i|Got exception (#{msg}):|]

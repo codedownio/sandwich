@@ -20,9 +20,11 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIInitialFolding
   , terminalUIDefaultEditor
   , terminalUIOpenInEditor
+  , terminalUICustomExceptionFormatters
 
   -- * Auxiliary types
   , InitialFolding(..)
+  , CustomTUIException(..)
   ) where
 
 import Brick as B
