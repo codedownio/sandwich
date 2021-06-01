@@ -12,6 +12,7 @@ import Brick.Widgets.Center
 import qualified Brick.Widgets.List as L
 import Control.Monad
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
@@ -93,11 +94,11 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
           _ -> Nothing
       ]
 
-    getInfoWidgets mle@(MainListElem {..}) = catMaybes [Just $ toBrickWidget (app ^. appCustomExceptionFormatters) status, callStackWidget mle, logWidget mle]
+    getInfoWidgets mle@(MainListElem {..}) = catMaybes [Just $ runReader (toBrickWidget status) (app ^. appCustomExceptionFormatters), callStackWidget mle, logWidget mle]
 
     callStackWidget (MainListElem {..}) = do
       cs <- getCallStackFromStatus status
-      return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ toBrickWidget (app ^. appCustomExceptionFormatters) cs
+      return $ borderWithLabel (padLeftRight 1 $ str "Callstack") $ runReader (toBrickWidget cs) (app ^. appCustomExceptionFormatters)
 
     logWidget (MainListElem {..}) = do
       let filteredLogs = case app ^. appLogLevel of
