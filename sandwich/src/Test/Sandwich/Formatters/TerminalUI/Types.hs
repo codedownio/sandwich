@@ -5,7 +5,9 @@
 
 module Test.Sandwich.Formatters.TerminalUI.Types where
 
+import qualified Brick as B
 import qualified Brick.Widgets.List as L
+import Control.Exception
 import Control.Monad.Logger
 import Data.Sequence
 import qualified Data.Text as T
@@ -46,6 +48,8 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- and invokes it with the strings LINE, COLUMN, and FILE replaced with the line number, column, and file path.
   -- If FILE is not found in the string, it will be appended to the command after a space.
   -- It's also passed a debug callback that accepts a 'T.Text'; messages logged with this function will go into the formatter logs.
+  , terminalUICustomExceptionFormatters :: CustomExceptionFormatters
+  -- ^ Custom exception formatters, used to nicely format custom exception types.
   }
 
 instance Show TerminalUIFormatter where
@@ -69,9 +73,15 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIRefreshPeriod = 100000
   , terminalUIDefaultEditor = Just "emacsclient +LINE:COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
+  , terminalUICustomExceptionFormatters = []
   }
 
-data AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
+type CustomExceptionFormatters = [SomeException -> Maybe CustomTUIException]
+
+data CustomTUIException = CustomTUIExceptionMessageAndCallStack T.Text (Maybe CallStack)
+                        | CustomTUIExceptionBrick (B.Widget ())
+
+newtype AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
 
 instance Show AppEvent where
   show (RunTreeUpdated {}) = "<RunTreeUpdated>"
@@ -113,6 +123,7 @@ data AppState = AppState {
 
   , _appOpenInEditor :: SrcLoc -> IO ()
   , _appDebug :: T.Text -> IO ()
+  , _appCustomExceptionFormatters :: CustomExceptionFormatters
   }
 
 makeLenses ''AppState

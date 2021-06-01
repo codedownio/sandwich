@@ -98,6 +98,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = lif
 
           , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (const $ return ())
           , _appDebug = (const $ return ())
+          , _appCustomExceptionFormatters = terminalUICustomExceptionFormatters
         }
 
   eventChan <- newBChan 10
