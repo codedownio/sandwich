@@ -43,7 +43,7 @@ spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
 ```
 ## Window positioning
 
-You can use the functions in [Test.Sandwich.WebDriver.Windows](#) to arrange browser windows on the screen. This is useful when you want to watch two browsers simultaneously accessing a collaborative app.
+You can use the functions in [Test.Sandwich.WebDriver.Windows](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver-Windows.html) to arrange browser windows on the screen. This is useful when you want to watch two browsers simultaneously accessing a collaborative app.
 
 The code below extends the previous example with window positioning. You can find this in the `webdriver-positioning` demo.
 
@@ -75,7 +75,7 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
   }
 ```
 
-Alternatively, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), you can enable headless mode by passing `--headless`.
+Alternatively, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver.html#v:introduceWebDriverOptions), you can enable headless mode by passing `--headless`.
 
 ### Xvfb
 
@@ -90,7 +90,7 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
   }
 ```
 
-Or, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), you can enable Xvfb mode by passing `--xvfb`.
+Or, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver.html#v:introduceWebDriverOptions), you can enable Xvfb mode by passing `--xvfb`.
 
 :::note
 Xvfb and ffmpeg must be installed in the test environment to use these features.
@@ -102,7 +102,7 @@ As discussed above, recording video doesn't work in headless (`--headless`) mode
 
 ### Manually
 
-Using the methods in [Test.Sandwich.WebDriver.Video](#), you can wrap arbitrary sections of a test in video recording. The example below can be found in the `webdriver-video` demo.
+Using the methods in [Test.Sandwich.WebDriver.Video](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver-Video.html), you can wrap arbitrary sections of a test in video recording. The example below can be found in the `webdriver-video` demo.
 
 ```haskell
 manualVideo :: TopSpec
@@ -124,7 +124,7 @@ You can also wrap video around multiple tests by using the [around](http://hacka
 
 ### With command line options
 
-If you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](#), then you can take advantage of the built-in command line arguments `--individual-videos` and `--error-videos`. The former will record videos of every individual test and store them in the corresponding folder on disk. The latter will do the same, but will delete the videos if the test ran successfully, so you only end up with error videos.
+If you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:runSandwichWithCommandLineArgs) in conjunction with [introduceWebDriverOptions](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver.html#v:introduceWebDriverOptions), then you can take advantage of the built-in command line arguments `--individual-videos` and `--error-videos`. The former will record videos of every individual test and store them in the corresponding folder on disk. The latter will do the same, but will delete the videos if the test ran successfully, so you only end up with error videos.
 
 You can try this out by running:
 
@@ -154,7 +154,7 @@ data WdOptions = WdOptions {
 }
 ```
 
-Alternatively, you can pass [DownloadSeleniumFrom](#) with a URL to download, and similarly for the other options. Please see the Haddocks for more details.
+Alternatively, you can pass [DownloadSeleniumFrom](http://hackage.haskell.org/package/sandwich-webdriver/docs/Test-Sandwich-WebDriver-Config.html#t:SeleniumToUse) with a URL to download, and similarly for the other options. Please see the Haddocks for more details.
 
 ## Running tests in parallel with a webdriver pool
 

@@ -1,11 +1,14 @@
+-- | Functions for manipulating browser windows.
+
 {-# LANGUAGE QuasiQuotes #-}
--- | Functions for manipulating browser windows
 
 module Test.Sandwich.WebDriver.Windows (
+  -- * Window positioning
   setWindowLeftSide
   , setWindowRightSide
   , setWindowFullScreen
 
+  -- * Querying screen info
   , getScreenResolution
   ) where
 
@@ -26,6 +29,7 @@ import Test.WebDriver
 import qualified Test.WebDriver.Class as W
 
 
+-- | Position the window on the left 50% of the screen.
 setWindowLeftSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowLeftSide = do
   sess <- getContext webdriver
@@ -36,6 +40,7 @@ setWindowLeftSide = do
   setWindowPos (x + 0, y + 0)
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
+-- | Position the window on the right 50% of the screen.
 setWindowRightSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowRightSide = do
   sess <- getContext webdriver
@@ -47,6 +52,7 @@ setWindowRightSide = do
   setWindowPos pos
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
+-- | Fullscreen the browser window.
 setWindowFullScreen :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
 setWindowFullScreen = do
   sess <- getContext webdriver
@@ -57,8 +63,7 @@ setWindowFullScreen = do
   setWindowPos (x + 0, y + 0)
   setWindowSize (fromIntegral width, fromIntegral height)
 
--- * Getting screen dimensions and resolution
-
+-- | Get the screen resolution as (x, y, width, height). (The x and y coordinates may be nonzero in multi-monitor setups.)
 getScreenResolution :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WebDriver -> m (Int, Int, Int, Int)
 getScreenResolution = getScreenResolutionX11
 
