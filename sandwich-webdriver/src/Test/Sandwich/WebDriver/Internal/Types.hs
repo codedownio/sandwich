@@ -24,7 +24,7 @@ import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
 
--- | 'Session' is just a 'String' name
+-- | 'Session' is just a 'String' name.
 type Session = String
 
 -- * Labels
@@ -60,28 +60,28 @@ data WdOptions = WdOptions {
   -- ^ Folder where any necessary binaries (chromedriver, Selenium, etc.) will be downloaded if needed. Required.
 
   , capabilities :: W.Capabilities
-  -- ^ The WebDriver capabilities to use
+  -- ^ The WebDriver capabilities to use.
 
   , saveSeleniumMessageHistory :: WhenToSave
-  -- ^ When to save a record of Selenium requests and responses
+  -- ^ When to save a record of Selenium requests and responses.
 
   , seleniumToUse :: SeleniumToUse
-  -- ^ Which Selenium server JAR file to use
+  -- ^ Which Selenium server JAR file to use.
 
   , chromeDriverToUse :: ChromeDriverToUse
-  -- ^ Which chromedriver executable to use
+  -- ^ Which chromedriver executable to use.
 
   , geckoDriverToUse :: GeckoDriverToUse
-  -- ^ Which geckodriver executable to use
+  -- ^ Which geckodriver executable to use.
 
   , runMode :: RunMode
-  -- ^ How to handle opening the browser (in a popup window, headless, etc.)
+  -- ^ How to handle opening the browser (in a popup window, headless, etc.).
 
   , httpManager :: Maybe Manager
   -- ^ HTTP manager for making requests to Selenium. If not provided, one will be created for each session.
 
   , httpRetryCount :: Int
-  -- ^ Number of times to retry an HTTP request if it times out
+  -- ^ Number of times to retry an HTTP request if it times out.
   }
 
 -- | How to obtain the Selenium server JAR file.
@@ -126,6 +126,7 @@ data HeadlessConfig = HeadlessConfig {
   -- ^ Resolution for the headless browser. Defaults to (1920, 1080)
   }
 
+-- | Default headless config.
 defaultHeadlessConfig = HeadlessConfig Nothing
 
 data XvfbConfig = XvfbConfig {
@@ -136,8 +137,8 @@ data XvfbConfig = XvfbConfig {
   -- ^ Whether to start fluxbox window manager to go with the Xvfb session. fluxbox must be on the path
   }
 
+-- | Default Xvfb settings.
 defaultXvfbConfig = XvfbConfig Nothing False
-
 
 -- | The default 'WdOptions' object.
 -- You should start with this and modify it using the accessors.
@@ -175,7 +176,7 @@ data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
 
 type WebDriverSession = (Session, IORef W.WDSession)
 
--- | Get the 'WdOptions' associated with the 'WebDriver'
+-- | Get the 'WdOptions' associated with the 'WebDriver'.
 getWdOptions :: WebDriver -> WdOptions
 getWdOptions = wdOptions
 
@@ -185,12 +186,12 @@ getDisplayNumber :: WebDriver -> Maybe Int
 getDisplayNumber (WebDriver {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
 
--- | Get the Xvfb session associated with the 'WebDriver', if present
+-- | Get the Xvfb session associated with the 'WebDriver', if present.
 getXvfbSession :: WebDriver -> Maybe XvfbSession
 getXvfbSession (WebDriver {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
--- | Get the name of the 'WebDriver'
+-- | Get the name of the 'WebDriver'.
 getWebDriverName :: WebDriver -> String
 getWebDriverName (WebDriver {wdName}) = wdName
 
