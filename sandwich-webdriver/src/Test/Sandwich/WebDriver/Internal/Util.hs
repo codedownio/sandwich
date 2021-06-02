@@ -7,7 +7,6 @@ import qualified Control.Exception.Lifted as E
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Convertible
 import Data.String.Interpolate
 import qualified Data.Text as T
 import System.Directory
@@ -38,10 +37,10 @@ moveAndTruncate from to = do
 -- * Exceptions
 
 leftOnException :: (MonadIO m, MonadBaseControl IO m) => m (Either T.Text a) -> m (Either T.Text a)
-leftOnException = E.handle (\(e :: SomeException) -> return $ Left $ convert $ show e)
+leftOnException = E.handle (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
 
 leftOnException' :: (MonadIO m, MonadBaseControl IO m) => m a -> m (Either T.Text a)
-leftOnException' action = E.catch (Right <$> action) (\(e :: SomeException) -> return $ Left $ convert $ show e)
+leftOnException' action = E.catch (Right <$> action) (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
 
 -- * Util
 
@@ -58,4 +57,4 @@ whenRight (Left _) _ = return ()
 whenRight (Right x) action = action x
 
 makeUUID :: IO T.Text
-makeUUID = (convert . take 10 . R.randomRs ('a','z')) <$> R.newStdGen
+makeUUID = (T.pack . take 10 . R.randomRs ('a','z')) <$> R.newStdGen

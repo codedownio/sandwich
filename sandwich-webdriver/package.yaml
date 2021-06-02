@@ -17,7 +17,6 @@ dependencies:
 - aeson
 - base < 5
 - containers
-- convertible
 - data-default
 - directory
 - exceptions

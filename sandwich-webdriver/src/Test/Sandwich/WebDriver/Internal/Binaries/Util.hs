@@ -1,4 +1,9 @@
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries.Util (
   detectPlatform
@@ -16,10 +21,11 @@ import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
-import Data.Convertible
 import qualified Data.HashMap.Strict as HM
 import Data.String.Interpolate
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Encoding as TL
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import Network.HTTP.Conduit (simpleHttp)
@@ -47,7 +53,7 @@ detectChromeVersion = leftOnException $ runExceptT $ do
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
-                 ExitSuccess -> return $ T.strip $ convert stdout
+                 ExitSuccess -> return $ T.strip $ T.pack stdout
 
   case T.splitOn "." rawString of
     [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ ChromeVersion (w, x, y, z)
@@ -65,7 +71,7 @@ getChromeDriverVersion' (ChromeVersion (w, x, y, _)) = do
             return $ Left [i|Error when requesting '#{url}': '#{e}'|]
          )
          (do
-             result :: T.Text <- convert <$> simpleHttp url
+             result :: T.Text <- (TL.toStrict . TL.decodeUtf8) <$> simpleHttp url
              case T.splitOn "." result of
                [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ Right $ ChromeDriverVersion (w, x, y, z)
                _ -> return $ Left [i|Failed to parse chromedriver version from string: '#{result}'|]
@@ -84,7 +90,7 @@ detectFirefoxVersion = leftOnException $ runExceptT $ do
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse firefox version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
-                 ExitSuccess -> return $ T.strip $ convert stdout
+                 ExitSuccess -> return $ T.strip $ T.pack stdout
 
   case T.splitOn "." rawString of
     [tReadMay -> Just x, tReadMay -> Just y] -> return $ FirefoxVersion (x, y, 0)
@@ -122,4 +128,4 @@ getGeckoDriverDownloadUrl (GeckoDriverVersion (x, y, z)) Windows = [i|https://gi
 
 -- * Util
 
-tReadMay = readMay . convert
+tReadMay = readMay . T.unpack

@@ -12,7 +12,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE ViewPatterns #-}
--- |
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 
@@ -48,6 +47,7 @@ import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
+
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
 
