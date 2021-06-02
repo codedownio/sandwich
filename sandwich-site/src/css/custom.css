@@ -23,6 +23,14 @@ html[data-theme='light'] {
   --ifm-navbar-background-color: #d6d8ff;
 }
 
+html[data-theme='light'] .button--outline {
+  background-color: #93ff73;
+}
+
+html[data-theme='dark'] .button--outline {
+  background-color: #52aa08;
+}
+
 .docusaurus-highlight-code-line {
   background-color: rgb(72, 77, 91);
   display: block;
