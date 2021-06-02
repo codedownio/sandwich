@@ -79,7 +79,7 @@ function Home() {
                         </div>
                         <div>
                             <div className={styles.carouselHeading}>Timing and flamegraphs</div>
-                            <img src={useBaseUrl("/img/timing_parallel.gif")} />
+                            <img src={useBaseUrl("/img/timing_landing.gif")} />
                         </div>
                     </Carousel>
                 </div>

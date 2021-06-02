@@ -76,7 +76,7 @@ Unless configured otherwise, each test tree run produces a *directory tree* whic
 │  └─ Strings
 │     └─ concatenates
 └─ errors
-   └─ subtracts --> ../results/subtracts # failure symlink
+   └─ subtracts --> ../results/Arithmetic/subtracts # failure symlink
 ```
 
 Thus, every test tree node has a place where it can stash logs, screenshots, or other artifacts. This structure makes it easy to browse through your tests and check results. Also, the `errors` folder at the root provides a handy list of symlinks to all failures.
