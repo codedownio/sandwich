@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.0.8
+
+* GHC 9 support
+
 ## 0.1.0.7
 
 * Add `terminalUICustomExceptionFormatters`.
