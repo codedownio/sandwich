@@ -20,7 +20,7 @@ quickCheckDemo = describe "QuickCheck tests" $ introduceQuickCheck $ do
 
 ## Modifying the args
 
-If you use [introduceQuickCheck'](http://hackage.haskell.org/package/sandwich-quickcheck/docs/Test-Sandwich-QuickCheck.html#v:introduceQuickCheck'), you can pass your own value for the QuickCheck [Args](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#t:Args). (The default version uses [stdArgs](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:stdArgs).)
+If you use [introduceQuickCheck'](http://hackage.haskell.org/package/sandwich-quickcheck/docs/Test-Sandwich-QuickCheck.html#v:introduceQuickCheck'), you can pass your own value for the QuickCheck [Args](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#t:Args). The default version uses [stdArgs](https://hackage.haskell.org/package/QuickCheck/docs/Test-QuickCheck.html#v:stdArgs).
 
 If you want to modify the already-introduced arguments in a test tree, we provide the [modifyArgs](http://hackage.haskell.org/package/sandwich-quickcheck/docs/Test-Sandwich-QuickCheck.html#v:modifyArgs) function, as well as helpers like `modifyMaxSize`, `modifyMaxDiscardRatio`, etc. These are modelled directly after HSpec's [Test.Hspec.QuickCheck](https://hackage.haskell.org/package/hspec/docs/Test-Hspec-QuickCheck.html).
 

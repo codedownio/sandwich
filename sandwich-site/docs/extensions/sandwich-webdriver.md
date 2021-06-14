@@ -181,7 +181,7 @@ introduceWebDriverPool poolSize wdOptions' =
     cleanup = liftIO . destroyAllResources
 ```
 
-There's some plumbing here because we want to pipe the command line options through. The important part is at the end, whre we make a pool that knows how to allocate and deallocate WebDrivers using the lower-level `allocateWebDriver'` and `cleanupWebDriver'` functions.
+There's some plumbing here because we want to pipe the command line options through. The important part is at the end, where we make a pool that knows how to allocate and deallocate WebDrivers using the lower-level `allocateWebDriver'` and `cleanupWebDriver'` functions.
 
 Next, we make another introduce node to *claim* a WebDriver from the pool.
 

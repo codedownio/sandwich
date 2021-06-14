@@ -8,7 +8,7 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 Test discovery is the process of automatically finding test files, so you don't need to manually manage your imports and write out top-level test trees.
 
-For the purposes of this discussion, let's assume a somewhat complex test suite with different kinds of tests, laid out on disk like the following. The key point is that different groups of tests may require different contexts: for example, `UnitTests` have no dependencies but `SeleniumTests` require [Selenium](extensions/sandwich-webdriver) context.
+For the purposes of this discussion, let's assume a somewhat complex test suite with different kinds of tests, laid out on disk like the following. The key point is that different groups of tests may require different contexts: for example, `UnitTests` have no dependencies but `SeleniumTests` require [Selenium](./extensions/sandwich-webdriver) context.
 
 ```bash
 <project root>
