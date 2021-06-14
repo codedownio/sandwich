@@ -58,7 +58,7 @@ instance MonadTrans (ExampleT context) where
 
 instance MonadTransControl (ExampleT context) where
   type StT (ExampleT context) a = StT LoggingT (StT (ReaderT context) a)
-  liftWith = defaultLiftWith2 ExampleT unExampleT
+  liftWith f = defaultLiftWith2 ExampleT unExampleT $ \x -> f x
   restoreT = defaultRestoreT2 ExampleT
 
 instance (MonadBaseControl b m) => MonadBaseControl b (ExampleT context m) where
