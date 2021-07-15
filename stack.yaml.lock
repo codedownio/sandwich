@@ -3,7 +3,18 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    name: webdriver
+    version: 0.9.0.1
+    git: https://github.com/codedownio/hs-webdriver
+    pantry-tree:
+      size: 2934
+      sha256: ed9af2f807e88ba033a28f02de751ada83bf7a24309b6259d8cbba084edfc526
+    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
+  original:
+    git: https://github.com/codedownio/hs-webdriver
+    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
 snapshots:
 - completed:
     size: 565266

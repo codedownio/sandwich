@@ -8,4 +8,7 @@ packages:
 - ./sandwich-slack
 - ./sandwich-webdriver
 
-extra-deps: []
+extra-deps:
+# Because upstream hs-webdriver has a few bugs and seems unmaintained
+- git: https://github.com/codedownio/hs-webdriver
+  commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
