@@ -46,7 +46,6 @@ dependencies:
 - unordered-containers
 - vector
 - webdriver
-- X11
 
 default-extensions:
 - OverloadedStrings
@@ -60,12 +59,24 @@ default-extensions:
 
 library:
   source-dirs: src
+  other-modules:
+    - Test.Sandwich.WebDriver.Resolution
   ghc-options:
   - -W
   # exposed-modules:
   #   - Test.Sandwich.Webdriver
   #   - Test.Sandwich.Webdriver.Video
   #   - Test.Sandwich.Webdriver.Windows
+
+when:
+  - condition: os(darwin)
+    source-dirs: darwin-src
+  - condition: os(windows)
+    source-dirs: windows-src
+  - condition: os(linux)
+    source-dirs: linux-src
+    dependencies:
+      - regex-compat
 
 executables:
   sandwich-webdriver-exe:
