@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7122af8dd4dcf7a989619219d67d70096bca6df8d4a7d5981dedaba8f191a572
+-- hash: 1c1f4f4de37e127081ce24f6bf4a7d56862aa76d42019445d4774d006721c430
 
 name:           sandwich-webdriver
 version:        0.1.0.6
@@ -160,6 +160,8 @@ executable sandwich-webdriver-exe
     hs-source-dirs:
         darwin-src
   if os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         windows-src
   if os(linux)
@@ -226,6 +228,8 @@ test-suite sandwich-webdriver-test
     hs-source-dirs:
         darwin-src
   if os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         windows-src
   if os(linux)
