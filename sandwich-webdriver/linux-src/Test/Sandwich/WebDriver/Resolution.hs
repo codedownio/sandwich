@@ -36,6 +36,7 @@ getResolution = getResolution' Nothing
 getResolutionForDisplay :: Int -> IO (Int, Int, Int, Int)
 getResolutionForDisplay n = getResolution' (Just [("DISPLAY", ":" <> show n)])
 
+-- | Note: this doesn't pick up display scaling on Ubuntu 20.04.
 getResolution' :: Maybe [(String, String)] -> IO (Int, Int, Int, Int)
 getResolution' xrandrEnv = do
   xrandrPath <- findExecutable "xrandr" >>= \case
