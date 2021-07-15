@@ -52,7 +52,7 @@ getResolution' xrandrEnv = do
                      & filter ("connected" `T.isInfixOf`)
                      & L.sortBy preferPrimary
 
-  case headMay [(w, h, x, y) | (matchRegex resolutionRegex -> Just [(readMay -> Just w), (readMay -> Just h), (readMay -> Just x), (readMay -> Just y)]) <- fmap T.unpack connectedLines] of
+  case headMay [(x, y, w, h) | (matchRegex resolutionRegex -> Just [(readMay -> Just w), (readMay -> Just h), (readMay -> Just x), (readMay -> Just y)]) <- fmap T.unpack connectedLines] of
     Nothing -> throwIO $ userError "Couldn't parse xrandr output to find screen resolution.\n\n***Stdout***\n\n#{stdout}"
     Just x -> return x
 

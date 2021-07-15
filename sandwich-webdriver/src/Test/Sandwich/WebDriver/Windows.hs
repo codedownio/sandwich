@@ -34,7 +34,7 @@ setWindowLeftSide = do
     RunHeadless (HeadlessConfig {..}) -> return (0, 0, w, h)
       where (w, h) = fromMaybe (1920, 1080) headlessResolution
     _ -> getScreenResolution sess
-  setWindowPos (x + 0, y + 0)
+  setWindowPos (x, y)
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
 -- | Position the window on the right 50% of the screen.
@@ -63,5 +63,5 @@ setWindowFullScreen = do
 -- | Get the screen resolution as (x, y, width, height). (The x and y coordinates may be nonzero in multi-monitor setups.)
 getScreenResolution :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WebDriver -> m (Int, Int, Int, Int)
 getScreenResolution (WebDriver {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = case maybeXvfbSession of
-    Nothing -> liftIO getResolution
-    Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
+  Nothing -> liftIO getResolution
+  Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
