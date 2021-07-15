@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ce9e2a6c92502ebb12f50d6209ad0f6fa9f6a970316660d4b5324e1e7c9635ad
+-- hash: c09c379b3cb07b83fb868e541538eed3cb43229eb84e8c56216648c7fc1f54c1
 
 name:           sandwich-quickcheck
 version:        0.1.0.5
@@ -45,12 +45,10 @@ library
   build-depends:
       QuickCheck
     , base <5
-    , brick
     , free
     , monad-control
     , safe-exceptions
     , sandwich >=0.1.0.4
-    , string-interpolate
     , text
     , time
   default-language: Haskell2010
@@ -75,13 +73,11 @@ test-suite sandwich-quickcheck-test
   build-depends:
       QuickCheck
     , base <5
-    , brick
     , free
     , monad-control
     , safe-exceptions
     , sandwich >=0.1.0.4
     , sandwich-quickcheck
-    , string-interpolate
     , text
     , time
   default-language: Haskell2010

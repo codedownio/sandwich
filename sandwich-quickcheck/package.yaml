@@ -15,13 +15,11 @@ extra-source-files:
 
 dependencies:
 - base < 5
-- brick
 - free
 - monad-control
 - QuickCheck
 - safe-exceptions
 - sandwich >= 0.1.0.4
-- string-interpolate
 - text
 - time
 
