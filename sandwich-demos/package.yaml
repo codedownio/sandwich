@@ -3,7 +3,7 @@ version:             0.1.0.0
 github:              "githubuser/sandwich-demos"
 license:             BSD3
 author:              "Tom McLaughlin"
-maintainer:          "example@example.com"
+maintainer:          "tom@codedown.io"
 copyright:           "2021 Tom McLaughlin"
 
 extra-source-files:
