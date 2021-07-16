@@ -71,6 +71,9 @@ library:
 when:
   - condition: os(darwin)
     source-dirs: darwin-src
+    frameworks:
+      - Carbon
+      - Cocoa
   - condition: os(windows)
     source-dirs: windows-src
   - condition: os(linux)
