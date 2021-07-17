@@ -10,7 +10,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
--- |
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb (
   makeXvfbSession
@@ -40,6 +39,12 @@ import System.Posix.IO as Posix
 import System.Posix.Types
 #endif
 
+#ifdef darwin_HOST_OS
+import GHC.IO.FD
+import qualified GHC.IO.Handle.FD as HFD
+newtype Fd = Fd FD
+handleToFd h = Fd <$> HFD.handleToFd h
+#endif
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
 

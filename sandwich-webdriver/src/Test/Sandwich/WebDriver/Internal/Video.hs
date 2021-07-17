@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, FlexibleContexts, OverloadedStrings, NamedFieldPuns, ViewPatterns #-}
--- |
 
 module Test.Sandwich.WebDriver.Internal.Video where
 
@@ -12,6 +11,9 @@ import Test.Sandwich.WebDriver.Internal.Types
 
 #ifdef darwin_HOST_OS
 import Safe
+
+getMacScreenNumber :: IO (Maybe Int)
+getMacScreenNumber = undefined
 #endif
 
 
@@ -41,14 +43,14 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
   maybeScreenNumber <- liftIO getMacScreenNumber
   let videoPath = [i|#{path}.avi|]
   let cmd = case maybeScreenNumber of
-    Just screenNumber -> ["-y"
-                         , "-nostdin"
-                         , "-f", "avfoundation"
-                         , "-i", [i|#{screenNumber}|]]
-                         ++ avfoundationOptions
-                         ++ [videoPath]
-    Nothing -> error [i|Not launching ffmpeg since OS X screen number couldn't be determined.|]
-  return ((proc "ffmpeg" cmds) { env = Nothing })
+        Just screenNumber -> ["-y"
+                             , "-nostdin"
+                             , "-f", "avfoundation"
+                             , "-i", [i|#{screenNumber}|]]
+                             ++ avfoundationOptions
+                             ++ [videoPath]
+        Nothing -> error [i|Not launching ffmpeg since OS X screen number couldn't be determined.|]
+  return ((proc "ffmpeg" cmd) { env = Nothing })
 #endif
 
 #ifdef mingw32_HOST_OS

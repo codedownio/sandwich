@@ -95,6 +95,8 @@ library
   if os(darwin)
     hs-source-dirs:
         darwin-src
+    frameworks:
+        CoreGraphics
   if os(windows)
     hs-source-dirs:
         windows-src
@@ -157,8 +159,12 @@ executable sandwich-webdriver-exe
     , vector
     , webdriver
   if os(darwin)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         darwin-src
+    frameworks:
+        CoreGraphics
   if os(windows)
     other-modules:
         Test.Sandwich.WebDriver.Resolution
@@ -225,8 +231,12 @@ test-suite sandwich-webdriver-test
     , vector
     , webdriver
   if os(darwin)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         darwin-src
+    frameworks:
+        CoreGraphics
   if os(windows)
     other-modules:
         Test.Sandwich.WebDriver.Resolution
