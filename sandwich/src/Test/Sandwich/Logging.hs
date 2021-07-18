@@ -50,7 +50,7 @@ logOther = logOtherCS callStack
 
 -- | Spawn a process with its stdout and stderr connected to the logging system. Every line output by the process
 -- will be fed to a 'debug' call.
-createProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> m ProcessHandle
+createProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> m ProcessHandle
 createProcessWithLogging cp = do
   (hRead, hWrite) <- liftIO createPipe
 
