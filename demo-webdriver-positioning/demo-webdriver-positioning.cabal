@@ -10,33 +10,6 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-library
-  exposed-modules:
-      Common
-  other-modules:
-      Paths_demo_webdriver_positioning
-  hs-source-dirs:
-      lib
-  default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base
-    , exceptions
-    , random
-    , sandwich
-    , sandwich-webdriver
-    , time
-    , webdriver
-  default-language: Haskell2010
-
 executable demo-webdriver-positioning
   main-is: Main.hs
   other-modules:
@@ -55,8 +28,6 @@ executable demo-webdriver-positioning
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
-    , exceptions
-    , random
     , sandwich
     , sandwich-webdriver
     , time

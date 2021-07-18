@@ -4,42 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           demo-landing
+name:           demo-slack
 version:        0.1.0.0
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-library
-  exposed-modules:
-      Common
-  other-modules:
-      Paths_demo_landing
-  hs-source-dirs:
-      lib
-  default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base
-    , exceptions
-    , random
-    , sandwich
-    , sandwich-demos
-    , time
-  default-language: Haskell2010
-
-executable demo-landing
+executable demo-slack
   main-is: Main.hs
   other-modules:
-      Paths_demo_landing
+      Paths_demo_slack
   hs-source-dirs:
       app
   default-extensions:
@@ -54,9 +28,9 @@ executable demo-landing
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
-    , exceptions
     , random
     , sandwich
     , sandwich-demos
+    , sandwich-slack
     , time
   default-language: Haskell2010

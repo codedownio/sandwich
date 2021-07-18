@@ -19,6 +19,7 @@ packages:
 - ./demo-landing
 - ./demo-paralleln
 - ./demo-quickcheck
+- ./demo-slack
 - ./demo-timing
 - ./demo-timing-parallel
 - ./demo-tui

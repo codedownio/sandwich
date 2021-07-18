@@ -1,10 +1,9 @@
-name:                demo-landing
+name:                demo-slack
 version:             0.1.0.0
 license:             BSD3
 
 dependencies:
 - base
-- exceptions
 - random
 - sandwich
 - sandwich-demos
@@ -26,10 +25,7 @@ ghc-options:
 - -rtsopts
 - -with-rtsopts=-N
 
-library:
-  source-dirs: lib
-
 executables:
-  demo-landing:
+  demo-slack:
     main: Main.hs
     source-dirs: app

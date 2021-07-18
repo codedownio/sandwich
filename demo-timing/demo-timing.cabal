@@ -10,32 +10,6 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-library
-  exposed-modules:
-      Common
-  other-modules:
-      Paths_demo_timing
-  hs-source-dirs:
-      lib
-  default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      base
-    , exceptions
-    , random
-    , sandwich
-    , sandwich-demos
-    , time
-  default-language: Haskell2010
-
 executable demo-timing
   main-is: Main.hs
   other-modules:
@@ -54,8 +28,6 @@ executable demo-timing
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
-    , exceptions
-    , random
     , sandwich
     , sandwich-demos
     , time
