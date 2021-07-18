@@ -10,7 +10,6 @@ import Control.Monad.IO.Class
 import Data.Time.Clock
 import System.Random
 import Test.Sandwich
-import Test.Sandwich.Formatters.Slack
 
 
 parallelNDemo :: TopSpec

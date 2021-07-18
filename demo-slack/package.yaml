@@ -1,4 +1,4 @@
-name:                demo-paralleln
+name:                demo-landing
 version:             0.1.0.0
 license:             BSD3
 
@@ -8,6 +8,7 @@ dependencies:
 - random
 - sandwich
 - sandwich-demos
+- sandwich-slack
 - time
 
 default-extensions:
@@ -29,6 +30,6 @@ library:
   source-dirs: lib
 
 executables:
-  demo-paralleln:
+  demo-landing:
     main: Main.hs
     source-dirs: app

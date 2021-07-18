@@ -10,6 +10,7 @@ import Control.Monad.IO.Class
 import Data.Time.Clock
 import System.Random
 import Test.Sandwich
+import Test.Sandwich.Formatters.Slack
 
 
 landingDemo :: TopSpec
@@ -56,6 +57,15 @@ sleepRandom = liftIO $ do
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
   , optionsProjectRoot = Just "sandwich-demos"
+  , optionsFormatters = [SomeFormatter $ defaultSlackFormatter {
+      slackFormatterSlackConfig = SlackConfig ""
+      , slackFormatterTopMessage = Just "Arithmetic tests"
+      , slackFormatterChannel = "testing"
+      , slackFormatterMaxFailures = Just 2
+      , slackFormatterMaxFailureReasonLines = Just 1
+      , slackFormatterMaxCallStackLines = Just 3
+      , slackFormatterVisibilityThreshold = Just 50
+      }]
   }
 
 main :: IO ()

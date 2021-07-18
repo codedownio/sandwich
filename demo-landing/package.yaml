@@ -8,7 +8,6 @@ dependencies:
 - random
 - sandwich
 - sandwich-demos
-- sandwich-slack
 - time
 
 default-extensions:
