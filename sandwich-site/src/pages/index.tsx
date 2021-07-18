@@ -112,12 +112,12 @@ function Home() {
                 </span>
 
                 <div className={styles.code}>
-                    <Typist avgTypingDelay={10}>
+                    <Typist avgTypingDelay={1}>
                         git clone git@github.com:codedownio/sandwich.git
                         <br />
                         cd sandwich
                         <br />
-                        stack run landing -- --tui
+                        stack run demo-landing -- --tui
                     </Typist>
                 </div>
 
