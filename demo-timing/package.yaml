@@ -1,15 +1,14 @@
-name:                sandwich-demos
+name:                demo-timing
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
 - exceptions
 - random
 - sandwich
+- sandwich-demos
+- time
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +27,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-timing:
+    main: Main.hs
+    source-dirs: app

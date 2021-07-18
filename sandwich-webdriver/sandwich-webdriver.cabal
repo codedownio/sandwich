@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c09758a2452bd10784dd68229b6cbbac26edfc712e28cb8bf828f4374ae7ef6b
+-- hash: f67a7d7277d905cba76171a6f6804544b6014f60422436f14e48f4fd948cad60
 
 name:           sandwich-webdriver
 version:        0.1.0.6
@@ -218,7 +218,6 @@ test-suite sandwich-webdriver-test
     , safe
     , safe-exceptions
     , sandwich >=0.1.0.3
-    , sandwich-webdriver
     , string-interpolate
     , temporary
     , text

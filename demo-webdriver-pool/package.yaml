@@ -1,15 +1,19 @@
-name:                sandwich-demos
+name:                demo-webdriver-pool
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
 - exceptions
+- filepath
+- lifted-base
 - random
+- resource-pool
 - sandwich
+- sandwich-webdriver
+- string-interpolate
+- time
+- webdriver
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +32,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-webdriver-pool:
+    main: Main.hs
+    source-dirs: app

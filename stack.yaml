@@ -3,10 +3,29 @@ resolver: lts-17.5
 
 packages:
 - ./sandwich
-- ./sandwich-demos
 - ./sandwich-quickcheck
 - ./sandwich-slack
 - ./sandwich-webdriver
+
+- ./sandwich-demos
+
+- ./demo-basic
+- ./demo-command-line-args
+- ./demo-contexts
+- ./demo-context-dependencies
+- ./demo-context-nested-dependencies
+- ./demo-custom-exceptions
+- ./demo-discover
+- ./demo-landing
+- ./demo-paralleln
+- ./demo-quickcheck
+- ./demo-timing
+- ./demo-timing-parallel
+- ./demo-tui
+- ./demo-webdriver
+- ./demo-webdriver-pool
+- ./demo-webdriver-positioning
+- ./demo-webdriver-video
 
 extra-deps:
 # Because upstream hs-webdriver has a few bugs and seems unmaintained

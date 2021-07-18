@@ -3,14 +3,9 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: efacfc1fa665b4b277ed8b89fcbee24495d9a7f02167a1ad572e99fe3971f655
 
-name:           sandwich-demos
+name:           demo-landing
 version:        0.1.0.0
-author:         Tom McLaughlin
-maintainer:     tom@codedown.io
-copyright:      2021 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -19,7 +14,7 @@ library
   exposed-modules:
       Common
   other-modules:
-      Paths_sandwich_demos
+      Paths_demo_landing
   hs-source-dirs:
       lib
   default-extensions:
@@ -37,4 +32,33 @@ library
     , exceptions
     , random
     , sandwich
+    , sandwich-demos
+    , sandwich-slack
+    , time
+  default-language: Haskell2010
+
+executable demo-landing
+  main-is: Main.hs
+  other-modules:
+      Paths_demo_landing
+  hs-source-dirs:
+      app
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , exceptions
+    , random
+    , sandwich
+    , sandwich-demos
+    , sandwich-slack
+    , time
   default-language: Haskell2010

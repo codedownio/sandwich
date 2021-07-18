@@ -1,15 +1,15 @@
-name:                sandwich-demos
+name:                demo-webdriver-positioning
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
 - exceptions
 - random
 - sandwich
+- sandwich-webdriver
+- time
+- webdriver
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +28,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-webdriver-positioning:
+    main: Main.hs
+    source-dirs: app

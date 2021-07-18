@@ -1,15 +1,18 @@
-name:                sandwich-demos
+name:                demo-webdriver-video
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
 - exceptions
+- filepath
+- lifted-base
 - random
 - sandwich
+- sandwich-webdriver
+- string-interpolate
+- time
+- webdriver
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +31,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-webdriver-video:
+    main: Main.hs
+    source-dirs: app

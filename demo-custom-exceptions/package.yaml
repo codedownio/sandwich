@@ -1,15 +1,16 @@
-name:                sandwich-demos
+name:                demo-custom-exceptions
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
+- brick
 - exceptions
 - random
 - sandwich
+- text
+- time
+- vty
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +29,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-custom-exceptions:
+    main: Main.hs
+    source-dirs: app

@@ -1,15 +1,16 @@
-name:                sandwich-demos
+name:                demo-context-dependencies
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
 - exceptions
+- lifted-base
 - random
 - sandwich
+- sandwich-demos
+- string-interpolate
+- time
 
 default-extensions:
 - OverloadedStrings
@@ -28,3 +29,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-context-dependencies:
+    main: Main.hs
+    source-dirs: app

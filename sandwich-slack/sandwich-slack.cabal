@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ccf989f1feae9e49597f212ee7da733a4da63453d988baa15c1a3684817d9fe6
+-- hash: 33eccacb7f22bc0f47248bf5ae3ba94d52b29a8f554678c5f99b97a60aa221c2
 
 name:           sandwich-slack
 version:        0.1.0.5
@@ -107,7 +107,6 @@ test-suite sandwich-slack-test
     , safe
     , safe-exceptions
     , sandwich
-    , sandwich-slack
     , stm
     , string-interpolate
     , text

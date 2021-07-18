@@ -1,9 +1,6 @@
-name:                sandwich-demos
+name:                demo-basic
 version:             0.1.0.0
 license:             BSD3
-author:              "Tom McLaughlin"
-maintainer:          "tom@codedown.io"
-copyright:           "2021 Tom McLaughlin"
 
 dependencies:
 - base
@@ -28,3 +25,8 @@ ghc-options:
 
 library:
   source-dirs: lib
+
+executables:
+  demo-basic:
+    main: Main.hs
+    source-dirs: app
