@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: efacfc1fa665b4b277ed8b89fcbee24495d9a7f02167a1ad572e99fe3971f655
 
 name:           sandwich-demos
 version:        0.1.0.0

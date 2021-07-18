@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: f67a7d7277d905cba76171a6f6804544b6014f60422436f14e48f4fd948cad60
 
 name:           sandwich-webdriver
 version:        0.1.0.6
@@ -166,6 +164,8 @@ executable sandwich-webdriver-exe
     frameworks:
         CoreGraphics
   if os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         windows-src
   if os(linux)
@@ -235,6 +235,8 @@ test-suite sandwich-webdriver-test
     frameworks:
         CoreGraphics
   if os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         windows-src
   if os(linux)
