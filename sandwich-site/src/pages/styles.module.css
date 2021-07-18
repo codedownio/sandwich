@@ -51,14 +51,14 @@
 
 .section {
   padding: 1em 0;
-  background-color: #9794e0;
 }
 
 html[data-theme='light'] .sectionLink {
-  color: #67ea00;
+  font-weight: bold;
 }
 html[data-theme='dark'] .sectionLink {
   color: #67ea00;
+  font-weight: bold;
 }
 
 .container {

@@ -105,7 +105,7 @@ function Home() {
             </div>
         </header>
 
-        <div className={styles.section}>
+        <div className={"section " + styles.section}>
             <div className={styles.container}>
                 <span className={styles.heading}>
                     Run the demo from the landing page:

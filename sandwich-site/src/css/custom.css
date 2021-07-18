@@ -20,11 +20,15 @@
 }
 
 html[data-theme='light'] {
-  --ifm-navbar-background-color: #d6d8ff;
+  --ifm-navbar-background-color: #ffab3f;
 }
 
 html[data-theme='light'] .button--outline {
   background-color: #93ff73;
+}
+
+html[data-theme='light'] .section {
+  background-color: #e7e7e7;
 }
 
 html[data-theme='dark'] .button--outline {
