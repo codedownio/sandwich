@@ -71,7 +71,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
   , terminalUIRefreshPeriod = 100000
-  , terminalUIDefaultEditor = Just "emacsclient +LINE:COLUMN --no-wait"
+  , terminalUIDefaultEditor = Just "emacsclient +$((LINE+1)):COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
   , terminalUICustomExceptionFormatters = []
   }

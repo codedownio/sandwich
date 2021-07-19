@@ -68,10 +68,15 @@ function Home() {
                 <p className="hero__subtitle">{siteConfig.tagline}</p>
 
                 <div className={styles.carouselContainer}>
-                    <Carousel showThumbs={false}>
+                    <Carousel showThumbs={false}
+                              dynamicHeight={true}>
                         <div>
                             <div className={styles.carouselHeading}>Terminal UI interface</div>
                             <img src={useBaseUrl("/img/basic.gif")} />
+                        </div>
+                        <div>
+                            <div className={styles.carouselHeading}>Jump to failure in editor</div>
+                            <img src={useBaseUrl("/img/jump_to_error.gif")} />
                         </div>
                         <div>
                             <div className={styles.carouselHeading}>Slack integration</div>
