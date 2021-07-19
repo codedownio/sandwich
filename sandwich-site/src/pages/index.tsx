@@ -123,7 +123,7 @@ function Home() {
 
                 <span className={styles.heading}>
                     Or, try one of the other <a className={styles.sectionLink}
-                                                href="https://github.com/codedownio/sandwich/tree/master/sandwich-demos/demos">examples</a>.
+                                                href="https://github.com/codedownio/sandwich/tree/master/">demos</a> with <code className={styles.codeInline}>stack run demo-[demoname]</code>.
                 </span>
             </div>
         </div>

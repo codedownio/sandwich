@@ -81,6 +81,13 @@ html[data-theme='dark'] .sectionLink {
   border: solid 1px lightgray;
 }
 
+.codeInline {
+  font-family: monospace;
+  background-color: #2a0321;
+  border-radius: 3px;
+  color: white;
+}
+
 .backticks {
   font-family: monospace;
 }
