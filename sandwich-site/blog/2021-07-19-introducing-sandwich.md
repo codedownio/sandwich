@@ -25,7 +25,7 @@ But why write a new test framework? Working with existing frameworks, I found my
 
 * **Integrations** with certain things I use heavily, namely Selenium. I had built up a fair amount of machinery for running Selenium tests, and it made sense to integrate it with the test suite.
 
-Undoubtedly I could have gotten a lot of this by continuing to work with Hspec and Tasty, which are both great tools. Was it worth it? Personally I've been using it happily for a while now, but you be the judge :)
+Undoubtedly I could have gotten a lot of this by continuing to work with Hspec or Tasty, which are both great tools. Was it worth it? Personally I've been using it happily for a while now, but you be the judge :)
 
 
 ---
