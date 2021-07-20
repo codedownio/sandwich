@@ -52,7 +52,7 @@ tests = do
 
 Autogenerating the tests in a given module requires two pieces of code in that module: 1) A CPP pragma to generate the imports, and 2) a Template Haskell call to generate the test tree. (Unfortunately it can't be done solely with Template Haskell, because [TH cannot generate imports](https://gitlab.haskell.org/ghc/ghc/-/issues/1475).)
 
-To autogenerate tests for the example above, we'll apply autodetection separately in `UnitTests.hs` and `SeleniumTests.hs`. You can follow along with the full example [here](https://github.com/codedownio/sandwich/tree/master/sandwich-demos/demos/discover).
+To autogenerate tests for the example above, we'll apply autodetection separately in `UnitTests.hs` and `SeleniumTests.hs`. You can follow along with the full example [here](https://github.com/codedownio/sandwich/tree/master/demo-discover).
 
 In the code below, the `OPTIONS_GHC` pragma invokes the `sandwich-discover` executable, which searches for modules *underneath the current module* (i.e., matching `SeleniumTests.*`). Then it inserts the imports wherever it finds the special `#insert_test_imports` token.
 
@@ -97,7 +97,7 @@ discoverDemo = describe "Discover" $ do
 Having set up test autodetection as above, we can now take advantage of the ability to run individual test modules. When you run with `--list-tests`, you'll see a list of special flags you can pass. When you pass any of these flags, Sandwich will run only that test module.
 
 ```bash
-> stack run discover -- --list-tests
+> stack run demo-discover -- --list-tests
 
 Available options:
   --selenium-tests         SeleniumTests
@@ -124,7 +124,7 @@ Sandwich can discover the presence of these `main` functions and give you the ab
 If this has happened, Sandwich will indicate it by putting an asterisk next to the module name. For example, if `UnitTests2.hs` had its own main function inside, you would see the following.
 
 ```bash
-> stack run discover -- --list-tests
+> stack run demo-discover -- --list-tests
 
 Available options:
   --selenium-tests         SeleniumTests

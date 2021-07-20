@@ -11,7 +11,7 @@ Haddocks can be found [here](http://hackage.haskell.org/package/sandwich-quickch
 
 To use `sandwich-quickcheck`, just add the package to your project. Then, introduce a QuickCheck argument context using [introduceQuickCheck](http://hackage.haskell.org/package/sandwich-quickcheck/docs/Test-Sandwich-QuickCheck.html#v:introduceQuickCheck). Now you can start writing props as test nodes using the [prop](http://hackage.haskell.org/package/sandwich-quickcheck/docs/Test-Sandwich-QuickCheck.html#v:prop) function. For example:
 
-```haskell title="https://github.com/codedownio/sandwich/blob/master/sandwich-demos/demos/quickcheck/Main.hs"
+```haskell title="https://github.com/codedownio/sandwich/blob/master/demo-quickcheck/app/Main.hs"
 quickCheckDemo :: TopSpec
 quickCheckDemo = describe "QuickCheck tests" $ introduceQuickCheck $ do
   prop "List reversal" $ \(xs :: [Int]) -> reverse (reverse xs) == xs

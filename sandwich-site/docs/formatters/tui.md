@@ -70,7 +70,7 @@ If your tests throw custom exceptions, you can control the way they are formatte
 
 Below is an example of passing a callback that matches a custom exception and displays it using blue text. You can find a full working example in the `custom-exceptions` demo.
 
-```haskell title="https://github.com/codedownio/sandwich/blob/master/sandwich-demos/demos/custom-exceptions/Main.hs"
+```haskell title="https://github.com/codedownio/sandwich/blob/master/demo-custom-exceptions/app/Main.hs"
 data MyColoredException = MyColoredException Text
   deriving Show
 instance Exception MyColoredException

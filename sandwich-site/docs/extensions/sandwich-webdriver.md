@@ -24,7 +24,7 @@ main :: IO ()
 main = runSandwich defaultOptions spec
 ```
 
-To see a demo, try running `stack run webdriver` in the Sandwich repo.
+To see a demo, try running `stack run demo-webdriver` in the Sandwich repo.
 
 ## Browser sessions
 
@@ -129,7 +129,7 @@ If you use Sandwich's [runSandwichWithCommandLineArgs](http://hackage.haskell.or
 You can try this out by running:
 
 ```bash
-stack run webdriver -- --individual-videos
+stack run demo-webdriver -- --individual-videos
 ```
 
 ## Screenshots
