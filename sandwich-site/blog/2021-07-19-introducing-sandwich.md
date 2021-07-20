@@ -21,6 +21,8 @@ But why write a new test framework? Working with existing frameworks, I found my
 
 * **Better UX for complex test trees.** When you have a lot of test tree nodes devoted to starting and stopping dependencies, timing things, and other bookkeeping, it can be hard to see the actual tests in the output. This was solved with the creation of [visibility thresholds](https://codedownio.github.io/sandwich/docs/node_options#visibility-thresholds).
 
+* **Pervasive CallStack support.** Every Sandwich formatter uses `HasCallStack` to report the exact source locations of test failures. There's even a feature in the terminal interface where you can jump to test and failure locations in your editor with a single keystroke.
+
 * **Integrations** with certain things I use heavily, namely Selenium. I had built up a fair amount of machinery for running Selenium tests, and it made sense to integrate it with the test suite.
 
 Undoubtedly I could have gotten a lot of this by continuing to work with Hspec and Tasty, which are both great tools. Was it worth it? Personally I've been using it happily for a while now, but you be the judge :)
@@ -29,4 +31,4 @@ Undoubtedly I could have gotten a lot of this by continuing to work with Hspec a
 ---
 
 
-About the name: while designing this I was thinking about how to expose the [bracket](https://hackage.haskell.org/package/base-4.15.0.0/docs/Control-Exception.html#v:bracket) pattern in a test node such as [introduceWith](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:introduceWith). Around the same time, California opened up outdoor dining for the first time during the Covid lockdowns, and I had a really good sandwich on a beautiful day outside. Maybe because it was the first respite in a while from my own cooking, but that sandwich stuck in my mind.
+About the name: while designing this I was thinking about how to expose the [bracket](https://hackage.haskell.org/package/base-4.15.0.0/docs/Control-Exception.html#v:bracket) pattern in a test node such as [introduceWith](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:introduceWith). Around the same time, California opened up outdoor dining for the first time during the Covid lockdowns, and I had a really good sandwich on a beautiful day outside. Maybe because it was the first respite in a while from my own cooking, but that sandwich stuck in my mind (along with the image of "sandwiching" test tree nodes between setup and teardown functions).
