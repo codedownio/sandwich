@@ -72,11 +72,17 @@ function Home() {
                               dynamicHeight={true}>
                         <div>
                             <div className={styles.carouselHeading}>Terminal UI interface</div>
-                            <img src={useBaseUrl("/img/basic.gif")} />
+                            <img src={useBaseUrl("/img/basic.gif")}
+                                 style={{
+                                   paddingBottom: "2.05em"
+                                 }} />
                         </div>
                         <div>
                             <div className={styles.carouselHeading}>Jump to failure in editor</div>
-                            <img src={useBaseUrl("/img/jump_to_error.gif")} />
+                            <img src={useBaseUrl("/img/jump_to_error.gif")}
+                                 style={{
+                                   paddingBottom: "2.05em"
+                                 }} />
                         </div>
                         <div>
                             <div className={styles.carouselHeading}>Slack integration</div>
