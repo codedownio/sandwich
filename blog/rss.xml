@@ -4,15 +4,15 @@
         <title>Sandwich Blog</title>
         <link>https://github.com/codedownio/sandwich/blog</link>
         <description>Sandwich Blog</description>
-        <lastBuildDate>Thu, 15 Apr 2021 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 19 Jul 2021 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <item>
             <title><![CDATA[Introducing Sandwich]]></title>
             <link>https://github.com/codedownio/sandwich/sandwich/blog/introducing-sandwich</link>
             <guid>introducing-sandwich</guid>
-            <pubDate>Thu, 15 Apr 2021 00:00:00 GMT</pubDate>
-            <description><![CDATA[This is Sandwich.]]></description>
+            <pubDate>Mon, 19 Jul 2021 00:00:00 GMT</pubDate>
+            <description><![CDATA[It's been a little over a year since I made the first commit on a new test framework. At the time I was working with a large and complex test suite, starting and stopping lots of Docker containers of different kinds and running Selenium tests against them. Several pieces of this infrastructure had dependencies on other pieces, and they needed to be started up and torn down gracefully, especially when one piece had a problem. It was essential to be able to quickly diagnose why some component was freezing and hanging the tests.]]></description>
         </item>
     </channel>
 </rss>
