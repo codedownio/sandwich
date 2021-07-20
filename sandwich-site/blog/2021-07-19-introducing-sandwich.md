@@ -19,7 +19,7 @@ But why write a new test framework? Working with existing frameworks, I found my
 
 * **Easier management of contexts.** I had some [ideas](https://hackage.haskell.org/package/sandwich-0.1.0.8/docs/Test-Sandwich.html#v:introduce) about how to use type-level nonsense to manage contexts in the test tree in such a way that they're keyed by a certain label, which tests can retrieve when needed. Also, it's a small thing, but I wanted access to a full monad transformer stack in an introduce node (Hspec hooks just use IO).
 
-* **Better UX for complex test trees.** When you have a lot of test tree nodes devoted to starting and stopping dependencies, timing things, and other bookkeeping, it can be hard to see the actual tests in the output. This was solved with the creation of [visibility thresholds](http://localhost:3000/sandwich/docs/node_options#visibility-thresholds).
+* **Better UX for complex test trees.** When you have a lot of test tree nodes devoted to starting and stopping dependencies, timing things, and other bookkeeping, it can be hard to see the actual tests in the output. This was solved with the creation of [visibility thresholds](https://codedownio.github.io/sandwich/docs/node_options#visibility-thresholds).
 
 * **Integrations** with certain things I use heavily, namely Selenium. I had built up a fair amount of machinery for running Selenium tests, and it made sense to integrate it with the test suite.
 
