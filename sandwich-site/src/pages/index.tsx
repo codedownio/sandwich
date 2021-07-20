@@ -123,7 +123,8 @@ function Home() {
                 </span>
 
                 <div className={styles.code}>
-                    <Typist avgTypingDelay={1}>
+                    <Typist avgTypingDelay={20}
+                            hideWhenDone={true}>
                         git clone git@github.com:codedownio/sandwich.git
                         <br />
                         cd sandwich

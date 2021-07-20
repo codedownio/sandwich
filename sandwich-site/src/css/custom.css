@@ -31,6 +31,10 @@ html[data-theme='light'] .section {
   background-color: #e7e7e7;
 }
 
+html[data-theme='dark'] .section {
+  background-color: #2f2f2f;
+}
+
 html[data-theme='dark'] .button--outline {
   background-color: #52aa08;
 }
