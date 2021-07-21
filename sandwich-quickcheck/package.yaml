@@ -17,6 +17,7 @@ dependencies:
 - base < 5
 - free
 - monad-control
+- mtl
 - QuickCheck
 - safe-exceptions
 - sandwich >= 0.1.0.4

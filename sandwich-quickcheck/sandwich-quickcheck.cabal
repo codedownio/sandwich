@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 54b6c5eda34dbce309bafdbd315749b8c6f1aeda6f7bbdaddbdd2c444a2c5016
+-- hash: dfbfabb44d2eac04070d493b2e29ccdd26bf0539d48b71414f3ee2a16b8c1bc5
 
 name:           sandwich-quickcheck
 version:        0.1.0.5
@@ -47,6 +47,7 @@ library
     , base <5
     , free
     , monad-control
+    , mtl
     , safe-exceptions
     , sandwich >=0.1.0.4
     , text
@@ -75,6 +76,7 @@ test-suite sandwich-quickcheck-test
     , base <5
     , free
     , monad-control
+    , mtl
     , safe-exceptions
     , sandwich >=0.1.0.4
     , text
