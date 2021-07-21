@@ -130,7 +130,7 @@ commandLineQuickCheckOptions maybeInternal = CommandLineQuickCheckOptions
   <*> optional (option auto (long "quickcheck-max-discard-ratio" <> help "Maximum number of discarded tests per successful test before giving up" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "quickcheck-max-size" <> help "Size to use for the biggest test cases" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "quickcheck-max-success" <> help "Maximum number of successful tests before succeeding" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "quickcheck-max-shrinks" <> help "Maximum number of shrinks to before giving up" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "quickcheck-max-shrinks" <> help "Maximum number of shrinks before giving up" <> metavar "INT" <> maybeInternal))
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions
