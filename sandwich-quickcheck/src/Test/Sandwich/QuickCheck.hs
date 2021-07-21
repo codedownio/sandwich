@@ -35,7 +35,6 @@ import Test.QuickCheck as QC
 import Test.QuickCheck.Random as QC
 import Test.Sandwich
 import Test.Sandwich.Internal
-import Test.Sandwich.Types.ArgParsing
 
 
 data QuickCheckContext = QuickCheckContext Args
