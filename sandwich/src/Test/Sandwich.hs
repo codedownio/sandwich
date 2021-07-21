@@ -26,6 +26,7 @@ module Test.Sandwich (
   --
   runSandwichWithCommandLineArgs
   , runSandwichWithCommandLineArgs'
+  , parseCommandLineArgs
 
   -- * Running tests
   , runSandwich
@@ -124,30 +125,13 @@ runSandwichWithCommandLineArgs baseOptions = runSandwichWithCommandLineArgs' bas
 -- The options will become available as a test context, which you can access by calling 'getCommandLineOptions'.
 runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => Options -> Parser a -> TopSpecWithOptions' a -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
-  let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
-                           & L.sortOn nodeModuleInfoModuleName
-                           & gatherShorthands
-  let individualTestFlags maybeInternal =
-        [[ Just $ flag' (Just $ IndividualTestModuleName nodeModuleInfoModuleName)
-                        (long (T.unpack shorthand)
-                          <> help (nodeModuleInfoModuleName
-                          <> (if isJust nodeModuleInfoFn then "*" else ""))
-                          <> maybeInternal)
-         , case nodeModuleInfoFn of
-             Nothing -> Nothing
-             Just fn -> Just $ flag' (Just $ IndividualTestMainFn fn)
-                                     (long (T.unpack (shorthand <> "-main"))
-                                       <> help nodeModuleInfoModuleName
-                                       <> internal
-                                     )
-         ]
-        | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
-  let individualTestParser maybeInternal = foldr (<|>) (pure Nothing) (catMaybes $ mconcat $ individualTestFlags maybeInternal)
-
-  clo <- OA.execParser (commandLineOptionsWithInfo userOptionsParser (individualTestParser internal))
+  (clo, individualTestParser, modulesAndShorthands) <- parseCommandLineArgs' userOptionsParser spec
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
 
-  if | optPrintSlackFlags clo == Just True -> do
+  if | optPrintQuickCheckFlags clo == Just True -> do
+         void $ withArgs ["--help"] $
+           OA.execParser quickCheckOptionsWithInfo
+     | optPrintSlackFlags clo == Just True -> do
          void $ withArgs ["--help"] $
            OA.execParser slackOptionsWithInfo
      | optPrintWebDriverFlags clo == Just True -> do

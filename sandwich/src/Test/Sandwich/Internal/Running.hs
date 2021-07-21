@@ -145,9 +145,10 @@ takenMainOptions = [
   , "fixed-root"
   , "list-tests"
 
+  , "print-quickcheck-flags"
   , "print-slack-flags"
-
   , "print-webdriver-flags"
+
   , "headless"
   ]
 

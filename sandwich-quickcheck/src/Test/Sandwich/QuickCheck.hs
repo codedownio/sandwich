@@ -1,4 +1,3 @@
-
 -- | Functions for introducing QuickCheck tests into a Sandwich test tree. Modelled after Hspec's version.
 --
 -- Documentation can be found <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck here>.
@@ -29,11 +28,14 @@ import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Maybe
 import qualified Data.Text as T
 import GHC.Stack
 import Test.QuickCheck as QC
+import Test.QuickCheck.Random as QC
 import Test.Sandwich
 import Test.Sandwich.Internal
+import Test.Sandwich.Types.ArgParsing
 
 
 data QuickCheckContext = QuickCheckContext Args
@@ -58,7 +60,13 @@ introduceQuickCheck' = introduceQuickCheck'' "Introduce QuickCheck context"
 -- | Introduce QuickCheck args with configurable message.
 introduceQuickCheck'' :: (MonadIO m, MonadBaseControl IO m)
   => String -> Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
-introduceQuickCheck'' msg args = introduce msg quickCheckContext (return $ QuickCheckContext args) (const $ return ())
+introduceQuickCheck'' msg args = introduce msg quickCheckContext getContext (const $ return ())
+  where
+    getContext = do
+      -- TODO: add command line options
+      -- clo <- getCommandLineOptions
+      -- let args' = addCommandLineOptions clo args
+      return $ QuickCheckContext args
 
 -- | Similar to 'it'. Runs the given prop with QuickCheck using the currently introduced 'Args'. Throws an appropriate exception on failure.
 prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
@@ -91,3 +99,12 @@ modifyMaxSize f = modifyArgs $ \args -> args { maxSize = f (maxSize args) }
 -- | Modify the 'maxShrinks' for the given spec.
 modifyMaxShrinks :: (HasQuickCheckContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 modifyMaxShrinks f = modifyArgs $ \args -> args { maxShrinks = f (maxShrinks args) }
+
+addCommandLineOptions :: CommandLineOptions a -> Args -> Args
+addCommandLineOptions (CommandLineOptions {optQuickCheckOptions=(CommandLineQuickCheckOptions {..})}) baseArgs@(Args {..}) = baseArgs {
+  replay = maybe replay (\n -> Just (mkQCGen (fromIntegral n), 0)) optQuickCheckSeed
+  , maxDiscardRatio = fromMaybe maxSuccess optQuickCheckMaxDiscardRatio
+  , maxSize = fromMaybe maxSuccess optQuickCheckMaxSize
+  , maxSuccess = fromMaybe maxSuccess optQuickCheckMaxSuccess
+  , maxShrinks = fromMaybe maxSuccess optQuickCheckMaxShrinks
+  }

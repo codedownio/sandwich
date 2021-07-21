@@ -51,13 +51,15 @@ data CommandLineOptions a = CommandLineOptions {
   , optFixedRoot :: Maybe String
 
   , optListAvailableTests :: Maybe Bool
+  , optPrintQuickCheckFlags :: Maybe Bool
   , optPrintSlackFlags :: Maybe Bool
   , optPrintWebDriverFlags :: Maybe Bool
 
   , optIndividualTestModule :: Maybe IndividualTestModule
 
-  , optWebdriverOptions :: CommandLineWebdriverOptions
+  , optQuickCheckOptions :: CommandLineQuickCheckOptions
   , optSlackOptions :: CommandLineSlackOptions
+  , optWebdriverOptions :: CommandLineWebdriverOptions
 
   , optUserOptions :: a
   } deriving Show
@@ -68,6 +70,16 @@ data IndividualTestModule = IndividualTestModuleName String
 instance Show IndividualTestModule where
   show (IndividualTestModuleName moduleName) = moduleName
   show (IndividualTestMainFn _) = "<main function>"
+
+-- * sandwich-quickcheck options
+
+data CommandLineQuickCheckOptions = CommandLineQuickCheckOptions {
+  optQuickCheckSeed :: Maybe Integer
+  , optQuickCheckMaxDiscardRatio :: Maybe Int
+  , optQuickCheckMaxSize :: Maybe Int
+  , optQuickCheckMaxSuccess :: Maybe Int
+  , optQuickCheckMaxShrinks :: Maybe Int
+  } deriving Show
 
 -- * sandwich-slack options
 
