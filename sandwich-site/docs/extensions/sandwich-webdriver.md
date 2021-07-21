@@ -55,7 +55,7 @@ positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
       openPage "http://www.google.com"
       setWindowLeftSide
 
-    it "opens Google" $ withSession2 $ do
+    it "opens Yahoo" $ withSession2 $ do
       openPage "http://www.yahoo.com"
       setWindowRightSide
 ```
