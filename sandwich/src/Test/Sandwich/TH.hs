@@ -112,7 +112,7 @@ getSpecFromFolder' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderO
       False -> [e|Nothing|]
   alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) currentModule $(return maybeMainFunction)) })|]
   [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
-     $ $(varE getSpecCombiner) $(stringE $ mangleFolderName folder) (L.foldl1 (>>) $(listE $ fmap return specs))|]
+     $ $(varE getSpecCombiner) $(stringE $ mangleFolderName folder) (L.foldl (pure ()) (>>) $(listE $ fmap return specs))|]
 
 -- * Util
 
