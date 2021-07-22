@@ -15,7 +15,7 @@ Let's start with a basic test suite and add more features as we go along. As wit
 
 The meat of the tests occurs in "it" nodes at the leaves of the tree. Every test runs in a special monad called `ExampleT`, which is essentially a `ReaderT context LoggingT`. The `LoggingT` part gives tests the ability to log information, and the `ReaderT` gives tests access to *context*. More on this later. The monad also implements some other useful classes like `MonadIO`, so you can run arbitrary IO actions.
 
-```haskell title="https://github.com/codedownio/sandwich/blob/master/demo-basic/app/Main.hs"
+```haskell title="https://github.com/codedownio/sandwich/blob/master/demos/demo-basic/app/Main.hs"
 module Main where
 
 import Test.Sandwich

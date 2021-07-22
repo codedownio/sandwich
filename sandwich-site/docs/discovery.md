@@ -52,7 +52,7 @@ tests = do
 
 Autogenerating the tests in a given module requires two pieces of code in that module: 1) A CPP pragma to generate the imports, and 2) a Template Haskell call to generate the test tree. (Unfortunately it can't be done solely with Template Haskell, because [TH cannot generate imports](https://gitlab.haskell.org/ghc/ghc/-/issues/1475).)
 
-To autogenerate tests for the example above, we'll apply autodetection separately in `UnitTests.hs` and `SeleniumTests.hs`. You can follow along with the full example [here](https://github.com/codedownio/sandwich/tree/master/demo-discover).
+To autogenerate tests for the example above, we'll apply autodetection separately in `UnitTests.hs` and `SeleniumTests.hs`. You can follow along with the full example [here](https://github.com/codedownio/sandwich/tree/master/demos/demo-discover).
 
 In the code below, the `OPTIONS_GHC` pragma invokes the `sandwich-discover` executable, which searches for modules *underneath the current module* (i.e., matching `SeleniumTests.*`). Then it inserts the imports wherever it finds the special `#insert_test_imports` token.
 

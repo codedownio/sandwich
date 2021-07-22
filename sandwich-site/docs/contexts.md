@@ -35,7 +35,7 @@ Another built-in function is `getRunRoot`, which will return the *root* of the o
 
 ## Introducing your own contexts
 
-Suppose we want to introduce a mock database into some tests. First, we define a label for it. The label represents the mapping between a type-level string and the type of the context. You can find the full working example for this section [here](https://github.com/codedownio/sandwich/blob/master/demo-contexts/app/Main.hs).
+Suppose we want to introduce a mock database into some tests. First, we define a label for it. The label represents the mapping between a type-level string and the type of the context. You can find the full working example for this section [here](https://github.com/codedownio/sandwich/blob/master/demos/demo-contexts/app/Main.hs).
 
 ```haskell
 {-# LANGUAGE DataKinds #-}
@@ -68,7 +68,7 @@ contextsDemo = describe "Contexts" $ do
 
 ## The HasX pattern for context dependencies
 
-Now let's decouple the introduce node from the test (full working example [here](https://github.com/codedownio/sandwich/blob/master/demo-context-dependencies/app/Main.hs)). First, we'll define the type of a spec that depends on a database. To do this, we'll need a HasX-style constraint type.
+Now let's decouple the introduce node from the test (full working example [here](https://github.com/codedownio/sandwich/blob/master/demos/demo-context-dependencies/app/Main.hs)). First, we'll define the type of a spec that depends on a database. To do this, we'll need a HasX-style constraint type.
 
 ```haskell
 {-# LANGUAGE ConstraintKinds #-}
@@ -159,4 +159,4 @@ introduceServer :: (HasDatabase context, MonadIO m, MonadBaseControl IO m)
   => SpecFree (LabelValue "server" Server :> context) m () -> SpecFree context m ()
 ```
 
-The full code for this example can be found [here](https://github.com/codedownio/sandwich/blob/master/demo-context-nested-dependencies/app/Main.hs).
+The full code for this example can be found [here](https://github.com/codedownio/sandwich/blob/master/demos/demo-context-nested-dependencies/app/Main.hs).

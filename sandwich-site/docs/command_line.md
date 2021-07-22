@@ -26,7 +26,7 @@ This will cause your options to be parsed along with the default ones. To obtain
 
 The example below shows this in action. Note that the type of the top-level spec changes from the usual [TopSpec](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Misc.html#t:TopSpec) to [TopSpecWithOptions' a](http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich-Misc.html#t:TopSpecWithOptions-39-).
 
-```haskell title="https://github.com/codedownio/sandwich/blob/master/demo-command-line-args/app/Main.hs"
+```haskell title="https://github.com/codedownio/sandwich/blob/master/demos/demo-command-line-args/app/Main.hs"
 import Options.Applicative
 import Test.Sandwich
 

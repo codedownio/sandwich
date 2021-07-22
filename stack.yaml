@@ -9,25 +9,25 @@ packages:
 
 - ./sandwich-demos
 
-- ./demo-basic
-- ./demo-command-line-args
-- ./demo-contexts
-- ./demo-context-dependencies
-- ./demo-context-nested-dependencies
-- ./demo-custom-exceptions
-- ./demo-discover
-- ./demo-landing
-- ./demo-paralleln
-- ./demo-quickcheck
-- ./demo-slack
-- ./demo-timing
-- ./demo-timing-parallel
-- ./demo-tui
-- ./demo-webdriver
-- ./demo-webdriver-landing
-- ./demo-webdriver-pool
-- ./demo-webdriver-positioning
-- ./demo-webdriver-video
+- ./demos/demo-basic
+- ./demos/demo-command-line-args
+- ./demos/demo-contexts
+- ./demos/demo-context-dependencies
+- ./demos/demo-context-nested-dependencies
+- ./demos/demo-custom-exceptions
+- ./demos/demo-discover
+- ./demos/demo-landing
+- ./demos/demo-paralleln
+- ./demos/demo-quickcheck
+- ./demos/demo-slack
+- ./demos/demo-timing
+- ./demos/demo-timing-parallel
+- ./demos/demo-tui
+- ./demos/demo-webdriver
+- ./demos/demo-webdriver-landing
+- ./demos/demo-webdriver-pool
+- ./demos/demo-webdriver-positioning
+- ./demos/demo-webdriver-video
 
 extra-deps:
 # Because upstream hs-webdriver has a few bugs and seems unmaintained
