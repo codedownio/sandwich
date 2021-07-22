@@ -24,6 +24,7 @@ packages:
 - ./demo-timing-parallel
 - ./demo-tui
 - ./demo-webdriver
+- ./demo-webdriver-landing
 - ./demo-webdriver-pool
 - ./demo-webdriver-positioning
 - ./demo-webdriver-video
