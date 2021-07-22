@@ -48,8 +48,8 @@ startSandwichTree' baseContext (Options {..}) spec' = do
 
   runTree <- atomically $ specToRunTreeVariable baseContext spec
 
-  unless optionsDryRun $ do
-    void $ async $ void $ runNodesSequentially runTree baseContext
+  if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
+     | otherwise -> void $ async $ void $ runNodesSequentially runTree baseContext
 
   return runTree
 

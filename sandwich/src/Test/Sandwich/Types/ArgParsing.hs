@@ -49,6 +49,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optTreeFilter :: Maybe String
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
+  , optDryRun :: Maybe Bool
 
   , optListAvailableTests :: Maybe Bool
   , optPrintQuickCheckFlags :: Maybe Bool

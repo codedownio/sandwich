@@ -9,6 +9,7 @@
 module Test.Sandwich.Interpreters.StartTree (
   startTree
   , runNodesSequentially
+  , markAllChildrenWithResult
   ) where
 
 
@@ -66,6 +67,9 @@ startTree node@(RunNodeBefore {..}) ctx' = do
       Success -> do
         void $ runNodesSequentially runNodeChildren ctx
         return Success
+      DryRun -> do
+        void $ runNodesSequentially runNodeChildren ctx
+        return DryRun
 startTree node@(RunNodeAfter {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon

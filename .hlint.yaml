@@ -1,3 +1,4 @@
 
 - ignore: {name: "Redundant bracket"}
+- ignore: {name: "Redundant multi-way if"}
 - ignore: {name: "Use <$>"}

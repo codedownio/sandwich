@@ -74,6 +74,7 @@ instance (Monad m, MonadThrow m) => MonadFail (ExampleT context m) where
 
 data Result = Success
             | Failure FailureReason
+            | DryRun
   deriving (Show, Eq)
 
 data ShowEqBox = forall s. (Show s, Eq s) => SEB s

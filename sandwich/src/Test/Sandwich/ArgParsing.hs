@@ -76,6 +76,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
+  <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "print-quickcheck-flags" <> help "Print the additional QuickCheck flags"))
@@ -212,6 +213,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
     , optionsFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
+    , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     }
 
   return (options, optRepeatCount)

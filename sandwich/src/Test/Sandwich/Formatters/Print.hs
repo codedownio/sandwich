@@ -87,6 +87,7 @@ runWithIndentation node@(RunNodeIt {..}) = do
   -- Print the main header
   case result of
     Success -> pGreenLn runTreeLabel
+    DryRun -> pin runTreeLabel
     (Failure (Pending _ _)) -> pYellowLn runTreeLabel
     (Failure reason) -> do
       pRedLn runTreeLabel
@@ -117,5 +118,6 @@ runWithIndentation node = do
       case result of
         Failure r -> withBumpIndent $ printFailureReason r
         Success -> return ()
+        DryRun -> return ()
       finishPrinting common result
     False -> return () -- TODO: print failure info even though node should be hidden?
