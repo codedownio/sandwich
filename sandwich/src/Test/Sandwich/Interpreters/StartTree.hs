@@ -67,6 +67,8 @@ startTree node@(RunNodeBefore {..}) ctx' = do
       Success -> do
         void $ runNodesSequentially runNodeChildren ctx
         return Success
+      Cancelled -> do
+        return Cancelled
       DryRun -> do
         void $ runNodesSequentially runNodeChildren ctx
         return DryRun

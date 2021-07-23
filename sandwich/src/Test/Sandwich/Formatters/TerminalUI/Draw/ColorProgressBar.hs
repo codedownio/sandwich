@@ -69,6 +69,7 @@ sumChunk = foldl combine zeroChunkSum
         lensForStatus (Done {statusResult=(Failure (Pending {}))}) = pending
         lensForStatus (Done {statusResult=(Failure _)}) = failure
         lensForStatus (Done {statusResult=DryRun}) = notStarted
+        lensForStatus (Done {statusResult=Cancelled}) = failure
 
 maxBy :: (Foldable t, Ord a) => (b -> a) -> t b -> b
 maxBy = maximumBy . comparing

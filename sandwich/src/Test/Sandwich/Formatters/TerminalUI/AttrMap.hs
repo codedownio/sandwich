@@ -128,6 +128,7 @@ chooseAttr (Done _ _ (Success {})) = successAttr
 chooseAttr (Done _ _ (Failure (Pending {}))) = pendingAttr
 chooseAttr (Done _ _ (Failure {})) = failureAttr
 chooseAttr (Done _ _ DryRun) = notStartedAttr
+chooseAttr (Done _ _ Cancelled) = failureAttr
 
 -- * Logging and callstacks
 
