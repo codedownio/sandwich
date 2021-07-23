@@ -25,6 +25,9 @@ module Test.Sandwich.Options (
   -- * Timing
   , optionsTestTimerType
 
+  -- * Dry run
+  , optionsDryRun
+
   -- * Misc
   , optionsProjectRoot
   ) where
