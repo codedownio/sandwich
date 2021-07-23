@@ -259,9 +259,6 @@ instance Show1 (SpecCommand context m) where
   liftShowsPrec sp _ d (Parallel'' {..}) = showsUnaryWith sp [i|Parallel<#{show subspec}>|] d next
   liftShowsPrec sp _ d (It'' {..}) = showsUnaryWith sp [i|It[#{label}]|] d next
 
--- First write beforeEach/afterEach to demonstrate push down approach
--- Then think about how/whether we can to introduceEach / aroundEach
-
 -- * ----------------------------------------------------------
 
 -- | Perform an action before a given spec tree.

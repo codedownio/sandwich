@@ -107,12 +107,13 @@ type RunNodeCommon = RunNodeCommonWithStatus (Var Status) (Var (Seq LogEntry)) (
 -- * Other
 
 type Var = TVar
-data LogEntry = LogEntry { logEntryTime :: UTCTime
-                         , logEntryLoc :: Loc
-                         , logEntrySource :: LogSource
-                         , logEntryLevel :: LogLevel
-                         , logEntryStr :: LogStr
-                         } deriving (Show, Eq)
+data LogEntry = LogEntry {
+  logEntryTime :: UTCTime
+  , logEntryLoc :: Loc
+  , logEntrySource :: LogSource
+  , logEntryLevel :: LogLevel
+  , logEntryStr :: LogStr
+  } deriving (Show, Eq)
 
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {
