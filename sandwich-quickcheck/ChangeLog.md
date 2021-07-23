@@ -1,3 +1,3 @@
-# Changelog for sandwich-webdriver
+# Changelog for sandwich-quickcheck
 
 ## Unreleased changes
