@@ -39,6 +39,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Foldable
+import Data.Functor.Identity
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Sequence as Seq
@@ -214,7 +215,7 @@ appEvent s (VtyEvent e) =
           Running {..} -> cancel statusAsync
           _ -> return ()
     V.EvKey c [] | c == runAllKey -> withContinueS $ do
-      when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
+      when (all (not . isRunning . runIdentity . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
         mapM_ clearRecursively (s ^. appRunTreeBase)
         void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
     V.EvKey c [] | c == runSelectedKey -> withContinueS $

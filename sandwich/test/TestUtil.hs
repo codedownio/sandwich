@@ -14,6 +14,8 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Writer
 import Data.Foldable
+import Data.Functor.Identity
+import Data.Sequence (Seq)
 import Data.String.Interpolate
 import GHC.Stack
 import System.Exit
@@ -73,11 +75,11 @@ getResultsAndMessages fixedTree = (results, msgs)
 
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-getStatuses :: (HasCallStack) => RunNodeWithStatus context s l t -> [(String, s)]
-getStatuses = extractValues $ \node -> (runTreeLabel $ runNodeCommon node, runTreeStatus $ runNodeCommon node)
+getStatuses :: (HasCallStack) => RunNodeWithStatus context Identity -> [(String, Status)]
+getStatuses = extractValues $ \node -> (runTreeLabel $ runNodeCommon node, runIdentity $ runTreeStatus $ runNodeCommon node)
 
-getLogs :: (HasCallStack) => RunNodeWithStatus context s l t -> [l]
-getLogs = extractValues $ \node -> runTreeLogs $ runNodeCommon node
+getLogs :: (HasCallStack) => RunNodeWithStatus context Identity -> [Seq LogEntry]
+getLogs = extractValues $ \node -> runIdentity $ runTreeLogs $ runNodeCommon node
 
 statusToResult :: (HasCallStack) => (String, Status) -> Result
 statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]

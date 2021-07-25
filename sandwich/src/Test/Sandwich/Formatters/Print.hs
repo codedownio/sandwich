@@ -122,4 +122,9 @@ runWithIndentation node = do
         Success -> return ()
         DryRun -> return ()
       finishPrinting common result
-    False -> return () -- TODO: print failure info even though node should be hidden?
+    False -> do
+      -- case result of
+      --   Failure r -> withBumpIndent $ printFailureReason r
+      --   _ -> return ()
+
+      return () -- TODO: print failure info even though node should be hidden?

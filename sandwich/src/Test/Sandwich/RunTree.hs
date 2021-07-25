@@ -6,17 +6,18 @@
 module Test.Sandwich.RunTree where
 
 import Control.Concurrent.STM
+import Data.Functor.Identity
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-extractValues :: (forall context. RunNodeWithStatus context s l t -> a) -> RunNodeWithStatus context s l t -> [a]
+extractValues :: (forall context. RunNodeWithStatus context v -> a) -> RunNodeWithStatus context v -> [a]
 extractValues f node@(RunNodeIt {}) = [f node]
 extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
 
-extractValuesControlRecurse :: (forall context. RunNodeWithStatus context s l t -> (Bool, a)) -> RunNodeWithStatus context s l t -> [a]
+extractValuesControlRecurse :: (forall context. RunNodeWithStatus context v -> (Bool, a)) -> RunNodeWithStatus context v -> [a]
 extractValuesControlRecurse f node@(RunNodeIt {}) = [snd $ f node]
 extractValuesControlRecurse f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = case f node of
   (True, x) -> x : (concatMap (extractValuesControlRecurse f) runNodeChildrenAugmented)
@@ -28,7 +29,7 @@ extractValuesControlRecurse f node = case f node of
   (True, x) -> x : (concatMap (extractValuesControlRecurse f) (runNodeChildren node))
   (False, x) -> [x]
 
-getCommons :: RunNodeWithStatus context s l t -> [RunNodeCommonWithStatus s l t]
+getCommons :: RunNodeWithStatus context v -> [RunNodeCommonWithStatus v]
 getCommons = extractValues runNodeCommon
 
 fixRunTree :: RunNode context -> STM (RunNodeFixed context)
@@ -39,10 +40,10 @@ fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
   open <- readTVar runTreeOpen
 
   let common' = RunNodeCommonWithStatus {
-        runTreeStatus = status
-        , runTreeLogs = logs
-        , runTreeToggled = toggled
-        , runTreeOpen = open
+        runTreeStatus = Identity status
+        , runTreeLogs = Identity logs
+        , runTreeToggled = Identity toggled
+        , runTreeOpen = Identity open
         , ..
         }
 
@@ -73,10 +74,10 @@ fixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
 
 unFixRunTree :: RunNodeFixed context -> STM (RunNode context)
 unFixRunTree node@(runNodeCommon -> (RunNodeCommonWithStatus {..})) = do
-  status <- newTVar runTreeStatus
-  logs <- newTVar runTreeLogs
-  toggled <- newTVar runTreeToggled
-  open <- newTVar runTreeOpen
+  status <- newTVar $ runIdentity runTreeStatus
+  logs <- newTVar $ runIdentity runTreeLogs
+  toggled <- newTVar $ runIdentity runTreeToggled
+  open <- newTVar $ runIdentity runTreeOpen
 
   let common' = RunNodeCommonWithStatus {
         runTreeStatus = status

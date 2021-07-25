@@ -10,6 +10,7 @@ module Test.Sandwich.Formatters.TerminalUI.Filter (
 import Control.Monad
 import Control.Monad.Trans.Reader
 import Data.Function
+import Data.Functor.Identity
 import qualified Data.List as L
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.RunTree
@@ -20,7 +21,7 @@ filterRunTree visibilityThreshold rtsFixed = rtsFixed
   & fmap (mapCommon (hideIfThresholdAbove visibilityThreshold))
   & fmap hideClosed
 
-mapCommon :: (RunNodeCommonWithStatus s l t -> RunNodeCommonWithStatus s l t) -> RunNodeWithStatus context s l t -> RunNodeWithStatus context s l t
+mapCommon :: (RunNodeCommonWithStatus v -> RunNodeCommonWithStatus v) -> RunNodeWithStatus context v -> RunNodeWithStatus context v
 mapCommon f node@(RunNodeIt {}) = node { runNodeCommon = f (runNodeCommon node) }
 mapCommon f (RunNodeIntroduce {..}) = RunNodeIntroduce { runNodeCommon = f runNodeCommon
                                                        , runNodeChildrenAugmented = fmap (mapCommon f) runNodeChildrenAugmented
@@ -36,22 +37,22 @@ hideIfThresholdAbove :: Int -> RunNodeCommonFixed -> RunNodeCommonFixed
 hideIfThresholdAbove visibilityThreshold node@(RunNodeCommonWithStatus {..}) =
   if | runTreeVisibilityLevel <= visibilityThreshold -> node { runTreeVisible = True }
      | otherwise -> node { runTreeVisible = False
-                         , runTreeOpen = True -- Must be open so children have a chance to be seen
+                         , runTreeOpen = Identity True -- Must be open so children have a chance to be seen
                          }
 
-markClosed :: RunNodeCommonWithStatus s l Bool -> RunNodeCommonWithStatus s l Bool
+markClosed :: RunNodeCommonWithStatus Identity -> RunNodeCommonWithStatus Identity
 markClosed node@(RunNodeCommonWithStatus {..}) = node { runTreeVisible = False }
 
-hideClosed :: RunNodeWithStatus context s l Bool -> RunNodeWithStatus context s l Bool
+hideClosed :: RunNodeWithStatus context Identity -> RunNodeWithStatus context Identity
 hideClosed node@(RunNodeIt {}) = node
 hideClosed (RunNodeIntroduce {..})
-  | runTreeOpen runNodeCommon = RunNodeIntroduce { runNodeChildrenAugmented = fmap hideClosed runNodeChildrenAugmented, .. }
+  | runIdentity $ runTreeOpen runNodeCommon = RunNodeIntroduce { runNodeChildrenAugmented = fmap hideClosed runNodeChildrenAugmented, .. }
   | otherwise = RunNodeIntroduce { runNodeChildrenAugmented = fmap (mapCommon markClosed) runNodeChildrenAugmented, .. }
 hideClosed (RunNodeIntroduceWith {..})
-  | runTreeOpen runNodeCommon = RunNodeIntroduceWith { runNodeChildrenAugmented = fmap hideClosed runNodeChildrenAugmented, .. }
+  | runIdentity $ runTreeOpen runNodeCommon = RunNodeIntroduceWith { runNodeChildrenAugmented = fmap hideClosed runNodeChildrenAugmented, .. }
   | otherwise = RunNodeIntroduceWith { runNodeChildrenAugmented = fmap (mapCommon markClosed) runNodeChildrenAugmented, .. }
 hideClosed node
-  | runTreeOpen (runNodeCommon node) = node { runNodeChildren = fmap hideClosed (runNodeChildren node) }
+  | runIdentity $ runTreeOpen (runNodeCommon node) = node { runNodeChildren = fmap hideClosed (runNodeChildren node) }
   | otherwise = node { runNodeChildren = fmap (mapCommon markClosed) (runNodeChildren node) }
 
 
@@ -68,17 +69,17 @@ treeToList (nodeFixed, node) = L.zip (runReader (getCommonsWithVisibleDepth' nod
     commonToMainListElem ((RunNodeCommonWithStatus {..}, depth), common) = MainListElem {
       label = runTreeLabel
       , depth = depth
-      , toggled = runTreeToggled
-      , open = runTreeOpen
-      , status = runTreeStatus
-      , logs = runTreeLogs
+      , toggled = runIdentity runTreeToggled
+      , open = runIdentity runTreeOpen
+      , status = runIdentity runTreeStatus
+      , logs = runIdentity runTreeLogs
       , visibilityLevel = runTreeVisibilityLevel
       , folderPath = runTreeFolder
       , node = common
       , ident = runTreeId
       }
 
-getCommonsWithVisibleDepth' :: RunNodeWithStatus context s l t -> Reader Int [(RunNodeCommonWithStatus s l t, Int)]
+getCommonsWithVisibleDepth' :: RunNodeWithStatus context v -> Reader Int [(RunNodeCommonWithStatus v, Int)]
 getCommonsWithVisibleDepth' node@(RunNodeIt {}) = ask >>= \vd -> return [(runNodeCommon node, vd)]
 getCommonsWithVisibleDepth' (RunNodeIntroduce {..}) = do
   let context = if runTreeVisible runNodeCommon then (local (+1)) else id

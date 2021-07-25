@@ -43,6 +43,7 @@ import Control.Monad.Logger hiding (logError)
 import qualified Data.Aeson as A
 import Data.Foldable
 import Data.Function
+import Data.Functor.Identity
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
@@ -191,8 +192,8 @@ publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
       -- Recurse into grouping nodes, because their failures are actually just derived from child failures
       RunNodeDescribe {} -> (True, Nothing)
       RunNodeParallel {} -> (True, Nothing)
-      ((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
-      node@((runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
+      ((runIdentity . runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure (Pending {}))})) -> (False, Nothing)
+      node@((runIdentity . runTreeStatus . runNodeCommon) -> (Done {statusResult=(Failure reason)})) | isFailedBlock node ->
         (False, Just $ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason)
       _ -> (True, Nothing)
 
@@ -252,7 +253,7 @@ addToLastLine [] _ = []
 addToLastLine xs toAdd = (init xs) <> [last xs <> toAdd]
 
 allIsDone :: [RunNodeFixed context] -> Bool
-allIsDone = all (isDone . runTreeStatus . runNodeCommon)
+allIsDone = all (isDone . runIdentity . runTreeStatus . runNodeCommon)
   where
     isDone :: Status -> Bool
     isDone (Done {}) = True

@@ -11,6 +11,7 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.TopBox (
 import Brick
 import qualified Brick.Widgets.List as L
 import Control.Monad.Logger
+import Data.Functor.Identity
 import qualified Data.List as L
 import Data.Maybe
 import Lens.Micro
@@ -172,10 +173,10 @@ selectedTestToggled s = case L.listSelectedElement (s ^. appMainList) of
   Nothing -> False
   Just (_, MainListElem {..}) -> toggled
 
-noTestsRunning s = all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+noTestsRunning s = all (not . isRunning . runIdentity . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
-someTestRunning s = any (isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+someTestRunning s = any (isRunning . runIdentity . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
-allTestsDone s = all (isDone . runTreeStatus . runNodeCommon) (s ^. appRunTree)
+allTestsDone s = all (isDone . runIdentity . runTreeStatus . runNodeCommon) (s ^. appRunTree)
 
 someTestSelected s = isJust $ L.listSelectedElement (s ^. appMainList)

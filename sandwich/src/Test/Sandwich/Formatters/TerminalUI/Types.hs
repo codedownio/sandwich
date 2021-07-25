@@ -99,7 +99,7 @@ data MainListElem = MainListElem {
   , ident :: Int
   }
 
-data SomeRunNode = forall context s l t. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context s l t }
+data SomeRunNode = forall context v. SomeRunNode { unSomeRunNode :: RunNodeWithStatus context v }
 
 data ClickableName = ColorBar | ListRow Int | MainList | InnerViewport T.Text
   deriving (Show, Ord, Eq)
@@ -129,7 +129,7 @@ data AppState = AppState {
 makeLenses ''AppState
 
 
-extractValues' :: (forall context s l t. RunNodeWithStatus context s l t -> a) -> SomeRunNode -> [a]
+extractValues' :: (forall context v. RunNodeWithStatus context v -> a) -> SomeRunNode -> [a]
 extractValues' f (SomeRunNode n@(RunNodeIt {})) = [f n]
 extractValues' f (SomeRunNode n@(RunNodeIntroduce {runNodeChildrenAugmented})) = (f n) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues' f (SomeRunNode n@(RunNodeIntroduceWith {runNodeChildrenAugmented})) = (f n) : (concatMap (extractValues f) runNodeChildrenAugmented)

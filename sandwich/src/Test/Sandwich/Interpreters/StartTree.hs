@@ -48,7 +48,7 @@ import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
 
 
-baseContextFromCommon :: RunNodeCommonWithStatus s l t -> BaseContext -> BaseContext
+baseContextFromCommon :: RunNodeCommonWithStatus v -> BaseContext -> BaseContext
 baseContextFromCommon (RunNodeCommonWithStatus {..}) bc@(BaseContext {}) =
   bc { baseContextPath = runTreeFolder }
 
@@ -266,10 +266,10 @@ cancelAllChildrenWith children e = do
         atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now (Failure reason))
       _ -> return ()
 
-shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
+shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context v -> Bool
 shouldRunChild ctx node = shouldRunChild' ctx (runNodeCommon node)
 
-shouldRunChild' :: (HasBaseContext ctx) => ctx -> RunNodeCommonWithStatus s l t -> Bool
+shouldRunChild' :: (HasBaseContext ctx) => ctx -> RunNodeCommonWithStatus v -> Bool
 shouldRunChild' ctx common = case baseContextOnlyRunIds $ getBaseContext ctx of
   Nothing -> True
   Just ids -> (runTreeId common) `S.member` ids

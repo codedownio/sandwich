@@ -10,6 +10,7 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar (
 
 import Brick
 import Data.Foldable
+import Data.Functor.Identity
 import Data.Ord (comparing)
 import Data.String.Interpolate
 import GHC.Stack
@@ -102,5 +103,5 @@ bottomProgressBarColoredWidth app width = hBox [getCharForChunk chunk | chunk <-
 
     testsPerChar :: Rational = fromIntegral width / fromIntegral (length statuses)
 
-    getStatuses :: (HasCallStack) => RunNodeWithStatus context a l t -> [a]
-    getStatuses = extractValues (runTreeStatus . runNodeCommon)
+    getStatuses :: (HasCallStack) => RunNodeWithStatus context Identity -> [Status]
+    getStatuses = extractValues (runIdentity . runTreeStatus . runNodeCommon)

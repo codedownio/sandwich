@@ -17,6 +17,7 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Data.Functor.Identity
 import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
@@ -40,79 +41,90 @@ data Status = NotStarted
 instance Show (Async Result) where
   show _ = "AsyncResult"
 
+data IntroduceStatus = IntroduceStatus
 
-data RunNodeWithStatus context s l t where
+data RunNodeWithStatus context v where
   RunNodeBefore :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildren :: [RunNodeWithStatus context v]
     , runNodeBefore :: ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    } -> RunNodeWithStatus context v
   RunNodeAfter :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildren :: [RunNodeWithStatus context v]
     , runNodeAfter :: ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    } -> RunNodeWithStatus context v
   RunNodeIntroduce :: (Typeable intro) => {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) v]
     , runNodeAlloc :: ExampleT context IO intro
     , runNodeCleanup :: intro -> ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    } -> RunNodeWithStatus context v
   RunNodeIntroduceWith :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) s l t]
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildrenAugmented :: [RunNodeWithStatus (LabelValue lab intro :> context) v]
     , runNodeIntroduceAction :: (intro -> ExampleT context IO [Result]) -> ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    , runNodeIntroduceStatus :: IntroduceStatus
+    } -> RunNodeWithStatus context v
   RunNodeAround :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildren :: [RunNodeWithStatus context s l t]
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildren :: [RunNodeWithStatus context v]
     , runNodeActionWith :: ExampleT context IO [Result] -> ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    } -> RunNodeWithStatus context v
   RunNodeDescribe :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildren :: [RunNodeWithStatus context s l t]
-    } -> RunNodeWithStatus context s l t
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildren :: [RunNodeWithStatus context v]
+    } -> RunNodeWithStatus context v
   RunNodeParallel :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
-    , runNodeChildren :: [RunNodeWithStatus context s l t]
-    } -> RunNodeWithStatus context s l t
+    runNodeCommon :: RunNodeCommonWithStatus v
+    , runNodeChildren :: [RunNodeWithStatus context v]
+    } -> RunNodeWithStatus context v
   RunNodeIt :: {
-    runNodeCommon :: RunNodeCommonWithStatus s l t
+    runNodeCommon :: RunNodeCommonWithStatus v
     , runNodeExample :: ExampleT context IO ()
-    } -> RunNodeWithStatus context s l t
+    } -> RunNodeWithStatus context v
 
-type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
-type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
+type RunNodeFixed context = RunNodeWithStatus context Identity
+type RunNode context = RunNodeWithStatus context Var
 
 -- * RunNodeCommon
 
-data RunNodeCommonWithStatus s l t = RunNodeCommonWithStatus {
+data RunNodeCommonWithStatus v = RunNodeCommonWithStatus {
   runTreeLabel :: String
   , runTreeId :: Int
   , runTreeAncestors :: Seq Int
-  , runTreeToggled :: t
-  , runTreeOpen :: t
-  , runTreeStatus :: s
+  , runTreeToggled :: v Bool
+  , runTreeOpen :: v Bool
+  , runTreeStatus :: v Status
   , runTreeVisible :: Bool
   , runTreeFolder :: Maybe FilePath
   , runTreeVisibilityLevel :: Int
   , runTreeRecordTime :: Bool
-  , runTreeLogs :: l
+  , runTreeLogs :: v (Seq LogEntry)
   , runTreeLoc :: Maybe SrcLoc
-  } deriving (Show, Eq)
+  }
 
-type RunNodeCommonFixed = RunNodeCommonWithStatus Status (Seq LogEntry) Bool
-type RunNodeCommon = RunNodeCommonWithStatus (Var Status) (Var (Seq LogEntry)) (Var Bool)
+deriving instance (Show (v (Seq LogEntry))
+                  , Show (v Bool)
+                  , Show (v Status)) => Show (RunNodeCommonWithStatus v)
+
+deriving instance (Eq (v (Seq LogEntry))
+                  , Eq (v Bool)
+                  , Eq (v Status)) => Eq (RunNodeCommonWithStatus v)
+
+type RunNodeCommonFixed = RunNodeCommonWithStatus Identity
+type RunNodeCommon = RunNodeCommonWithStatus Var
 
 -- * Other
 
 type Var = TVar
-data LogEntry = LogEntry { logEntryTime :: UTCTime
-                         , logEntryLoc :: Loc
-                         , logEntrySource :: LogSource
-                         , logEntryLevel :: LogLevel
-                         , logEntryStr :: LogStr
-                         } deriving (Show, Eq)
+data LogEntry = LogEntry {
+  logEntryTime :: UTCTime
+  , logEntryLoc :: Loc
+  , logEntrySource :: LogSource
+  , logEntryLevel :: LogLevel
+  , logEntryStr :: LogStr
+  } deriving (Show, Eq)
 
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {

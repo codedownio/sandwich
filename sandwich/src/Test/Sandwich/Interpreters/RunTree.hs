@@ -68,7 +68,7 @@ specToRunTree'  (Free (Introduce'' loc no l _cl alloc cleanup subspec next)) = d
   continueWith next =<< RunNodeIntroduce common <$> recurse l no common subspec <*> pure alloc <*> pure cleanup
 specToRunTree'  (Free (IntroduceWith'' loc no l _cl action subspec next)) = do
   common <- getCommon l loc no
-  continueWith next =<< RunNodeIntroduceWith common <$> recurse l no common subspec <*> pure action
+  continueWith next =<< RunNodeIntroduceWith common <$> recurse l no common subspec <*> pure action <*> pure IntroduceStatus
 specToRunTree'  (Free (Around'' loc no l actionWith subspec next)) = do
   common <- getCommon l loc no
   continueWith next =<< RunNodeAround common <$> recurse l no common subspec <*> pure actionWith
@@ -100,9 +100,9 @@ getCommon l srcLoc (NodeOptions {..}) = do
     runTreeLabel = l
     , runTreeId = ident
     , runTreeAncestors = runTreeCurrentAncestors |> ident
-    , runTreeToggled = False
-    , runTreeOpen = True
-    , runTreeStatus = NotStarted
+    , runTreeToggled = Identity False
+    , runTreeOpen = Identity True
+    , runTreeStatus = Identity NotStarted
     , runTreeVisible = True
     , runTreeFolder = case (nodeOptionsCreateFolder, runTreeCurrentFolder) of
         (True, Just f) -> Just (f </> (nodeToFolderName l runTreeNumSiblings runTreeIndexInParent))

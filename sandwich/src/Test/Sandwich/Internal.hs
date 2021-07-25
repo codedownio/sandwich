@@ -25,6 +25,7 @@ module Test.Sandwich.Internal (
   , waitForTree
   , SomeAsyncExceptionWithEq(..)
   , logEntryStr
+  , LogEntry
 
   , module Test.Sandwich.Internal.Formatters
   , module Test.Sandwich.Internal.Running
