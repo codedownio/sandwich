@@ -3,6 +3,7 @@ resolver: lts-17.5
 
 packages:
 - ./sandwich
+- ./sandwich-hedgehog
 - ./sandwich-quickcheck
 - ./sandwich-slack
 - ./sandwich-webdriver
