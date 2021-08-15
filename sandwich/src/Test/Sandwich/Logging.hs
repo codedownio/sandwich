@@ -70,9 +70,11 @@ callCommandWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => S
 callCommandWithLogging cmd = do
   (hRead, hWrite) <- liftIO createPipe
 
-  (_, _, _, p) <- liftIO $ createProcess (shell cmd) { delegate_ctlc = True
-                                                     , std_out = UseHandle hWrite
-                                                     , std_err = UseHandle hWrite }
+  (_, _, _, p) <- liftIO $ createProcess (shell cmd) {
+    delegate_ctlc = True
+    , std_out = UseHandle hWrite
+    , std_err = UseHandle hWrite
+    }
 
   _ <- async $ forever $ do
     line <- liftIO $ hGetLine hRead
