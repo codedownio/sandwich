@@ -88,6 +88,7 @@ runWithIndentation node@(RunNodeIt {..}) = do
   case result of
     Success -> pGreenLn runTreeLabel
     DryRun -> pin runTreeLabel
+    Cancelled -> pin runTreeLabel
     (Failure (Pending _ _)) -> pYellowLn runTreeLabel
     (Failure reason) -> do
       pRedLn runTreeLabel
@@ -117,6 +118,7 @@ runWithIndentation node = do
     True -> do
       case result of
         Failure r -> withBumpIndent $ printFailureReason r
+        Cancelled -> return ()
         Success -> return ()
         DryRun -> return ()
       finishPrinting common result

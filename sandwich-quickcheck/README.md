@@ -1,1 +1,1 @@
-# sandwich-webdriver
+# sandwich-quickcheck

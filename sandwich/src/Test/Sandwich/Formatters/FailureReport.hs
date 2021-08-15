@@ -101,6 +101,7 @@ runWithIndentation frf@(FailureReportFormatter {..}) idToLabel node = do
   case result of
     Success -> return ()
     DryRun -> return ()
+    Cancelled -> return ()
     Failure (ChildrenFailed {}) -> return ()
     Failure reason -> do
       p "\n"

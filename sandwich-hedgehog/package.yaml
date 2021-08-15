@@ -1,0 +1,50 @@
+name:                sandwich-hedgehog
+version:             0.1.0.5
+github:              "codedownio/sandwich-hedgehog"
+license:             BSD3
+author:              "Tom McLaughlin"
+maintainer:          "tom@codedown.io"
+copyright:           "2021 Tom McLaughlin"
+category:            Testing
+homepage:            https://codedownio.github.io/sandwich
+synopsis:            Sandwich integration with Hedgehog
+description:         Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-hedgehog documentation>.
+
+extra-source-files:
+- ChangeLog.md
+
+dependencies:
+- base < 5
+- free
+- hedgehog
+- monad-control
+- mtl
+- safe-exceptions
+- sandwich >= 0.1.0.4
+- string-interpolate
+- text
+- time
+
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Test.Sandwich.Hedgehog
+
+tests:
+  sandwich-hedgehog-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
