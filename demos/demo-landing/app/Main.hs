@@ -10,6 +10,7 @@ import Control.Monad.IO.Class
 import Data.Time.Clock
 import System.Random
 import Test.Sandwich
+import Test.Sandwich.Formatters.Print
 
 
 landingDemo :: TopSpec
@@ -50,11 +51,12 @@ landingDemo = describe "Arithmetic tests" $ parallel $ do
 
 sleepRandom :: ExampleM context ()
 sleepRandom = liftIO $ do
-  timeToSleep :: Int <- randomRIO (1500000, 3000000)
+  timeToSleep :: Int <- randomRIO (150000, 300000)
   threadDelay timeToSleep
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  -- , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Just "demos/demo-landing"
   }
 

@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Test.Sandwich.Types.RunTree where
 
@@ -17,12 +18,15 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Data.Aeson hiding (Result, Options)
+import Data.Aeson.TH hiding (Result, Options)
 import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Time
 import Data.Typeable
+import GHC.Generics
 import GHC.Stack
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.Spec
@@ -83,6 +87,13 @@ data RunNodeWithStatus context s l t where
 
 type RunNodeFixed context = RunNodeWithStatus context Status (Seq LogEntry) Bool
 type RunNode context = RunNodeWithStatus context (Var Status) (Var (Seq LogEntry)) (Var Bool)
+
+-- deriving instance Generic (RunNodeWithStatus context s l t)
+-- instance () => ToJSON (RunNodeWithStatus context s l t) where
+--   toJSON = genericToJSON defaultOptions
+--   toEncoding = genericToEncoding defaultOptions
+-- instance () => FromJSON (RunNodeWithStatus context s l t) where
+--   parseJSON = genericParseJSON defaultOptions
 
 -- * RunNodeCommon
 
@@ -283,3 +294,5 @@ data SomeExceptionWithCallStack = forall e. Exception e => SomeExceptionWithCall
 instance Show SomeExceptionWithCallStack where
   showsPrec p (SomeExceptionWithCallStack e _) = showsPrec p e
 instance Exception SomeExceptionWithCallStack
+
+deriveJSON defaultOptions ''RunNodeWithStatus
