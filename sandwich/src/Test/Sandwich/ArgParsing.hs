@@ -73,6 +73,7 @@ mainCommandLineOptions :: Parser a -> Parser (Maybe IndividualTestModule) -> Par
 mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptions
   <$> formatter
   <*> logLevel
+  <*> optional (option auto (long "visibility-threshold" <> short 'v' <> showDefault <> help "Set the visibility threshold for formatters" <> metavar "INT"))
   <*> optional (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
@@ -207,12 +208,15 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let baseFormatters = optionsFormatters baseOptions
                      & filter (not . isMainFormatter)
 
+  let finalFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
+                      & fmap (setVisibilityThreshold optVisibilityThreshold)
+
   let options = baseOptions {
     optionsTestArtifactsDirectory = case optFixedRoot of
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
     , optionsFilterTree = TreeFilter <$> optTreeFilter
-    , optionsFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
+    , optionsFormatters = finalFormatters
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     }
 
@@ -225,3 +229,12 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       Nothing -> case cast x of
         Just (_ :: TerminalUIFormatter) -> True
         Nothing -> False
+
+    setVisibilityThreshold Nothing x = x
+    setVisibilityThreshold (Just v) x@(SomeFormatter f) = case cast f of
+      Just pf@(PrintFormatter {}) -> SomeFormatter (pf { printFormatterVisibilityThreshold = v })
+      Nothing -> case cast f of
+        Just tuif@(TerminalUIFormatter {}) -> SomeFormatter (tuif { terminalUIVisibilityThreshold = v })
+        Nothing -> case cast f of
+          Just (frf :: FailureReportFormatter) -> SomeFormatter (frf { failureReportVisibilityThreshold = v })
+          Nothing -> x

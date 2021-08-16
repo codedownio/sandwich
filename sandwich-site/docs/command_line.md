@@ -11,6 +11,7 @@ If you use [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/s
 
 * Choose a formatter: `--tui`, `--print`, `--print-failures`, `--silent`, `--auto`.
 * Choose a default log level: `--debug`, `--info`, `--warn`, `--error`.
+* Choose a visibility threshold: `--visibility-threshold N` (or `-v N`)
 * Repeat the test suite N times: `--repeat n` (useful to exercise flaky tests)
 * Filter the test tree to a string: `--filter some_string`.
 * Learn about extra flags controlling extensions: `--print-slack-flags`, `--print-webdriver-flags`.

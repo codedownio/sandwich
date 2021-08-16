@@ -13,6 +13,7 @@
 
 module Test.Sandwich.Formatters.FailureReport (
   defaultFailureReportFormatter
+  , FailureReportFormatter
 
   -- * Options
   , failureReportUseColor

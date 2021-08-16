@@ -6,6 +6,7 @@
 
 * Expose `optionsDryRun` and the `--dry-run` option.
 * Add command-line arguments for `sandwich-quickcheck`.
+* Add `--visibility-threshold`/`-v` option.
 
 ## 0.1.0.8
 

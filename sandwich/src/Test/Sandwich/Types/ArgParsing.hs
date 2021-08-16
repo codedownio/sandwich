@@ -46,6 +46,7 @@ instance Read DisplayType where
 data CommandLineOptions a = CommandLineOptions {
   optFormatter :: FormatterType
   , optLogLevel :: Maybe LogLevel
+  , optVisibilityThreshold :: Maybe Int
   , optTreeFilter :: Maybe String
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
