@@ -37,7 +37,7 @@ import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
+import Control.Monad.Logger hiding (logError)
 import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
@@ -59,6 +59,7 @@ import Test.Sandwich.Formatters.TerminalUI.Keys
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
+import Test.Sandwich.Logging
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.ArgParsing
@@ -72,13 +73,13 @@ instance Formatter TerminalUIFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
-runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = liftIO $ do
-  startTime <- getCurrentTime
+runApp :: (MonadLoggerIO m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
+  startTime <- liftIO getCurrentTime
 
   liftIO $ setInitialFolding terminalUIInitialFolding rts
 
-  rtsFixed <- atomically $ mapM fixRunTree rts
+  rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
 
   let initialState = updateFilteredTree $
         AppState {
@@ -103,18 +104,22 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = lif
           , _appCustomExceptionFormatters = terminalUICustomExceptionFormatters
         }
 
-  eventChan <- newBChan 10
+  eventChan <- liftIO $ newBChan 10
 
-  currentFixedTree <- newTVarIO rtsFixed
-  eventAsync <- async $ forever $ do
-    newFixedTree <- atomically $ do
-      currentFixed <- readTVar currentFixedTree
-      newFixed <- mapM fixRunTree rts
-      when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
-      writeTVar currentFixedTree newFixed
-      return newFixed
-    writeBChan eventChan (RunTreeUpdated newFixedTree)
-    threadDelay terminalUIRefreshPeriod
+  logFn <- askLoggerIO
+
+  currentFixedTree <- liftIO $ newTVarIO rtsFixed
+  eventAsync <- liftIO $ async $
+    forever $ do
+      handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
+        newFixedTree <- atomically $ do
+          currentFixed <- readTVar currentFixedTree
+          newFixed <- mapM fixRunTree rts
+          when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
+          writeTVar currentFixedTree newFixed
+          return newFixed
+        writeBChan eventChan (RunTreeUpdated newFixedTree)
+        threadDelay terminalUIRefreshPeriod
 
   let buildVty = do
         v <- V.mkVty V.defaultConfig
@@ -122,8 +127,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = lif
         when (V.supportsMode output V.Mouse) $
           liftIO $ V.setMode output V.Mouse True
         return v
-  initialVty <- buildVty
-  flip onException (cancel eventAsync) $
+  initialVty <- liftIO buildVty
+  liftIO $ flip onException (cancel eventAsync) $
     void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ClickableName

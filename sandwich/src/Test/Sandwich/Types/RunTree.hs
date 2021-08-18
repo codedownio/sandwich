@@ -180,7 +180,7 @@ type TopSpecWithOptions' a = forall context. (
 class Formatter f where
   formatterName :: f -> String
   -- ^ Name of the formatter
-  runFormatter :: (MonadIO m, MonadLogger m, MonadUnliftIO m, MonadCatch m) => f -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+  runFormatter :: (MonadLoggerIO m, MonadUnliftIO m, MonadCatch m) => f -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
   -- ^ The main function, executed while the test tree is running
   finalizeFormatter :: (MonadIO m, MonadLogger m, MonadCatch m) => f -> [RunNode BaseContext] -> BaseContext -> m ()
   -- ^ Called after the test tree is completed, can be used to print final results
