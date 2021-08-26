@@ -152,18 +152,21 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
                           , W.wdHTTPRetryCount = httpRetryCount
                           })
 
+-- | TODO: expose this as an option
+gracePeriod :: Int
+gracePeriod = 30000000
 
 stopWebDriver :: Constraints m => WebDriver -> m ()
 stopWebDriver (WebDriver {wdWebDriver=(hout, herr, h, _, _, maybeXvfbSession)}) = do
-  _ <- liftIO (interruptProcessGroupOf h >> waitForProcess h)
+  gracefullyStopProcess h gracePeriod
   liftIO $ hClose hout
   liftIO $ hClose herr
 
   whenJust maybeXvfbSession $ \(XvfbSession {..}) -> do
-    whenJust xvfbFluxboxProcess $ \p ->
-      liftIO (interruptProcessGroupOf p >> waitForProcess p)
+    whenJust xvfbFluxboxProcess $ \p -> do
+      gracefullyStopProcess p gracePeriod
 
-    liftIO (interruptProcessGroupOf xvfbProcess >> waitForProcess xvfbProcess)
+    gracefullyStopProcess xvfbProcess gracePeriod
 
 -- * Util
 
