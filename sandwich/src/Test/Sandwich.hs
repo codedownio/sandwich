@@ -75,6 +75,7 @@ import Control.Concurrent.STM
 import qualified Control.Exception as E
 import Control.Exception.Safe
 import Control.Monad
+import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -142,8 +143,11 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
            OA.execParser $ OA.info (individualTestParser mempty <**> helper) $
              fullDesc <> header "Pass one of these flags to run an individual test module."
                       <> progDesc "If a module has a \"*\" next to its name, then we detected that it has its own main function. If you pass the option name suffixed by -main then we'll just directly invoke the main function."
-     | otherwise ->
-         runWithRepeat repeatCount $
+     | otherwise -> do
+         -- Awkward, but we need a specific context type to call countItNodes
+         let totalTests = countItNodes (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
+
+         runWithRepeat repeatCount totalTests $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
                introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
@@ -212,3 +216,12 @@ runSandwich' maybeCommandLineOptions options spec' = do
   let failed = countWhere isFailedItBlock fixedTree
   exitReason <- readIORef exitReasonRef
   return (exitReason, failed)
+
+
+-- | Count the it nodes
+countItNodes :: Free (SpecCommand context m) r -> Int
+countItNodes (Free x@(It'' {})) = 1 + countItNodes (next x)
+countItNodes (Free (IntroduceWith'' {..})) = countItNodes next + countItNodes subspecAugmented
+countItNodes (Free (Introduce'' {..})) = countItNodes next + countItNodes subspecAugmented
+countItNodes (Free x) = countItNodes (next x) + countItNodes (subspec x)
+countItNodes (Pure _) = 0
