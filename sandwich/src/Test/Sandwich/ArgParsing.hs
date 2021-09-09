@@ -19,7 +19,6 @@ import Data.Time.Clock.POSIX
 import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
-import System.IO
 import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
@@ -196,9 +195,9 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
 
   maybeMainFormatter <- case (optRepeatCount, optFormatter) of
     (x, _) | x /= 1 -> return $ Just printFormatter
-    (_, Auto) -> hIsTerminalDevice stdout >>= \case
-      True -> return $ Just printFormatter
-      False -> return $ Just tuiFormatter
+    (_, Auto) -> isTuiFormatterSupported >>= \case
+      False -> return $ Just printFormatter
+      True -> return $ Just tuiFormatter
     (_, TUI) -> return $ Just tuiFormatter
     (_, Print) -> return $ Just printFormatter
     (_, PrintFailures) -> return $ Just failureReportFormatter

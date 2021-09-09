@@ -25,6 +25,9 @@ module Test.Sandwich.Formatters.TerminalUI (
   -- * Auxiliary types
   , InitialFolding(..)
   , CustomTUIException(..)
+
+  -- * Util
+  , isTuiFormatterSupported
   ) where
 
 import Brick as B
@@ -38,6 +41,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
+import Data.Either
 import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
@@ -72,6 +76,9 @@ instance Formatter TerminalUIFormatter where
   formatterName _ = "terminal-ui-formatter"
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
+
+isTuiFormatterSupported :: IO Bool
+isTuiFormatterSupported = isRight <$> tryAny (V.mkVty V.defaultConfig)
 
 runApp :: (MonadLoggerIO m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
 runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
