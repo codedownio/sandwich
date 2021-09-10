@@ -195,9 +195,12 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
 
   maybeMainFormatter <- case (optRepeatCount, optFormatter) of
     (x, _) | x /= 1 -> return $ Just printFormatter
-    (_, Auto) -> isTuiFormatterSupported >>= \case
-      False -> return $ Just printFormatter
-      True -> return $ Just tuiFormatter
+    (_, Auto) ->
+      -- Formerly this tried to use the TUI formatter by default after checking isTuiFormatterSupported.
+      -- Unfortunately, this function returns true under "cabal test", which also redirects stdout. So
+      -- you end up with no output and a hanging process (until you hit 'q'; stdin is still attached).
+      -- Seems like the best default is just the print formatter.
+      return $ Just printFormatter
     (_, TUI) -> return $ Just tuiFormatter
     (_, Print) -> return $ Just printFormatter
     (_, PrintFailures) -> return $ Just failureReportFormatter
