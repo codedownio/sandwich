@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 33eccacb7f22bc0f47248bf5ae3ba94d52b29a8f554678c5f99b97a60aa221c2
+-- hash: 50f2c0f77f15237db2d29e2b36e0b9a3a2d553043aeeb460cd7fe04012530a42
 
 name:           sandwich-slack
-version:        0.1.0.5
+version:        0.1.0.6
 synopsis:       Sandwich integration with Slack
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-slack documentation>.
 category:       Testing
