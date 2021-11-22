@@ -122,4 +122,9 @@ runWithIndentation node = do
         Success -> return ()
         DryRun -> return ()
       finishPrinting common result
-    False -> return () -- TODO: print failure info even though node should be hidden?
+    False -> case result of
+        Failure r -> do
+          pRedLn ("^ " <> runTreeLabel)
+          printFailureReason r
+          finishPrinting common result
+        _ -> return ()
