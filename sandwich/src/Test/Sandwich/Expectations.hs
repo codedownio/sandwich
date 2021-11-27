@@ -23,11 +23,11 @@ expectationFailure :: (HasCallStack, MonadThrow m) => String -> m a
 expectationFailure = throwIO . Reason (Just callStack)
 
 -- | Throws a 'Pending' exception, which will cause the test to be marked as pending.
-pending :: (HasCallStack, MonadThrow m) => m ()
+pending :: (HasCallStack, MonadThrow m) => m a
 pending = throwIO $ Pending (Just callStack) Nothing
 
 -- | Throws a 'Pending' exception with a message to add additional details.
-pendingWith :: (HasCallStack, MonadThrow m) => String -> m ()
+pendingWith :: (HasCallStack, MonadThrow m) => String -> m a
 pendingWith msg = throwIO $ Pending (Just callStack) (Just msg)
 
 -- | Shorthand for a pending test example. You can quickly mark an 'it' node as pending by putting an "x" in front of it.
