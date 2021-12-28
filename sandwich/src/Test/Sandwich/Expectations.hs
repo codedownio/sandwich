@@ -103,6 +103,26 @@ shouldNotContainPredicate haystack pred = case L.find pred haystack of
   Nothing -> return ()
   Just _ -> expectationFailure [i|Expected #{show haystack} not to contain an item matching the predicate|]
 
+-- | Asserts that the given 'Maybe' is 'Nothing'.
+shouldBeNothing :: (HasCallStack, MonadThrow m, Show a) => Maybe a -> m ()
+shouldBeNothing Nothing = return ()
+shouldBeNothing x = expectationFailure [i|Expected Nothing but got #{x}|]
+
+-- | Asserts that the given 'Maybe' is 'Just'.
+shouldBeJust :: (HasCallStack, MonadThrow m, Show a) => Maybe a -> m ()
+shouldBeJust (Just _) = return ()
+shouldBeJust Nothing = expectationFailure [i|Expected Just but got Nothing.|]
+
+-- | Asserts that the given 'Either' is 'Left'.
+shouldBeLeft :: (HasCallStack, MonadThrow m, Show a, Show b) => Either a b -> m ()
+shouldBeLeft (Left _) = return ()
+shouldBeLeft x = expectationFailure [i|Expected Left but got #{x}|]
+
+-- | Asserts that the given 'Either' is 'Right'.
+shouldBeRight :: (HasCallStack, MonadThrow m, Show a, Show b) => Either a b -> m ()
+shouldBeRight (Right _) = return ()
+shouldBeRight x = expectationFailure [i|Expected Right but got #{x}.|]
+
 -- | Asserts that the given text contains a substring.
 textShouldContain :: (HasCallStack, MonadThrow m) => T.Text -> T.Text -> m ()
 t `textShouldContain` txt = ((T.unpack t) :: String) `shouldContain` (T.unpack txt)
