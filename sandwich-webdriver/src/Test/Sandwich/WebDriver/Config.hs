@@ -5,7 +5,9 @@ module Test.Sandwich.WebDriver.Config (
   , defaultWdOptions
   , runMode
   , seleniumToUse
+  , chromeBinaryPath
   , chromeDriverToUse
+  , firefoxBinaryPath
   , geckoDriverToUse
   , capabilities
   , httpManager

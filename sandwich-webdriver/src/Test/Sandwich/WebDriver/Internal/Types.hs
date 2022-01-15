@@ -68,9 +68,13 @@ data WdOptions = WdOptions {
   , seleniumToUse :: SeleniumToUse
   -- ^ Which Selenium server JAR file to use.
 
+  , chromeBinaryPath :: Maybe FilePath
+  -- ^ Which chrome binary to use.
   , chromeDriverToUse :: ChromeDriverToUse
   -- ^ Which chromedriver executable to use.
 
+  , firefoxBinaryPath :: Maybe FilePath
+  -- ^ Which firefox binary to use.
   , geckoDriverToUse :: GeckoDriverToUse
   -- ^ Which geckodriver executable to use.
 
@@ -99,8 +103,9 @@ data ChromeDriverToUse =
   -- ^ Download chromedriver from the given URL to the 'toolsRoot'
   | DownloadChromeDriverVersion ChromeDriverVersion
   -- ^ Download the given chromedriver version to the 'toolsRoot'
-  | DownloadChromeDriverAutodetect
+  | DownloadChromeDriverAutodetect (Maybe FilePath)
   -- ^ Autodetect chromedriver to use based on the Chrome version and download it to the 'toolsRoot'
+  -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath
   -- ^ Use the chromedriver at the given path
 
@@ -110,8 +115,9 @@ data GeckoDriverToUse =
   -- ^ Download geckodriver from the given URL to the 'toolsRoot'
   | DownloadGeckoDriverVersion GeckoDriverVersion
   -- ^ Download the given geckodriver version to the 'toolsRoot'
-  | DownloadGeckoDriverAutodetect
+  | DownloadGeckoDriverAutodetect (Maybe FilePath)
   -- ^ Autodetect geckodriver to use based on the Gecko version and download it to the 'toolsRoot'
+  -- Pass the path to the Firefox binary, or else it will be found by looking for firefox on the PATH.
   | UseGeckoDriverAt FilePath
   -- ^ Use the geckodriver at the given path
 
@@ -148,8 +154,10 @@ defaultWdOptions toolsRoot = WdOptions {
   , capabilities = def
   , saveSeleniumMessageHistory = OnException
   , seleniumToUse = DownloadSeleniumDefault
-  , chromeDriverToUse = DownloadChromeDriverAutodetect
-  , geckoDriverToUse = DownloadGeckoDriverAutodetect
+  , chromeBinaryPath = Nothing
+  , chromeDriverToUse = DownloadChromeDriverAutodetect Nothing
+  , firefoxBinaryPath = Nothing
+  , geckoDriverToUse = DownloadGeckoDriverAutodetect Nothing
   , runMode = Normal
   , httpManager = Nothing
   , httpRetryCount = 0

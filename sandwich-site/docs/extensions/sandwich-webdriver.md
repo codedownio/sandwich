@@ -70,7 +70,7 @@ Many browsers now have the ability to natively run in headless mode. For example
 
 ```haskell
 wdOptions = (defaultWdOptions "/tmp/tools") {
-  capabilities = firefoxCapabilities
+  capabilities = firefoxCapabilities Nothing
   , runMode = RunHeadless defaultHeadlessConfig
   }
 ```

@@ -141,8 +141,8 @@ addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptio
 addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
   capabilities = case optFirefox of
     Nothing -> capabilities
-    Just UseFirefox -> firefoxCapabilities
-    Just UseChrome -> chromeCapabilities
+    Just UseFirefox -> firefoxCapabilities firefoxBinaryPath
+    Just UseChrome -> chromeCapabilities chromeBinaryPath
   , runMode = case optDisplay of
       Nothing -> runMode
       Just Headless -> RunHeadless defaultHeadlessConfig

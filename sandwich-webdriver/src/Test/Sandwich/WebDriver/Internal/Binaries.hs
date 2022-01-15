@@ -68,8 +68,8 @@ obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = 
       let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
       ExceptT $ downloadAndUnzipToPath downloadPath path
       return path
-obtainChromeDriver toolsDir DownloadChromeDriverAutodetect = runExceptT $ do
-  version <- ExceptT $ liftIO getChromeDriverVersion
+obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect maybeChromePath) = runExceptT $ do
+  version <- ExceptT $ liftIO $ getChromeDriverVersion maybeChromePath
   ExceptT $ obtainChromeDriver toolsDir (DownloadChromeDriverVersion version)
 obtainChromeDriver _ (UseChromeDriverAt path) =
   (liftIO $ doesFileExist path) >>= \case
@@ -93,8 +93,8 @@ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = run
       let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
       ExceptT $ downloadAndUntarballToPath downloadPath path
       return path
-obtainGeckoDriver toolsDir DownloadGeckoDriverAutodetect = runExceptT $ do
-  version <- ExceptT $ liftIO getGeckoDriverVersion
+obtainGeckoDriver toolsDir (DownloadGeckoDriverAutodetect maybeFirefoxPath) = runExceptT $ do
+  version <- ExceptT $ liftIO $ getGeckoDriverVersion maybeFirefoxPath
   ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
 obtainGeckoDriver _ (UseGeckoDriverAt path) =
   (liftIO $ doesFileExist path) >>= \case
@@ -126,9 +126,9 @@ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
 
   return chromeDriverPath
 
-downloadChromeDriverIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
-downloadChromeDriverIfNecessary toolsDir = runExceptT $ do
-  chromeDriverVersion <- ExceptT $ liftIO getChromeDriverVersion
+downloadChromeDriverIfNecessary :: Constraints m => Maybe FilePath -> FilePath -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary maybeChromePath toolsDir = runExceptT $ do
+  chromeDriverVersion <- ExceptT $ liftIO $ getChromeDriverVersion maybeChromePath
   ExceptT $ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion
 
 getChromeDriverPath :: FilePath -> ChromeDriverVersion -> FilePath

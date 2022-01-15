@@ -22,6 +22,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -47,9 +48,10 @@ detectPlatform =  case SI.os of
 
 -- * Chrome
 
-detectChromeVersion :: IO (Either T.Text ChromeVersion)
-detectChromeVersion = leftOnException $ runExceptT $ do
-  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell "google-chrome --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"") ""
+detectChromeVersion :: Maybe FilePath -> IO (Either T.Text ChromeVersion)
+detectChromeVersion maybeChromePath = leftOnException $ runExceptT $ do
+  let chromeToUse = fromMaybe "google-chrome" maybeChromePath
+  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell (chromeToUse <> " --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"")) ""
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
@@ -59,9 +61,9 @@ detectChromeVersion = leftOnException $ runExceptT $ do
     [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ ChromeVersion (w, x, y, z)
     _ -> throwE [i|Failed to parse google-chrome version from string: '#{rawString}'|]
 
-getChromeDriverVersion :: IO (Either T.Text ChromeDriverVersion)
-getChromeDriverVersion = runExceptT $ do
-  chromeVersion <- ExceptT $ liftIO detectChromeVersion
+getChromeDriverVersion :: Maybe FilePath -> IO (Either T.Text ChromeDriverVersion)
+getChromeDriverVersion maybeChromePath = runExceptT $ do
+  chromeVersion <- ExceptT $ liftIO $ detectChromeVersion maybeChromePath
   ExceptT $ getChromeDriverVersion' chromeVersion
 
 getChromeDriverVersion' :: ChromeVersion -> IO (Either T.Text ChromeDriverVersion)
@@ -84,9 +86,10 @@ getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Windows = [i|https
 
 -- * Firefox
 
-detectFirefoxVersion :: IO (Either T.Text FirefoxVersion)
-detectFirefoxVersion = leftOnException $ runExceptT $ do
-  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell "firefox --version | grep -Eo \"[0-9]+\\.[0-9]+(\\.[0-9]+)?\"") ""
+detectFirefoxVersion :: Maybe FilePath -> IO (Either T.Text FirefoxVersion)
+detectFirefoxVersion maybeFirefoxPath = leftOnException $ runExceptT $ do
+  let firefoxToUse = fromMaybe "firefox" maybeFirefoxPath
+  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell (firefoxToUse <> " --version | grep -Eo \"[0-9]+\\.[0-9]+(\\.[0-9]+)?\"")) ""
 
   rawString <- case exitCode of
                  ExitFailure _ -> throwE [i|Couldn't parse firefox version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
@@ -98,9 +101,9 @@ detectFirefoxVersion = leftOnException $ runExceptT $ do
     _ -> throwE [i|Failed to parse firefox version from string: '#{rawString}'|]
 
 
-getGeckoDriverVersion :: IO (Either T.Text GeckoDriverVersion)
-getGeckoDriverVersion = runExceptT $ do
-  -- firefoxVersion <- ExceptT $ liftIO detectFirefoxVersion
+getGeckoDriverVersion :: Maybe FilePath -> IO (Either T.Text GeckoDriverVersion)
+getGeckoDriverVersion _maybeFirefoxPath = runExceptT $ do
+  -- firefoxVersion <- ExceptT $ liftIO $ detectFirefoxVersion maybeFirefoxPath
 
   -- Just get the latest release on GitHub
   let url = [i|https://api.github.com/repos/mozilla/geckodriver/releases/latest|]

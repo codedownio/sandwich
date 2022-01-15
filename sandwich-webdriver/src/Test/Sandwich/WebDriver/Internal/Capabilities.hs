@@ -29,18 +29,18 @@ loggingPrefs = A.object [("browser", "ALL")
 
 -- | Default capabilities for regular Chrome.
 -- Has the "browser" log level to "ALL" so that tests can collect browser logs.
-chromeCapabilities :: Capabilities
-chromeCapabilities =
-  def {browser=Chrome Nothing Nothing args [] chromePrefs
+chromeCapabilities :: Maybe FilePath -> Capabilities
+chromeCapabilities maybeChromePath =
+  def {browser=Chrome Nothing maybeChromePath args [] chromePrefs
       , additionalCaps=[("loggingPrefs", loggingPrefs)
                        , ("goog:loggingPrefs", loggingPrefs)]
       }
   where args = ["--verbose"]
 
 -- | Default capabilities for headless Chrome.
-headlessChromeCapabilities :: Capabilities
-headlessChromeCapabilities =
-  def {browser=Chrome Nothing Nothing args [] chromePrefs
+headlessChromeCapabilities :: Maybe FilePath -> Capabilities
+headlessChromeCapabilities maybeChromePath =
+  def {browser=Chrome Nothing maybeChromePath args [] chromePrefs
       , additionalCaps=[("loggingPrefs", loggingPrefs)
                        , ("goog:loggingPrefs", loggingPrefs)]
       }
@@ -58,22 +58,22 @@ chromePrefs = HM.fromList [
 -- * Firefox
 
 -- | Default capabilities for regular Firefox.
-firefoxCapabilities :: Capabilities
-firefoxCapabilities = def { browser=ff }
+firefoxCapabilities :: Maybe FilePath -> Capabilities
+firefoxCapabilities maybeFirefoxPath = def { browser=ff }
   where
     ff = Firefox { ffProfile = Nothing
                  , ffLogPref = LogAll
-                 , ffBinary = Nothing
+                 , ffBinary = maybeFirefoxPath
                  , ffAcceptInsecureCerts = Nothing
                  }
 
 -- | Default capabilities for headless Firefox.
-headlessFirefoxCapabilities :: Capabilities
-headlessFirefoxCapabilities = def { browser=ff, additionalCaps=additionalCaps }
+headlessFirefoxCapabilities :: Maybe FilePath -> Capabilities
+headlessFirefoxCapabilities maybeFirefoxPath = def { browser=ff, additionalCaps=additionalCaps }
   where
     ff = Firefox { ffProfile = Nothing
                  , ffLogPref = LogAll
-                 , ffBinary = Nothing
+                 , ffBinary = maybeFirefoxPath
                  , ffAcceptInsecureCerts = Nothing
                  }
 
