@@ -96,6 +96,7 @@ data SeleniumToUse =
   -- ^ Download selenium from a default location to the 'toolsRoot'
   | UseSeleniumAt FilePath
   -- ^ Use the JAR file at the given path
+  deriving Show
 
 -- | How to obtain the chromedriver binary.
 data ChromeDriverToUse =
@@ -108,6 +109,7 @@ data ChromeDriverToUse =
   -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath
   -- ^ Use the chromedriver at the given path
+  deriving Show
 
 -- | How to obtain the geckodriver binary.
 data GeckoDriverToUse =
@@ -120,6 +122,7 @@ data GeckoDriverToUse =
   -- Pass the path to the Firefox binary, or else it will be found by looking for firefox on the PATH.
   | UseGeckoDriverAt FilePath
   -- ^ Use the geckodriver at the given path
+  deriving Show
 
 newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int) deriving Show
 newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int) deriving Show
