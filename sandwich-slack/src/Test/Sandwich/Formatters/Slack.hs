@@ -13,6 +13,7 @@
 
 module Test.Sandwich.Formatters.Slack (
   defaultSlackFormatter
+  , SlackFormatter
 
   -- * Options
   , slackFormatterSlackConfig
