@@ -7,6 +7,7 @@
 module Test.Sandwich.Logging where
 
 import Control.Concurrent.Async.Lifted
+import qualified Control.Exception as C
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
@@ -14,8 +15,9 @@ import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import Data.Text
+import Foreign.C.Error
+import GHC.IO.Exception
 import GHC.Stack
-import System.Exit
 import System.IO
 import System.Process
 
@@ -64,6 +66,41 @@ createProcessWithLogging cp = do
 
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
+
+-- | Spawn a process with its stdout and stderr connected to the logging system. Every line output by the process
+-- will be fed to a 'debug' call.
+createProcessWithLoggingAndStdin :: (MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin cp input = do
+  (hRead, hWrite) <- liftIO createPipe
+
+  let name = case cmdspec cp of
+        ShellCommand {} -> "shell"
+        RawCommand path _ -> path
+
+  _ <- async $ forever $ do
+    line <- liftIO $ hGetLine hRead
+    debug [i|#{name}: #{line}|]
+
+  (Just inh, _, _, p) <- liftIO $ createProcess (
+    cp { std_out = UseHandle hWrite
+       , std_err = UseHandle hWrite
+       , std_in = CreatePipe }
+    )
+
+  unless (Prelude.null input) $
+    liftIO $ ignoreSigPipe $ hPutStr inh input
+  -- hClose performs implicit hFlush, and thus may trigger a SIGPIPE
+  liftIO $ ignoreSigPipe $ hClose inh
+
+  return p
+
+  where
+    -- Copied from System.Process
+    ignoreSigPipe :: IO () -> IO ()
+    ignoreSigPipe = C.handle $ \case
+      IOError { ioe_type  = ResourceVanished, ioe_errno = Just ioe } | Errno ioe == ePIPE -> return ()
+      e -> throwIO e
+
 
 -- | Higher level version of 'createProcessWithLogging', accepting a shell command.
 callCommandWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
