@@ -39,6 +39,9 @@ module Test.Sandwich (
   , describe
   , parallel
   , parallelN
+  , parallelN'
+  , parallelNFromArgs
+  , parallelNFromArgs'
 
   -- * Context manager nodes
   --
