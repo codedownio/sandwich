@@ -4,7 +4,10 @@
 
 -- | Wrapper around 'parallel' for limiting the threads using a semaphore.
 
-module Test.Sandwich.ParallelN (parallelN) where
+module Test.Sandwich.ParallelN (
+  parallelN
+  , parallelN'
+  ) where
 
 import Control.Concurrent.QSem
 import Control.Exception.Safe
