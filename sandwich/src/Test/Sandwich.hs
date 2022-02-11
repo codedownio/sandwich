@@ -38,10 +38,6 @@ module Test.Sandwich (
   , it
   , describe
   , parallel
-  , parallelN
-  , parallelN'
-  , parallelNFromArgs
-  , parallelNFromArgs'
 
   -- * Context manager nodes
   --
@@ -70,6 +66,7 @@ module Test.Sandwich (
   , module Test.Sandwich.Misc
   , module Test.Sandwich.Nodes
   , module Test.Sandwich.Options
+  , module Test.Sandwich.ParallelN
   , module Test.Sandwich.TH
   ) where
 

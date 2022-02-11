@@ -4,6 +4,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 -- | Wrapper around 'parallel' for limiting the threads using a semaphore.
 
@@ -13,6 +14,9 @@ module Test.Sandwich.ParallelN (
 
   , parallelNFromArgs
   , parallelNFromArgs'
+
+  , parallelSemaphore
+  , HasParallelSemaphore
   ) where
 
 import Control.Concurrent.QSem
@@ -64,5 +68,7 @@ parallelNFromArgs' nodeOptions getParallelism children = introduce "Introduce pa
 
 parallelSemaphore :: Label "parallelSemaphore" QSem
 parallelSemaphore = Label
+
+type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
 
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
