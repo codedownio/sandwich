@@ -20,7 +20,12 @@ import Test.Sandwich.Types.Spec
 parallelN :: (
   MonadBaseControl IO m, MonadIO m, MonadMask m
   ) => Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
-parallelN n children = introduceParallelSemaphore n $ parallel $ aroundEach "Take parallel semaphore" claimRunSlot children
+parallelN = parallelN' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 })
+
+parallelN' :: (
+  MonadBaseControl IO m, MonadIO m, MonadMask m
+  ) => NodeOptions -> Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
+parallelN' nodeOptions n children = introduceParallelSemaphore n $ parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
   where claimRunSlot f = do
           s <- getContext parallelSemaphore
           bracket_ (liftIO $ waitQSem s) (liftIO $ signalQSem s) (void f)
