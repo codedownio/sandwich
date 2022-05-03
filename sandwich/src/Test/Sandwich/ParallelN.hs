@@ -17,6 +17,8 @@ module Test.Sandwich.ParallelN (
 
   , parallelSemaphore
   , HasParallelSemaphore
+
+  , defaultParallelNodeOptions
   ) where
 
 import Control.Concurrent.QSem
@@ -54,7 +56,7 @@ parallelNFromArgs = parallelNFromArgs' @context @a defaultParallelNodeOptions
 
 parallelNFromArgs' :: forall context a m. (
   MonadBaseControl IO m, MonadIO m, MonadMask m, HasCommandLineOptions context a
-  ) => NodeOptions -> (CommandLineOptions a -> Int) ->SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
+  ) => NodeOptions -> (CommandLineOptions a -> Int) -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
 parallelNFromArgs' nodeOptions getParallelism children = introduce "Introduce parallel semaphore" parallelSemaphore getQSem (const $ return ()) $
   parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
   where
@@ -71,4 +73,5 @@ parallelSemaphore = Label
 
 type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
 
+defaultParallelNodeOptions :: NodeOptions
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
