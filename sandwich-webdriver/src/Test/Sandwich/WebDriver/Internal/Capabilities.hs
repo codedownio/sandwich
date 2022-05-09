@@ -68,6 +68,7 @@ getDefaultFirefoxProfile downloadDir = do
     & FF.addPref "browser.download.folderList" (2 :: Int)
     & FF.addPref "browser.download.manager.showWhenStarting" False
     & FF.addPref "browser.download.dir" downloadDir
+    & FF.addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
     & FF.prepareProfile
 
 -- | Default capabilities for regular Firefox.
