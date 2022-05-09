@@ -81,6 +81,9 @@ data WdOptions = WdOptions {
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.).
 
+  , downloadDir :: Maybe FilePath
+  -- ^ Directory to which browser downloads will be saved.
+
   , httpManager :: Maybe Manager
   -- ^ HTTP manager for making requests to Selenium. If not provided, one will be created for each session.
 
@@ -162,6 +165,7 @@ defaultWdOptions toolsRoot = WdOptions {
   , firefoxBinaryPath = Nothing
   , geckoDriverToUse = DownloadGeckoDriverAutodetect Nothing
   , runMode = Normal
+  , downloadDir = Nothing
   , httpManager = Nothing
   , httpRetryCount = 0
   }

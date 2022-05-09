@@ -6,6 +6,7 @@ dependencies:
 - base
 - filepath
 - lifted-base
+- monad-control
 - resource-pool
 - sandwich
 - sandwich-webdriver

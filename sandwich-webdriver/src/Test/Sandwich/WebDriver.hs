@@ -45,6 +45,7 @@ import Control.Concurrent.MVar.Lifted
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
@@ -54,6 +55,7 @@ import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
+import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Types
@@ -72,7 +74,7 @@ introduceWebDriverOptions :: forall a context m. (BaseMonadContext m context, Ha
 introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
   where alloc = do
           clo <- getCommandLineOptions
-          allocateWebDriver (addCommandLineOptionsToWdOptions @a clo wdOptions)
+          allocateWebDriver =<< (addCommandLineOptionsToWdOptions @a clo wdOptions)
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WebDriver
@@ -137,15 +139,20 @@ getSessions = do
   M.keys <$> liftIO (readMVar wdSessionMap)
 
 -- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.
-addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptions
-addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
-  capabilities = case optFirefox of
-    Nothing -> capabilities
-    Just UseFirefox -> firefoxCapabilities firefoxBinaryPath
-    Just UseChrome -> chromeCapabilities chromeBinaryPath
-  , runMode = case optDisplay of
-      Nothing -> runMode
-      Just Headless -> RunHeadless defaultHeadlessConfig
-      Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
-      Just Current -> Normal
-  }
+addCommandLineOptionsToWdOptions :: forall a m. MonadBaseControl IO m => CommandLineOptions a -> WdOptions -> m WdOptions
+addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = do
+  capabilities <- case optFirefox of
+    Nothing -> return capabilities
+    Just UseFirefox -> case downloadDir of
+      Nothing -> return $ firefoxCapabilities firefoxBinaryPath Nothing
+      Just dir -> do
+        profile <- getDefaultFirefoxProfile dir
+        return $ firefoxCapabilities firefoxBinaryPath (Just profile)
+    Just UseChrome -> return $ chromeCapabilities chromeBinaryPath downloadDir
+  return $ wdOptions { capabilities = capabilities
+                     , runMode = case optDisplay of
+                         Nothing -> runMode
+                         Just Headless -> RunHeadless defaultHeadlessConfig
+                         Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
+                         Just Current -> Normal
+                     }

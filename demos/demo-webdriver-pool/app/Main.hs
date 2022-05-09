@@ -11,6 +11,7 @@ import Control.Concurrent
 import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Maybe
 import Data.Pool
 import Data.String.Interpolate
@@ -29,12 +30,13 @@ webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
 type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
 
 introduceWebDriverPool :: forall m context. (
-  Monad m, MonadIO m, HasBaseContext context, HasCommandLineOptions context ()
+  Monad m, MonadIO m, MonadBaseControl IO m, HasBaseContext context, HasCommandLineOptions context ()
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduce "Introduce webdriver pool" webDriverPool alloc cleanup
   where
     alloc = do
-      wdOptions <- addCommandLineOptionsToWdOptions <$> (getCommandLineOptions @()) <*> pure wdOptions'
+      clo <- getCommandLineOptions @()
+      wdOptions <- addCommandLineOptionsToWdOptions clo wdOptions'
       runRoot <- fromMaybe "/tmp" <$> getRunRoot
       liftIO $ createPool (allocateWebDriver' runRoot wdOptions) cleanupWebDriver' 1 30 poolSize
     cleanup = liftIO . destroyAllResources
