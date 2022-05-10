@@ -14,6 +14,8 @@ module Test.Sandwich.WebDriver.Types (
 
   , webdriver
 
+  , wdDownloadDir
+
   -- * Constraint synonyms
   , BaseMonad
   , BaseMonadContext
