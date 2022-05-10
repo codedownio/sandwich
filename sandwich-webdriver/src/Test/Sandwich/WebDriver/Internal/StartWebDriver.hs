@@ -17,6 +17,7 @@ module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 
 
 import Control.Concurrent
+import Control.Exception
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
@@ -47,6 +48,7 @@ import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
+import qualified Test.WebDriver.Firefox.Profile as FF
 
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
@@ -55,11 +57,14 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl I
 startWebDriver :: Constraints m => WdOptions -> FilePath -> m WebDriver
 startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
-  webdriverName <- ("webdriver_" <>) <$> (liftIO makeUUID)
+  webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
 
   -- Directory to log everything for this webdriver
   let webdriverRoot = runRoot </> (T.unpack webdriverName)
   liftIO $ createDirectoryIfMissing True webdriverRoot
+
+  let downloadDir = webdriverRoot </> "Downloads"
+  liftIO $ createDirectoryIfMissing True downloadDir
 
   -- Get selenium and chromedriver
   debug [i|Preparing to create the Selenium process|]
@@ -103,9 +108,9 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
     webdriverProcessName <- ("webdriver_process_" <>) <$> (liftIO makeUUID)
     let webdriverProcessRoot = webdriverRoot </> T.unpack webdriverProcessName
     liftIO $ createDirectoryIfMissing True webdriverProcessRoot
-    startWebDriver' wdOptions webdriverName webdriverProcessRoot seleniumPath driverArgs maybeXvfbSession javaEnv
+    startWebDriver' wdOptions webdriverName webdriverProcessRoot downloadDir seleniumPath driverArgs maybeXvfbSession javaEnv
 
-startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot seleniumPath driverArgs maybeXvfbSession javaEnv = do
+startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot downloadDir seleniumPath driverArgs maybeXvfbSession javaEnv = do
   port <- liftIO findFreePortOrException
   let wdCreateProcess = (proc "java" (driverArgs <> ["-jar", seleniumPath
                                                     , "-port", show port])) { env = javaEnv }
@@ -141,16 +146,19 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
     interruptProcessGroupOf p >> waitForProcess p
     error [i|Selenium server failed to start after 60 seconds|]
 
+  capabilities <- configureDownloadCapabilities downloadDir (configureHeadlessCapabilities runMode capabilities')
+
   -- Make the WebDriver
   WebDriver <$> pure (T.unpack webdriverName)
             <*> pure (hout, herr, p, seleniumOutPath, seleniumErrPath, maybeXvfbSession)
             <*> pure wdOptions
             <*> liftIO (newMVar mempty)
             <*> pure (def { W.wdPort = fromIntegral port
-                          , W.wdCapabilities = configureCapabilities capabilities' runMode
+                          , W.wdCapabilities = capabilities
                           , W.wdHTTPManager = httpManager
                           , W.wdHTTPRetryCount = httpRetryCount
                           })
+            <*> pure downloadDir
 
 -- | TODO: expose this as an option
 gracePeriod :: Int
@@ -175,19 +183,19 @@ seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 
 -- | Add headless configuration to the Chrome browser
-configureCapabilities caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) (RunHeadless (HeadlessConfig {..})) = caps { W.browser = browser' }
+configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = caps { W.browser = browser' }
   where browser' = browser { W.chromeOptions = "--headless":resolution:chromeOptions }
         resolution = [i|--window-size=#{w},#{h}|]
         (w, h) = fromMaybe (1920, 1080) headlessResolution
 
 -- | Add headless configuration to the Firefox capabilities
-configureCapabilities caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) (RunHeadless (HeadlessConfig {..})) = caps { W.additionalCaps = additionalCaps }
+configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) = caps { W.additionalCaps = additionalCaps }
   where
     additionalCaps = case L.findIndex (\x -> fst x == "moz:firefoxOptions") ac of
       Nothing -> ("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])]) : ac
-      Just i -> let ffOptions' = (snd $ ac !! i)
-                      & ensureKeyExists "args" (A.Array [])
-                      & ((key "args" . _Array) %~ addHeadlessArg) in
+      Just i -> let ffOptions' = snd (ac !! i)
+                               & ensureKeyExists "args" (A.Array [])
+                               & ((key "args" . _Array) %~ addHeadlessArg) in
         L.nubBy (\x y -> fst x == fst y) (("moz:firefoxOptions", ffOptions') : ac)
 
     ensureKeyExists :: T.Text -> A.Value -> A.Value -> A.Value
@@ -199,5 +207,42 @@ configureCapabilities caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additi
     addHeadlessArg xs | (A.String "-headless") `V.elem` xs = xs
     addHeadlessArg xs = (A.String "-headless") `V.cons` xs
 
-configureCapabilities browser (RunHeadless {}) = error [i|Headless mode not yet supported for browser '#{browser}'|]
-configureCapabilities browser _ = browser
+configureHeadlessCapabilities (RunHeadless {}) browser = error [i|Headless mode not yet supported for browser '#{browser}'|]
+configureHeadlessCapabilities _ browser = browser
+
+
+configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Firefox {..})}) = do
+  case ffProfile of
+    Nothing -> return ()
+    Just _ -> liftIO $ throwIO $ userError [i|Can't support Firefox profile yet.|]
+
+  profile <- FF.defaultProfile
+    & FF.addPref "browser.download.folderList" (2 :: Int)
+    & FF.addPref "browser.download.manager.showWhenStarting" False
+    & FF.addPref "browser.download.dir" downloadDir
+    & FF.addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
+    & FF.prepareProfile
+
+  return (caps { W.browser = browser { W.ffProfile = Just profile } })
+configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = return $ caps { W.browser=browser' }
+  where
+    browser' = browser { W.chromeExperimentalOptions = options }
+
+    basePrefs :: A.Object
+    basePrefs = case HM.lookup "prefs" chromeExperimentalOptions of
+      Just (A.Object hm) -> hm
+      Just x -> error [i|Expected chrome prefs to be object, got '#{x}'.|]
+      Nothing -> mempty
+
+    prefs :: A.Object
+    prefs = basePrefs
+          & foldl (.) id [HM.insert k v | (k, v) <- downloadPrefs]
+
+    options = HM.insert "prefs" (A.Object prefs) chromeExperimentalOptions
+
+    downloadPrefs = [("profile.default_content_setting_values.automatic_downloads", A.Number 1)
+                    , ("profile.content_settings.exceptions.automatic_downloads.*.setting", A.Number 1)
+                    , ("download.prompt_for_download", A.Bool False)
+                    , ("download.directory_upgrade", A.Bool True)
+                    , ("download.default_directory", A.String (T.pack downloadDir))]
+configureDownloadCapabilities _ browser = return browser

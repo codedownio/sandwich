@@ -172,7 +172,9 @@ introduceWebDriverPool poolSize wdOptions' =
   introduce "Introduce webdriver pool" webDriverPool alloc cleanup
   where
     alloc = do
-      clo <- getCommandLineOptions @()
+      wdOptions <- addCommandLineOptionsToWdOptions
+                   <$> (getCommandLineOptions @())
+                   <*> pure wdOptions'
       wdOptions <- addCommandLineOptionsToWdOptions clo wdOptions'
       runRoot <- fromMaybe "/tmp" <$> getRunRoot
       liftIO $ createPool

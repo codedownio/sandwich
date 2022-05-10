@@ -6,7 +6,7 @@ import Test.Sandwich.WebDriver
 import Test.WebDriver
 
 wdOptions = (defaultWdOptions "/tmp/tools") {
-  capabilities = firefoxCapabilities Nothing Nothing
+  capabilities = firefoxCapabilities Nothing
   , runMode = RunHeadless defaultHeadlessConfig
   }
 

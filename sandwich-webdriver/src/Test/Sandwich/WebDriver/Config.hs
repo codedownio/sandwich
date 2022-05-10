@@ -4,7 +4,6 @@ module Test.Sandwich.WebDriver.Config (
   WdOptions
   , defaultWdOptions
   , runMode
-  , downloadDir
   , seleniumToUse
   , chromeBinaryPath
   , chromeDriverToUse

@@ -9,15 +9,15 @@ packages:
     version: 0.9.0.1
     git: https://github.com/codedownio/hs-webdriver
     pantry-tree:
-      size: 2934
-      sha256: ed9af2f807e88ba033a28f02de751ada83bf7a24309b6259d8cbba084edfc526
-    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
+      size: 3059
+      sha256: 3b018ce8f50ff6f942142eea858f861587882811b491ae7ec714f6c2d5cd59df
+    commit: f696e6cc573834b9509474ae82752de5f2152422
   original:
     git: https://github.com/codedownio/hs-webdriver
-    commit: 96400ea0ba6ef118033d6a727ef4f57c31a187ca
+    commit: f696e6cc573834b9509474ae82752de5f2152422
 snapshots:
 - completed:
-    size: 587126
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/8.yaml
-    sha256: 93a107557e8691ed5ca17beaee41e68222b142c48868fc8c04a4181fb233477d
-  original: lts-18.8
+    size: 634925
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/2/7.yaml
+    sha256: eccf3b87cf7521eb8e7704c2efbb579d2074a0a76c7b961e0f07b98b3079ada5
+  original: nightly-2022-02-07
