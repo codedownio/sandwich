@@ -21,7 +21,6 @@ import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
-import qualified Data.HashMap.Strict as HM
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -36,6 +35,13 @@ import qualified System.Info as SI
 import System.Process
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as HM
+#else
+import qualified Data.HashMap.Strict        as HM
+#endif
+
 
 data Platform = Linux | OSX | Windows deriving (Show, Eq)
 

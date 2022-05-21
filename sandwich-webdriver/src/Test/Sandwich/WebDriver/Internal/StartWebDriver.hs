@@ -27,7 +27,6 @@ import Control.Retry
 import qualified Data.Aeson as A
 import Data.Default
 import Data.Function
-import qualified Data.HashMap.Strict as HM
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
@@ -49,6 +48,17 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Firefox.Profile as FF
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key             as A
+import qualified Data.Aeson.KeyMap          as HM
+fromText :: T.Text -> A.Key
+fromText = A.fromText
+#else
+import qualified Data.HashMap.Strict        as HM
+fromText :: T.Text -> T.Text
+fromText = id
+#endif
 
 
 type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
@@ -199,8 +209,8 @@ configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabi
         L.nubBy (\x y -> fst x == fst y) (("moz:firefoxOptions", ffOptions') : ac)
 
     ensureKeyExists :: T.Text -> A.Value -> A.Value -> A.Value
-    ensureKeyExists key _ val@(A.Object (HM.lookup key -> Just _)) = val
-    ensureKeyExists key defaultVal (A.Object m@(HM.lookup key -> Nothing)) = A.Object (HM.insert key defaultVal m)
+    ensureKeyExists key _ val@(A.Object (HM.lookup (fromText key) -> Just _)) = val
+    ensureKeyExists key defaultVal (A.Object m@(HM.lookup (fromText key) -> Nothing)) = A.Object (HM.insert (fromText key) defaultVal m)
     ensureKeyExists _ _ _ = error "Expected Object in ensureKeyExists"
 
     addHeadlessArg :: V.Vector A.Value -> V.Vector A.Value
