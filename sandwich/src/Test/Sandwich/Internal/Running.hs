@@ -138,7 +138,7 @@ gatherMainFunctions tests = gatherNodeOptions tests
 -- | TODO: get these automatically from mainCommandLineOptions
 takenMainOptions :: [T.Text]
 takenMainOptions = [
-  "print", "tui", "silent", "auto"
+  "print", "tui", "silent", "auto", "markdown-summary"
   , "debug", "info", "warn", "error"
   , "filter"
   , "repeat"

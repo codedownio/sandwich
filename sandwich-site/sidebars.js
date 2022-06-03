@@ -15,6 +15,7 @@ module.exports = {
       "formatters/log_saver",
       "formatters/silent",
       "formatters/slack"
+      "formatters/markdown_summary",
     ] },
     { type: "doc", id: "extensions/sandwich-webdriver" },
     { type: "doc", id: "extensions/sandwich-quickcheck" },

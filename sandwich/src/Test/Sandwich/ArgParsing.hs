@@ -20,6 +20,7 @@ import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
 import Test.Sandwich.Formatters.FailureReport
+import Test.Sandwich.Formatters.MarkdownSummary
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
 import Test.Sandwich.Formatters.TerminalUI
@@ -77,6 +78,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
+  <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "print-quickcheck-flags" <> help "Print the additional QuickCheck flags"))
@@ -208,6 +210,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
 
   -- Strip out any "main" formatters since the options control that
   let baseFormatters = optionsFormatters baseOptions
+                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
                      & filter (not . isMainFormatter)
 
   let finalFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
@@ -240,3 +243,19 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         Nothing -> case cast f of
           Just (frf :: FailureReportFormatter) -> SomeFormatter (frf { failureReportVisibilityThreshold = v })
           Nothing -> x
+
+    isMarkdownSummaryFormatter :: SomeFormatter -> Bool
+    isMarkdownSummaryFormatter (SomeFormatter x) = case cast x of
+      Just (_ :: MarkdownSummaryFormatter) -> True
+      Nothing -> False
+
+    setMarkdownSummaryFormatterPath :: FilePath -> SomeFormatter -> SomeFormatter
+    setMarkdownSummaryFormatterPath path (SomeFormatter x) = case cast x of
+      Just (y :: MarkdownSummaryFormatter) -> SomeFormatter (y { markdownSummaryPath = path })
+      Nothing -> SomeFormatter x
+
+    tryAddMarkdownSummaryFormatter :: Maybe FilePath -> [SomeFormatter] -> [SomeFormatter]
+    tryAddMarkdownSummaryFormatter Nothing xs = xs
+    tryAddMarkdownSummaryFormatter (Just path) xs
+      | L.any isMarkdownSummaryFormatter xs = fmap (setMarkdownSummaryFormatterPath path) xs
+      | otherwise = (SomeFormatter (defaultMarkdownSummaryFormatter path)) : xs

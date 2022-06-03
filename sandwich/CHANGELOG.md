@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+* Add Markdown Summary formatter (useful with GitHub Actions)
+
 ## 0.1.0.9
 
 * Expose `optionsDryRun` and the `--dry-run` option.
