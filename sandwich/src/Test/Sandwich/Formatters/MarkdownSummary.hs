@@ -23,16 +23,21 @@ module Test.Sandwich.Formatters.MarkdownSummary (
   , markdownSummaryFailureIcon
   ) where
 
+import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
-import Control.Monad.State
 import Data.String.Interpolate
 import Data.Text as T
+import Data.Time
 import System.IO
+import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Interpreters.RunTree.Util (waitForTree)
+import Test.Sandwich.RunTree
+import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
-import Test.Sandwich.Types.Spec
+import Test.Sandwich.Util
 
 
 data MarkdownSummaryFormatter = MarkdownSummaryFormatter {
@@ -50,40 +55,31 @@ defaultMarkdownSummaryFormatter path = MarkdownSummaryFormatter {
 
 instance Formatter MarkdownSummaryFormatter where
   formatterName _ = "markdown-summary-formatter"
-  runFormatter _ _ _ _ = return ()
-  finalizeFormatter = printMarkdownSummary
+  runFormatter = run
+  finalizeFormatter _ _ _ = return ()
 
-printMarkdownSummary :: (MonadIO m, MonadLogger m, MonadCatch m) => MarkdownSummaryFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
-printMarkdownSummary msf@(MarkdownSummaryFormatter {..}) rts _bc = do
-  Info {..} <- execStateT (mapM_ (runWithIndentation msf) rts) (Info 0 0 0)
+run :: (MonadIO m, MonadLogger m, MonadCatch m) => MarkdownSummaryFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+run (MarkdownSummaryFormatter {..}) rts _ _bc = do
+  let total = countWhere isItBlock rts
+
+  startTime <- liftIO getCurrentTime
+
+  mapM_ (liftIO . waitForTree) rts
+
+  endTime <- liftIO getCurrentTime
+  let timeDiff = formatNominalDiffTime $ diffUTCTime endTime startTime
+
+  fixedTree <- liftIO $ atomically $ mapM fixRunTree rts
+  let failed = countWhere isFailedItBlock fixedTree
+  let pending = countWhere isPendingItBlock fixedTree
 
   liftIO $ withFile markdownSummaryPath AppendMode $ \h -> do
-    if | infoFailures == 0 -> hPutStrLn h ((maybe "" T.unpack markdownSummarySuccessIcon) <> [i|#{infoTotal} test#{if infoTotal > 1 then ("s" :: String) else ""} succeeded!|])
-       | otherwise -> hPutStrLn h ((maybe "" T.unpack markdownSummaryFailureIcon) <> [i|#{infoFailures} test#{if infoFailures > 1 then ("s" :: String) else ""} failed of #{infoTotal}!|])
-
-data Info = Info {
-  infoSuccesses :: Int
-  , infoFailures :: Int
-  , infoTotal :: Int
-  }
-
-runWithIndentation :: (MonadIO m) => MarkdownSummaryFormatter -> RunNode context -> StateT Info m ()
-runWithIndentation msf@(MarkdownSummaryFormatter {..}) node = do
-  case node of
-    RunNodeIt {} -> return ()
-    RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented (runWithIndentation msf)
-    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation msf)
-    _ -> forM_ (runNodeChildren node) (runWithIndentation msf)
-
-  result <- liftIO $ waitForTree node
-
-  -- Print the failure reason
-  case node of
-    RunNodeIt {} -> do
-      modify (\x -> x { infoTotal = (infoTotal x) + 1 })
-      case result of
-        Success -> modify (\x -> x { infoTotal = (infoSuccesses x) + 1 })
-        Cancelled -> modify (\x -> x { infoTotal = (infoFailures x) + 1 })
-        Failure _ -> modify (\x -> x { infoTotal = (infoFailures x) + 1 })
-        DryRun {} -> return ()
-    _ -> return ()
+    if | failed == 0 -> do
+           whenJust markdownSummarySuccessIcon (liftIO . (hPutStr h) . T.unpack)
+           hPutStr h [i|All tests passed in #{timeDiff}.|]
+       | otherwise -> do
+           whenJust markdownSummaryFailureIcon (liftIO . (hPutStr h) . T.unpack)
+           hPutStr h [i|#{failed} failed of #{total} in #{timeDiff}.|]
+    case pending of
+      0 -> hPutStrLn h ""
+      _ -> hPutStrLn h [i| (#{pending} pending)|]
