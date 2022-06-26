@@ -250,6 +250,9 @@ type SpecFree context m a = Free (SpecCommand context m) a
 
 makeFree_ ''SpecCommand
 
+instance Show t => Show (SpecCommand context m t) where
+  showsPrec = liftShowsPrec showsPrec showList
+
 instance Show1 (SpecCommand context m) where
   liftShowsPrec sp _ d (Before'' {..}) = showsUnaryWith sp [i|Before[#{label}]<#{show subspec}>|] d next
   liftShowsPrec sp _ d (After'' {..}) = showsUnaryWith sp [i|After[#{label}]<#{show subspec}>|] d next
