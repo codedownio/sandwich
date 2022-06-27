@@ -1,6 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
 
 -- | Logging functions.
 
@@ -20,6 +21,10 @@ import GHC.IO.Exception
 import GHC.Stack
 import System.IO
 import System.Process
+
+#if !MIN_VERSION_base(4,13,0)
+import Control.Monad.Fail
+#endif
 
 
 -- * Basic logging functions
