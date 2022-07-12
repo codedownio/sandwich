@@ -15,7 +15,7 @@ import Test.Sandwich.Hedgehog
 
 
 quickCheckDemo :: TopSpec
-quickCheckDemo = describe "QuickCheck tests" $ introduceHedgehog $ do
+quickCheckDemo = describe "Hedgehog tests" $ introduceHedgehog $ do
   prop "List reversal" $ do
     xs <- forAll $ Gen.list (Range.linear 0 100) Gen.alpha
     reverse (reverse xs) === xs
