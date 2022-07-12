@@ -19,6 +19,7 @@ quickCheckDemo = describe "QuickCheck tests" $ introduceHedgehog $ do
   prop "List reversal" $ do
     xs <- forAll $ Gen.list (Range.linear 0 100) Gen.alpha
     reverse (reverse xs) === xs
+
   prop "Failing list reversal" $ do
     xs <- forAll $ Gen.list (Range.linear 0 100) Gen.alpha
     reverse xs === xs

@@ -1,6 +1,6 @@
 -- | Functions for introducing Hedgehog tests into a Sandwich test tree. Modelled after Hspec's version.
 --
--- Documentation can be found <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck here>.
+-- Documentation can be found <https://codedownio.github.io/sandwich/docs/extensions/sandwich-hedgehog here>.
 
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
@@ -8,30 +8,29 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Test.Sandwich.Hedgehog where
-  -- (
-  -- -- * Introducing Hedgehog args
-  -- -- Any tests that use Hedgehog should be wrapped in one of these.
-  -- introduceHedgehog
-  -- , introduceHedgehog'
-  -- , introduceHedgehog''
+module Test.Sandwich.Hedgehog (
+  -- * Introducing Hedgehog args
+  -- Any tests that use Hedgehog should be wrapped in one of these.
+  introduceHedgehog
+  , introduceHedgehog'
+  , introduceHedgehog''
 
-  -- -- * Versions that can be configured with built-in command line arguments.
-  -- -- Pass --print-quickcheck-flags to list them.
+  -- * Versions that can be configured with built-in command line arguments.
+  -- Pass --print-quickcheck-flags to list them.
   -- , introduceHedgehogCommandLineOptions
   -- , introduceHedgehogCommandLineOptions'
   -- , introduceHedgehogCommandLineOptions''
 
-  -- -- * Prop
-  -- , prop
+  -- * Prop
+  , prop
 
-  -- -- * Modifying Hedgehog args
-  -- , modifyArgs
+  -- * Modifying Hedgehog args
+  , modifyArgs
   -- , modifyMaxSuccess
   -- , modifyMaxDiscardRatio
   -- , modifyMaxSize
   -- , modifyMaxShrinks
-  -- ) where
+  ) where
 
 import Control.Exception.Safe
 import Control.Monad.Free
@@ -44,12 +43,13 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Hedgehog as H
-import Hedgehog.Internal.Config (UseColor, detectColor)
+import Hedgehog.Internal.Config (UseColor (EnableColor), detectColor)
 import Hedgehog.Internal.Property hiding (Label)
-import Hedgehog.Internal.Report
+import Hedgehog.Internal.Report as H
 import Hedgehog.Internal.Runner as HR
 import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
+import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Internal
 
 import qualified Hedgehog.Gen as Gen
@@ -78,14 +78,10 @@ defaultHedgehogParams = HedgehogParams {
   , hedgehogSeed = Nothing
   }
 
-data HedgehogContext = HedgehogContext HedgehogParams
+newtype HedgehogContext = HedgehogContext HedgehogParams
   deriving Show
 hedgehogContext = Label :: Label "hedgehogContext" HedgehogContext
 type HasHedgehogContext context = HasLabel context "hedgehogContext" HedgehogContext
-
-data HedgehogException = HedgehogException
-  deriving (Show)
-instance Exception HedgehogException
 
 -- | Same as 'introduceHedgehog'' but with default args.
 introduceHedgehog :: (MonadIO m, MonadBaseControl IO m)
@@ -139,12 +135,19 @@ prop msg p = it msg $ do
   seed <- maybe Seed.random return hedgehogSeed
 
   finalReport <- checkReport config size seed p $ \progressReport@(Report {..}) -> do
-    debug [i|Progress: #{progressReport}|]
+    progress <- renderProgress EnableColor Nothing progressReport
+    debug [i|#{progress}|]
 
-  info [i|Final report: #{finalReport}|]
+  result <- renderResult EnableColor Nothing finalReport
+  case reportStatus finalReport of
+    H.Failed fr -> throwIO $ Reason (Just callStack) result
+    H.GaveUp -> throwIO $ Reason (Just callStack) result
+    H.OK -> info [i|#{result}|]
 
 -- | Modify the 'HedgehogParams' for the given spec.
-modifyArgs :: (HasHedgehogContext context, Monad m) => (HedgehogParams -> HedgehogParams) -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
+modifyArgs :: (
+  HasHedgehogContext context, Monad m
+  ) => (HedgehogParams -> HedgehogParams) -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (const $ return ())
   where
     acquire = do
@@ -163,3 +166,15 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
 --   , maxSuccess = fromMaybe maxSuccess optHedgehogMaxSuccess
 --   , maxShrinks = fromMaybe maxSuccess optHedgehogMaxShrinks
 --   }
+
+-- * Custom exception type for TUI
+
+data HedgehogException = HedgehogException (H.Report H.Result) String (Maybe CallStack)
+  deriving (Show)
+instance Exception HedgehogException
+
+formatHedgehogException :: SomeException -> Maybe CustomTUIException
+formatHedgehogException e = case fromException e of
+  Just (HedgehogException report formatted maybeCallStack) ->
+    Just $ CustomTUIExceptionMessageAndCallStack (T.pack formatted) maybeCallStack
+  Nothing -> Nothing
