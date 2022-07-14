@@ -33,6 +33,7 @@ import Control.Monad.Trans.Control
 import Data.Functor.Classes
 import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
 import GHC.Stack
 import GHC.TypeLits
 import Graphics.Vty.Image (Image)
@@ -103,6 +104,7 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                    | ChildrenFailed { failureCallStack :: Maybe CallStack
                                     , failureNumChildren :: Int }
                    | RawImage { failureCallStack :: Maybe CallStack
+                              , failureFallback :: String
                               , failureRawImage :: Image }
   deriving (Show, Typeable, Eq)
 

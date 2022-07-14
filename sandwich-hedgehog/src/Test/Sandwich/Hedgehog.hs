@@ -55,6 +55,7 @@ import Test.Sandwich.Internal
 
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
+import qualified Data.List as L
 
 
 data HedgehogParams = HedgehogParams {
@@ -140,17 +141,15 @@ prop msg p = it msg $ do
     debug [i|#{progress}|]
 
   tokens <- (return . renderHedgehogToTokens) =<< ppResult Nothing finalReport
-  info [i|tokens: #{tokens}|]
 
   image <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
-  info [i|got image: #{image}|]
 
+  -- Hedgehog naturally indents everything by 2. Remove this for the fallback text.
+  resultText <- dedent 2 <$> renderResult EnableColor Nothing finalReport
   case reportStatus finalReport of
-    H.Failed fr -> throwIO $ RawImage (Just callStack) image
-    H.GaveUp -> throwIO $ RawImage (Just callStack) image
-    H.OK -> do
-      result <- renderResult EnableColor Nothing finalReport
-      info [i|#{result}|]
+    H.Failed fr -> throwIO $ RawImage (Just callStack) resultText image
+    H.GaveUp -> throwIO $ RawImage (Just callStack) resultText image
+    H.OK -> info [i|#{resultText}|]
 
 -- | Modify the 'HedgehogParams' for the given spec.
 modifyArgs :: (
@@ -175,14 +174,7 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
 --   , maxShrinks = fromMaybe maxSuccess optHedgehogMaxShrinks
 --   }
 
--- * Custom exception type for TUI
-
-data HedgehogException = HedgehogException (H.Report H.Result) String (Maybe CallStack)
-  deriving (Show)
-instance Exception HedgehogException
-
-formatHedgehogException :: SomeException -> Maybe CustomTUIException
-formatHedgehogException e = case fromException e of
-  Just (HedgehogException report formatted maybeCallStack) ->
-    Just $ CustomTUIExceptionMessageAndCallStack (T.pack formatted) maybeCallStack
-  Nothing -> Nothing
+dedent :: Int -> String -> String
+dedent n s
+  | (replicate n ' ') `L.isPrefixOf` s = L.drop n s
+  | otherwise = s
