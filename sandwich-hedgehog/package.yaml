@@ -24,6 +24,8 @@ dependencies:
 - string-interpolate
 - text
 - time
+- vty
+- wl-pprint-annotated
 
 default-extensions:
 - OverloadedStrings

@@ -50,6 +50,7 @@ import Hedgehog.Internal.Runner as HR
 import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
 import Test.Sandwich.Formatters.TerminalUI
+import Test.Sandwich.Hedgehog.Render
 import Test.Sandwich.Internal
 
 import qualified Hedgehog.Gen as Gen
@@ -139,6 +140,10 @@ prop msg p = it msg $ do
     debug [i|#{progress}|]
 
   result <- renderResult EnableColor Nothing finalReport
+
+  widget <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
+  info [i|Got widget: #{widget}|]
+
   case reportStatus finalReport of
     H.Failed fr -> throwIO $ Reason (Just callStack) result
     H.GaveUp -> throwIO $ Reason (Just callStack) result
