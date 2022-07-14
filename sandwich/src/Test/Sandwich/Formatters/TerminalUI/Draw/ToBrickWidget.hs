@@ -64,6 +64,7 @@ instance ToBrickWidget FailureReason where
     Just msg -> hBox [withAttr pendingAttr $ str "Pending"
                      , str (": " <> msg)]
   toBrickWidget (Reason _ msg) = return $ boxWithTitle "Failure reason:" (strWrap msg)
+  toBrickWidget (RawImage _ image) = return $ boxWithTitle "Failure reason:" (raw image)
   toBrickWidget (ChildrenFailed _ n) = return $ boxWithTitle [i|Reason: #{n} #{if n == 1 then ("child" :: String) else "children"} failed|] (strWrap "")
   toBrickWidget (GotException _ maybeMessage e@(SomeExceptionWithEq baseException)) = case fromException baseException of
     Just (fr :: FailureReason) -> boxWithTitle heading <$> (toBrickWidget fr)

@@ -1,7 +1,13 @@
 {-# LANGUAGE CPP #-}
 
-module Test.Sandwich.Hedgehog.Render (renderHedgehogToImage) where
+module Test.Sandwich.Hedgehog.Render (
+  renderHedgehogToImage
+  , renderHedgehogToTokens
+  ) where
 
+import Data.Function
+import qualified Data.List as L
+import qualified Data.Text as T
 import Graphics.Vty.Attributes
 import Graphics.Vty.Image
 import Hedgehog.Internal.Report
@@ -9,17 +15,9 @@ import Text.PrettyPrint.Annotated.WL (Doc)
 import qualified Text.PrettyPrint.Annotated.WL as WL
 
 
-data Token = Str String
+data Token = Str T.Text
            | NewAttr Attr
   deriving (Show)
-
-  -- None
-  -- | RedDull | RedBoldVivid | RedVivid
-  -- | Yellow | YellowDull
-  -- | Green | GreenDull
-  -- | Black | BlackVivid
-  -- | MagentaDull
-  -- | Str String
 
 defaultAttr = Attr Default Default Default Default
 redVivid = withForeColor defaultAttr brightRed
@@ -31,19 +29,25 @@ greenDull = withForeColor defaultAttr green
 blackVivid = withForeColor defaultAttr brightBlack
 
 renderHedgehogToImage :: Doc Markup -> Image
-renderHedgehogToImage doc = foldTokens defaultAttr (mconcat $ renderHedgehogToColors doc)
+renderHedgehogToImage doc = foldTokens emptyImage defaultAttr $ renderHedgehogToTokens doc
 
-foldTokens currentAttr ((Str "\n"):xs) = foldTokens currentAttr xs
-foldTokens currentAttr ((Str s):xs) = string currentAttr s <-> foldTokens currentAttr xs
-foldTokens _currentAttr ((NewAttr attr):xs) = foldTokens attr xs
-foldTokens _currentAttr [] = emptyImage
+foldTokens imageSoFar currentAttr ((Str "\n"):xs) = imageSoFar <-> string defaultAttr " " <-> foldTokens emptyImage currentAttr xs
+foldTokens imageSoFar currentAttr ((Str s):xs) = foldTokens (imageSoFar <|> text' currentAttr s) currentAttr xs
+foldTokens imageSoFar _currentAttr ((NewAttr attr):xs) = foldTokens imageSoFar attr xs
+foldTokens imageSoFar _currentAttr [] = imageSoFar
 
-renderHedgehogToColors :: Doc Markup -> [[Token]]
-renderHedgehogToColors doc =
-  pure .
-    WL.displayDecorated (\x -> [NewAttr $ start x]) end (\x -> [Str x]) .
-    WL.renderSmart 100 $
-    WL.indent 0 doc
+renderHedgehogToTokens :: Doc Markup -> [Token]
+renderHedgehogToTokens doc =
+  WL.indent 0 doc
+  & WL.renderSmart 100
+  & WL.displayDecorated (\x -> [NewAttr $ start x]) end (\x -> [Str (T.pack x)])
+  & splitNewlines
+  where
+    splitNewlines :: [Token] -> [Token]
+    splitNewlines ((Str s):xs) = [Str s | s <- parts, s /= ""] <> xs
+      where parts = L.intersperse "\n" $ T.splitOn "\n" s
+    splitNewlines (x:xs) = x : splitNewlines xs
+    splitNewlines [] = []
 
 start = \case
   WaitingIcon -> defaultAttr

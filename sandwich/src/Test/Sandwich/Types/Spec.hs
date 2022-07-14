@@ -35,6 +35,7 @@ import Data.Maybe
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
+import Graphics.Vty.Image (Image)
 import Safe
 
 #if !MIN_VERSION_base(4,13,0)
@@ -101,6 +102,8 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                                        , failureAsyncException :: SomeAsyncExceptionWithEq }
                    | ChildrenFailed { failureCallStack :: Maybe CallStack
                                     , failureNumChildren :: Int }
+                   | RawImage { failureCallStack :: Maybe CallStack
+                              , failureRawImage :: Image }
   deriving (Show, Typeable, Eq)
 
 instance Exception FailureReason

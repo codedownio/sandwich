@@ -139,15 +139,18 @@ prop msg p = it msg $ do
     progress <- renderProgress EnableColor Nothing progressReport
     debug [i|#{progress}|]
 
-  result <- renderResult EnableColor Nothing finalReport
+  tokens <- (return . renderHedgehogToTokens) =<< ppResult Nothing finalReport
+  info [i|tokens: #{tokens}|]
 
-  widget <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
-  info [i|Got widget: #{widget}|]
+  image <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
+  info [i|got image: #{image}|]
 
   case reportStatus finalReport of
-    H.Failed fr -> throwIO $ Reason (Just callStack) result
-    H.GaveUp -> throwIO $ Reason (Just callStack) result
-    H.OK -> info [i|#{result}|]
+    H.Failed fr -> throwIO $ RawImage (Just callStack) image
+    H.GaveUp -> throwIO $ RawImage (Just callStack) image
+    H.OK -> do
+      result <- renderResult EnableColor Nothing finalReport
+      info [i|#{result}|]
 
 -- | Modify the 'HedgehogParams' for the given spec.
 modifyArgs :: (
