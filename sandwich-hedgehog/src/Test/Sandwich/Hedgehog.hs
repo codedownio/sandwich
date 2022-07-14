@@ -43,7 +43,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import Hedgehog as H
-import Hedgehog.Internal.Config (UseColor (EnableColor), detectColor)
+import Hedgehog.Internal.Config (UseColor (..), detectColor)
 import Hedgehog.Internal.Property hiding (Label)
 import Hedgehog.Internal.Report as H
 import Hedgehog.Internal.Runner as HR
@@ -137,10 +137,10 @@ prop msg p = it msg $ do
   seed <- maybe Seed.random return hedgehogSeed
 
   finalReport <- checkReport config size seed p $ \progressReport@(Report {..}) -> do
-    progress <- renderProgress EnableColor Nothing progressReport
-    debug [i|#{progress}|]
+    -- image <- (return . renderHedgehogToImage) =<< ppProgress Nothing progressReport
 
-  tokens <- (return . renderHedgehogToTokens) =<< ppResult Nothing finalReport
+    progress <- renderProgress DisableColor Nothing progressReport
+    debug [i|#{progress}|]
 
   image <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
 
