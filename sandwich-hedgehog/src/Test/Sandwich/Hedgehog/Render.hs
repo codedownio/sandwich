@@ -15,23 +15,10 @@ import Text.PrettyPrint.Annotated.WL (Doc)
 import qualified Text.PrettyPrint.Annotated.WL as WL
 
 
-data Token = Str T.Text
-           | NewAttr Attr
-  deriving (Show)
-
-defaultAttr = Attr Default Default Default Default
-redVivid = withForeColor defaultAttr brightRed
-redDull = withForeColor defaultAttr red
-redVividBold = flip withStyle bold $ withForeColor defaultAttr brightRed
-yellowDull = withForeColor defaultAttr yellow
-magentaDull = withForeColor defaultAttr magenta
-greenDull = withForeColor defaultAttr green
-blackVivid = withForeColor defaultAttr brightBlack
-
 renderHedgehogToImage :: Doc Markup -> Image
 renderHedgehogToImage doc = foldTokens emptyImage defaultAttr $ renderHedgehogToTokens doc
 
-foldTokens imageSoFar currentAttr ((Str "\n"):xs) = imageSoFar <-> string defaultAttr " " <-> foldTokens emptyImage currentAttr xs
+foldTokens imageSoFar currentAttr ((Str "\n"):xs) = (if imageSoFar == emptyImage then text defaultAttr " " else imageSoFar) <-> foldTokens emptyImage currentAttr xs
 foldTokens imageSoFar currentAttr ((Str s):xs) = foldTokens (imageSoFar <|> text' currentAttr s) currentAttr xs
 foldTokens imageSoFar _currentAttr ((NewAttr attr):xs) = foldTokens imageSoFar attr xs
 foldTokens imageSoFar _currentAttr [] = imageSoFar
@@ -41,13 +28,34 @@ renderHedgehogToTokens doc =
   WL.indent 0 doc
   & WL.renderSmart 100
   & WL.displayDecorated (\x -> [NewAttr $ start x]) end (\x -> [Str (T.pack x)])
+  & joinAdjacentStrings
   & splitNewlines
   where
+    joinAdjacentStrings ((Str s1):(Str s2):xs) = joinAdjacentStrings (Str (s1 <> s2) : xs)
+    joinAdjacentStrings (x:xs) = x : joinAdjacentStrings xs
+    joinAdjacentStrings [] = []
+
     splitNewlines :: [Token] -> [Token]
-    splitNewlines ((Str s):xs) = [Str s | s <- parts, s /= ""] <> xs
+    splitNewlines ((Str s):xs) = [Str s | s <- parts, s /= ""] <> splitNewlines xs
       where parts = L.intersperse "\n" $ T.splitOn "\n" s
     splitNewlines (x:xs) = x : splitNewlines xs
     splitNewlines [] = []
+
+data Token = Str T.Text
+           | NewAttr Attr
+  deriving (Show)
+
+
+-- * This all is modeled after Hedgehog.Internal.Report
+
+defaultAttr = Attr Default Default Default Default
+redVivid = withForeColor defaultAttr brightRed
+redDull = withForeColor defaultAttr red
+redVividBold = flip withStyle bold $ withForeColor defaultAttr brightRed
+yellowDull = withForeColor defaultAttr yellow
+magentaDull = withForeColor defaultAttr magenta
+greenDull = withForeColor defaultAttr green
+blackVivid = withForeColor defaultAttr brightBlack
 
 start = \case
   WaitingIcon -> defaultAttr
