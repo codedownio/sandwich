@@ -26,4 +26,23 @@ If you want to modify the already-introduced arguments in a test tree, we provid
 
 ## Controlling QuickCheck parameters with command line args
 
-There are not (yet) any built-in command line arguments for controlling QuickCheck parameters such as `maxSize`. However, you can add [custom command line options](../command_line) to control any parameters you like.
+Some QuickCheck parameters can be controlled via the command line. To see the valid options, run Sandwich with `--print-quickcheck-flags`.
+
+```shell
+Usage: demo [--quickcheck-seed INT]
+            [--quickcheck-max-discard-ratio INT]
+            [--quickcheck-max-size INT] [--quickcheck-max-success INT]
+            [--quickcheck-max-shrinks INT]
+
+Available options:
+  --quickcheck-seed INT    QuickCheck seed
+  --quickcheck-max-discard-ratio INT
+                           Maximum number of discarded tests per successful test
+                           before giving up
+  --quickcheck-max-size INT
+                           Size to use for the biggest test cases
+  --quickcheck-max-success INT
+                           Maximum number of successful tests before succeeding
+  --quickcheck-max-shrinks INT
+                           Maximum number of shrinks before giving up
+```

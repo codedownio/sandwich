@@ -14,7 +14,7 @@ If you use [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/s
 * Choose a visibility threshold: `--visibility-threshold N` (or `-v N`)
 * Repeat the test suite N times: `--repeat n` (useful to exercise flaky tests)
 * Filter the test tree to a string: `--filter some_string`.
-* Learn about extra flags controlling extensions: `--print-slack-flags`, `--print-webdriver-flags`.
+* Learn about extra flags controlling extensions: `--print-slack-flags`, `--print-webdriver-flags`, `--print-quickcheck-flags`, `--print-hedgehog-flags`.
 * List test modules and flags to run them individually: `--list-tests`. (Requires the use of [test discovery](discovery).)
 
 This list isn't exhaustive; to learn more about shorthands and other options pass `--help`.
