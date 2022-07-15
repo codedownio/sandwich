@@ -94,7 +94,6 @@ data CommandLineHedgehogOptions = CommandLineHedgehogOptions {
   , optHedgehogDiscardLimit :: Maybe Integer
   , optHedgehogShrinkLimit :: Maybe Integer
   , optHedgehogShrinkRetries :: Maybe Integer
-  , optHedgehogConfidence :: Maybe Integer
   } deriving Show
 
 -- * sandwich-slack options

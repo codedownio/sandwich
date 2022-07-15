@@ -151,7 +151,6 @@ commandLineHedgehogOptions maybeInternal = CommandLineHedgehogOptions
   <*> optional (option auto (long "hedgehog-discard-limit" <> help "The number of times a property is allowed to discard before the test runner gives up" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "hedgehog-shrink-limit" <> help "The number of times a property is allowed to shrink before the test runner gives up and prints the counterexample" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "hedgehog-shrink-retries" <> help "The number of times to re-run a test during shrinking" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-confidence" <> help "The acceptable occurrence of false positives" <> metavar "INT" <> maybeInternal))
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions

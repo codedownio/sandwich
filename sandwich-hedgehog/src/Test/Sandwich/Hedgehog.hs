@@ -25,7 +25,6 @@ module Test.Sandwich.Hedgehog (
   , hedgehogShrinkLimit
   , hedgehogShrinkRetries
   , hedgehogTerminationCriteria
-  , hedgehogConfidence
   , hedgehogSize
   , hedgehogSeed
 
@@ -42,7 +41,6 @@ module Test.Sandwich.Hedgehog (
   , modifyShrinkLimit
   , modifyShrinkRetries
   , modifyTerminationCriteria
-  , modifyConfidence
   , modifySize
   , modifySeed
 
@@ -83,8 +81,6 @@ data HedgehogParams = HedgehogParams {
   , hedgehogShrinkRetries :: Maybe ShrinkRetries
   -- | Control when the test runner should terminate.
   , hedgehogTerminationCriteria :: Maybe TerminationCriteria
-  -- | The acceptable occurrence of false positives.
-  , hedgehogConfidence :: Maybe Confidence
   } deriving (Show)
 
 defaultHedgehogParams = HedgehogParams {
@@ -94,7 +90,6 @@ defaultHedgehogParams = HedgehogParams {
   , hedgehogShrinkLimit = Nothing
   , hedgehogShrinkRetries = Nothing
   , hedgehogTerminationCriteria = Nothing
-  , hedgehogConfidence = Nothing
   }
 
 newtype HedgehogContext = HedgehogContext HedgehogParams
@@ -204,11 +199,6 @@ modifyShrinkRetries f = modifyArgs $ \args -> args { hedgehogShrinkRetries = f (
 modifyTerminationCriteria :: (HasHedgehogContext context, Monad m) => (Maybe TerminationCriteria -> Maybe TerminationCriteria) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyTerminationCriteria f = modifyArgs $ \args -> args { hedgehogTerminationCriteria = f (hedgehogTerminationCriteria args) }
 
--- | Modify the 'Confidence' for the given spec.
-modifyConfidence :: (HasHedgehogContext context, Monad m) => (Maybe Confidence -> Maybe Confidence) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
-modifyConfidence f = modifyArgs $ \args -> args { hedgehogConfidence = f (hedgehogConfidence args) }
-
-
 addCommandLineOptions :: CommandLineOptions a -> HedgehogParams -> HedgehogParams
 addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseHedgehogParams@(HedgehogParams {..}) = baseHedgehogParams {
   hedgehogSeed = (read <$> optHedgehogSeed) <|> hedgehogSeed
@@ -216,5 +206,4 @@ addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgeh
   , hedgehogDiscardLimit = (fromIntegral <$> optHedgehogDiscardLimit) <|> hedgehogDiscardLimit
   , hedgehogShrinkLimit = (fromIntegral <$> optHedgehogShrinkLimit) <|> hedgehogShrinkLimit
   , hedgehogShrinkRetries = (fromIntegral <$> optHedgehogShrinkRetries) <|> hedgehogShrinkRetries
-  , hedgehogConfidence = (fromIntegral <$> optHedgehogConfidence) <|> hedgehogConfidence
   }
