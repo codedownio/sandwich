@@ -55,12 +55,14 @@ data CommandLineOptions a = CommandLineOptions {
 
   , optListAvailableTests :: Maybe Bool
   , optPrintQuickCheckFlags :: Maybe Bool
+  , optPrintHedgehogFlags :: Maybe Bool
   , optPrintSlackFlags :: Maybe Bool
   , optPrintWebDriverFlags :: Maybe Bool
 
   , optIndividualTestModule :: Maybe IndividualTestModule
 
   , optQuickCheckOptions :: CommandLineQuickCheckOptions
+  , optHedgehogOptions :: CommandLineHedgehogOptions
   , optSlackOptions :: CommandLineSlackOptions
   , optWebdriverOptions :: CommandLineWebdriverOptions
 
@@ -82,6 +84,17 @@ data CommandLineQuickCheckOptions = CommandLineQuickCheckOptions {
   , optQuickCheckMaxSize :: Maybe Int
   , optQuickCheckMaxSuccess :: Maybe Int
   , optQuickCheckMaxShrinks :: Maybe Int
+  } deriving Show
+
+-- * sandwich-hedgehog options
+
+data CommandLineHedgehogOptions = CommandLineHedgehogOptions {
+  optHedgehogSeed :: Maybe String
+  , optHedgehogSize :: Maybe Int
+  , optHedgehogDiscardLimit :: Maybe Integer
+  , optHedgehogShrinkLimit :: Maybe Integer
+  , optHedgehogShrinkRetries :: Maybe Integer
+  , optHedgehogConfidence :: Maybe Integer
   } deriving Show
 
 -- * sandwich-slack options

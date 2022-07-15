@@ -54,6 +54,13 @@ quickCheckOptionsWithInfo = OA.info (commandLineQuickCheckOptions mempty <**> he
     <> header "Special options used by sandwich-quickcheck.\n\nIf a flag is passed, it will override the value in the QuickCheck option configured in the code."
   )
 
+hedgehogOptionsWithInfo :: ParserInfo CommandLineHedgehogOptions
+hedgehogOptionsWithInfo = OA.info (commandLineHedgehogOptions mempty <**> helper)
+  (
+    briefDesc
+    <> header "Special options used by sandwich-hedgehog.\n\nIf a flag is passed, it will override the value in the Hedgehog option configured in the code."
+  )
+
 slackOptionsWithInfo :: ParserInfo CommandLineSlackOptions
 slackOptionsWithInfo = OA.info (commandLineSlackOptions mempty <**> helper)
   (
@@ -82,12 +89,14 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "print-quickcheck-flags" <> help "Print the additional QuickCheck flags"))
+  <*> optional (flag False True (long "print-hedgehog-flags" <> help "Print the additional Hedgehog flags"))
   <*> optional (flag False True (long "print-slack-flags" <> help "Print the additional Slack flags"))
   <*> optional (flag False True (long "print-webdriver-flags" <> help "Print the additional Webdriver flags"))
 
   <*> individualTestParser
 
   <*> commandLineQuickCheckOptions internal
+  <*> commandLineHedgehogOptions internal
   <*> commandLineSlackOptions internal
   <*> commandLineWebdriverOptions internal
 
@@ -134,6 +143,15 @@ commandLineQuickCheckOptions maybeInternal = CommandLineQuickCheckOptions
   <*> optional (option auto (long "quickcheck-max-size" <> help "Size to use for the biggest test cases" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "quickcheck-max-success" <> help "Maximum number of successful tests before succeeding" <> metavar "INT" <> maybeInternal))
   <*> optional (option auto (long "quickcheck-max-shrinks" <> help "Maximum number of shrinks before giving up" <> metavar "INT" <> maybeInternal))
+
+commandLineHedgehogOptions :: (forall f a. Mod f a) -> Parser CommandLineHedgehogOptions
+commandLineHedgehogOptions maybeInternal = CommandLineHedgehogOptions
+  <$> optional (option auto (long "hedgehog-seed" <> help "Hedgehog seed" <> metavar "STRING" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-size" <> help "Hedgehog size" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-discard-limit" <> help "Hedgehog discard limit" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-shrink-limit" <> help "Hedgehog shrink limit" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-shrink-retries" <> help "Hedgehog shrink retries" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-confidence" <> help "Hedgehog confidence" <> metavar "INT" <> maybeInternal))
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions

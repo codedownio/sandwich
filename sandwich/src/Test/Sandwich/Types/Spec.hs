@@ -33,7 +33,6 @@ import Control.Monad.Trans.Control
 import Data.Functor.Classes
 import Data.Maybe
 import Data.String.Interpolate
-import qualified Data.Text as T
 import GHC.Stack
 import GHC.TypeLits
 import Graphics.Vty.Image (Image)

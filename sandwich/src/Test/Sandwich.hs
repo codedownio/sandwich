@@ -132,6 +132,9 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   if | optPrintQuickCheckFlags clo == Just True -> do
          void $ withArgs ["--help"] $
            OA.execParser quickCheckOptionsWithInfo
+     | optPrintHedgehogFlags clo == Just True -> do
+         void $ withArgs ["--help"] $
+           OA.execParser hedgehogOptionsWithInfo
      | optPrintSlackFlags clo == Just True -> do
          void $ withArgs ["--help"] $
            OA.execParser slackOptionsWithInfo

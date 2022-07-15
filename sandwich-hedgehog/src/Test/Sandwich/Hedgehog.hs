@@ -15,6 +15,9 @@ module Test.Sandwich.Hedgehog (
   , introduceHedgehog'
   , introduceHedgehog''
 
+  -- * Prop
+  , prop
+
   -- * Params
   , HedgehogParams
   , defaultHedgehogParams
@@ -26,13 +29,12 @@ module Test.Sandwich.Hedgehog (
   , hedgehogSize
   , hedgehogSeed
 
+  -- * Versions that can be configured with built-in command line arguments.
   -- Pass --print-hedgehog-flags to list them.
   -- , introduceHedgehogCommandLineOptions
   -- , introduceHedgehogCommandLineOptions'
   -- , introduceHedgehogCommandLineOptions''
-
-  -- * Prop
-  , prop
+  , addCommandLineOptions
 
   -- * Modifying Hedgehog args
   , modifyArgs
@@ -48,52 +50,51 @@ module Test.Sandwich.Hedgehog (
   , HasHedgehogContext
   ) where
 
+import Control.Applicative
 import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.IO.Class
-import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Function
 import Data.Maybe
 import Data.String.Interpolate
-import qualified Data.Text as T
 import GHC.Stack
 import Hedgehog as H
-import Hedgehog.Internal.Config (UseColor (..), detectColor)
+import Hedgehog.Internal.Config (UseColor (..))
 import Hedgehog.Internal.Property hiding (Label)
 import Hedgehog.Internal.Report as H
 import Hedgehog.Internal.Runner as HR
 import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
-import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Hedgehog.Render
 import Test.Sandwich.Internal
-
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
-import qualified Data.List as L
+import Test.Sandwich.Types.ArgParsing
 
 
 data HedgehogParams = HedgehogParams {
-  hedgehogDiscardLimit :: Maybe DiscardLimit
-  , hedgehogShrinkLimit :: Maybe ShrinkLimit
-  , hedgehogShrinkRetries :: Maybe ShrinkRetries
-  , hedgehogTerminationCriteria :: Maybe TerminationCriteria
-  , hedgehogConfidence :: Maybe Confidence
-
+  -- | Random number generator seed.
+  hedgehogSeed :: Maybe Seed
+  -- | Size of the randomly-generated data.
   , hedgehogSize :: Maybe Size
-  , hedgehogSeed :: Maybe Seed
+  -- | The number of times a property is allowed to discard before the test runner gives up.
+  , hedgehogDiscardLimit :: Maybe DiscardLimit
+  -- | The number of times a property is allowed to shrink before the test runner gives up and prints the counterexample.
+  , hedgehogShrinkLimit :: Maybe ShrinkLimit
+  -- | The number of times to re-run a test during shrinking.
+  , hedgehogShrinkRetries :: Maybe ShrinkRetries
+  -- | Control when the test runner should terminate.
+  , hedgehogTerminationCriteria :: Maybe TerminationCriteria
+  -- | The acceptable occurrence of false positives.
+  , hedgehogConfidence :: Maybe Confidence
   } deriving (Show)
 
 defaultHedgehogParams = HedgehogParams {
-  hedgehogDiscardLimit = Nothing
+  hedgehogSize = Nothing
+  , hedgehogSeed = Nothing
+  , hedgehogDiscardLimit = Nothing
   , hedgehogShrinkLimit = Nothing
   , hedgehogShrinkRetries = Nothing
   , hedgehogTerminationCriteria = Nothing
   , hedgehogConfidence = Nothing
-
-  , hedgehogSize = Nothing
-  , hedgehogSeed = Nothing
   }
 
 newtype HedgehogContext = HedgehogContext HedgehogParams
@@ -163,7 +164,7 @@ prop msg p = it msg $ do
   -- Hedgehog naturally indents everything by 2. Remove this for the fallback text.
   resultText <- dedent 2 <$> renderResult EnableColor Nothing finalReport
   case reportStatus finalReport of
-    H.Failed fr -> throwIO $ RawImage (Just callStack) resultText image
+    H.Failed _ -> throwIO $ RawImage (Just callStack) resultText image
     H.GaveUp -> throwIO $ RawImage (Just callStack) resultText image
     H.OK -> info [i|#{resultText}|]
 
@@ -178,6 +179,14 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
        return $ HedgehogContext (f params)
 
 type HedgehogContextLabel context = LabelValue "hedgehogContext" HedgehogContext :> context
+
+-- | Modify the 'Seed' for the given spec.
+modifySeed :: (HasHedgehogContext context, Monad m) => (Maybe Seed -> Maybe Seed) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySeed f = modifyArgs $ \args -> args { hedgehogSeed = f (hedgehogSeed args) }
+
+-- | Modify the 'Size' for the given spec.
+modifySize :: (HasHedgehogContext context, Monad m) => (Maybe Size -> Maybe Size) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySize f = modifyArgs $ \args -> args { hedgehogSize = f (hedgehogSize args) }
 
 -- | Modify the 'DiscardLimit' for the given spec.
 modifyDiscardLimit :: (HasHedgehogContext context, Monad m) => (Maybe DiscardLimit -> Maybe DiscardLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
@@ -199,20 +208,13 @@ modifyTerminationCriteria f = modifyArgs $ \args -> args { hedgehogTerminationCr
 modifyConfidence :: (HasHedgehogContext context, Monad m) => (Maybe Confidence -> Maybe Confidence) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyConfidence f = modifyArgs $ \args -> args { hedgehogConfidence = f (hedgehogConfidence args) }
 
--- | Modify the 'Size' for the given spec.
-modifySize :: (HasHedgehogContext context, Monad m) => (Maybe Size -> Maybe Size) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
-modifySize f = modifyArgs $ \args -> args { hedgehogSize = f (hedgehogSize args) }
 
--- | Modify the 'Seed' for the given spec.
-modifySeed :: (HasHedgehogContext context, Monad m) => (Maybe Seed -> Maybe Seed) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
-modifySeed f = modifyArgs $ \args -> args { hedgehogSeed = f (hedgehogSeed args) }
-
-
--- addCommandLineOptions :: CommandLineOptions a -> Args -> Args
--- addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseArgs@(Args {..}) = baseArgs {
---   replay = maybe replay (\n -> Just (mkQCGen (fromIntegral n), 0)) optHedgehogSeed
---   , maxDiscardRatio = fromMaybe maxSuccess optHedgehogMaxDiscardRatio
---   , maxSize = fromMaybe maxSuccess optHedgehogMaxSize
---   , maxSuccess = fromMaybe maxSuccess optHedgehogMaxSuccess
---   , maxShrinks = fromMaybe maxSuccess optHedgehogMaxShrinks
---   }
+addCommandLineOptions :: CommandLineOptions a -> HedgehogParams -> HedgehogParams
+addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseHedgehogParams@(HedgehogParams {..}) = baseHedgehogParams {
+  hedgehogSeed = (read <$> optHedgehogSeed) <|> hedgehogSeed
+  , hedgehogSize = (fromIntegral <$> optHedgehogSize) <|> hedgehogSize
+  , hedgehogDiscardLimit = (fromIntegral <$> optHedgehogDiscardLimit) <|> hedgehogDiscardLimit
+  , hedgehogShrinkLimit = (fromIntegral <$> optHedgehogShrinkLimit) <|> hedgehogShrinkLimit
+  , hedgehogShrinkRetries = (fromIntegral <$> optHedgehogShrinkRetries) <|> hedgehogShrinkRetries
+  , hedgehogConfidence = (fromIntegral <$> optHedgehogConfidence) <|> hedgehogConfidence
+  }
