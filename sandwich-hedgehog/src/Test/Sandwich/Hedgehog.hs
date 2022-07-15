@@ -31,9 +31,9 @@ module Test.Sandwich.Hedgehog (
 
   -- * Versions that can be configured with built-in command line arguments.
   -- Pass --print-hedgehog-flags to list them.
-  -- , introduceHedgehogCommandLineOptions
-  -- , introduceHedgehogCommandLineOptions'
-  -- , introduceHedgehogCommandLineOptions''
+  , introduceHedgehogCommandLineOptions
+  , introduceHedgehogCommandLineOptions'
+  , introduceHedgehogCommandLineOptions''
   , addCommandLineOptions
 
   -- * Modifying Hedgehog args
@@ -54,6 +54,7 @@ import Control.Applicative
 import Control.Exception.Safe
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Maybe
 import Data.String.Interpolate
@@ -117,24 +118,24 @@ introduceHedgehog'' :: (MonadIO m, MonadBaseControl IO m)
 introduceHedgehog'' msg params = introduce msg hedgehogContext (return $ HedgehogContext params) (const $ return ())
 
 
--- -- | Same as 'introduceHedgehogCommandLineOptions'' but with default args.
--- introduceHedgehogCommandLineOptions :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
---   => SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
--- introduceHedgehogCommandLineOptions = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options" stdArgs
+-- | Same as 'introduceHedgehogCommandLineOptions'' but with default args.
+introduceHedgehogCommandLineOptions :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+  => SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
+introduceHedgehogCommandLineOptions = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options" defaultHedgehogParams
 
--- -- | Same as 'introduceHedgehogCommandLineOptions''' but with a default message.
--- introduceHedgehogCommandLineOptions' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
---   => Args -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
--- introduceHedgehogCommandLineOptions' = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options"
+-- | Same as 'introduceHedgehogCommandLineOptions''' but with a default message.
+introduceHedgehogCommandLineOptions' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+  => HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
+introduceHedgehogCommandLineOptions' = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options"
 
--- -- | Introduce Hedgehog args with configurable message, overriding those args with any command line options passed.
--- introduceHedgehogCommandLineOptions'' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
---   => String -> Args -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
--- introduceHedgehogCommandLineOptions'' msg args = introduce msg hedgehogContext getContext (const $ return ())
---   where
---     getContext = do
---       clo <- getCommandLineOptions @a
---       return $ HedgehogContext $ addCommandLineOptions clo args
+-- | Introduce Hedgehog args with configurable message, overriding those args with any command line options passed.
+introduceHedgehogCommandLineOptions'' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+  => String -> HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
+introduceHedgehogCommandLineOptions'' msg args = introduce msg hedgehogContext getContext (const $ return ())
+  where
+    getContext = do
+      clo <- getCommandLineOptions @a
+      return $ HedgehogContext $ addCommandLineOptions clo args
 
 
 -- | Similar to 'it'. Runs the given propery with Hedgehog using the currently introduced 'HedgehogParams'. Throws an appropriate exception on failure.
