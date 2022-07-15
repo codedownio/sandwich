@@ -29,9 +29,9 @@ hedgehogDemo = describe "Hedgehog tests" $ introduceHedgehog $ do
 
 ## Modifying the parameters
 
-If you use [introduceHedgehog'](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:introduceHedgehog'), you can pass your own value for the [HedgehogParams](https://hackage.haskell.org/package/Hedgehog/docs/Test-Hedgehog.html#t:HedgehogParams).
+If you use [introduceHedgehog'](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:introduceHedgehog'), you can pass your own value for the [HedgehogParams](https://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#t:HedgehogParams).
 
-If you want to modify the already-introduced arguments in a test tree, we provide the [modifyArgs](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:modifyArgs) function, as well as helpers like `modifySeed`, `modifySize`, etc. These are modelled directly after HSpec's [Test.Hspec.Hedgehog](https://hackage.haskell.org/package/hspec/docs/Test-Hspec-Hedgehog.html).
+If you want to modify the already-introduced arguments in a test tree, we provide the [modifyArgs](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:modifyArgs) function, as well as helpers like `modifySeed`, `modifySize`, etc. These are modelled directly after HSpec's [Test.Hspec.Hedgehog](https://hackage.haskell.org/package/hspec-hedgehog/docs/Test-Hspec-Hedgehog.html).
 
 ## Controlling Hedgehog parameters with command line args
 
