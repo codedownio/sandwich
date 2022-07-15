@@ -3,6 +3,9 @@
 module Test.Sandwich.Hedgehog.Render (
   renderHedgehogToImage
   , renderHedgehogToTokens
+
+  -- * Util
+  , dedent
   ) where
 
 import Data.Function
@@ -45,6 +48,10 @@ data Token = Str T.Text
            | NewAttr Attr
   deriving (Show)
 
+dedent :: Int -> String -> String
+dedent n s
+  | (replicate n ' ') `L.isPrefixOf` s = L.drop n s
+  | otherwise = s
 
 -- * This all is modeled after Hedgehog.Internal.Report
 

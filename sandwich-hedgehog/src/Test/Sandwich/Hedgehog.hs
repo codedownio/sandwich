@@ -9,14 +9,24 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Hedgehog (
-  -- * Introducing Hedgehog args
+  -- * Introducing a Hedgehog context
   -- Any tests that use Hedgehog should be wrapped in one of these.
   introduceHedgehog
   , introduceHedgehog'
   , introduceHedgehog''
 
-  -- * Versions that can be configured with built-in command line arguments.
-  -- Pass --print-quickcheck-flags to list them.
+  -- * Params
+  , HedgehogParams
+  , defaultHedgehogParams
+  , hedgehogDiscardLimit
+  , hedgehogShrinkLimit
+  , hedgehogShrinkRetries
+  , hedgehogTerminationCriteria
+  , hedgehogConfidence
+  , hedgehogSize
+  , hedgehogSeed
+
+  -- Pass --print-hedgehog-flags to list them.
   -- , introduceHedgehogCommandLineOptions
   -- , introduceHedgehogCommandLineOptions'
   -- , introduceHedgehogCommandLineOptions''
@@ -26,10 +36,16 @@ module Test.Sandwich.Hedgehog (
 
   -- * Modifying Hedgehog args
   , modifyArgs
-  -- , modifyMaxSuccess
-  -- , modifyMaxDiscardRatio
-  -- , modifyMaxSize
-  -- , modifyMaxShrinks
+  , modifyDiscardLimit
+  , modifyShrinkLimit
+  , modifyShrinkRetries
+  , modifyTerminationCriteria
+  , modifyConfidence
+  , modifySize
+  , modifySeed
+
+  -- * Misc
+  , HasHedgehogContext
   ) where
 
 import Control.Exception.Safe
@@ -161,9 +177,36 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
        HedgehogContext params <- getContext hedgehogContext
        return $ HedgehogContext (f params)
 
--- -- | Modify the 'maxSuccess' for the given spec.
--- modifyMaxSuccess :: (HasHedgehogContext context, Monad m) => (Int -> Int) -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
--- modifyMaxSuccess f = modifyArgs $ \args -> args { maxSuccess = f (maxSuccess args) }
+type HedgehogContextLabel context = LabelValue "hedgehogContext" HedgehogContext :> context
+
+-- | Modify the 'DiscardLimit' for the given spec.
+modifyDiscardLimit :: (HasHedgehogContext context, Monad m) => (Maybe DiscardLimit -> Maybe DiscardLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyDiscardLimit f = modifyArgs $ \args -> args { hedgehogDiscardLimit = f (hedgehogDiscardLimit args) }
+
+-- | Modify the 'ShrinkLimit' for the given spec.
+modifyShrinkLimit :: (HasHedgehogContext context, Monad m) => (Maybe ShrinkLimit -> Maybe ShrinkLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyShrinkLimit f = modifyArgs $ \args -> args { hedgehogShrinkLimit = f (hedgehogShrinkLimit args) }
+
+-- | Modify the 'ShrinkRetries' for the given spec.
+modifyShrinkRetries :: (HasHedgehogContext context, Monad m) => (Maybe ShrinkRetries -> Maybe ShrinkRetries) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyShrinkRetries f = modifyArgs $ \args -> args { hedgehogShrinkRetries = f (hedgehogShrinkRetries args) }
+
+-- | Modify the 'TerminationCriteria' for the given spec.
+modifyTerminationCriteria :: (HasHedgehogContext context, Monad m) => (Maybe TerminationCriteria -> Maybe TerminationCriteria) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyTerminationCriteria f = modifyArgs $ \args -> args { hedgehogTerminationCriteria = f (hedgehogTerminationCriteria args) }
+
+-- | Modify the 'Confidence' for the given spec.
+modifyConfidence :: (HasHedgehogContext context, Monad m) => (Maybe Confidence -> Maybe Confidence) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyConfidence f = modifyArgs $ \args -> args { hedgehogConfidence = f (hedgehogConfidence args) }
+
+-- | Modify the 'Size' for the given spec.
+modifySize :: (HasHedgehogContext context, Monad m) => (Maybe Size -> Maybe Size) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySize f = modifyArgs $ \args -> args { hedgehogSize = f (hedgehogSize args) }
+
+-- | Modify the 'Seed' for the given spec.
+modifySeed :: (HasHedgehogContext context, Monad m) => (Maybe Seed -> Maybe Seed) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySeed f = modifyArgs $ \args -> args { hedgehogSeed = f (hedgehogSeed args) }
+
 
 -- addCommandLineOptions :: CommandLineOptions a -> Args -> Args
 -- addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseArgs@(Args {..}) = baseArgs {
@@ -173,8 +216,3 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
 --   , maxSuccess = fromMaybe maxSuccess optHedgehogMaxSuccess
 --   , maxShrinks = fromMaybe maxSuccess optHedgehogMaxShrinks
 --   }
-
-dedent :: Int -> String -> String
-dedent n s
-  | (replicate n ' ') `L.isPrefixOf` s = L.drop n s
-  | otherwise = s
