@@ -19,6 +19,7 @@ module Test.Sandwich.Misc (
   -- * Command line options
   , CommandLineOptions(..)
   , CommandLineQuickCheckOptions(..)
+  , CommandLineHedgehogOptions(..)
   , CommandLineSlackOptions(..)
   , CommandLineWebdriverOptions(..)
   , BrowserToUse(..)

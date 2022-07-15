@@ -67,7 +67,6 @@ import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
 import Test.Sandwich.Hedgehog.Render
 import Test.Sandwich.Internal
-import Test.Sandwich.Types.ArgParsing
 
 
 data HedgehogParams = HedgehogParams {

@@ -146,12 +146,12 @@ commandLineQuickCheckOptions maybeInternal = CommandLineQuickCheckOptions
 
 commandLineHedgehogOptions :: (forall f a. Mod f a) -> Parser CommandLineHedgehogOptions
 commandLineHedgehogOptions maybeInternal = CommandLineHedgehogOptions
-  <$> optional (option auto (long "hedgehog-seed" <> help "Hedgehog seed" <> metavar "STRING" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-size" <> help "Hedgehog size" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-discard-limit" <> help "Hedgehog discard limit" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-shrink-limit" <> help "Hedgehog shrink limit" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-shrink-retries" <> help "Hedgehog shrink retries" <> metavar "INT" <> maybeInternal))
-  <*> optional (option auto (long "hedgehog-confidence" <> help "Hedgehog confidence" <> metavar "INT" <> maybeInternal))
+  <$> optional (option auto (long "hedgehog-seed" <> help "Seed as a tuple (a, b)" <> metavar "STRING" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-size" <> help "Size of the randomly-generated data" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-discard-limit" <> help "The number of times a property is allowed to discard before the test runner gives up" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-shrink-limit" <> help "The number of times a property is allowed to shrink before the test runner gives up and prints the counterexample" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-shrink-retries" <> help "The number of times to re-run a test during shrinking" <> metavar "INT" <> maybeInternal))
+  <*> optional (option auto (long "hedgehog-confidence" <> help "The acceptable occurrence of false positives" <> metavar "INT" <> maybeInternal))
 
 commandLineSlackOptions :: (forall f a. Mod f a) -> Parser CommandLineSlackOptions
 commandLineSlackOptions maybeInternal = CommandLineSlackOptions
