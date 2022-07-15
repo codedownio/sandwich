@@ -2,7 +2,11 @@
 
 ## Unreleased changes
 
+
+## 0.1.0.10
+
 * Add Markdown Summary formatter (useful with GitHub Actions)
+* Release `sandwich-hedgehog` compatibility.
 
 ## 0.1.0.9
 

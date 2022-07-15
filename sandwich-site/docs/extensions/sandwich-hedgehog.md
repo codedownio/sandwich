@@ -29,13 +29,13 @@ hedgehogDemo = describe "Hedgehog tests" $ introduceHedgehog $ do
 
 ## Modifying the parameters
 
-If you use [introduceHedgehog'](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:introduceHedgehog'), you can pass your own value for the [HedgehogParameters](https://hackage.haskell.org/package/Hedgehog/docs/Test-Hedgehog.html#t:HedgehogParameters).
+If you use [introduceHedgehog'](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:introduceHedgehog'), you can pass your own value for the [HedgehogParams](https://hackage.haskell.org/package/Hedgehog/docs/Test-Hedgehog.html#t:HedgehogParams).
 
 If you want to modify the already-introduced arguments in a test tree, we provide the [modifyArgs](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:modifyArgs) function, as well as helpers like `modifySeed`, `modifySize`, etc. These are modelled directly after HSpec's [Test.Hspec.Hedgehog](https://hackage.haskell.org/package/hspec/docs/Test-Hspec-Hedgehog.html).
 
 ## Controlling Hedgehog parameters with command line args
 
-Some Hedgehog parameters can be controlled via the command line. To see the valid options, run Sandwich with `--print-hedgehog-flags`.
+If you use the [introduceHedgehogCommandLineOptions](http://hackage.haskell.org/package/sandwich-hedgehog/docs/Test-Sandwich-Hedgehog.html#v:introduceHedgehogCommandLineOptions) family of functions, then some Hedgehog parameters can be controlled via the command line. To see the valid options, run Sandwich with `--print-hedgehog-flags`.
 
 ```shell
 Usage: demo [--hedgehog-seed STRING] [--hedgehog-size INT]

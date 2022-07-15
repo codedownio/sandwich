@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-hedgehog
-version:        0.1.0.5
+version:        0.1.0.10
 synopsis:       Sandwich integration with Hedgehog
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-hedgehog documentation>.
 category:       Testing
