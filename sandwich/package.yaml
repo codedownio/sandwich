@@ -61,6 +61,7 @@ library:
     - Test.Sandwich
     - Test.Sandwich.Contexts
     - Test.Sandwich.Expectations
+    - Test.Sandwich.Golden
     - Test.Sandwich.Logging
     - Test.Sandwich.Misc
     - Test.Sandwich.Nodes

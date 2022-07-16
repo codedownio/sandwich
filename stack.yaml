@@ -18,6 +18,7 @@ packages:
 - ./demos/demo-context-nested-dependencies
 - ./demos/demo-custom-exceptions
 - ./demos/demo-discover
+- ./demos/demo-golden
 - ./demos/demo-hedgehog
 - ./demos/demo-landing
 - ./demos/demo-paralleln
