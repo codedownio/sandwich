@@ -47,11 +47,11 @@ commandLineOptionsWithInfo userOptionsParser individualTestParser = OA.info (mai
     <> header "Sandwich test runner"
   )
 
-quickCheckOptionsWithInfo :: ParserInfo CommandLineQuickCheckOptions
-quickCheckOptionsWithInfo = OA.info (commandLineQuickCheckOptions mempty <**> helper)
+goldenOptionsWithInfo :: ParserInfo CommandLineGoldenOptions
+goldenOptionsWithInfo = OA.info (commandLineGoldenOptions mempty <**> helper)
   (
     briefDesc
-    <> header "Special options used by sandwich-quickcheck.\n\nIf a flag is passed, it will override the value in the QuickCheck option configured in the code."
+    <> header "Special options used for golden testing."
   )
 
 hedgehogOptionsWithInfo :: ParserInfo CommandLineHedgehogOptions
@@ -59,6 +59,13 @@ hedgehogOptionsWithInfo = OA.info (commandLineHedgehogOptions mempty <**> helper
   (
     briefDesc
     <> header "Special options used by sandwich-hedgehog.\n\nIf a flag is passed, it will override the value in the Hedgehog option configured in the code."
+  )
+
+quickCheckOptionsWithInfo :: ParserInfo CommandLineQuickCheckOptions
+quickCheckOptionsWithInfo = OA.info (commandLineQuickCheckOptions mempty <**> helper)
+  (
+    briefDesc
+    <> header "Special options used by sandwich-quickcheck.\n\nIf a flag is passed, it will override the value in the QuickCheck option configured in the code."
   )
 
 slackOptionsWithInfo :: ParserInfo CommandLineSlackOptions
@@ -141,7 +148,7 @@ display maybeInternal =
 commandLineGoldenOptions :: (forall f a. Mod f a) -> Parser CommandLineGoldenOptions
 commandLineGoldenOptions maybeInternal = CommandLineGoldenOptions
   <$> optional (flag False True (long "golden-update" <> help "Update your golden files" <> maybeInternal))
-  <*> optional (strOption (long "golden-dir" <> help "The testing directory where you're dumping your results." <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "golden-dir" <> help "The directory where golden results are stored (defaults to \".golden\")" <> metavar "STRING" <> maybeInternal))
 
 commandLineQuickCheckOptions :: (forall f a. Mod f a) -> Parser CommandLineQuickCheckOptions
 commandLineQuickCheckOptions maybeInternal = CommandLineQuickCheckOptions

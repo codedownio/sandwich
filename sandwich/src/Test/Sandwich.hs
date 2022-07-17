@@ -95,6 +95,7 @@ import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
+import Test.Sandwich.Golden.Update
 import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
@@ -129,12 +130,15 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
   (clo, individualTestParser, modulesAndShorthands) <- parseCommandLineArgs' userOptionsParser spec
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
 
-  if | optPrintQuickCheckFlags clo == Just True -> do
+  if | optPrintGoldenFlags clo == Just True -> do
          void $ withArgs ["--help"] $
-           OA.execParser quickCheckOptionsWithInfo
+           OA.execParser goldenOptionsWithInfo
      | optPrintHedgehogFlags clo == Just True -> do
          void $ withArgs ["--help"] $
            OA.execParser hedgehogOptionsWithInfo
+     | optPrintQuickCheckFlags clo == Just True -> do
+         void $ withArgs ["--help"] $
+           OA.execParser quickCheckOptionsWithInfo
      | optPrintSlackFlags clo == Just True -> do
          void $ withArgs ["--help"] $
            OA.execParser slackOptionsWithInfo
@@ -146,6 +150,8 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
            OA.execParser $ OA.info (individualTestParser mempty <**> helper) $
              fullDesc <> header "Pass one of these flags to run an individual test module."
                       <> progDesc "If a module has a \"*\" next to its name, then we detected that it has its own main function. If you pass the option name suffixed by -main then we'll just directly invoke the main function."
+     | optUpdateGolden (optGoldenOptions clo) == Just True -> do
+         updateGolden (optGoldenDir (optGoldenOptions clo))
      | otherwise -> do
          -- Awkward, but we need a specific context type to call countItNodes
          let totalTests = countItNodes (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
