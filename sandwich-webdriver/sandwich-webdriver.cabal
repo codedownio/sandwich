@@ -13,7 +13,7 @@ homepage:       https://codedownio.github.io/sandwich
 bug-reports:    https://github.com/codedownio/sandwich/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2021 Tom McLaughlin
+copyright:      2022 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

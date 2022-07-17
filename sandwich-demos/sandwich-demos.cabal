@@ -8,7 +8,7 @@ name:           sandwich-demos
 version:        0.1.0.0
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2021 Tom McLaughlin
+copyright:      2022 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
