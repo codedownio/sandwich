@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NamedFieldPuns #-}
+
 -- | Utility functions for printing
 
 module Test.Sandwich.Formatters.Print.Printing where
@@ -31,12 +32,12 @@ pYellowLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Yellow)) 
 pRedLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Red)) (msg <> "\n") -- Tried solarizedRed here but it was too orange
 
 printIndentedWithColor maybeColor msg = do
-  (PrintFormatter {..}, indent, h) <- ask
+  (PrintFormatter {}, indent, h) <- ask
   liftIO $ hPutStr h $ L.replicate indent ' '
   printWithColor maybeColor msg
 
 printWithColor maybeColor msg = do
-  (PrintFormatter {..}, _, h) <- ask
+  (PrintFormatter {printFormatterUseColor}, _, h) <- ask
   when (printFormatterUseColor) $ whenJust maybeColor $ \color -> liftIO $ setSGR [color]
   liftIO $ hPutStr h msg
   when (printFormatterUseColor) $ whenJust maybeColor $ \_ -> liftIO $ setSGR [Reset]

@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.Formatters.Print.Color where
 

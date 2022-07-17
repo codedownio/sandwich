@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
--- |
 
 module Test.Sandwich.Formatters.Print.CallStacks where
 
