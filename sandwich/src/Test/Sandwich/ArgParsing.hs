@@ -88,6 +88,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
+  <*> optional (flag False True (long "print-golden-flags" <> help "Print the additional golden testing flags"))
   <*> optional (flag False True (long "print-quickcheck-flags" <> help "Print the additional QuickCheck flags"))
   <*> optional (flag False True (long "print-hedgehog-flags" <> help "Print the additional Hedgehog flags"))
   <*> optional (flag False True (long "print-slack-flags" <> help "Print the additional Slack flags"))
@@ -95,6 +96,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
 
   <*> individualTestParser
 
+  <*> commandLineGoldenOptions internal
   <*> commandLineQuickCheckOptions internal
   <*> commandLineHedgehogOptions internal
   <*> commandLineSlackOptions internal
@@ -135,6 +137,11 @@ display maybeInternal =
   flag' Current (long "current" <> help "Open browser in current display (default)" <> maybeInternal)
   <|> flag' Headless (long "headless" <> help "Open browser in headless mode" <> maybeInternal)
   <|> flag Current Xvfb (long "xvfb" <> help "Open browser in Xvfb session" <> maybeInternal)
+
+commandLineGoldenOptions :: (forall f a. Mod f a) -> Parser CommandLineGoldenOptions
+commandLineGoldenOptions maybeInternal = CommandLineGoldenOptions
+  <$> optional (flag False True (long "golden-update" <> help "Update your golden files" <> maybeInternal))
+  <*> optional (strOption (long "golden-dir" <> help "The testing directory where you're dumping your results." <> metavar "STRING" <> maybeInternal))
 
 commandLineQuickCheckOptions :: (forall f a. Mod f a) -> Parser CommandLineQuickCheckOptions
 commandLineQuickCheckOptions maybeInternal = CommandLineQuickCheckOptions

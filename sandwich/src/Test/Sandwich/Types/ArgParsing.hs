@@ -54,6 +54,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optMarkdownSummaryPath :: Maybe FilePath
 
   , optListAvailableTests :: Maybe Bool
+  , optPrintGoldenFlags :: Maybe Bool
   , optPrintQuickCheckFlags :: Maybe Bool
   , optPrintHedgehogFlags :: Maybe Bool
   , optPrintSlackFlags :: Maybe Bool
@@ -61,6 +62,7 @@ data CommandLineOptions a = CommandLineOptions {
 
   , optIndividualTestModule :: Maybe IndividualTestModule
 
+  , optGoldenOptions :: CommandLineGoldenOptions
   , optQuickCheckOptions :: CommandLineQuickCheckOptions
   , optHedgehogOptions :: CommandLineHedgehogOptions
   , optSlackOptions :: CommandLineSlackOptions
@@ -75,6 +77,13 @@ data IndividualTestModule = IndividualTestModuleName String
 instance Show IndividualTestModule where
   show (IndividualTestModuleName moduleName) = moduleName
   show (IndividualTestMainFn _) = "<main function>"
+
+-- * golden options
+
+data CommandLineGoldenOptions = CommandLineGoldenOptions {
+  optUpdateGolden :: Maybe Bool
+  , optGoldenDir :: Maybe FilePath
+  } deriving Show
 
 -- * sandwich-quickcheck options
 

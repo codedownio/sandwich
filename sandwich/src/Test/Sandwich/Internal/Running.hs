@@ -145,6 +145,8 @@ takenMainOptions = [
   , "fixed-root"
   , "list-tests"
 
+  , "print-golden-flags"
+  , "print-hedgehog-flags"
   , "print-quickcheck-flags"
   , "print-slack-flags"
   , "print-webdriver-flags"
