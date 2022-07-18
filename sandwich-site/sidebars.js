@@ -17,8 +17,9 @@ module.exports = {
       "formatters/slack",
       "formatters/markdown_summary",
     ] },
-    { type: "doc", id: "extensions/sandwich-webdriver" },
-    { type: "doc", id: "extensions/sandwich-quickcheck" },
+    { type: "doc", id: "extensions/sandwich-golden" },
     { type: "doc", id: "extensions/sandwich-hedgehog" },
+    { type: "doc", id: "extensions/sandwich-quickcheck" },
+    { type: "doc", id: "extensions/sandwich-webdriver" },
   ],
 };
