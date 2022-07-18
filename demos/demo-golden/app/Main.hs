@@ -1,17 +1,15 @@
 module Main where
 
-import Control.Concurrent
-import Control.Monad.IO.Class
 import Test.Sandwich
 import Test.Sandwich.Golden
 
 
-golden :: TopSpec
-golden = describe "Simple tests" $ do
-  describe "myTextFunc" $
-    golden' $ defaultGolden "myTextFunc" (myTextFunc ())
+goldenDemo :: TopSpec
+goldenDemo = describe "Simple tests" $ do
+  describe "myStringFunc" $
+    golden $ goldenString "myStringFunc" (myStringFunc ())
 
-myTextFunc _ = "asdf"
+myStringFunc _ = "foo"
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs defaultOptions golden
+main = runSandwichWithCommandLineArgs defaultOptions goldenDemo

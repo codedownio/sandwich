@@ -2,6 +2,9 @@
 
 ## Unreleased changes
 
+## 0.1.0.11
+
+* Release Test.Sandwich.Golden for golden testing.
 
 ## 0.1.0.10
 
