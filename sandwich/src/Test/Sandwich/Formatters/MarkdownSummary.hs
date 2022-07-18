@@ -72,11 +72,12 @@ run (MarkdownSummaryFormatter {..}) rts _ _bc = do
   fixedTree <- liftIO $ atomically $ mapM fixRunTree rts
   let failed = countWhere isFailedItBlock fixedTree
   let pending = countWhere isPendingItBlock fixedTree
+  let succeeded = countWhere isSuccessItBlock fixedTree
 
   liftIO $ withFile markdownSummaryPath AppendMode $ \h -> do
     if | failed == 0 -> do
            whenJust markdownSummarySuccessIcon (liftIO . (hPutStr h) . T.unpack)
-           hPutStr h [i|All tests passed in #{timeDiff}.|]
+           hPutStr h [i|All #{succeeded} tests passed in #{timeDiff}.|]
        | otherwise -> do
            whenJust markdownSummaryFailureIcon (liftIO . (hPutStr h) . T.unpack)
            hPutStr h [i|#{failed} failed of #{total} in #{timeDiff}.|]
