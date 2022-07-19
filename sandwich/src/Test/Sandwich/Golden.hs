@@ -13,23 +13,25 @@ module Test.Sandwich.Golden (
   -- * Built-in Goldens.
   , goldenText
   , goldenString
+  , goldenJSON
   , goldenShowable
   , mkGolden
 
   -- * Parameters for a 'Golden'.
-  , output
-  , encodePretty
-  , writeToFile
-  , readFromFile
+  , goldenOutput
+  , goldenWriteToFile
+  , goldenReadFromFile
   , goldenFile
-  , actualFile
-  , failFirstTime
+  , goldenActualFile
+  , goldenFailFirstTime
   ) where
 
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Data.Aeson as A
+import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -43,72 +45,76 @@ import Test.Sandwich.Types.Spec
 
 data Golden a = Golden {
   -- | Name
-  name :: String
+  goldenName :: String
   -- | Expected output.
-  , output :: a
-  -- | Makes the comparison pretty when the test fails.
-  , encodePretty :: a -> String
+  , goldenOutput :: a
   -- | How to write into the golden file the file.
-  , writeToFile :: FilePath -> a -> IO ()
+  , goldenWriteToFile :: FilePath -> a -> IO ()
   -- | How to read the file.
-  , readFromFile :: FilePath -> IO a
+  , goldenReadFromFile :: FilePath -> IO a
   -- | Where to read/write the golden file for this test.
   , goldenFile :: FilePath
   -- | Where to save the actual file for this test. If it is @Nothing@ then no file is written.
-  , actualFile :: Maybe FilePath
+  , goldenActualFile :: Maybe FilePath
   -- | Whether to record a failure the first time this test is run.
-  , failFirstTime :: Bool
+  , goldenFailFirstTime :: Bool
   }
 
 
 -- | Golden functions
 
--- | Make your own 'Golden' by providing 'encodePretty', 'writeToFile', and 'readFromFile'.
-mkGolden :: (a -> String) -> (FilePath -> a -> IO ()) -> (FilePath -> IO a) -> String -> a -> Golden a
-mkGolden encodePretty writeToFile readFromFile name output = Golden {
-  name = name
-  , output = output
-  , encodePretty = encodePretty
-  , writeToFile = writeToFile
-  , readFromFile = readFromFile
+-- | Make your own 'Golden' constructor by providing 'goldenWriteToFile' and 'goldenReadFromFile'.
+mkGolden :: (FilePath -> a -> IO ()) -> (FilePath -> IO a) -> String -> a -> Golden a
+mkGolden goldenWriteToFile goldenReadFromFile name output = Golden {
+  goldenName = name
+  , goldenOutput = output
+  , goldenWriteToFile = goldenWriteToFile
+  , goldenReadFromFile = goldenReadFromFile
   , goldenFile = defaultDirGoldenTest </> name </> "golden"
-  , actualFile = Just (defaultDirGoldenTest </> name </> "actual")
-  , failFirstTime = False
+  , goldenActualFile = Just (defaultDirGoldenTest </> name </> "actual")
+  , goldenFailFirstTime = False
   }
 
 -- | Golden for a 'T.Text'.
 goldenText :: String -> T.Text -> Golden T.Text
-goldenText = mkGolden T.unpack T.writeFile T.readFile
+goldenText = mkGolden T.writeFile T.readFile
 
 -- | Golden for a 'String'.
 goldenString :: String -> String -> Golden String
-goldenString = mkGolden show writeFile readFile
+goldenString = mkGolden writeFile readFile
+
+-- | Golden for a 'String'.
+goldenJSON :: (A.ToJSON a, A.FromJSON a) => String -> a -> Golden a
+goldenJSON = mkGolden (\f x -> BL.writeFile f $ A.encode x) $ \f ->
+  eitherDecodeFileStrict' f >>= \case
+    Left err -> expectationFailure [i|Failed to decode JSON value in #{f}: #{err}|]
+    Right x -> return x
 
 -- | Golden for a general 'Show'/'Read' type.
 goldenShowable :: (Show a, Read a) => String -> a -> Golden a
-goldenShowable = mkGolden show (\f x -> writeFile f (show x)) ((read <$>) . readFile)
+goldenShowable = mkGolden (\f x -> writeFile f (show x)) ((read <$>) . readFile)
 
 -- | Runs a Golden test.
 
 golden :: (MonadIO m, MonadThrow m, Eq str, Show str) => Golden str -> Free (SpecCommand context m) ()
-golden (Golden {..}) = it (show name) $ do
+golden (Golden {..}) = it goldenName $ do
   let goldenTestDir = takeDirectory goldenFile
   liftIO $ createDirectoryIfMissing True goldenTestDir
   goldenFileExist <- liftIO $ doesFileExist goldenFile
 
-  case actualFile of
+  case goldenActualFile of
     Nothing -> return ()
     Just actual -> do
       -- It is recommended to always write the actual file
       let actualDir = takeDirectory actual
       liftIO $ createDirectoryIfMissing True actualDir
-      liftIO $ writeToFile actual output
+      liftIO $ goldenWriteToFile actual goldenOutput
 
   if not goldenFileExist
     then do
-        liftIO $ writeToFile goldenFile output
-        when failFirstTime $ expectationFailure [i|Failed due to first execution and failFirstTime=True.|]
+        liftIO $ goldenWriteToFile goldenFile goldenOutput
+        when goldenFailFirstTime $ expectationFailure [i|Failed due to first execution and goldenFailFirstTime=True.|]
     else do
-       liftIO (readFromFile goldenFile) >>= \case
-         x | x == output -> return ()
-         x -> throwIO $ ExpectedButGot (Just callStack) (SEB x) (SEB output)
+       liftIO (goldenReadFromFile goldenFile) >>= \case
+         x | x == goldenOutput -> return ()
+         x -> throwIO $ ExpectedButGot (Just callStack) (SEB x) (SEB goldenOutput)
