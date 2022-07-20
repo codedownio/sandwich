@@ -4,7 +4,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE LambdaCase #-}
 
-{-| This module is based on Test.Hspec.Golden from hspec-golden-0.2.0.0, which is MIT licensed. -}
+-- This module is based on Test.Hspec.Golden from hspec-golden-0.2.0.0, which is MIT licensed.
 
 module Test.Sandwich.Golden (
   -- * Main test function
@@ -61,8 +61,6 @@ data Golden a = Golden {
   }
 
 
--- | Golden functions
-
 -- | Make your own 'Golden' constructor by providing 'goldenWriteToFile' and 'goldenReadFromFile'.
 mkGolden :: (FilePath -> a -> IO ()) -> (FilePath -> IO a) -> String -> a -> Golden a
 mkGolden goldenWriteToFile goldenReadFromFile name output = Golden {
@@ -83,7 +81,7 @@ goldenText = mkGolden T.writeFile T.readFile
 goldenString :: String -> String -> Golden String
 goldenString = mkGolden writeFile readFile
 
--- | Golden for a 'String'.
+-- | Golden for an Aeson value ('ToJSON'/'FromJSON').
 goldenJSON :: (A.ToJSON a, A.FromJSON a) => String -> a -> Golden a
 goldenJSON = mkGolden (\f x -> BL.writeFile f $ A.encode x) $ \f ->
   eitherDecodeFileStrict' f >>= \case

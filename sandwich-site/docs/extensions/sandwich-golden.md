@@ -15,13 +15,19 @@ The main function for working with golden tests is [golden](http://hackage.haske
 import Test.Sandwich
 import Test.Sandwich.Golden
 
-golden :: TopSpec
-golden = describe "Simple tests" $ do
+goldenDemo :: TopSpec
+goldenDemo = describe "Simple tests" $ do
   describe "myStringFunc" $
-    golden $ defaultGolden "myStringFunc" (myStringFunc ())
+    golden $ goldenString "myStringFunc" (myStringFunc ())
 
 myStringFunc _ = "foo"
 ```
+
+The first time you run this test, it will
+
+### Updating golden files
+
+TODO
 
 ## Demo
 
