@@ -13,15 +13,16 @@
 module Test.Sandwich.Types.TestTimer where
 
 import Control.Concurrent
-import Control.Lens
 import Data.Aeson as A
 import Data.Aeson.TH as A
 import qualified Data.List as L
 import Data.Sequence
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX
+import Lens.Micro.TH
 import System.IO
 import Test.Sandwich.Types.Spec
+import Test.Sandwich.Types.TestTimer.LensRules (testTimerLensRules)
 
 
 -- * SpeedScope types
@@ -33,7 +34,7 @@ $(deriveJSON (A.defaultOptions {
                  A.fieldLabelModifier = L.drop 1
                  , A.sumEncoding = A.UntaggedValue
                  }) ''SpeedScopeFrame)
-$(makeFieldsNoPrefix ''SpeedScopeFrame)
+$(makeLensesWith testTimerLensRules ''SpeedScopeFrame)
 
 data SpeedScopeShared = SpeedScopeShared {
   _frames :: Seq SpeedScopeFrame
@@ -42,7 +43,7 @@ $(deriveJSON (A.defaultOptions {
                  A.fieldLabelModifier = L.drop 1
                  , A.sumEncoding = A.UntaggedValue
                  }) ''SpeedScopeShared)
-$(makeFieldsNoPrefix ''SpeedScopeShared)
+$(makeLensesWith testTimerLensRules ''SpeedScopeShared)
 
 data SpeedScopeEventType = SpeedScopeEventTypeOpen | SpeedScopeEventTypeClose
   deriving (Show, Eq)
@@ -62,7 +63,7 @@ $(deriveJSON (A.defaultOptions {
                      _ -> L.drop 1 x
                  , A.sumEncoding = A.UntaggedValue
                  }) ''SpeedScopeEvent)
-$(makeFieldsNoPrefix ''SpeedScopeEvent)
+$(makeLensesWith testTimerLensRules ''SpeedScopeEvent)
 
 data SpeedScopeProfile = SpeedScopeProfile {
   _typ :: T.Text
@@ -78,7 +79,7 @@ $(deriveJSON (A.defaultOptions {
                      _ -> L.drop 1 x
                  , A.sumEncoding = A.UntaggedValue
                  }) ''SpeedScopeProfile)
-$(makeFieldsNoPrefix ''SpeedScopeProfile)
+$(makeLensesWith testTimerLensRules ''SpeedScopeProfile)
 
 data SpeedScopeFile = SpeedScopeFile {
   _exporter :: T.Text
@@ -94,7 +95,7 @@ $(deriveJSON (A.defaultOptions {
                      _ -> L.drop 1 x
                  , A.sumEncoding = A.UntaggedValue
                  }) ''SpeedScopeFile)
-$(makeFieldsNoPrefix ''SpeedScopeFile)
+$(makeLensesWith testTimerLensRules ''SpeedScopeFile)
 
 emptySpeedScopeFile =
   SpeedScopeFile {

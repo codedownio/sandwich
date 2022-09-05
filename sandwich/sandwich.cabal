@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7560b2d2fe1c1f74cbdc1e498e1e88cc78cb2ba6f05a803404fe1de5f0ec047e
+-- hash: eea544fa3b581852af314541fcc7874b15f46d425b1632e09e36eeaf60de11b3
 
 name:           sandwich
 version:        0.1.0.11
@@ -89,6 +89,7 @@ library
       Test.Sandwich.Types.RunTree
       Test.Sandwich.Types.Spec
       Test.Sandwich.Types.TestTimer
+      Test.Sandwich.Types.TestTimer.LensRules
       Test.Sandwich.Util
       Paths_sandwich
   hs-source-dirs:
@@ -108,10 +109,8 @@ library
     , filepath
     , free
     , haskell-src-exts
-    , lens
     , lifted-async
     , microlens
-    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -155,10 +154,8 @@ executable sandwich-demo
     , filepath
     , free
     , haskell-src-exts
-    , lens
     , lifted-async
     , microlens
-    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -203,10 +200,8 @@ executable sandwich-discover
     , filepath
     , free
     , haskell-src-exts
-    , lens
     , lifted-async
     , microlens
-    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -256,10 +251,8 @@ executable sandwich-test
     , filepath
     , free
     , haskell-src-exts
-    , lens
     , lifted-async
     , microlens
-    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -310,10 +303,8 @@ test-suite sandwich-test-suite
     , filepath
     , free
     , haskell-src-exts
-    , lens
     , lifted-async
     , microlens
-    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
