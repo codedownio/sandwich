@@ -4,7 +4,8 @@
 
 ## 0.1.0.11
 
-* Release Test.Sandwich.Golden for golden testing.
+* Initial release Test.Sandwich.Golden for golden testing.
+* Support Brick 1.x in addition to 0.x.
 
 ## 0.1.0.10
 
