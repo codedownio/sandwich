@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.AttrMap where
 
