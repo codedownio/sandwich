@@ -15,9 +15,16 @@ packages:
   original:
     git: https://github.com/codedownio/hs-webdriver
     commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
+- completed:
+    hackage: brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828
+    pantry-tree:
+      size: 6686
+      sha256: 7267fcc9b1c23186c996ff998aeafe88832e0f11595a9b00d3cc783777b930da
+  original:
+    hackage: brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828
 snapshots:
 - completed:
-    size: 619399
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/22.yaml
-    sha256: 5098594e71bdefe0c13e9e6236f12e3414ef91a2b89b029fd30e8fc8087f3a07
-  original: lts-19.22
+    size: 633902
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/9/4.yaml
+    sha256: 493243cccbb79ce8a7fc9850522a0b565139237ae5587edf05880791e952077b
+  original: nightly-2022-09-04

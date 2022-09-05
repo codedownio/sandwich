@@ -7,6 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.TerminalUI (
   -- | The terminal UI formatter produces an interactive UI for running tests and inspecting their results.
@@ -142,12 +143,36 @@ app :: App AppState AppEvent ClickableName
 app = App {
   appDraw = drawUI
   , appChooseCursor = showFirstCursor
+#if MIN_VERSION_brick(1,0,0)
+  , appHandleEvent = \event -> get >>= \s -> appEvent s event
+  , appStartEvent = return ()
+#else
   , appHandleEvent = appEvent
   , appStartEvent = return
+#endif
   , appAttrMap = const mainAttrMap
   }
 
+#if MIN_VERSION_brick(1,0,0)
+continue :: AppState -> EventM ClickableName AppState ()
+continue = put
+
+continueNoChange :: AppState -> EventM ClickableName AppState ()
+continueNoChange _ = return ()
+
+doHalt _ = halt
+#else
+continueNoChange :: AppState -> EventM ClickableName (Next AppState)
+continueNoChange = continue
+
+doHalt = halt
+#endif
+
+#if MIN_VERSION_brick(1,0,0)
+appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName AppState ()
+#else
 appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName (Next AppState)
+#endif
 appEvent s (AppEvent (RunTreeUpdated newTree)) = do
   now <- liftIO getCurrentTime
   continue $ s
@@ -170,10 +195,10 @@ appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
 
 appEvent s (MouseDown (ListRow _i) V.BScrollUp _ _) = do
   vScrollBy (viewportScroll MainList) (-1)
-  continue s
+  continueNoChange s
 appEvent s (MouseDown (ListRow _i) V.BScrollDown _ _) = do
   vScrollBy (viewportScroll MainList) 1
-  continue s
+  continueNoChange s
 appEvent s (MouseDown (ListRow i) V.BLeft _ _) = do
   continue (s & appMainList %~ (listMoveTo i))
 appEvent s (VtyEvent e) =
@@ -207,29 +232,29 @@ appEvent s (VtyEvent e) =
 
     -- Scrolling in toggled items
     -- Wanted to make these uniformly Ctrl+whatever, but Ctrl+PageUp/PageDown was causing it to get KEsc and exit (?)
-    V.EvKey V.KUp [V.MCtrl] -> withScroll s $ flip vScrollBy (-1)
-    V.EvKey (V.KChar 'p') [V.MCtrl] -> withScroll s $ flip vScrollBy (-1)
-    V.EvKey V.KDown [V.MCtrl] -> withScroll s $ flip vScrollBy 1
-    V.EvKey (V.KChar 'n') [V.MCtrl] -> withScroll s $ flip vScrollBy 1
-    V.EvKey (V.KChar 'v') [V.MMeta] -> withScroll s $ flip vScrollPage Up
-    V.EvKey (V.KChar 'v') [V.MCtrl] -> withScroll s $ flip vScrollPage Down
-    V.EvKey V.KHome [V.MCtrl] -> withScroll s vScrollToBeginning
-    V.EvKey V.KEnd [V.MCtrl] -> withScroll s vScrollToEnd
+    V.EvKey V.KUp [V.MCtrl] -> withScroll s $ \vp -> vScrollBy vp (-1)
+    V.EvKey (V.KChar 'p') [V.MCtrl] -> withScroll s $ \vp -> vScrollBy vp (-1)
+    V.EvKey V.KDown [V.MCtrl] -> withScroll s $ \vp -> vScrollBy vp 1
+    V.EvKey (V.KChar 'n') [V.MCtrl] -> withScroll s $ \vp -> vScrollBy vp 1
+    V.EvKey (V.KChar 'v') [V.MMeta] -> withScroll s $ \vp -> vScrollPage vp Up
+    V.EvKey (V.KChar 'v') [V.MCtrl] -> withScroll s $ \vp -> vScrollPage vp Down
+    V.EvKey V.KHome [V.MCtrl] -> withScroll s $ \vp -> vScrollToBeginning vp
+    V.EvKey V.KEnd [V.MCtrl] -> withScroll s $ \vp -> vScrollToEnd vp
 
     -- Column 2
     V.EvKey c [] | c == cancelAllKey -> do
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       continue s
-    V.EvKey c [] | c == cancelSelectedKey -> withContinueS $ do
+    V.EvKey c [] | c == cancelSelectedKey -> withContinueS s $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> liftIO $
         (readTVarIO $ runTreeStatus node) >>= \case
           Running {..} -> cancel statusAsync
           _ -> return ()
-    V.EvKey c [] | c == runAllKey -> withContinueS $ do
+    V.EvKey c [] | c == runAllKey -> withContinueS s $ do
       when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
         mapM_ clearRecursively (s ^. appRunTreeBase)
         void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
-    V.EvKey c [] | c == runSelectedKey -> withContinueS $
+    V.EvKey c [] | c == runSelectedKey -> withContinueS s $
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
         Running {} -> return ()
         _ -> do
@@ -244,18 +269,18 @@ appEvent s (VtyEvent e) =
               -- Start a run for all affected nodes
               let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
               void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
-    V.EvKey c [] | c == clearSelectedKey -> withContinueS $ do
+    V.EvKey c [] | c == clearSelectedKey -> withContinueS s $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
         Running {} -> return ()
         _ -> case findRunNodeChildrenById ident (s ^. appRunTree) of
           Nothing -> return ()
           Just childIds -> liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` childIds)) (s ^. appRunTreeBase)
-    V.EvKey c [] | c == clearAllKey -> withContinueS $ do
+    V.EvKey c [] | c == clearAllKey -> withContinueS s $ do
       liftIO $ mapM_ clearRecursively (s ^. appRunTreeBase)
-    V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS $ do
+    V.EvKey c [] | c == openSelectedFolderInFileExplorer -> withContinueS s $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_i, MainListElem {folderPath}) ->
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
-    V.EvKey c [] | c == openTestRootKey -> withContinueS $
+    V.EvKey c [] | c == openTestRootKey -> withContinueS s $
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openTestInEditorKey -> case listSelectedElement (s ^. appMainList) of
       Just (_i, MainListElem {node=(runTreeLoc -> Just loc)}) -> openSrcLoc s loc
@@ -282,7 +307,8 @@ appEvent s (VtyEvent e) =
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
-      let newVisibilityThreshold =  case [(i, x) | (i, x) <- zip [0..] (s ^. appVisibilityThresholdSteps), x > s ^. appVisibilityThreshold] of
+      let newVisibilityThreshold =  case [(i, x) | (i, x) <- zip [0..] (s ^. appVisibilityThresholdSteps)
+                                                 , x > s ^. appVisibilityThreshold] of
             [] -> 0
             xs -> minimum $ fmap snd xs
       continue $ s
@@ -298,16 +324,24 @@ appEvent s (VtyEvent e) =
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
-      halt s
+      doHalt s
     V.EvKey c [] | c == debugKey -> continue (s & appLogLevel ?~ LevelDebug)
     V.EvKey c [] | c == infoKey -> continue (s & appLogLevel ?~ LevelInfo)
     V.EvKey c [] | c == warnKey -> continue (s & appLogLevel ?~ LevelWarn)
     V.EvKey c [] | c == errorKey -> continue (s & appLogLevel ?~ LevelError)
 
+#if MIN_VERSION_brick(1,0,0)
+    ev -> zoom appMainList $ handleListEvent ev
+#else
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
+#endif
 
-  where withContinueS action = action >> continue s
+  where withContinueS s action = action >> continue s
+#if MIN_VERSION_brick(1,0,0)
+appEvent _ _ = return ()
+#else
 appEvent s _ = continue s
+#endif
 
 modifyToggled s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
@@ -387,6 +421,11 @@ findRunNodeChildrenById' ident (RunNodeIntroduce {..}) = findRunNodeChildrenById
 findRunNodeChildrenById' ident (RunNodeIntroduceWith {..}) = findRunNodeChildrenById ident runNodeChildrenAugmented
 findRunNodeChildrenById' ident node = findRunNodeChildrenById ident (runNodeChildren node)
 
+#if MIN_VERSION_brick(1,0,0)
+withScroll :: AppState -> (forall s. ViewportScroll ClickableName -> EventM n s ()) -> EventM n AppState ()
+#else
+withScroll :: AppState -> (ViewportScroll ClickableName -> EventM n ()) -> EventM n (Next AppState)
+#endif
 withScroll s action = do
   case listSelectedElement (s ^. appMainList) of
     Nothing -> return ()
@@ -394,7 +433,9 @@ withScroll s action = do
       let scroll = viewportScroll (InnerViewport [i|viewport_#{ident}|])
       action scroll
 
+#if !MIN_VERSION_brick(1,0,0)
   continue s
+#endif
 
 openSrcLoc s loc' = do
   -- Try to make the file path in the SrcLoc absolute

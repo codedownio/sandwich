@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.TerminalUI.AttrMap where
 
@@ -7,6 +8,16 @@ import Brick.Widgets.ProgressBar
 import qualified Graphics.Vty as V
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+
+#if MIN_VERSION_brick(1,0,0)
+mkAttrName :: String -> AttrName
+mkAttrName = attrName
+#else
+import Data.String
+
+mkAttrName :: String -> AttrName
+mkAttrName = fromString
+#endif
 
 
 mainAttrMap :: AttrMap
@@ -79,46 +90,46 @@ mainAttrMap = attrMap V.defAttr [
 -- selectedAttr = "list_line_selected"
 
 visibilityThresholdNotSelectedAttr :: AttrName
-visibilityThresholdNotSelectedAttr = "visibility_threshold_not_selected"
+visibilityThresholdNotSelectedAttr = mkAttrName "visibility_threshold_not_selected"
 
 visibilityThresholdSelectedAttr :: AttrName
-visibilityThresholdSelectedAttr = "visibility_threshold_selected"
+visibilityThresholdSelectedAttr = mkAttrName "visibility_threshold_selected"
 
 runningAttr :: AttrName
-runningAttr = "running"
+runningAttr = mkAttrName "running"
 
 notStartedAttr :: AttrName
-notStartedAttr = "not_started"
+notStartedAttr = mkAttrName "not_started"
 
 pendingAttr :: AttrName
-pendingAttr = "pending"
+pendingAttr = mkAttrName "pending"
 
 totalAttr :: AttrName
-totalAttr = "total"
+totalAttr = mkAttrName "total"
 
 successAttr :: AttrName
-successAttr = "success"
+successAttr = mkAttrName "success"
 
 failureAttr :: AttrName
-failureAttr = "failure"
+failureAttr = mkAttrName "failure"
 
 toggleMarkerAttr :: AttrName
-toggleMarkerAttr = "toggleMarker"
+toggleMarkerAttr = mkAttrName "toggleMarker"
 
 openMarkerAttr :: AttrName
-openMarkerAttr = "openMarker"
+openMarkerAttr = mkAttrName "openMarker"
 
 visibilityThresholdIndicatorAttr :: AttrName
-visibilityThresholdIndicatorAttr = "visibilityThresholdIndicator"
+visibilityThresholdIndicatorAttr = mkAttrName "visibilityThresholdIndicator"
 
 visibilityThresholdIndicatorMutedAttr :: AttrName
-visibilityThresholdIndicatorMutedAttr = "visibilityThresholdMutedIndicator"
+visibilityThresholdIndicatorMutedAttr = mkAttrName "visibilityThresholdMutedIndicator"
 
 hotkeyAttr, disabledHotkeyAttr, hotkeyMessageAttr, disabledHotkeyMessageAttr :: AttrName
-hotkeyAttr = "hotkey"
-disabledHotkeyAttr = "disableHotkey"
-hotkeyMessageAttr = "hotkeyMessage"
-disabledHotkeyMessageAttr = "disabledHotkeyMessage"
+hotkeyAttr = mkAttrName "hotkey"
+disabledHotkeyAttr = mkAttrName "disableHotkey"
+hotkeyMessageAttr = mkAttrName "hotkeyMessage"
+disabledHotkeyMessageAttr = mkAttrName "disabledHotkeyMessage"
 
 chooseAttr :: Status -> AttrName
 chooseAttr NotStarted = notStartedAttr
@@ -132,47 +143,47 @@ chooseAttr (Done _ _ Cancelled) = failureAttr
 -- * Logging and callstacks
 
 debugAttr, infoAttr, warnAttr, errorAttr, otherAttr :: AttrName
-debugAttr = "log_debug"
-infoAttr = "log_info"
-warnAttr = "log_warn"
-errorAttr = "log_error"
-otherAttr = "log_other"
+debugAttr = attrName"log_debug"
+infoAttr = attrName"log_info"
+warnAttr = attrName"log_warn"
+errorAttr = attrName"log_error"
+otherAttr = mkAttrName "log_other"
 
 logTimestampAttr :: AttrName
-logTimestampAttr = "log_timestamp"
+logTimestampAttr = mkAttrName "log_timestamp"
 
 logFilenameAttr, logModuleAttr, logPackageAttr, logLineAttr, logChAttr :: AttrName
-logFilenameAttr = "logFilename"
-logModuleAttr = "logModule"
-logPackageAttr = "logPackage"
-logLineAttr = "logLine"
-logChAttr = "logCh"
-logFunctionAttr = "logFunction"
+logFilenameAttr = mkAttrName "logFilename"
+logModuleAttr = mkAttrName "logModule"
+logPackageAttr = mkAttrName "logPackage"
+logLineAttr = mkAttrName "logLine"
+logChAttr = mkAttrName "logCh"
+logFunctionAttr = mkAttrName "logFunction"
 
 -- * Exceptions and pretty printing
 
 expectedAttr, sawAttr :: AttrName
-expectedAttr = "expected"
-sawAttr = "saw"
+expectedAttr = mkAttrName "expected"
+sawAttr = mkAttrName "saw"
 
 integerAttr, timeAttr, dateAttr, stringAttr, charAttr, floatAttr, quoteAttr, slashAttr, negAttr :: AttrName
 listBracketAttr, tupleBracketAttr, braceAttr, ellipsesAttr, recordNameAttr, fieldNameAttr, constructorNameAttr :: AttrName
-integerAttr = "integer"
-floatAttr = "float"
-charAttr = "char"
-stringAttr = "string"
-dateAttr = "date"
-timeAttr = "time"
-quoteAttr = "quote"
-slashAttr = "slash"
-negAttr = "neg"
-listBracketAttr = "listBracket"
-tupleBracketAttr = "tupleBracket"
-braceAttr = "brace"
-ellipsesAttr = "ellipses"
-recordNameAttr = "recordName"
-fieldNameAttr = "fieldName"
-constructorNameAttr = "fieldName"
+integerAttr = mkAttrName "integer"
+floatAttr = mkAttrName "float"
+charAttr = mkAttrName "char"
+stringAttr = mkAttrName "string"
+dateAttr = mkAttrName "date"
+timeAttr = mkAttrName "time"
+quoteAttr = mkAttrName "quote"
+slashAttr = mkAttrName "slash"
+negAttr = mkAttrName "neg"
+listBracketAttr = mkAttrName "listBracket"
+tupleBracketAttr = mkAttrName "tupleBracket"
+braceAttr = mkAttrName "brace"
+ellipsesAttr = mkAttrName "ellipses"
+recordNameAttr = mkAttrName "recordName"
+fieldNameAttr = mkAttrName "fieldName"
+constructorNameAttr = mkAttrName "fieldName"
 
 -- * Colors
 

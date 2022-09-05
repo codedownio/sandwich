@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 737efd662f51ef3795e5fd0802e02dff4eea4ca54999f2bb1c76a08f1131e768
+-- hash: 7560b2d2fe1c1f74cbdc1e498e1e88cc78cb2ba6f05a803404fe1de5f0ec047e
 
 name:           sandwich
 version:        0.1.0.11
@@ -111,6 +111,7 @@ library
     , lens
     , lifted-async
     , microlens
+    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -157,6 +158,7 @@ executable sandwich-demo
     , lens
     , lifted-async
     , microlens
+    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -204,6 +206,7 @@ executable sandwich-discover
     , lens
     , lifted-async
     , microlens
+    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -256,6 +259,7 @@ executable sandwich-test
     , lens
     , lifted-async
     , microlens
+    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger
@@ -309,6 +313,7 @@ test-suite sandwich-test-suite
     , lens
     , lifted-async
     , microlens
+    , microlens-mtl
     , microlens-th
     , monad-control
     , monad-logger

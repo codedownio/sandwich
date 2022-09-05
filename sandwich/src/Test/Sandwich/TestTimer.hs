@@ -13,7 +13,6 @@ module Test.Sandwich.TestTimer where
 
 import Control.Concurrent
 import Control.Exception.Safe
-import Control.Lens
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Control.Monad.Trans.State
@@ -25,6 +24,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time.Clock.POSIX
+import Lens.Micro
 import System.Directory
 import System.FilePath
 import System.IO

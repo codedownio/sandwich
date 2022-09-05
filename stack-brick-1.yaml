@@ -1,5 +1,6 @@
 
-resolver: lts-19.22
+# resolver: lts-19.7
+resolver: nightly-2022-09-04
 
 packages:
 - ./sandwich
@@ -36,3 +37,5 @@ extra-deps:
 # Because upstream hs-webdriver has a few bugs and seems unmaintained
 - git: https://github.com/codedownio/hs-webdriver
   commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
+
+- brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828

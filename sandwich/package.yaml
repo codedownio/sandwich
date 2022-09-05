@@ -29,6 +29,7 @@ dependencies:
 - lens
 - lifted-async
 - microlens
+- microlens-mtl
 - microlens-th
 - monad-control
 - monad-logger
