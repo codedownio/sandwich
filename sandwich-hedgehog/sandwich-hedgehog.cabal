@@ -28,7 +28,6 @@ library
   exposed-modules:
       Test.Sandwich.Hedgehog
   other-modules:
-      Test.Sandwich.Hedgehog.Render
       Paths_sandwich_hedgehog
   hs-source-dirs:
       src
@@ -56,6 +55,11 @@ library
   if !os(windows)
     build-depends:
         vty
+  if !os(windows)
+    other-modules:
+        Test.Sandwich.Hedgehog.Render
+    hs-source-dirs:
+        unix-src
   default-language: Haskell2010
 
 test-suite sandwich-hedgehog-test

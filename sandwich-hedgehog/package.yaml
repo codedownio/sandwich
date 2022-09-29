@@ -45,6 +45,9 @@ library:
   source-dirs: src
   exposed-modules:
     - Test.Sandwich.Hedgehog
+  when:
+  - condition: "!os(windows)"
+    source-dirs: unix-src
 
 tests:
   sandwich-hedgehog-test:

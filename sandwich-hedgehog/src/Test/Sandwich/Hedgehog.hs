@@ -7,6 +7,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Hedgehog (
   -- * Introducing a Hedgehog context
@@ -64,8 +65,11 @@ import Hedgehog.Internal.Report as H
 import Hedgehog.Internal.Runner as HR
 import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
-import Test.Sandwich.Hedgehog.Render
 import Test.Sandwich.Internal
+
+#ifndef mingw32_HOST_OS
+import Test.Sandwich.Hedgehog.Render
+#endif
 
 
 data HedgehogParams = HedgehogParams {
@@ -154,6 +158,13 @@ prop msg p = it msg $ do
     progress <- renderProgress DisableColor Nothing progressReport
     debug [i|#{progress}|]
 
+#ifdef mingw32_HOST_OS
+  result <- renderResult EnableColor Nothing finalReport
+  case reportStatus finalReport of
+    H.Failed fr -> throwIO $ Reason (Just callStack) result
+    H.GaveUp -> throwIO $ Reason (Just callStack) result
+    H.OK -> info [i|#{result}|]
+#else
   image <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
 
   -- Hedgehog naturally indents everything by 2. Remove this for the fallback text.
@@ -162,6 +173,7 @@ prop msg p = it msg $ do
     H.Failed _ -> throwIO $ RawImage (Just callStack) resultText image
     H.GaveUp -> throwIO $ RawImage (Just callStack) resultText image
     H.OK -> info [i|#{resultText}|]
+#endif
 
 -- | Modify the 'HedgehogParams' for the given spec.
 modifyArgs :: (
