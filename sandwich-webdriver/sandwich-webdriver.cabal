@@ -36,7 +36,6 @@ library
       Test.Sandwich.WebDriver.Internal.Ports
       Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
-      Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
       Test.Sandwich.WebDriver.Internal.Types
       Test.Sandwich.WebDriver.Internal.Util
       Test.Sandwich.WebDriver.Internal.Video
@@ -105,6 +104,11 @@ library
   if !os(windows)
     build-depends:
         unix
+  if !os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
+    hs-source-dirs:
+        unix-src
   default-language: Haskell2010
 
 executable sandwich-webdriver-exe

@@ -22,6 +22,10 @@ import System.Process
 import qualified System.Random as R
 import Test.Sandwich.Logging
 
+#ifdef mingw32_HOST_OS
+import System.IO
+#endif
+
 
 -- * Truncating log files
 

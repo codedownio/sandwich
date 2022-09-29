@@ -2,6 +2,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE CPP #-}
+
 module Main where
 
 import Control.Concurrent
@@ -11,10 +13,14 @@ import Data.String.Interpolate
 import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
-import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver
+
+#ifndef mingw32_HOST_OS
+import Test.Sandwich.Formatters.TerminalUI
+#endif
+
 
 simple :: TopSpec
 simple = introduceWebDriver wdOptions $ do

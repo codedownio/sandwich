@@ -43,11 +43,14 @@ import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Ports
-import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Firefox.Profile as FF
+
+#ifndef mingw32_HOST_OS
+import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
+#endif
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key             as A
@@ -101,9 +104,11 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
   debug [i|driverArgs: #{driverArgs}|]
 
   (maybeXvfbSession, javaEnv) <- case runMode of
+#ifndef mingw32_HOST_OS
     RunInXvfb (XvfbConfig {..}) -> do
       (s, e) <- makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
       return (Just s, Just e)
+#endif
     _ -> return (Nothing, Nothing)
 
   -- Retry up to 10 times
