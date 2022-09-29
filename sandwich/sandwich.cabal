@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: af93a0c2a8209f0ff1b02a10d81f51cc28bc53091f46b35919f1907c23e84ae3
+-- hash: 1750b981aa8aedcd566f479c9aeab1e7c6e333a341cfa12d40b3170ad8ebe3cb
 
 name:           sandwich
 version:        0.1.0.11
@@ -40,7 +40,6 @@ library
       Test.Sandwich.Formatters.LogSaver
       Test.Sandwich.Formatters.Print
       Test.Sandwich.Formatters.Silent
-      Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.TH
   other-modules:
@@ -110,7 +109,6 @@ library
     , ansi-terminal
     , async
     , base <5
-    , brick
     , bytestring
     , colour
     , containers
@@ -137,10 +135,16 @@ library
     , time
     , transformers
     , transformers-base
-    , unix
     , unliftio-core
     , vector
-    , vty
+  if !os(windows)
+    build-depends:
+        brick
+      , unix
+      , vty
+  if !os(windows)
+    exposed-modules:
+        Test.Sandwich.Formatters.TerminalUI
   default-language: Haskell2010
 
 executable sandwich-demo
@@ -165,7 +169,6 @@ executable sandwich-demo
     , ansi-terminal
     , async
     , base <5
-    , brick
     , bytestring
     , colour
     , containers
@@ -193,10 +196,13 @@ executable sandwich-demo
     , time
     , transformers
     , transformers-base
-    , unix
     , unliftio-core
     , vector
-    , vty
+  if !os(windows)
+    build-depends:
+        brick
+      , unix
+      , vty
   default-language: Haskell2010
 
 executable sandwich-discover
@@ -221,7 +227,6 @@ executable sandwich-discover
     , ansi-terminal
     , async
     , base <5
-    , brick
     , bytestring
     , colour
     , containers
@@ -249,10 +254,13 @@ executable sandwich-discover
     , time
     , transformers
     , transformers-base
-    , unix
     , unliftio-core
     , vector
-    , vty
+  if !os(windows)
+    build-depends:
+        brick
+      , unix
+      , vty
   default-language: Haskell2010
 
 executable sandwich-test
@@ -282,7 +290,6 @@ executable sandwich-test
     , ansi-terminal
     , async
     , base <5
-    , brick
     , bytestring
     , colour
     , containers
@@ -310,10 +317,13 @@ executable sandwich-test
     , time
     , transformers
     , transformers-base
-    , unix
     , unliftio-core
     , vector
-    , vty
+  if !os(windows)
+    build-depends:
+        brick
+      , unix
+      , vty
   default-language: Haskell2010
 
 test-suite sandwich-test-suite
@@ -344,7 +354,6 @@ test-suite sandwich-test-suite
     , ansi-terminal
     , async
     , base <5
-    , brick
     , bytestring
     , colour
     , containers
@@ -372,8 +381,11 @@ test-suite sandwich-test-suite
     , time
     , transformers
     , transformers-base
-    , unix
     , unliftio-core
     , vector
-    , vty
+  if !os(windows)
+    build-depends:
+        brick
+      , unix
+      , vty
   default-language: Haskell2010

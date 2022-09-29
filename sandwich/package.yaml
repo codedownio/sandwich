@@ -31,7 +31,6 @@ dependencies:
 - base < 5
 - colour
 - containers
-- brick
 - bytestring
 - directory
 - exceptions
@@ -55,34 +54,43 @@ dependencies:
 - transformers
 - transformers-base
 - unliftio-core
-- unix
 - vector
-- vty
 
 # For spec discovery. Move to its own package?
 - template-haskell
 - haskell-src-exts
+
+when:
+- condition: "!os(windows)"
+  dependencies:
+  - brick
+  - unix
+  - vty
 
 library:
   source-dirs: src
   ghc-options:
   - -W
   exposed-modules:
-    - Test.Sandwich
-    - Test.Sandwich.Contexts
-    - Test.Sandwich.Expectations
-    - Test.Sandwich.Golden
-    - Test.Sandwich.Logging
-    - Test.Sandwich.Misc
-    - Test.Sandwich.Nodes
-    - Test.Sandwich.Options
-    - Test.Sandwich.Formatters.FailureReport
-    - Test.Sandwich.Formatters.LogSaver
-    - Test.Sandwich.Formatters.Print
-    - Test.Sandwich.Formatters.Silent
+  - Test.Sandwich
+  - Test.Sandwich.Contexts
+  - Test.Sandwich.Expectations
+  - Test.Sandwich.Golden
+  - Test.Sandwich.Logging
+  - Test.Sandwich.Misc
+  - Test.Sandwich.Nodes
+  - Test.Sandwich.Options
+  - Test.Sandwich.Formatters.FailureReport
+  - Test.Sandwich.Formatters.LogSaver
+  - Test.Sandwich.Formatters.Print
+  - Test.Sandwich.Formatters.Silent
+  - Test.Sandwich.Internal
+  - Test.Sandwich.TH
+  when:
+  - condition: "!os(windows)"
+    exposed-modules:
     - Test.Sandwich.Formatters.TerminalUI
-    - Test.Sandwich.Internal
-    - Test.Sandwich.TH
+
 
 executables:
   sandwich-demo:
