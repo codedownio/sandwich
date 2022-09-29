@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 4bd8afdc6a246f8840f7ef95fa9c999889dbfc75c3af14a62d9c9948e5ee2117
 
 name:           sandwich
 version:        0.1.0.11
@@ -135,6 +133,18 @@ library
   if !os(windows)
     exposed-modules:
         Test.Sandwich.Formatters.TerminalUI
+    other-modules:
+        Test.Sandwich.Formatters.TerminalUI.AttrMap
+        Test.Sandwich.Formatters.TerminalUI.CrossPlatform
+        Test.Sandwich.Formatters.TerminalUI.Draw
+        Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+        Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
+        Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
+        Test.Sandwich.Formatters.TerminalUI.Draw.Util
+        Test.Sandwich.Formatters.TerminalUI.Filter
+        Test.Sandwich.Formatters.TerminalUI.Keys
+        Test.Sandwich.Formatters.TerminalUI.OpenInEditor
+        Test.Sandwich.Formatters.TerminalUI.Types
     hs-source-dirs:
         unix-src
   default-language: Haskell2010
