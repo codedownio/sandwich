@@ -82,6 +82,7 @@ nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToL
                  | otherwise -> paddedNumber <> "_"
 
 fixupName = replace '/' '_'
+          . replace '\\' '_'
 
 replace :: Eq a => a -> a -> [a] -> [a]
 replace a b = map $ \c -> if c == a then b else c
