@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.1.1
+
+* Fix error symlink creation on Windows (don't allow invalid characters).
+
 ## 0.1.1.0
 
 * Be able to accept multiple `--filter/-f` arguments. A test must match all of them to be run.
