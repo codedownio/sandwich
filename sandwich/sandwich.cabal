@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8974a5333af3c2b92169042d67a8398f766cb9f5fbe40088ffba8de1686b427b
+-- hash: 4bd8afdc6a246f8840f7ef95fa9c999889dbfc75c3af14a62d9c9948e5ee2117
 
 name:           sandwich
 version:        0.1.0.11
@@ -135,6 +135,8 @@ library
   if !os(windows)
     exposed-modules:
         Test.Sandwich.Formatters.TerminalUI
+    hs-source-dirs:
+        unix-src
   default-language: Haskell2010
 
 executable sandwich-demo
