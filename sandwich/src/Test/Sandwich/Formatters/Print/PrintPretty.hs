@@ -1,6 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.Formatters.Print.PrintPretty (
   printPretty

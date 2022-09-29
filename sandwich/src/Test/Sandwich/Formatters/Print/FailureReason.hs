@@ -1,8 +1,5 @@
 -- | Pretty printing failure reasons
 
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Sandwich.Formatters.Print.FailureReason (
   printFailureReason

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 
 module Test.Sandwich.Interpreters.PrettyShow (prettyShow) where
 

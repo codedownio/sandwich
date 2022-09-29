@@ -13,6 +13,17 @@ description:         Please see the <https://codedownio.github.io/sandwich docum
 extra-source-files:
 - CHANGELOG.md
 
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+- ViewPatterns
+
 dependencies:
 - aeson
 - ansi-terminal

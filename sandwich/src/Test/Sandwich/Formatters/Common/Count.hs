@@ -1,6 +1,4 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ViewPatterns #-}
 -- |
 
 module Test.Sandwich.Formatters.Common.Count where

@@ -1,8 +1,5 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar (
   bottomProgressBarColored

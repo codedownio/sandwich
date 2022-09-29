@@ -1,6 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
 
 {-| This module is based on hgold from hspec-golden-0.2.0.0, which is MIT licensed -}
 

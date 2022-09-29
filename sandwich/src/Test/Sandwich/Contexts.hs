@@ -1,6 +1,4 @@
 {-# LANGUAGE MonoLocalBinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Functions for retrieving context information from within tests.
 

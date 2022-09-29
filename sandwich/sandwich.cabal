@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: eea544fa3b581852af314541fcc7874b15f46d425b1632e09e36eeaf60de11b3
+-- hash: af93a0c2a8209f0ff1b02a10d81f51cc28bc53091f46b35919f1907c23e84ae3
 
 name:           sandwich
 version:        0.1.0.11
@@ -94,6 +94,16 @@ library
       Paths_sandwich
   hs-source-dirs:
       src
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      ViewPatterns
   ghc-options: -W
   build-depends:
       aeson
@@ -139,6 +149,16 @@ executable sandwich-demo
       Paths_sandwich
   hs-source-dirs:
       app
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -185,6 +205,16 @@ executable sandwich-discover
       Paths_sandwich
   hs-source-dirs:
       discover
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -236,6 +266,16 @@ executable sandwich-test
       Paths_sandwich
   hs-source-dirs:
       test
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -288,6 +328,16 @@ test-suite sandwich-test-suite
       Paths_sandwich
   hs-source-dirs:
       test
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

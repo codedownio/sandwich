@@ -1,4 +1,3 @@
-{-# LANGUAGE RecordWildCards #-}
 
 -- | Filter a spec tree to match a module
 

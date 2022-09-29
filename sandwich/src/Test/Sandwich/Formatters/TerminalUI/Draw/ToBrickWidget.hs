@@ -1,8 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiWayIf #-}
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget where

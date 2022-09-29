@@ -1,8 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
 
 -- This module is based on Test.Hspec.Golden from hspec-golden-0.2.0.0, which is MIT licensed.
 

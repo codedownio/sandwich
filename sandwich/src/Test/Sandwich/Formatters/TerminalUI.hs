@@ -1,12 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.TerminalUI (
