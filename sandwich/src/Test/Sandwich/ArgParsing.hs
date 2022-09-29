@@ -88,7 +88,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <$> formatter
   <*> logLevel
   <*> optional (option auto (long "visibility-threshold" <> short 'v' <> showDefault <> help "Set the visibility threshold for formatters" <> metavar "INT"))
-  <*> optional (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
+  <*> many (strOption (long "filter" <> short 'f' <> help "Filter test tree by string matching text example labels" <> metavar "STRING"))
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
@@ -251,7 +251,9 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     optionsTestArtifactsDirectory = case optFixedRoot of
       Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
       Just path -> TestArtifactsFixedDirectory path
-    , optionsFilterTree = TreeFilter <$> optTreeFilter
+    , optionsFilterTree = case optTreeFilter of
+        [] -> Nothing
+        xs -> Just $ TreeFilter xs
     , optionsFormatters = finalFormatters
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     }

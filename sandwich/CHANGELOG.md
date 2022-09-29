@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.0.12
+
+* Be able to accept multiple `--filter/-f` arguments. A test must match all of them to be run.
+
 ## 0.1.0.11
 
 * Initial release Test.Sandwich.Golden for golden testing.
