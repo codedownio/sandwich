@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- | Pretty printing failure reasons
 
 
@@ -22,8 +24,10 @@ import Text.Show.Pretty as P
 printFailureReason :: FailureReason -> ReaderT (PrintFormatter, Int, Handle) IO ()
 printFailureReason (Reason _ s) = do
   printShowBoxPrettyWithTitleString "Reason: " s
+#ifndef mingw32_HOST_OS
 printFailureReason (RawImage _ fallback _image) = do
   forM_ (L.lines fallback) pin
+#endif
 printFailureReason (ChildrenFailed _ n) = do
   picn midWhite ([i|#{n} #{if n == 1 then ("child" :: String) else "children"} failed|] :: String)
 printFailureReason (ExpectedButGot _ seb1 seb2) = do

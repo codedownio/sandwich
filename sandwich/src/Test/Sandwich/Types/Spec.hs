@@ -31,12 +31,16 @@ import Data.Maybe
 import Data.String.Interpolate
 import GHC.Stack
 import GHC.TypeLits
-import Graphics.Vty.Image (Image)
 import Safe
+
+#ifndef mingw32_HOST_OS
+import Graphics.Vty.Image (Image)
+#endif
 
 #if !MIN_VERSION_base(4,13,0)
 import Control.Monad.Fail
 #endif
+
 
 -- * ExampleM monad
 
@@ -98,9 +102,12 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                                        , failureAsyncException :: SomeAsyncExceptionWithEq }
                    | ChildrenFailed { failureCallStack :: Maybe CallStack
                                     , failureNumChildren :: Int }
+#ifndef mingw32_HOST_OS
                    | RawImage { failureCallStack :: Maybe CallStack
                               , failureFallback :: String
                               , failureRawImage :: Image }
+#endif
+
   deriving (Show, Typeable, Eq)
 
 instance Exception FailureReason

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1750b981aa8aedcd566f479c9aeab1e7c6e333a341cfa12d40b3170ad8ebe3cb
+-- hash: 8974a5333af3c2b92169042d67a8398f766cb9f5fbe40088ffba8de1686b427b
 
 name:           sandwich
 version:        0.1.0.11
@@ -56,17 +56,6 @@ library
       Test.Sandwich.Formatters.Print.PrintPretty
       Test.Sandwich.Formatters.Print.Types
       Test.Sandwich.Formatters.Print.Util
-      Test.Sandwich.Formatters.TerminalUI.AttrMap
-      Test.Sandwich.Formatters.TerminalUI.CrossPlatform
-      Test.Sandwich.Formatters.TerminalUI.Draw
-      Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
-      Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
-      Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
-      Test.Sandwich.Formatters.TerminalUI.Draw.Util
-      Test.Sandwich.Formatters.TerminalUI.Filter
-      Test.Sandwich.Formatters.TerminalUI.Keys
-      Test.Sandwich.Formatters.TerminalUI.OpenInEditor
-      Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Golden.Update
       Test.Sandwich.Internal.Formatters
       Test.Sandwich.Internal.Running
@@ -80,6 +69,7 @@ library
       Test.Sandwich.ParallelN
       Test.Sandwich.RunTree
       Test.Sandwich.Shutdown
+      Test.Sandwich.Signals
       Test.Sandwich.TestTimer
       Test.Sandwich.TH.HasMainFunction
       Test.Sandwich.TH.ModuleMap

@@ -83,7 +83,6 @@ import Options.Applicative
 import qualified Options.Applicative as OA
 import System.Environment
 import System.FilePath
-import System.Posix.Signals
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
@@ -100,6 +99,7 @@ import Test.Sandwich.Options
 import Test.Sandwich.ParallelN
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
+import Test.Sandwich.Signals
 import Test.Sandwich.TH
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.ArgParsing
@@ -190,12 +190,12 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   exitReasonRef <- newIORef NormalExit
 
-  let shutdown = do
-        putStrLn "Shutting down..."
+  let shutdown info = do
+        putStrLn [i|Shutting down due to #{info}...|]
         writeIORef exitReasonRef InterruptExit
         forM_ rts cancelNode
 
-  _ <- installHandler sigINT (Catch shutdown) Nothing
+  _ <- installHandler sigINT shutdown
 
   -- Wait for the tree to finish
   mapM_ waitForTree rts

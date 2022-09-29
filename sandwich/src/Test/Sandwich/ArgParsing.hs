@@ -113,7 +113,9 @@ formatter :: Parser FormatterType
 formatter =
   flag' Print (long "print" <> help "Print to stdout")
   <|> flag' PrintFailures (long "print-failures" <> help "Print failures only to stdout")
+#ifndef mingw32_HOST_OS
   <|> flag' TUI (long "tui" <> help "Open terminal UI app")
+#endif
   <|> flag' Silent (long "silent" <> help "Run silently (print the run root only)")
   <|> flag Auto Auto (long "auto" <> help "Automatically decide which formatter to use")
 
@@ -263,18 +265,27 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     isMainFormatter :: SomeFormatter -> Bool
     isMainFormatter (SomeFormatter x) = case cast x of
       Just (_ :: PrintFormatter) -> True
+#ifdef mingw32_HOST_OS
+      Nothing -> False
+#else
       Nothing -> case cast x of
         Just (_ :: TerminalUIFormatter) -> True
         Nothing -> False
+#endif
 
     setVisibilityThreshold Nothing x = x
     setVisibilityThreshold (Just v) x@(SomeFormatter f) = case cast f of
       Just pf@(PrintFormatter {}) -> SomeFormatter (pf { printFormatterVisibilityThreshold = v })
       Nothing -> case cast f of
+#ifdef mingw32_HOST_OS
+        Just (frf :: FailureReportFormatter) -> SomeFormatter (frf { failureReportVisibilityThreshold = v })
+        Nothing -> x
+#else
         Just tuif@(TerminalUIFormatter {}) -> SomeFormatter (tuif { terminalUIVisibilityThreshold = v })
         Nothing -> case cast f of
           Just (frf :: FailureReportFormatter) -> SomeFormatter (frf { failureReportVisibilityThreshold = v })
           Nothing -> x
+#endif
 
     isMarkdownSummaryFormatter :: SomeFormatter -> Bool
     isMarkdownSummaryFormatter (SomeFormatter x) = case cast x of
