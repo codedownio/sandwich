@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Interpreters.RunTree.Util where
 
@@ -81,11 +82,19 @@ nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToL
     padding = if | numSiblings == 1 -> ""
                  | otherwise -> paddedNumber <> "_"
 
-fixupName = replace '/' '_'
-          . replace '\\' '_'
 
-replace :: Eq a => a -> a -> [a] -> [a]
-replace a b = map $ \c -> if c == a then b else c
+charsToReplace :: [Char]
+#ifdef mingw32_HOST_OS
+charsToReplace = ['\\', '/', ':', '*', '?', '"', '<', '>', '|']
+#else
+charsToReplace = ['/']
+#endif
+
+fixupName :: String -> String
+fixupName = replaceAll charsToReplace '_'
+  where
+    replaceAll :: Eq a => [a] -> a -> [a] -> [a]
+    replaceAll from to = map $ \c -> if c `L.elem` from then to else c
 
 truncateFileNameToLength :: Int -> String -> String
 truncateFileNameToLength len x | L.length x <= len = x
