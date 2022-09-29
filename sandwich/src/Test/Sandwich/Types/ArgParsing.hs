@@ -10,7 +10,14 @@ import GHC.Int
 
 -- * FormatterType
 
-data FormatterType = Print | PrintFailures | TUI | Auto | Silent
+data FormatterType =
+  Print
+  | PrintFailures
+  | Auto
+  | Silent
+#ifndef mingw32_HOST_OS
+  | TUI
+#endif
 
 instance Show FormatterType where
   show Print = "print"

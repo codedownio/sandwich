@@ -23,13 +23,16 @@ import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.MarkdownSummary
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
-import Test.Sandwich.Formatters.TerminalUI
-import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Internal.Running
 import Test.Sandwich.Options
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+
+#ifndef mingw32_HOST_OS
+import Test.Sandwich.Formatters.TerminalUI
+import Test.Sandwich.Formatters.TerminalUI.Types
+#endif
 
 #if MIN_VERSION_time(1,9,0)
 import Data.Time.Format.ISO8601
@@ -223,7 +226,6 @@ addOptionsFromArgs :: Options -> CommandLineOptions a -> IO (Options, Int)
 addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let printFormatter = SomeFormatter $ defaultPrintFormatter { printFormatterLogLevel = optLogLevel }
   let failureReportFormatter = SomeFormatter $ defaultFailureReportFormatter { failureReportLogLevel = optLogLevel }
-  let tuiFormatter = SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
   let silentFormatter = SomeFormatter defaultSilentFormatter
 
   maybeMainFormatter <- case (optRepeatCount, optFormatter) of
@@ -234,7 +236,9 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       -- you end up with no output and a hanging process (until you hit 'q'; stdin is still attached).
       -- Seems like the best default is just the print formatter.
       return $ Just printFormatter
-    (_, TUI) -> return $ Just tuiFormatter
+#ifndef mingw32_HOST_OS
+    (_, TUI) -> return $ Just $ SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
+#endif
     (_, Print) -> return $ Just printFormatter
     (_, PrintFailures) -> return $ Just failureReportFormatter
     (_, Silent) -> return $ Just silentFormatter
