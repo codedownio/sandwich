@@ -4,11 +4,16 @@ license:             BSD3
 
 dependencies:
 - base
-- brick
 - sandwich
 - text
 - time
-- vty
+
+when:
+- condition: "!os(windows)"
+  dependencies:
+  - brick
+  - vty
+
 
 default-extensions:
 - OverloadedStrings

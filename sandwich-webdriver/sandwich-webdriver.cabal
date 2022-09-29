@@ -86,7 +86,6 @@ library
     , text
     , time
     , transformers
-    , unix
     , unordered-containers
     , vector
     , webdriver
@@ -103,6 +102,9 @@ library
         linux-src
     build-depends:
         regex-compat
+  if !os(windows)
+    build-depends:
+        unix
   default-language: Haskell2010
 
 executable sandwich-webdriver-exe
@@ -152,7 +154,6 @@ executable sandwich-webdriver-exe
     , text
     , time
     , transformers
-    , unix
     , unordered-containers
     , vector
     , webdriver
@@ -175,6 +176,9 @@ executable sandwich-webdriver-exe
         linux-src
     build-depends:
         regex-compat
+  if !os(windows)
+    build-depends:
+        unix
   default-language: Haskell2010
 
 test-suite sandwich-webdriver-test
@@ -223,7 +227,6 @@ test-suite sandwich-webdriver-test
     , text
     , time
     , transformers
-    , unix
     , unordered-containers
     , vector
     , webdriver
@@ -246,4 +249,7 @@ test-suite sandwich-webdriver-test
         linux-src
     build-depends:
         regex-compat
+  if !os(windows)
+    build-depends:
+        unix
   default-language: Haskell2010

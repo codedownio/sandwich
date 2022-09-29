@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module Main where
 
@@ -9,7 +10,11 @@ import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.Slack
+
+#ifndef mingw32_HOST_OS
 import Test.Sandwich.Formatters.TerminalUI
+#endif
+
 
 simple :: TopSpec
 simple = parallel $ do
@@ -37,8 +42,11 @@ slackFormatter = defaultSlackFormatter {
   , slackFormatterVisibilityThreshold = Just 50
   }
 
+#ifndef mingw32_HOST_OS
 baseFormatter = SomeFormatter defaultTerminalUIFormatter
--- baseFormatter = SomeFormatter defaultPrintFormatter
+#else
+baseFormatter = SomeFormatter defaultPrintFormatter
+#endif
 
 main :: IO ()
 main = runSandwich options simple

@@ -24,8 +24,12 @@ dependencies:
 - string-interpolate
 - text
 - time
-- vty
 - wl-pprint-annotated
+
+when:
+- condition: "!os(windows)"
+  dependencies:
+  - vty
 
 default-extensions:
 - OverloadedStrings

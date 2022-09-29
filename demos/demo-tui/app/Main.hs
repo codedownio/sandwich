@@ -2,8 +2,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE CPP #-}
+
 module Main where
 
+#ifdef mingw32_HOST_OS
+main :: IO ()
+main = putStrLn "Demo not enabled on Windows."
+#else
 import Common
 import Control.Concurrent
 import Control.Monad.IO.Class
@@ -34,3 +40,5 @@ testOptions = defaultOptions {
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs testOptions simple
+
+#endif
