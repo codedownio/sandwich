@@ -67,7 +67,7 @@ runWithRepeat n totalTests action = do
 
     modify $ \(successes, total) -> (successes + (if numFailures == 0 then 1 else 0), total + 1)
 
-    if | exitReason == InterruptExit -> return ()
+    if | exitReason == SignalExit -> return ()
        | n > 0 -> loop (n - 1)
        | otherwise -> return ()
 

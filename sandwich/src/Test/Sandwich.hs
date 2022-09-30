@@ -190,12 +190,17 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   exitReasonRef <- newIORef NormalExit
 
-  let shutdown info = do
-        putStrLn [i|Shutting down due to #{info}...|]
-        writeIORef exitReasonRef InterruptExit
+  let shutdown sig = do
+        let signalName :: T.Text =
+              if | sig == sigINT -> "sigINT"
+                 | sig == sigTERM -> "sigTERM"
+                 | otherwise -> [i|signal #{sig}|]
+        putStrLn [i|Shutting down due to #{signalName}...|]
+        writeIORef exitReasonRef SignalExit
         forM_ rts cancelNode
 
   _ <- installHandler sigINT shutdown
+  _ <- installHandler sigTERM shutdown
 
   -- Wait for the tree to finish
   mapM_ waitForTree rts
