@@ -205,7 +205,7 @@ data TestArtifactsDirectory =
       }
   -- ^ Create a new test artifacts directory under '' test artifacts directory at the given path.
 
-newtype TreeFilter = TreeFilter [String]
+newtype TreeFilter = TreeFilter { unTreeFilter :: [String] }
 
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 

@@ -37,9 +37,7 @@ startSandwichTree options spec = do
 
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree' baseContext (Options {..}) spec' = do
-  let spec = case optionsFilterTree of
-        Nothing -> spec'
-        Just (TreeFilter matches) -> filterTree matches spec'
+  let spec = maybe spec' (L.foldl' filterTree spec' . unTreeFilter) optionsFilterTree
 
   runTree <- atomically $ specToRunTreeVariable baseContext spec
 

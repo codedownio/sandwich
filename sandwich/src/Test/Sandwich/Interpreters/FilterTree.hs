@@ -7,28 +7,32 @@ import Control.Monad.Free
 import qualified Data.List as L
 import Test.Sandwich.Types.Spec
 
-filterTree :: [String] -> Free (SpecCommand context m) () -> Free (SpecCommand context m) ()
-filterTree matches (Free (It'' loc no l ex next))
-  | all (`L.isInfixOf` l) matches = Free (It'' loc no l ex (filterTree matches next))
-  | otherwise = filterTree matches (filterTree matches next)
-filterTree matches (Free (Introduce'' loc no l cl alloc cleanup subspec next))
-  | all (`L.isInfixOf` l) matches = Free (Introduce'' loc no l cl alloc cleanup subspec (filterTree matches next))
-  | otherwise = case filterTree matches subspec of
-      (Pure _) -> filterTree matches next
-      x -> Free (Introduce'' loc no l cl alloc cleanup x (filterTree matches next))
-filterTree matches (Free (IntroduceWith'' loc no l cl action subspec next))
-  | all (`L.isInfixOf` l) matches = Free (IntroduceWith'' loc no l cl action subspec (filterTree matches next))
-  | otherwise = case filterTree matches subspec of
-      (Pure _) -> filterTree matches next
-      x -> Free (IntroduceWith'' loc no l cl action x (filterTree matches next))
-filterTree matches (Free (Parallel'' loc no subspec next)) =
-  case filterTree matches subspec of
-    (Pure _) -> filterTree matches next
-    x -> Free (Parallel'' loc no x (filterTree matches next))
-filterTree matches (Free x)
-  | all (`L.isInfixOf` label x) matches = Free (x { next = (filterTree matches (next x)) })
-  | otherwise = case filterTree matches (subspec x) of
-      (Pure _) -> filterTree matches (next x)
+filterTree :: Free (SpecCommand context m) () -> String -> Free (SpecCommand context m) ()
+filterTree (Free (It'' loc no l ex next)) match
+  | l `matches` match = Free (It'' loc no l ex (filterTree next match))
+  | otherwise = filterTree (filterTree next match) match
+filterTree (Free (Introduce'' loc no l cl alloc cleanup subspec next)) match
+  | l `matches` match = Free (Introduce'' loc no l cl alloc cleanup subspec (filterTree next match))
+  | otherwise = case filterTree subspec match of
+      (Pure _) -> filterTree next match
+      x -> Free (Introduce'' loc no l cl alloc cleanup x (filterTree next match))
+filterTree (Free (IntroduceWith'' loc no l cl action subspec next)) match
+  | l `matches` match = Free (IntroduceWith'' loc no l cl action subspec (filterTree next match))
+  | otherwise = case filterTree subspec match of
+      (Pure _) -> filterTree next match
+      x -> Free (IntroduceWith'' loc no l cl action x (filterTree next match))
+filterTree (Free (Parallel'' loc no subspec next)) match
+  = case filterTree subspec match of
+      (Pure _) -> filterTree next match
+      x -> Free (Parallel'' loc no x (filterTree next match))
+filterTree (Free x) match
+  | label x `matches` match = Free (x { next = (filterTree (next x) match) })
+  | otherwise = case filterTree (subspec x) match of
+      (Pure _) -> filterTree (next x) match
       subspec' -> Free (x { subspec = subspec'
-                          , next = (filterTree matches (next x)) })
-filterTree _ (Pure x) = Pure x
+                          , next = (filterTree (next x) match) })
+filterTree (Pure x) _ = Pure x
+
+
+matches :: String -> String -> Bool
+matches l match = match `L.isInfixOf` l
