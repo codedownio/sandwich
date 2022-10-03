@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.1.2
+
+* Improve semantics of multiple `--filter/-f` arguments. Now they get applied to the test tree sequentially.
+
 ## 0.1.1.1
 
 * Fix error symlink creation on Windows (don't allow invalid characters).
