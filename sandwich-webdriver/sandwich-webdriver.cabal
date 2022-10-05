@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -88,6 +88,7 @@ library
     , unordered-containers
     , vector
     , webdriver
+  default-language: Haskell2010
   if os(darwin)
     hs-source-dirs:
         darwin-src
@@ -109,7 +110,6 @@ library
         Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
     hs-source-dirs:
         unix-src
-  default-language: Haskell2010
 
 executable sandwich-webdriver-exe
   main-is: Main.hs
@@ -161,6 +161,7 @@ executable sandwich-webdriver-exe
     , unordered-containers
     , vector
     , webdriver
+  default-language: Haskell2010
   if os(darwin)
     other-modules:
         Test.Sandwich.WebDriver.Resolution
@@ -183,7 +184,6 @@ executable sandwich-webdriver-exe
   if !os(windows)
     build-depends:
         unix
-  default-language: Haskell2010
 
 test-suite sandwich-webdriver-test
   type: exitcode-stdio-1.0
@@ -234,6 +234,7 @@ test-suite sandwich-webdriver-test
     , unordered-containers
     , vector
     , webdriver
+  default-language: Haskell2010
   if os(darwin)
     other-modules:
         Test.Sandwich.WebDriver.Resolution
@@ -256,4 +257,3 @@ test-suite sandwich-webdriver-test
   if !os(windows)
     build-depends:
         unix
-  default-language: Haskell2010
