@@ -1,8 +1,9 @@
 # Changelog for sandwich-webdriver
 
-## Unreleased changes
+# 0.1.2.0
 
 * Be able to control download directory.
+* Add flags to control Selenium paths: `--selenium-jar`, `--chrome-binary`, `--chromedriver-binary`, `--firefox-binary`, `--geckodriver-binary`.
 
 # 0.1.1.0
 

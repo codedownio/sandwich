@@ -41,6 +41,7 @@ module Test.Sandwich.WebDriver (
   , module Test.Sandwich.WebDriver.Types
   ) where
 
+import Control.Applicative
 import Control.Concurrent.MVar.Lifted
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -147,4 +148,12 @@ addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(Comma
       Just Headless -> RunHeadless defaultHeadlessConfig
       Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
       Just Current -> Normal
+
+  , seleniumToUse = maybe seleniumToUse UseSeleniumAt optSeleniumJar
+
+  , chromeBinaryPath = optChromeBinary <|> chromeBinaryPath
+  , chromeDriverToUse = maybe chromeDriverToUse UseChromeDriverAt optChromeDriver
+
+  , firefoxBinaryPath = optFirefoxBinary <|> firefoxBinaryPath
+  , geckoDriverToUse = maybe geckoDriverToUse UseGeckoDriverAt optGeckoDriver
   }

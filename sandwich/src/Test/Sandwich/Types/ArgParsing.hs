@@ -143,4 +143,12 @@ data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
   , optFluxbox :: Bool
   , optIndividualVideos :: Bool
   , optErrorVideos :: Bool
+
+  , optSeleniumJar :: Maybe FilePath
+
+  , optChromeBinary :: Maybe FilePath
+  , optChromeDriver :: Maybe FilePath
+
+  , optFirefoxBinary :: Maybe FilePath
+  , optGeckoDriver :: Maybe FilePath
   } deriving Show
