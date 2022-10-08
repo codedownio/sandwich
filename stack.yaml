@@ -23,6 +23,7 @@ packages:
 - ./demos/demo-paralleln
 - ./demos/demo-quickcheck
 - ./demos/demo-slack
+- ./demos/demo-stack-test
 - ./demos/demo-timing
 - ./demos/demo-timing-parallel
 - ./demos/demo-tui
