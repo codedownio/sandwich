@@ -28,7 +28,7 @@ dependencies:
 - aeson
 - ansi-terminal
 - async
-- base < 5
+- base >= 4.11 && < 5
 - colour
 - containers
 - bytestring

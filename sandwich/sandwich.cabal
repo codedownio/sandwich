@@ -96,7 +96,7 @@ library
       aeson
     , ansi-terminal
     , async
-    , base <5
+    , base >=4.11 && <5
     , bytestring
     , colour
     , containers
@@ -170,7 +170,7 @@ executable sandwich-demo
       aeson
     , ansi-terminal
     , async
-    , base <5
+    , base >=4.11 && <5
     , bytestring
     , colour
     , containers
@@ -228,7 +228,7 @@ executable sandwich-discover
       aeson
     , ansi-terminal
     , async
-    , base <5
+    , base >=4.11 && <5
     , bytestring
     , colour
     , containers
@@ -291,7 +291,7 @@ executable sandwich-test
       aeson
     , ansi-terminal
     , async
-    , base <5
+    , base >=4.11 && <5
     , bytestring
     , colour
     , containers
@@ -355,7 +355,7 @@ test-suite sandwich-test-suite
       aeson
     , ansi-terminal
     , async
-    , base <5
+    , base >=4.11 && <5
     , bytestring
     , colour
     , containers
