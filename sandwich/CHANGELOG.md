@@ -2,6 +2,11 @@
 
 ## Unreleased changes
 
+## 0.1.2.0
+
+* Be able to control `sandwich-webdriver` download directory.
+* Add flags to control `sandwich-webdriver` Selenium paths: `--selenium-jar`, `--chrome-binary`, `--chromedriver-binary`, `--firefox-binary`, `--geckodriver-binary`.
+
 ## 0.1.1.2
 
 * Improve semantics of multiple `--filter/-f` arguments. Now they get applied to the test tree sequentially.
