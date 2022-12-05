@@ -20,6 +20,7 @@ import System.FilePath
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.Interpreters.SkipTree
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Options
 import Test.Sandwich.TestTimer
@@ -36,10 +37,11 @@ startSandwichTree options spec = do
   startSandwichTree' baseContext options spec
 
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
-startSandwichTree' baseContext (Options {..}) spec' = do
-  let spec = maybe spec' (L.foldl' filterTree spec' . unTreeFilter) optionsFilterTree
+startSandwichTree' baseContext (Options {..}) spec = do
+  let filteredSpec = maybe spec (L.foldl' filterTree spec . unTreeFilter) optionsFilterTree
+  let skippedSpec = maybe filteredSpec (skipTree filteredSpec . unTreeFilter) optionsSkipTree
 
-  runTree <- atomically $ specToRunTreeVariable baseContext spec
+  runTree <- atomically $ specToRunTreeVariable baseContext skippedSpec
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
      | otherwise -> void $ async $ void $ runNodesSequentially runTree baseContext
