@@ -63,6 +63,7 @@ library
       Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Interpreters.RunTree.Util
+      Test.Sandwich.Interpreters.SkipTree
       Test.Sandwich.Interpreters.StartTree
       Test.Sandwich.ParallelN
       Test.Sandwich.RunTree
