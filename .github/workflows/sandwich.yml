@@ -78,7 +78,7 @@ jobs:
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
-        stack-version: "latest"
+        stack-version: "2.9.3"
         enable-stack: true
 
     - uses: actions/cache@v1
