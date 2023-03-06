@@ -60,10 +60,10 @@ library
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.FilterTreeModule
       Test.Sandwich.Interpreters.PrettyShow
+      Test.Sandwich.Interpreters.PruneTree
       Test.Sandwich.Interpreters.RunTree
       Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Interpreters.RunTree.Util
-      Test.Sandwich.Interpreters.SkipTree
       Test.Sandwich.Interpreters.StartTree
       Test.Sandwich.ParallelN
       Test.Sandwich.RunTree

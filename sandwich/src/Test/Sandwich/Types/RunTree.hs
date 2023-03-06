@@ -261,8 +261,8 @@ data Options = Options {
   -- ^ Formatter function for log entries.
   , optionsFilterTree :: Maybe TreeFilter
   -- ^ Filter to apply to the text tree before running that only retains the matched tests.
-  , optionsSkipTree :: Maybe TreeFilter
-  -- ^ Filter to apply to the text tree before running that filters out the matched tests.
+  , optionsPruneTree :: Maybe TreeFilter
+  -- ^ Filter to apply to the text tree before running that prunes out the matched tests and their subtrees.
   , optionsDryRun :: Bool
   -- ^ Whether to skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI.
   , optionsFormatters :: [SomeFormatter]
