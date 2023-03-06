@@ -1,23 +1,23 @@
 
--- | Skip any nodes in a spec tree that match any of a list of names
+-- | Prunes any nodes and their children in a spec tree that match any of a list of names
 
-module Test.Sandwich.Interpreters.SkipTree (skipTree) where
+module Test.Sandwich.Interpreters.PruneTree (pruneTree) where
 
 import Control.Monad.Free
 import qualified Data.List as L
 import Test.Sandwich.Types.Spec
 
-skipTree :: Free (SpecCommand context m) () -> [String] -> Free (SpecCommand context m) ()
-skipTree tree skipLabels =
+pruneTree :: Free (SpecCommand context m) () -> [String] -> Free (SpecCommand context m) ()
+pruneTree tree pruneLabels =
   go tree
   where
     go :: Free (SpecCommand context m) () -> Free (SpecCommand context m) ()
     go = \case
       (Free (It'' loc no label' ex next))
-        | label' `doesNotMatchAny` skipLabels -> Free (It'' loc no label' ex (go next))
+        | label' `doesNotMatchAny` pruneLabels -> Free (It'' loc no label' ex (go next))
         | otherwise -> go next
       (Free (Introduce'' loc no label' cl alloc cleanup subspec next))
-        | label' `doesNotMatchAny` skipLabels ->
+        | label' `doesNotMatchAny` pruneLabels ->
           case go subspec of
             (Pure _) -> go next
             subspec' -> Free (Introduce'' loc no label' cl alloc cleanup subspec' (go next))
@@ -25,7 +25,7 @@ skipTree tree skipLabels =
           go next
 
       (Free (IntroduceWith'' loc no label' cl action subspec next))
-        | label' `doesNotMatchAny` skipLabels ->
+        | label' `doesNotMatchAny` pruneLabels ->
           case go subspec of
             (Pure _) -> go next
             subspec' -> Free (IntroduceWith'' loc no label' cl action subspec' (go next))
@@ -37,7 +37,7 @@ skipTree tree skipLabels =
           subspec' -> Free (Parallel'' loc no subspec' (go next))
       -- Before'', After'', Around'', Describe''
       (Free x)
-        | label x `doesNotMatchAny` skipLabels ->
+        | label x `doesNotMatchAny` pruneLabels ->
           case go (subspec x) of
             (Pure _) -> go (next x)
             subspec' -> Free (x { subspec = subspec', next = go (next x) })

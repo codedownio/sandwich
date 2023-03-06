@@ -13,8 +13,8 @@ If you use [runSandwichWithCommandLineArgs](http://hackage.haskell.org/package/s
 * Choose a default log level: `--debug`, `--info`, `--warn`, `--error`.
 * Choose a visibility threshold: `--visibility-threshold N` (or `-v N`)
 * Repeat the test suite N times: `--repeat n` (useful to exercise flaky tests)
-* Filter the test tree to a string: `--filter some_string`.
-* Skip any nodes (and their children) in the test tree whose label contains a particular string: `--skip some_string`.
+* Filter the test tree to a string: `--filter some_string`. Filtering happens after pruning, no matter the order of the arguments.
+* Prunes any nodes (and their children) in the test tree whose label contains a particular string: `--skip some_string`. Pruning happens before filtering, no matter the order of the arguments.
 * Learn about extra flags controlling extensions: `--print-slack-flags`, `--print-webdriver-flags`, `--print-quickcheck-flags`, `--print-hedgehog-flags`.
 * List test modules and flags to run them individually: `--list-tests`. (Requires the use of [test discovery](discovery).)
 

@@ -20,7 +20,7 @@ module Test.Sandwich.Options (
 
   -- * Filtering
   , optionsFilterTree
-  , optionsSkipTree
+  , optionsPruneTree
   , TreeFilter(..)
 
   -- * Timing
@@ -45,7 +45,7 @@ defaultOptions = Options {
   , optionsMemoryLogLevel = Just LevelDebug
   , optionsLogFormatter = defaultLogEntryFormatter
   , optionsFilterTree = Nothing
-  , optionsSkipTree = Nothing
+  , optionsPruneTree = Nothing
   , optionsDryRun = False
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
