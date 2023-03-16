@@ -1,5 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, NamedFieldPuns, Rank2Types #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE Rank2Types #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries (
   obtainSelenium
@@ -9,7 +13,9 @@ module Test.Sandwich.WebDriver.Internal.Binaries (
   , downloadChromeDriverIfNecessary
   ) where
 
+import Control.Exception
 import Control.Monad
+import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -19,17 +25,25 @@ import qualified Data.Text as T
 import GHC.Stack
 import System.Directory
 import System.FilePath
+import System.IO.Temp
 import System.Process
 import Test.Sandwich.Logging
 import Test.Sandwich.WebDriver.Internal.Binaries.Util
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m)
+
+type Constraints m = (
+  HasCallStack
+  , MonadLogger m
+  , MonadIO m
+  , MonadBaseControl IO m
+  , MonadMask m
+  )
 
 -- * Obtaining binaries
 
-  -- TODO: remove curl dependencies here
+-- TODO: remove curl dependencies here
 
 -- | Manually obtain a Selenium server JAR file, according to the 'SeleniumToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
@@ -53,7 +67,9 @@ obtainSelenium _ (UseSeleniumAt path) =
 
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
-obtainChromeDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
+obtainChromeDriver :: (
+  MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadMask m
+  ) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
 obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory path)
@@ -147,11 +163,19 @@ geckoDriverExecutable = case detectPlatform of
   Windows -> "geckodriver.exe"
   _ -> "geckodriver"
 
-downloadAndUnzipToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUnzipToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, MonadMask m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
-  liftIO $ void $ readCreateProcess (shell [i|wget -nc -O - #{downloadPath} | gunzip - > #{localPath}|]) ""
+  withSystemTempDirectory "sandwich-webdriver-tool-download" $ \dir -> liftIO $ do
+    void $ readCreateProcess ((proc "curl" [T.unpack downloadPath, "-o", "temp.zip"]) { cwd = Just dir }) ""
+    void $ readCreateProcess ((proc "unzip" ["temp.zip"]) { cwd = Just dir }) ""
+
+    liftIO (listDirectory dir >>= filterM (\f -> executable <$> getPermissions (dir </> f))) >>= \case
+      [] -> throwIO $ userError [i|No executable found in file downloaded from #{downloadPath}|]
+      [x] -> renameFile (dir </> x) localPath
+      xs -> throwIO $ userError [i|Found multiple executable found in file downloaded from #{downloadPath}: #{xs}|]
+
   liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
 
 downloadAndUntarballToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
