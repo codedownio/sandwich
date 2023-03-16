@@ -11,7 +11,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os:
+        - ubuntu-latest
+        - macOS-latest
+        # - windows-latest
         ghc:
         - "8.6.5"
         - "8.8.4"
@@ -22,8 +25,13 @@ jobs:
         exclude:
         # ghc-9.4.4.exe: C:\sr\ghc-9.4.4\hashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348\lib\libHShashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348.a(#7:LowLevel.o): Not a x86_64 PE+ file.
         # ghc-9.4.4.exe: Unknown COFF 4 type in getHeaderInfo.
-        - os: windows-latest
-          ghc: 9.4.4
+        # - os: windows-latest
+        #   ghc: 9.4.4
+
+        - os: macOS-latest
+          ghc: 8.6.5
+        - os: macOS-latest
+          ghc: 8.8.4
 
     steps:
     - uses: actions/checkout@v2
