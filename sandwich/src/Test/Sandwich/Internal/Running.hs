@@ -39,8 +39,8 @@ startSandwichTree options spec = do
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpts), optionsFilterTree=(unwrapTreeFilter -> filterOpts), optionsDryRun}) spec = do
   runTree <- spec
-    & (`pruneTree` pruneOpts)
-    & (\x -> (L.foldl' filterTree x) filterOpts)
+    & (\tree -> L.foldl' pruneTree tree pruneOpts)
+    & (\tree -> L.foldl' filterTree tree filterOpts)
     & atomically . specToRunTreeVariable baseContext
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
