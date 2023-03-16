@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
 name:           sandwich
-version:        0.1.2.0
+version:        0.1.3.0
 synopsis:       Yet another test framework for Haskell
 description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 category:       Testing

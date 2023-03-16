@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.3.0
+
+* Add the --prune option (#69)
+
 ## 0.1.2.0
 
 * Be able to control `sandwich-webdriver` download directory.

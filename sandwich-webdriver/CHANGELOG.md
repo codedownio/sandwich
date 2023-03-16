@@ -1,5 +1,9 @@
 # Changelog for sandwich-webdriver
 
+# 0.2.0.0
+
+* Fix the obtainChromeDriver function now that the zip files contain multiple files. This added a MonadMask constraint to the function so it's a major version bump.
+
 # 0.1.2.0
 
 * Be able to control download directory.
