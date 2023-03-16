@@ -57,8 +57,8 @@ data CommandLineOptions a = CommandLineOptions {
   optFormatter :: FormatterType
   , optLogLevel :: Maybe LogLevel
   , optVisibilityThreshold :: Maybe Int
-  , optTreeFilter :: [String]
   , optTreePrune :: [String]
+  , optTreeFilter :: [String]
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
   , optDryRun :: Maybe Bool

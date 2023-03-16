@@ -8,8 +8,7 @@ import qualified Data.List as L
 import Test.Sandwich.Types.Spec
 
 pruneTree :: Free (SpecCommand context m) () -> [String] -> Free (SpecCommand context m) ()
-pruneTree tree pruneLabels =
-  go tree
+pruneTree tree pruneLabels = go tree
   where
     go :: Free (SpecCommand context m) () -> Free (SpecCommand context m) ()
     go = \case
@@ -21,16 +20,14 @@ pruneTree tree pruneLabels =
           case go subspec of
             (Pure _) -> go next
             subspec' -> Free (Introduce'' loc no label' cl alloc cleanup subspec' (go next))
-        | otherwise ->
-          go next
+        | otherwise -> go next
 
       (Free (IntroduceWith'' loc no label' cl action subspec next))
         | label' `doesNotMatchAny` pruneLabels ->
           case go subspec of
             (Pure _) -> go next
             subspec' -> Free (IntroduceWith'' loc no label' cl action subspec' (go next))
-        | otherwise ->
-          go next
+        | otherwise -> go next
       (Free (Parallel'' loc no subspec next)) ->
         case go subspec of
           (Pure _) -> go next
