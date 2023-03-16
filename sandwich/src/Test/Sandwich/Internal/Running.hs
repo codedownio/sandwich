@@ -37,16 +37,19 @@ startSandwichTree options spec = do
   startSandwichTree' baseContext options spec
 
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
-startSandwichTree' baseContext (Options {..}) spec = do
-  let prunedSpec = maybe spec (pruneTree spec . unTreeFilter) optionsPruneTree
-  let filteredSpec = maybe prunedSpec (L.foldl' filterTree prunedSpec . unTreeFilter) optionsFilterTree
-
-  runTree <- atomically $ specToRunTreeVariable baseContext filteredSpec
+startSandwichTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpts), optionsFilterTree=(unwrapTreeFilter -> filterOpts), optionsDryRun}) spec = do
+  runTree <- spec
+    & (`pruneTree` pruneOpts)
+    & (\x -> (L.foldl' filterTree x) filterOpts)
+    & atomically . specToRunTreeVariable baseContext
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
      | otherwise -> void $ async $ void $ runNodesSequentially runTree baseContext
 
   return runTree
+
+unwrapTreeFilter :: Maybe TreeFilter -> [String]
+unwrapTreeFilter = maybe [] unTreeFilter
 
 runSandwichTree :: Options -> CoreSpec -> IO [RunNode BaseContext]
 runSandwichTree options spec = do
