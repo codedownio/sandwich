@@ -20,6 +20,7 @@ jobs:
           - "8.10.7"
           - "9.0.2"
           - "9.2.7"
+          - "9.4.4"
         # exclude:
         #   - os: macOS-latest
         #     ghc: 8.8.3
@@ -69,6 +70,7 @@ jobs:
           - "8.10.7"
           - "9.0.2"
           - "9.2.7"
+          - "9.4.4"
 
     steps:
     - uses: actions/checkout@v2
