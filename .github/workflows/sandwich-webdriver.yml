@@ -1,4 +1,4 @@
-name: sandwich
+name: sandwich-webdriver
 
 on:
   pull_request:
@@ -38,7 +38,7 @@ jobs:
 
     - name: Freeze
       run: |
-        cd sandwich
+        cd sandwich-webdriver
         cabal freeze
 
     - uses: actions/cache@v1
@@ -49,13 +49,13 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich
+        cd sandwich-webdriver
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
     - name: Test
       run: |
-        cd sandwich
+        cd sandwich-webdriver
         cabal test all
 
   stack:
@@ -96,10 +96,10 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich
+        cd sandwich-webdriver
         stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
-        cd sandwich
+        cd sandwich-webdriver
         stack test --system-ghc
