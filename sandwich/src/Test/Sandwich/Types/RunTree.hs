@@ -259,10 +259,10 @@ data Options = Options {
   -- ^ Test log level to store in memory while tests are running. (These logs are presented in formatters, etc.).
   , optionsLogFormatter :: LogEntryFormatter
   -- ^ Formatter function for log entries.
-  , optionsFilterTree :: Maybe TreeFilter
-  -- ^ Filter to apply to the text tree before running that only retains the matched tests.
   , optionsPruneTree :: Maybe TreeFilter
   -- ^ Filter to apply to the text tree before running that prunes out the matched tests and their subtrees.
+  , optionsFilterTree :: Maybe TreeFilter
+  -- ^ Filter to apply to the text tree before running that only retains the matched tests.
   , optionsDryRun :: Bool
   -- ^ Whether to skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI.
   , optionsFormatters :: [SomeFormatter]
