@@ -60,10 +60,9 @@ obtainSelenium toolsDir DownloadSeleniumDefault = do
   unlessM (liftIO $ doesFileExist seleniumPath) $
     void $ liftIO $ readCreateProcess (shell [i|curl https://selenium-release.storage.googleapis.com/3.141/selenium-server-standalone-3.141.59.jar -o #{seleniumPath}|]) ""
   return $ Right seleniumPath
-obtainSelenium _ (UseSeleniumAt path) =
-  (liftIO $ doesFileExist path) >>= \case
-    False -> return $ Left [i|Path '#{path}' didn't exist|]
-    True -> return $ Right path
+obtainSelenium _ (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
+  False -> return $ Left [i|Path '#{path}' didn't exist|]
+  True -> return $ Right path
 
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
@@ -87,10 +86,9 @@ obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = 
 obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect maybeChromePath) = runExceptT $ do
   version <- ExceptT $ liftIO $ getChromeDriverVersion maybeChromePath
   ExceptT $ obtainChromeDriver toolsDir (DownloadChromeDriverVersion version)
-obtainChromeDriver _ (UseChromeDriverAt path) =
-  (liftIO $ doesFileExist path) >>= \case
-    False -> return $ Left [i|Path '#{path}' didn't exist|]
-    True -> return $ Right path
+obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= \case
+  False -> return $ Left [i|Path '#{path}' didn't exist|]
+  True -> return $ Right path
 
 -- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
@@ -112,10 +110,9 @@ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = run
 obtainGeckoDriver toolsDir (DownloadGeckoDriverAutodetect maybeFirefoxPath) = runExceptT $ do
   version <- ExceptT $ liftIO $ getGeckoDriverVersion maybeFirefoxPath
   ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
-obtainGeckoDriver _ (UseGeckoDriverAt path) =
-  (liftIO $ doesFileExist path) >>= \case
-    False -> return $ Left [i|Path '#{path}' didn't exist|]
-    True -> return $ Right path
+obtainGeckoDriver _ (UseGeckoDriverAt path) = liftIO (doesFileExist path) >>= \case
+  False -> return $ Left [i|Path '#{path}' didn't exist|]
+  True -> return $ Right path
 
 -- * Lower level helpers
 
@@ -123,7 +120,7 @@ obtainGeckoDriver _ (UseGeckoDriverAt path) =
 downloadSeleniumIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
 downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
   let seleniumPath = [i|#{toolsDir}/selenium-server.jar|]
-  (liftIO (doesFileExist seleniumPath) >>= flip unless (downloadSelenium seleniumPath))
+  liftIO (doesFileExist seleniumPath) >>= flip unless (downloadSelenium seleniumPath)
   return seleniumPath
 
 downloadSelenium :: Constraints m => FilePath -> m ()
