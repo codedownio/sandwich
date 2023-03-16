@@ -4,6 +4,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE CPP #-}
 
 module Main where
 
@@ -11,6 +12,7 @@ import Control.Concurrent
 import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Data.Maybe
 import Data.Pool
 import Data.String.Interpolate
@@ -48,8 +50,15 @@ claimWebdriver spec = introduceWith' (
   where
     wrappedAction action = do
       pool <- getContext webDriverPool
+
+#if !MIN_VERSION_resource_pool(3,0,0)
+      withRunInIO $ \runInIO ->
+        withResource pool $ \sess ->
+          runInIO $ (void $ action sess) `finally` closeAllSessions sess
+#else
       withResource pool $ \sess ->
         (void $ action sess) `finally` closeAllSessions sess
+#endif
 
 -- * Tests
 

@@ -1,5 +1,5 @@
 
-resolver: lts-19.22
+resolver: nightly-2023-03-15
 
 packages:
 - ./sandwich

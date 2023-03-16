@@ -12,6 +12,7 @@ dependencies:
 - sandwich-webdriver
 - string-interpolate
 - time
+- unliftio-core
 - webdriver
 
 default-extensions:
