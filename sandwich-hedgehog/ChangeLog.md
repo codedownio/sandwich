@@ -2,6 +2,7 @@
 
 ## Unreleased changes
 
+* Support propertySkip in hedgehog
 
 ## 0.1.1.0
 

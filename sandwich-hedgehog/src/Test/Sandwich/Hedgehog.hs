@@ -26,6 +26,9 @@ module Test.Sandwich.Hedgehog (
   , hedgehogShrinkLimit
   , hedgehogShrinkRetries
   , hedgehogTerminationCriteria
+#if MIN_VERSION_hedgehog(1,2,0)
+  , hedgehogSkip
+#endif
   , hedgehogSize
   , hedgehogSeed
 
@@ -42,6 +45,7 @@ module Test.Sandwich.Hedgehog (
   , modifyShrinkLimit
   , modifyShrinkRetries
   , modifyTerminationCriteria
+  , modifySkip
   , modifySize
   , modifySeed
 
@@ -85,6 +89,10 @@ data HedgehogParams = HedgehogParams {
   , hedgehogShrinkRetries :: Maybe ShrinkRetries
   -- | Control when the test runner should terminate.
   , hedgehogTerminationCriteria :: Maybe TerminationCriteria
+  -- | Control where to start running a property's tests
+#if MIN_VERSION_hedgehog(1,2,0)
+  , hedgehogSkip :: Maybe Skip
+#endif
   } deriving (Show)
 
 defaultHedgehogParams = HedgehogParams {
@@ -94,6 +102,9 @@ defaultHedgehogParams = HedgehogParams {
   , hedgehogShrinkLimit = Nothing
   , hedgehogShrinkRetries = Nothing
   , hedgehogTerminationCriteria = Nothing
+#if MIN_VERSION_hedgehog(1,2,0)
+  , hedgehogSkip = Nothing
+#endif
   }
 
 newtype HedgehogContext = HedgehogContext HedgehogParams
@@ -147,6 +158,11 @@ prop msg p = it msg $ do
         , propertyShrinkLimit = fromMaybe (propertyShrinkLimit defaultConfig) hedgehogShrinkLimit
         , propertyShrinkRetries = fromMaybe (propertyShrinkRetries defaultConfig) hedgehogShrinkRetries
         , propertyTerminationCriteria = fromMaybe (propertyTerminationCriteria defaultConfig) hedgehogTerminationCriteria
+
+#if MIN_VERSION_hedgehog(1,2,0)
+        , propertySkip = hedgehogSkip <|> propertySkip defaultConfig
+#endif
+
         }
 
   let size = fromMaybe 0 hedgehogSize
@@ -188,28 +204,46 @@ modifyArgs f = introduce "Modified Hedgehog context" hedgehogContext acquire (co
 type HedgehogContextLabel context = LabelValue "hedgehogContext" HedgehogContext :> context
 
 -- | Modify the 'Seed' for the given spec.
-modifySeed :: (HasHedgehogContext context, Monad m) => (Maybe Seed -> Maybe Seed) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySeed :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe Seed -> Maybe Seed) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifySeed f = modifyArgs $ \args -> args { hedgehogSeed = f (hedgehogSeed args) }
 
 -- | Modify the 'Size' for the given spec.
-modifySize :: (HasHedgehogContext context, Monad m) => (Maybe Size -> Maybe Size) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySize :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe Size -> Maybe Size) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifySize f = modifyArgs $ \args -> args { hedgehogSize = f (hedgehogSize args) }
 
 -- | Modify the 'DiscardLimit' for the given spec.
-modifyDiscardLimit :: (HasHedgehogContext context, Monad m) => (Maybe DiscardLimit -> Maybe DiscardLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyDiscardLimit :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe DiscardLimit -> Maybe DiscardLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyDiscardLimit f = modifyArgs $ \args -> args { hedgehogDiscardLimit = f (hedgehogDiscardLimit args) }
 
 -- | Modify the 'ShrinkLimit' for the given spec.
-modifyShrinkLimit :: (HasHedgehogContext context, Monad m) => (Maybe ShrinkLimit -> Maybe ShrinkLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyShrinkLimit :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe ShrinkLimit -> Maybe ShrinkLimit) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyShrinkLimit f = modifyArgs $ \args -> args { hedgehogShrinkLimit = f (hedgehogShrinkLimit args) }
 
 -- | Modify the 'ShrinkRetries' for the given spec.
-modifyShrinkRetries :: (HasHedgehogContext context, Monad m) => (Maybe ShrinkRetries -> Maybe ShrinkRetries) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyShrinkRetries :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe ShrinkRetries -> Maybe ShrinkRetries) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyShrinkRetries f = modifyArgs $ \args -> args { hedgehogShrinkRetries = f (hedgehogShrinkRetries args) }
 
 -- | Modify the 'TerminationCriteria' for the given spec.
-modifyTerminationCriteria :: (HasHedgehogContext context, Monad m) => (Maybe TerminationCriteria -> Maybe TerminationCriteria) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifyTerminationCriteria :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe TerminationCriteria -> Maybe TerminationCriteria) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyTerminationCriteria f = modifyArgs $ \args -> args { hedgehogTerminationCriteria = f (hedgehogTerminationCriteria args) }
+
+-- | Modify the 'Skip' for the given spec.
+modifySkip :: (
+  HasHedgehogContext context, Monad m
+  ) => (Maybe Skip -> Maybe Skip) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
+modifySkip f = modifyArgs $ \args -> args { hedgehogSkip = f (hedgehogSkip args) }
 
 addCommandLineOptions :: CommandLineOptions a -> HedgehogParams -> HedgehogParams
 addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseHedgehogParams@(HedgehogParams {..}) = baseHedgehogParams {
