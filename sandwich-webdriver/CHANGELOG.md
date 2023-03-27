@@ -1,5 +1,11 @@
 # Changelog for sandwich-webdriver
 
+# Unreleased
+
+# 0.2.1.0
+
+* Pass `--headless=new` instead of `--headless` for Chrome >= 110, to address https://www.selenium.dev/blog/2023/headless-is-going-away/.
+
 # 0.2.0.0
 
 * Fix the obtainChromeDriver function now that the zip files contain multiple files. This added a MonadMask constraint to the function so it's a major version bump.
