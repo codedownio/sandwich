@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, LambdaCase, QuasiQuotes, RecordWildCards, NamedFieldPuns, ScopedTypeVariables, DataKinds #-}
+{-# LANGUAGE DataKinds #-}
 
 module Test.Sandwich.WebDriver.Internal.Action where
 

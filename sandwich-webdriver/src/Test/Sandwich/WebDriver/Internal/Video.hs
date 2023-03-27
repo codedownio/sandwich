@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, QuasiQuotes, ScopedTypeVariables, FlexibleContexts, OverloadedStrings, NamedFieldPuns, ViewPatterns #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.WebDriver.Internal.Video where
 

@@ -47,14 +47,18 @@ dependencies:
 - webdriver
 
 default-extensions:
-- OverloadedStrings
-- QuasiQuotes
-- NamedFieldPuns
-- RecordWildCards
-- ScopedTypeVariables
 - FlexibleContexts
 - FlexibleInstances
 - LambdaCase
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
+- NumericUnderscores
+- OverloadedStrings
+- QuasiQuotes
+- RecordWildCards
+- ScopedTypeVariables
+- ViewPatterns
 
 library:
   source-dirs: src

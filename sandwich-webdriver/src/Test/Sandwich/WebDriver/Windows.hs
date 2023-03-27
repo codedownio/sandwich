@@ -1,6 +1,5 @@
 -- | Functions for manipulating browser windows.
 
-{-# LANGUAGE QuasiQuotes #-}
 
 module Test.Sandwich.WebDriver.Windows (
   -- * Window positioning
