@@ -152,9 +152,9 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
   -- Retry every 60ms, for up to 60s before admitting defeat
   let policy = constantDelay 60000 <> limitRetries 1000
   success <- retrying policy (\_retryStatus result -> return (not result)) $ const $
-    (liftIO $ T.readFile seleniumErrPath) >>= \case
+    liftIO (T.readFile seleniumErrPath) >>= \case
       t | readyMessage `T.isInfixOf` t -> return True
-      _ -> (liftIO $ T.readFile seleniumOutPath) >>= \case
+      _ -> liftIO (T.readFile seleniumOutPath) >>= \case
         t | readyMessage `T.isInfixOf` t -> return True
         _ -> return False
   unless success $ liftIO $ do
