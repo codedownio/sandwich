@@ -15,7 +15,6 @@
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 
-
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
@@ -42,6 +41,7 @@ import System.IO
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries
+import Test.Sandwich.WebDriver.Internal.Binaries.Util (detectChromeVersion)
 import Test.Sandwich.WebDriver.Internal.Ports
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
@@ -161,7 +161,8 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
     interruptProcessGroupOf p >> waitForProcess p
     error [i|Selenium server failed to start after 60 seconds|]
 
-  capabilities <- configureDownloadCapabilities downloadDir (configureHeadlessCapabilities runMode capabilities')
+  capabilities <- configureHeadlessCapabilities wdOptions runMode capabilities'
+                  >>= configureDownloadCapabilities downloadDir
 
   -- Make the WebDriver
   WebDriver <$> pure (T.unpack webdriverName)
@@ -198,13 +199,27 @@ seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"
 
 -- | Add headless configuration to the Chrome browser
-configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = caps { W.browser = browser' }
-  where browser' = browser { W.chromeOptions = "--headless":resolution:chromeOptions }
-        resolution = [i|--window-size=#{w},#{h}|]
-        (w, h) = fromMaybe (1920, 1080) headlessResolution
+configureHeadlessCapabilities :: Constraints m => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
+configureHeadlessCapabilities wdOptions (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
+  headlessArg <- liftIO (detectChromeVersion (chromeBinaryPath wdOptions)) >>= \case
+    Left err -> do
+      warn [i|Couldn't determine chrome version when configuring headless capabilities (err: #{err}); passing --headless|]
+      return "--headless"
+    Right (ChromeVersion (major, _, _, _))
+      -- See https://www.selenium.dev/blog/2023/headless-is-going-away/
+      | major >= 110 -> return "--headless=new"
+      | otherwise -> return "--headless"
+
+  let browser' = browser { W.chromeOptions = headlessArg:resolution:chromeOptions }
+
+  return (caps { W.browser = browser' })
+
+  where
+    resolution = [i|--window-size=#{w},#{h}|]
+    (w, h) = fromMaybe (1920, 1080) headlessResolution
 
 -- | Add headless configuration to the Firefox capabilities
-configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) = caps { W.additionalCaps = additionalCaps }
+configureHeadlessCapabilities _ (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) = return (caps { W.additionalCaps = additionalCaps })
   where
     additionalCaps = case L.findIndex (\x -> fst x == "moz:firefoxOptions") ac of
       Nothing -> ("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])]) : ac
@@ -222,8 +237,8 @@ configureHeadlessCapabilities (RunHeadless (HeadlessConfig {..})) caps@(W.Capabi
     addHeadlessArg xs | (A.String "-headless") `V.elem` xs = xs
     addHeadlessArg xs = (A.String "-headless") `V.cons` xs
 
-configureHeadlessCapabilities (RunHeadless {}) browser = error [i|Headless mode not yet supported for browser '#{browser}'|]
-configureHeadlessCapabilities _ browser = browser
+configureHeadlessCapabilities _ (RunHeadless {}) browser = error [i|Headless mode not yet supported for browser '#{browser}'|]
+configureHeadlessCapabilities _ _ browser = return browser
 
 
 configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Firefox {..})}) = do
