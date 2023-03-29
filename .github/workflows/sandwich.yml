@@ -25,6 +25,10 @@ jobs:
         - os: windows-latest
           ghc: 9.4.4
 
+        # Access violation in generated code when executing data at 0x6d88
+        - os: windows-latest
+          ghc: 8.8.4
+
     steps:
     - uses: actions/checkout@v2
       if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
