@@ -14,6 +14,7 @@ import Data.Time.Clock.POSIX
 import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
+import Safe
 import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.MarkdownSummary
 import Test.Sandwich.Formatters.Print.Types
@@ -243,7 +244,9 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       -- Seems like the best default is just the print formatter.
       return $ Just printFormatter
 #ifndef mingw32_HOST_OS
-    (_, TUI) -> return $ Just $ SomeFormatter $ defaultTerminalUIFormatter { terminalUILogLevel = optLogLevel }
+    (_, TUI) -> do
+      let mainTerminalUiFormatter = headMay [x | SomeFormatter (cast -> Just x@(TerminalUIFormatter {})) <- optionsFormatters baseOptions]
+      return $ Just $ SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) { terminalUILogLevel = optLogLevel }
 #endif
     (_, Print) -> return $ Just printFormatter
     (_, PrintFailures) -> return $ Just failureReportFormatter
