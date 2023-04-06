@@ -1,6 +1,8 @@
 # Changelog for sandwich
 
-## Unreleased changes
+## 0.1.3.1
+
+* Fix #61 (options not being passed from configured TUI formatter when `--tui` flag is used)
 
 ## 0.1.3.0
 

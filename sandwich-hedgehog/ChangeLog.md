@@ -1,6 +1,6 @@
 # Changelog for sandwich-hedgehog
 
-## Unreleased changes
+## 0.1.2.0
 
 * Support propertySkip in hedgehog
 
