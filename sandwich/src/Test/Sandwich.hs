@@ -152,9 +152,11 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          runWithRepeat repeatCount totalTests $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
+                                              , nodeOptionsCreateFolder = False }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
+                                              , nodeOptionsCreateFolder = False }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
