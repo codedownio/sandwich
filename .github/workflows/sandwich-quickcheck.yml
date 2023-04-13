@@ -1,4 +1,4 @@
-name: sandwich-hedgehog
+name: sandwich-quickcheck
 
 on:
   pull_request:
@@ -46,7 +46,7 @@ jobs:
 
     - name: Freeze
       run: |
-        cd sandwich-hedgehog
+        cd sandwich-quickcheck
         cabal freeze
 
     - uses: actions/cache@v1
@@ -57,13 +57,13 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich-hedgehog
+        cd sandwich-quickcheck
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
     - name: Test
       run: |
-        cd sandwich-hedgehog
+        cd sandwich-quickcheck
         cabal test all
 
   stack:
@@ -99,10 +99,10 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich-hedgehog
+        cd sandwich-quickcheck
         stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
-        cd sandwich-hedgehog
+        cd sandwich-quickcheck
         stack test --system-ghc
