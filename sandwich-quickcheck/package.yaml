@@ -1,6 +1,6 @@
 name:                sandwich-quickcheck
 version:             0.1.0.6
-github:              "codedownio/sandwich-quickcheck"
+github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"

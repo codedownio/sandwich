@@ -1,6 +1,6 @@
 name:                sandwich-hedgehog
 version:             0.1.2.0
-github:              "codedownio/sandwich-hedgehog"
+github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
