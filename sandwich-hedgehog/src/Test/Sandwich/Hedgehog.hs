@@ -45,7 +45,9 @@ module Test.Sandwich.Hedgehog (
   , modifyShrinkLimit
   , modifyShrinkRetries
   , modifyTerminationCriteria
+#if MIN_VERSION_hedgehog(1,2,0)
   , modifySkip
+#endif
   , modifySize
   , modifySeed
 
@@ -239,11 +241,13 @@ modifyTerminationCriteria :: (
   ) => (Maybe TerminationCriteria -> Maybe TerminationCriteria) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifyTerminationCriteria f = modifyArgs $ \args -> args { hedgehogTerminationCriteria = f (hedgehogTerminationCriteria args) }
 
+#if MIN_VERSION_hedgehog(1,2,0)
 -- | Modify the 'Skip' for the given spec.
 modifySkip :: (
   HasHedgehogContext context, Monad m
   ) => (Maybe Skip -> Maybe Skip) -> SpecFree (HedgehogContextLabel context) m () -> SpecFree context m ()
 modifySkip f = modifyArgs $ \args -> args { hedgehogSkip = f (hedgehogSkip args) }
+#endif
 
 addCommandLineOptions :: CommandLineOptions a -> HedgehogParams -> HedgehogParams
 addCommandLineOptions (CommandLineOptions {optHedgehogOptions=(CommandLineHedgehogOptions {..})}) baseHedgehogParams@(HedgehogParams {..}) = baseHedgehogParams {
