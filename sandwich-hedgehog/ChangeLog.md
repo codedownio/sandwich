@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 0.1.3.0
+
 * Fix bug-reports URL
+* Fix build for hedgehog < 1.2
 
 ## 0.1.2.0
 
