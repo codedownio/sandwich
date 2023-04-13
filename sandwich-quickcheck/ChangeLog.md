@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+## 0.1.0.7
+
 * Fix bug-reports URL
 
 ## 0.1.0.6

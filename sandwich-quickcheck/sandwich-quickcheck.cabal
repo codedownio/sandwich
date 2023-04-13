@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d63e3749146433a037b0d12ce89a4ba24edda093d222ef0dd9e94f95d274dffe
+-- hash: 496ab214547ab49a21ff2bed85694f6d3b52326cdd719476fd8f526488cae467
 
 name:           sandwich-quickcheck
-version:        0.1.0.6
+version:        0.1.0.7
 synopsis:       Sandwich integration with QuickCheck
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck documentation>.
 category:       Testing
