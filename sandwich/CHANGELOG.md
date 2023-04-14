@@ -1,5 +1,9 @@
 # Changelog for sandwich
 
+## 0.1.3.2
+
+* Prevent spurious messages in IOExceptions from withFile
+
 ## 0.1.3.1
 
 * Fix #61 (options not being passed from configured TUI formatter when `--tui` flag is used)
