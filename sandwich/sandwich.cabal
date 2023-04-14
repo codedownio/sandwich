@@ -132,6 +132,9 @@ library
         brick
       , unix
       , vty
+  if os(windows)
+    build-depends:
+        Win32
   if !os(windows)
     exposed-modules:
         Test.Sandwich.Formatters.TerminalUI

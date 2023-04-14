@@ -1,8 +1,9 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich (
   -- | Sandwich is a test framework for Haskell. See the <https://codedownio.github.io/sandwich/docs/ documentation> for details and usage examples.
@@ -79,6 +80,7 @@ import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
+import GHC.IO.Encoding
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.Environment
@@ -106,6 +108,10 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
+
+#ifdef mingw32_HOST_OS
+import System.Win32.Console
+#endif
 
 
 -- | Run the spec with the given 'Options'.
@@ -172,6 +178,15 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
+
+  -- To prevent weird errors saving files like "commitAndReleaseBuffer: invalid argument (invalid character)",
+  -- especially on Windows
+  -- See https://gitlab.haskell.org/ghc/ghc/issues/8118
+  setLocaleEncoding utf8
+#ifdef mingw32_HOST_OS
+  -- Fix Windows console output. Makes sandwich-hedgehog unicode print properly
+  setConsoleOutputCP 65001
+#endif
 
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of

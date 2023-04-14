@@ -87,6 +87,9 @@ library:
   - Test.Sandwich.Internal
   - Test.Sandwich.TH
   when:
+  - condition: "os(windows)"
+    dependencies:
+    - Win32
   - condition: "!os(windows)"
     source-dirs: unix-src
     exposed-modules:

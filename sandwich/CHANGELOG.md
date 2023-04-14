@@ -1,5 +1,9 @@
 # Changelog for sandwich
 
+## Unreleased
+
+* Windows improvements (fix "invalid argument (invalid character)", fix console unicode output)
+
 ## 0.1.3.2
 
 * Prevent spurious messages in IOExceptions from withFile
