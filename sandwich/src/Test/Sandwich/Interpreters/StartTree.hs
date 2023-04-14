@@ -284,8 +284,11 @@ runExampleM' ex ctx logs exceptionMessage = do
   maybeTestDirectory <- getTestDirectory ctx
   let options = baseContextOptions $ getBaseContext ctx
 
-  handleAny (wrapInFailureReasonIfNecessary exceptionMessage) $
-    withLogFn maybeTestDirectory options $ \logFn ->
+  -- We want our handleAny call to be *inside* the withLogFn call, because
+  -- withFile will catch IOException and fill in its own information, making the
+  -- resulting error confusing
+  withLogFn maybeTestDirectory options $ \logFn ->
+    handleAny (wrapInFailureReasonIfNecessary exceptionMessage)
       (Right <$> (runLoggingT (runReaderT (unExampleT ex) ctx) logFn))
 
   where
