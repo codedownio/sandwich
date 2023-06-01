@@ -2,7 +2,10 @@
 
 ## Unreleased
 
+## 0.1.4.0
+
 * Windows improvements (fix "invalid argument (invalid character)", fix console unicode output)
+* Add Alternative (ExampleT context m) instance
 
 ## 0.1.3.2
 

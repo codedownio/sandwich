@@ -17,6 +17,7 @@
 
 module Test.Sandwich.Types.Spec where
 
+import Control.Applicative
 import Control.Exception.Safe
 import Control.Monad.Base
 import Control.Monad.Except
@@ -47,6 +48,8 @@ import Control.Monad.Fail
 newtype ExampleT context m a = ExampleT { unExampleT :: ReaderT context (LoggingT m) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader context, MonadLogger, MonadLoggerIO, MonadThrow, MonadCatch, MonadMask)
 type ExampleM context = ExampleT context IO
+
+deriving instance (Applicative m, Alternative (LoggingT m)) => Alternative (ExampleT context m)
 
 instance (MonadIO m, MonadUnliftIO m) => MonadUnliftIO (ExampleT context m) where
   withRunInIO inner = ExampleT $ withRunInIO $ \run -> inner (run . unExampleT)
