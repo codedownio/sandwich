@@ -20,7 +20,6 @@ module Test.Sandwich.Types.Spec where
 import Control.Applicative
 import Control.Exception.Safe
 import Control.Monad.Base
-import Control.Monad.Except
 import Control.Monad.Free
 import Control.Monad.Free.TH
 import Control.Monad.IO.Unlift
@@ -28,6 +27,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
 import Data.Functor.Classes
+import Data.Kind (Type)
 import Data.Maybe
 import Data.String.Interpolate
 import GHC.Stack
@@ -149,7 +149,7 @@ instance {-# OVERLAPPING #-} HasLabel context l a => HasLabel (intro :> context)
 
 -- * Free monad language
 
-data (a :: *) :> (b :: *) = a :> b
+data (a :: Type) :> (b :: Type) = a :> b
   deriving Show
 infixr :>
 
