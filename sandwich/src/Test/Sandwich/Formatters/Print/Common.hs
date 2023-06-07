@@ -12,6 +12,10 @@ import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+#endif
+
 
 finishPrinting :: RunNodeCommon -> Result -> ReaderT (PrintFormatter, Int, Handle) IO ()
 finishPrinting (RunNodeCommonWithStatus {..}) result = do

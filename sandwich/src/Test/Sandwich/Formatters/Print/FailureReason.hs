@@ -20,6 +20,10 @@ import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Types.Spec
 import Text.Show.Pretty as P
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+#endif
+
 
 printFailureReason :: FailureReason -> ReaderT (PrintFormatter, Int, Handle) IO ()
 printFailureReason (Reason _ s) = do

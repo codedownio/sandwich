@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.Print.Logs where
 
@@ -12,6 +13,10 @@ import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Types.RunTree
+
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+#endif
 
 
 printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int, Handle) m, Foldable t) => TVar (t LogEntry) -> m ()
