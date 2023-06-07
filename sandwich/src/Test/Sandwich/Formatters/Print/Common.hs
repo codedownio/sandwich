@@ -3,6 +3,7 @@
 module Test.Sandwich.Formatters.Print.Common where
 
 import Control.Monad.Reader
+import Control.Monad
 import System.IO
 import Test.Sandwich.Formatters.Print.CallStacks
 import Test.Sandwich.Formatters.Print.Logs

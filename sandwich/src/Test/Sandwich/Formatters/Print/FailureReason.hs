@@ -9,6 +9,7 @@ module Test.Sandwich.Formatters.Print.FailureReason (
 
 import Control.Exception.Safe
 import Control.Monad.Reader
+import Control.Monad
 import qualified Data.List as L
 import Data.String.Interpolate
 import System.IO
