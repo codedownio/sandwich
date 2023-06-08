@@ -14,6 +14,12 @@ import qualified Data.Vector as V
 import qualified Network.Wreq as W
 import Test.Sandwich.Formatters.Slack.Internal.Types
 
+#if MIN_VERSION_mtl(2,3,0)
+import Control.Monad
+import Control.Monad.IO.Class
+#endif
+
+
 postMessage :: (MonadError T.Text m, MonadIO m) => SlackConfig -> ChannelName -> T.Text -> [A.Value] -> Maybe [A.Value] -> m Value
 postMessage conf cid msg as maybeBlocks =
   makeSlackCall conf "chat.postMessage" $ A.object $ [
