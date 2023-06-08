@@ -1,6 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.Slack.Internal.Core where
 

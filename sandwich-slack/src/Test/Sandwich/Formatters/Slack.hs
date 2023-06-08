@@ -1,11 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 -- | The Slack formatter shows live-updating test progress and failures by sending messages to a Slack channel.
 --

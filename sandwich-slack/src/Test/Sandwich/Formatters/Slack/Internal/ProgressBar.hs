@@ -1,7 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Test.Sandwich.Formatters.Slack.Internal.ProgressBar where
 

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 45b6dbb83c46f011de792526ebf261f17b93498a4a4a5da7b24a5725eb2c2261
+-- hash: 5502816eb68a87ae65a7949254d8df4e8ea98e63abc71674e29eebf4c747e577
 
 name:           sandwich-slack
 version:        0.1.1.0
@@ -38,6 +38,17 @@ library
       Paths_sandwich_slack
   hs-source-dirs:
       src
+  default-extensions:
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
+      ViewPatterns
   ghc-options: -W
   build-depends:
       aeson
@@ -65,6 +76,17 @@ executable sandwich-slack-exe
       Paths_sandwich_slack
   hs-source-dirs:
       app
+  default-extensions:
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -94,6 +116,17 @@ test-suite sandwich-slack-test
       Paths_sandwich_slack
   hs-source-dirs:
       test
+  default-extensions:
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
+      ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson

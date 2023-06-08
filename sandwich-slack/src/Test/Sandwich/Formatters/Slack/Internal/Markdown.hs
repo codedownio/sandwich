@@ -1,7 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Formatters.Slack.Internal.Markdown where

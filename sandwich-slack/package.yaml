@@ -32,6 +32,18 @@ dependencies:
 - vector
 - wreq
 
+default-extensions:
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+- MultiWayIf
+- NamedFieldPuns
+- OverloadedStrings
+- QuasiQuotes
+- RecordWildCards
+- ScopedTypeVariables
+- ViewPatterns
+
 library:
   source-dirs: src
   ghc-options:
