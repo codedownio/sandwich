@@ -3,4 +3,29 @@ packages:
   sandwich
   sandwich-hedgehog
   sandwich-quickcheck
+  sandwich-slack
   sandwich-webdriver
+
+  sandwich-demos
+
+  demos/demo-basic
+  demos/demo-command-line-args
+  demos/demo-contexts
+  demos/demo-context-dependencies
+  demos/demo-context-nested-dependencies
+  demos/demo-custom-exceptions
+  demos/demo-discover
+  demos/demo-golden
+  demos/demo-hedgehog
+  demos/demo-landing
+  demos/demo-paralleln
+  demos/demo-quickcheck
+  demos/demo-slack
+  demos/demo-timing
+  demos/demo-timing-parallel
+  demos/demo-tui
+  demos/demo-webdriver
+  demos/demo-webdriver-landing
+  demos/demo-webdriver-pool
+  demos/demo-webdriver-positioning
+  demos/demo-webdriver-video
