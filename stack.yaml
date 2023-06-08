@@ -1,5 +1,5 @@
 
-resolver: lts-20.18
+resolver: lts-20.24
 
 packages:
 - ./sandwich
@@ -32,8 +32,3 @@ packages:
 - ./demos/demo-webdriver-pool
 - ./demos/demo-webdriver-positioning
 - ./demos/demo-webdriver-video
-
-extra-deps:
-# Because upstream hs-webdriver has a few bugs and seems unmaintained
-- git: https://github.com/codedownio/hs-webdriver
-  commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec

@@ -5,26 +5,26 @@
 
 packages:
 - completed:
+    commit: c60fd08c7d383841b5ef6a57d7b010da9489d6db
+    git: https://github.com/haskell-webdriver/haskell-webdriver
     name: webdriver
-    version: 0.9.0.1
-    git: https://github.com/codedownio/hs-webdriver
     pantry-tree:
-      size: 3059
-      sha256: 0be59abfbfa9de2fb8d80b73f2a12ef051dc1d2c4bce373eafc68b7e07cee964
-    commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
+      sha256: 44e786f50040e7ce8236aa9687791d8e199a8e9ee2248a117a943fb8a0bb6392
+      size: 3068
+    version: 0.10.0.1
   original:
-    git: https://github.com/codedownio/hs-webdriver
-    commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
+    commit: c60fd08c7d383841b5ef6a57d7b010da9489d6db
+    git: https://github.com/haskell-webdriver/haskell-webdriver
 - completed:
     hackage: brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828
     pantry-tree:
-      size: 6686
       sha256: 7267fcc9b1c23186c996ff998aeafe88832e0f11595a9b00d3cc783777b930da
+      size: 6686
   original:
     hackage: brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828
 snapshots:
 - completed:
+    sha256: 493243cccbb79ce8a7fc9850522a0b565139237ae5587edf05880791e952077b
     size: 633902
     url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2022/9/4.yaml
-    sha256: 493243cccbb79ce8a7fc9850522a0b565139237ae5587edf05880791e952077b
   original: nightly-2022-09-04

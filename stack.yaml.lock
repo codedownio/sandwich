@@ -3,21 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages:
-- completed:
-    commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
-    git: https://github.com/codedownio/hs-webdriver
-    name: webdriver
-    pantry-tree:
-      sha256: 0be59abfbfa9de2fb8d80b73f2a12ef051dc1d2c4bce373eafc68b7e07cee964
-      size: 3059
-    version: 0.9.0.1
-  original:
-    commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
-    git: https://github.com/codedownio/hs-webdriver
+packages: []
 snapshots:
 - completed:
-    sha256: 9fa4bece7acfac1fc7930c5d6e24606004b09e80aa0e52e9f68b148201008db9
-    size: 649606
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/18.yaml
-  original: lts-20.18
+    sha256: e019cd29e3f7f9dbad500225829a3f7a50f73c674614f2f452e21bb8bf5d99ea
+    size: 650253
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/24.yaml
+  original: lts-20.24

@@ -35,7 +35,7 @@ packages:
 
 extra-deps:
 # Because upstream hs-webdriver has a few bugs and seems unmaintained
-- git: https://github.com/codedownio/hs-webdriver
-  commit: 6ea8952a1ed009ae949063ceb3d98bb4f5176dec
+- git: https://github.com/haskell-webdriver/haskell-webdriver
+  commit: c60fd08c7d383841b5ef6a57d7b010da9489d6db
 
 - brick-1.1@sha256:a4d13f2ae42acb61bb9850033181059e0cd0ed34ded39154f72cdbc7d083dc0b,17828
