@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* GHC 9.6 support
+
 ## 0.1.4.0
 
 * Windows improvements (fix "invalid argument (invalid character)", fix console unicode output)
