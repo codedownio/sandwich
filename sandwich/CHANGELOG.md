@@ -1,6 +1,8 @@
 # Changelog for sandwich
 
-## Unreleased
+## Unreleased changes
+
+## 0.1.5.0
 
 * GHC 9.6 support
 
