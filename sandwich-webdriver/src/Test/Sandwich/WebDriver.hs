@@ -132,10 +132,15 @@ getSessions = do
 -- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.
 addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptions
 addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
-  capabilities = case optFirefox of
-    Nothing -> capabilities
+  capabilities = case optBrowserToUse of
     Just UseFirefox -> firefoxCapabilities firefoxBinaryPath
     Just UseChrome -> chromeCapabilities chromeBinaryPath
+    Nothing -> case chromeBinaryPath of
+      Just p -> chromeCapabilities (Just p)
+      Nothing -> case firefoxBinaryPath of
+        Just p -> firefoxCapabilities (Just p)
+        Nothing -> capabilities
+
   , runMode = case optDisplay of
       Nothing -> runMode
       Just Headless -> RunHeadless defaultHeadlessConfig

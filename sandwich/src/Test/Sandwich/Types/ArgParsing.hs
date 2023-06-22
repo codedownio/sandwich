@@ -139,7 +139,7 @@ data BrowserToUse = UseChrome | UseFirefox
   deriving Show
 
 data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
-  optFirefox :: Maybe BrowserToUse
+  optBrowserToUse :: Maybe BrowserToUse
   , optDisplay :: Maybe DisplayType
   , optFluxbox :: Bool
   , optIndividualVideos :: Bool

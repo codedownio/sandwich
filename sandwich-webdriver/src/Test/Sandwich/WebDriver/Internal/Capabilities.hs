@@ -32,21 +32,19 @@ loggingPrefs = A.object [("browser", "ALL")
 -- | Default capabilities for regular Chrome.
 -- Has the "browser" log level to "ALL" so that tests can collect browser logs.
 chromeCapabilities :: Maybe FilePath -> Capabilities
-chromeCapabilities maybeChromePath =
-  def {browser=Chrome Nothing maybeChromePath args [] mempty
-      , additionalCaps=[("loggingPrefs", loggingPrefs)
-                       , ("goog:loggingPrefs", loggingPrefs)]
-      }
-  where args = ["--verbose"]
+chromeCapabilities maybeChromePath = def {
+  browser = Chrome Nothing maybeChromePath ["--verbose"] [] mempty
+  , additionalCaps=[("loggingPrefs", loggingPrefs)
+                   , ("goog:loggingPrefs", loggingPrefs)]
+  }
 
 -- | Default capabilities for headless Chrome.
 headlessChromeCapabilities :: Maybe FilePath -> Capabilities
-headlessChromeCapabilities maybeChromePath =
-  def {browser=Chrome Nothing maybeChromePath args [] mempty
-      , additionalCaps=[("loggingPrefs", loggingPrefs)
-                       , ("goog:loggingPrefs", loggingPrefs)]
-      }
-  where args = ["--verbose", "--headless"]
+headlessChromeCapabilities maybeChromePath = def {
+  browser = Chrome Nothing maybeChromePath ["--verbose", "--headless"] [] mempty
+  , additionalCaps=[("loggingPrefs", loggingPrefs)
+                   , ("goog:loggingPrefs", loggingPrefs)]
+  }
 
 -- * Firefox
 
@@ -61,7 +59,7 @@ getDefaultFirefoxProfile downloadDir = do
 
 -- | Default capabilities for regular Firefox.
 firefoxCapabilities :: Maybe FilePath -> Capabilities
-firefoxCapabilities maybeFirefoxPath = def { browser=ff }
+firefoxCapabilities maybeFirefoxPath = def { browser = ff }
   where
     ff = Firefox { ffProfile = Nothing
                  , ffLogPref = LogAll
