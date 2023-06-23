@@ -133,11 +133,11 @@ getSessions = do
 addCommandLineOptionsToWdOptions :: CommandLineOptions a -> WdOptions -> WdOptions
 addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) wdOptions@(WdOptions {..}) = wdOptions {
   capabilities = case optBrowserToUse of
-    Just UseFirefox -> firefoxCapabilities firefoxBinaryPath
-    Just UseChrome -> chromeCapabilities chromeBinaryPath
-    Nothing -> case chromeBinaryPath of
+    Just UseFirefox -> firefoxCapabilities fbp
+    Just UseChrome -> chromeCapabilities cbp
+    Nothing -> case cbp of
       Just p -> chromeCapabilities (Just p)
-      Nothing -> case firefoxBinaryPath of
+      Nothing -> case fbp of
         Just p -> firefoxCapabilities (Just p)
         Nothing -> capabilities
 
@@ -149,9 +149,13 @@ addCommandLineOptionsToWdOptions (CommandLineOptions {optWebdriverOptions=(Comma
 
   , seleniumToUse = maybe seleniumToUse UseSeleniumAt optSeleniumJar
 
-  , chromeBinaryPath = optChromeBinary <|> chromeBinaryPath
+  , chromeBinaryPath = cbp
   , chromeDriverToUse = maybe chromeDriverToUse UseChromeDriverAt optChromeDriver
 
-  , firefoxBinaryPath = optFirefoxBinary <|> firefoxBinaryPath
+  , firefoxBinaryPath = fbp
   , geckoDriverToUse = maybe geckoDriverToUse UseGeckoDriverAt optGeckoDriver
   }
+
+  where
+    cbp = optChromeBinary <|> chromeBinaryPath
+    fbp = optFirefoxBinary <|> firefoxBinaryPath
