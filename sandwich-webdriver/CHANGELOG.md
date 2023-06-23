@@ -2,6 +2,10 @@
 
 # Unreleased
 
+# 0.2.2.0
+
+* Fix browser path calculation in addCommandLineOptionsToWdOptions
+
 # 0.2.1.0
 
 * Pass `--headless=new` instead of `--headless` for Chrome >= 110, to address https://www.selenium.dev/blog/2023/headless-is-going-away/.
