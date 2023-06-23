@@ -69,30 +69,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc:
-        - "8.6.5"
-        - "8.8.4"
-        - "8.10.7"
-        - "9.0.2"
-        - "9.2.7"
-        - "9.4.5"
+        include:
+        - ghc: "8.6.5"
+          resolver: "lts-14.27"
+        - ghc: "8.8.4"
+          resolver: "lts-16.31"
+        - ghc: "8.10.7"
+          resolver: "lts-18.28"
+        - ghc: "9.0.2"
+          resolver: "lts-19.33"
+        - ghc: "9.2.8"
+          resolver: "lts-20.26"
+        - ghc: "9.4.5"
+          resolver: "lts-21.0"
 
     steps:
-    - uses: actions/checkout@v2
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+    - uses: actions/checkout@v3
 
     - uses: haskell/actions/setup@v2
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
-        stack-version: "2.9.3"
         enable-stack: true
+        stack-version: "latest"
 
     - uses: actions/cache@v1
       name: Cache ~/.stack
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.resolver }}-stack
 
     - name: apt
       run: |
@@ -102,9 +107,9 @@ jobs:
     - name: Build
       run: |
         cd sandwich
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --resolver ${{matrix.resolver}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
         cd sandwich
-        stack test --system-ghc
+        stack test --resolver ${{matrix.resolver}} --system-ghc
