@@ -25,7 +25,7 @@ simple = introduceWebDriver wdOptions $ do
   it "does the thing 1" $ withSession1 $ do
     openPage "http://www.google.com"
     setWindowLeftSide
-    search <- findElem (ByCSS [i|input[title="Search"]|])
+    search <- findElem (ByCSS [i|*[title="Search"]|])
     click search
     sendKeys "asdf" search
     liftIO $ threadDelay 1000000

@@ -20,7 +20,7 @@ simple :: TopSpecWithOptions
 simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
   it "opens Google and searches" $ withSession1 $ do
     openPage [i|https://www.google.com|]
-    search <- findElem (ByCSS [i|input[title="Search"]|])
+    search <- findElem (ByCSS [i|*[title="Search"]|])
     click search
     sendKeys "Haskell Sandwich" search
     findElem (ByCSS [i|input[type="submit"]|]) >>= click

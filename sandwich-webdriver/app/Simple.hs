@@ -14,7 +14,7 @@ spec :: TopSpec
 spec = introduceWebDriver wdOptions $ do
   it "opens Google and searches" $ withSession1 $ do
     openPage "http://www.google.com"
-    search <- findElem (ByCSS "input[title='Search']")
+    search <- findElem (ByCSS "*[title='Search']")
     click search
     sendKeys "asdf\n" search
 

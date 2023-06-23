@@ -25,7 +25,7 @@ manualVideo = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
       Just dir <- getCurrentFolder
       let path = dir </> "video" -- No extension needed
       bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording $ \_ -> do
-        search <- findElem (ByCSS [i|input[title="Search"]|])
+        search <- findElem (ByCSS [i|*[title="Search"]|])
         click search
         sendKeys "Haskell Sandwich" search
         findElem (ByCSS [i|input[type="submit"]|]) >>= click
