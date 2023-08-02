@@ -144,7 +144,8 @@ downloadChromeDriverIfNecessary maybeChromePath toolsDir = runExceptT $ do
   ExceptT $ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion
 
 getChromeDriverPath :: FilePath -> ChromeDriverVersion -> FilePath
-getChromeDriverPath toolsDir (ChromeDriverVersion (w, x, y, z)) = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{chromeDriverExecutable}|]
+getChromeDriverPath toolsDir (ChromeDriverVersionTuple (w, x, y, z)) = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{chromeDriverExecutable}|]
+getChromeDriverPath toolsDir (ChromeDriverVersionExactUrl (w, x, y, z) _) = [i|#{toolsDir}/chromedrivers/#{w}.#{x}.#{y}.#{z}/#{chromeDriverExecutable}|]
 
 getGeckoDriverPath :: FilePath -> GeckoDriverVersion -> FilePath
 getGeckoDriverPath toolsDir (GeckoDriverVersion (x, y, z)) = [i|#{toolsDir}/geckodrivers/#{x}.#{y}.#{z}/#{geckoDriverExecutable}|]
@@ -165,14 +166,17 @@ downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
   withSystemTempDirectory "sandwich-webdriver-tool-download" $ \dir -> liftIO $ do
     void $ readCreateProcess ((proc "curl" [T.unpack downloadPath, "-o", "temp.zip"]) { cwd = Just dir }) ""
-    void $ readCreateProcess ((proc "unzip" ["temp.zip"]) { cwd = Just dir }) ""
 
-    liftIO (listDirectory dir >>= filterM (\f -> executable <$> getPermissions (dir </> f))) >>= \case
+    void $ readCreateProcess ((proc "unzip" ["temp.zip", "-d", "unzipped"]) { cwd = Just dir }) ""
+    let unzipped = dir </> "unzipped"
+
+    executables <- (filter (/= "") . T.splitOn "\n" . T.pack) <$> readCreateProcess (proc "find" [unzipped, "-executable", "-type", "f"]) ""
+    case executables of
       [] -> throwIO $ userError [i|No executable found in file downloaded from #{downloadPath}|]
-      [x] -> renameFile (dir </> x) localPath
+      [x] -> do
+        copyFile (T.unpack x) localPath
+        liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
       xs -> throwIO $ userError [i|Found multiple executable found in file downloaded from #{downloadPath}: #{xs}|]
-
-  liftIO $ void $ readCreateProcess (shell [i|chmod u+x #{localPath}|]) ""
 
 downloadAndUntarballToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do

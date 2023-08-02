@@ -12,6 +12,7 @@ import Data.Default
 import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
+import Data.Text as T
 import Network.HTTP.Client (Manager)
 import System.IO
 import System.Process
@@ -121,7 +122,10 @@ data GeckoDriverToUse =
   deriving Show
 
 newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int) deriving Show
-newtype ChromeDriverVersion = ChromeDriverVersion (Int, Int, Int, Int) deriving Show
+data ChromeDriverVersion =
+  ChromeDriverVersionTuple (Int, Int, Int, Int)
+  | ChromeDriverVersionExactUrl (Int, Int, Int, Int) Text
+  deriving Show
 
 newtype FirefoxVersion = FirefoxVersion (Int, Int, Int) deriving Show
 newtype GeckoDriverVersion = GeckoDriverVersion (Int, Int, Int) deriving Show
