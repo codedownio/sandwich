@@ -1,6 +1,12 @@
 
 resolver: lts-20.24
 
+nix:
+  pure: false
+  packages:
+  - pkg-config
+  - zlib
+
 packages:
 - ./sandwich
 - ./sandwich-hedgehog
