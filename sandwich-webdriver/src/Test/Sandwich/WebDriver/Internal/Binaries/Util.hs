@@ -16,6 +16,7 @@ import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
+import Data.Function
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -25,6 +26,7 @@ import Network.HTTP.Client
 import Network.HTTP.Client.TLS
 import Network.HTTP.Conduit (simpleHttp)
 import Safe
+import System.Directory (findExecutable)
 import System.Exit
 import qualified System.Info as SI
 import System.Process
@@ -49,14 +51,28 @@ detectPlatform =  case SI.os of
 
 -- * Chrome
 
+findChromeInEnvironment :: IO String
+findChromeInEnvironment =
+  flip fix candidates $ \loop cs -> case cs of
+    [] -> pure "google-chrome" -- Give up
+    (candidate:rest) -> findExecutable candidate >>= \case
+      Nothing -> loop rest
+      Just _ -> pure candidate
+  where
+    candidates = [
+      "google-chrome"
+      , "google-chrome-stable" -- May be found on NixOS
+      ]
+
 detectChromeVersion :: Maybe FilePath -> IO (Either T.Text ChromeVersion)
 detectChromeVersion maybeChromePath = leftOnException $ runExceptT $ do
-  let chromeToUse = fromMaybe "google-chrome" maybeChromePath
+  chromeToUse <- liftIO $ maybe findChromeInEnvironment pure maybeChromePath
+
   (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell (chromeToUse <> " --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"")) ""
 
   rawString <- case exitCode of
-                 ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
-                 ExitSuccess -> return $ T.strip $ T.pack stdout
+    ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
+    ExitSuccess -> return $ T.strip $ T.pack stdout
 
   case T.splitOn "." rawString of
     [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ ChromeVersion (w, x, y, z)
