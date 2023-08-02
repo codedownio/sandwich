@@ -33,7 +33,7 @@ import System.IO
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries
-import Test.Sandwich.WebDriver.Internal.Binaries.Util (detectChromeVersion)
+import Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome (detectChromeVersion)
 import Test.Sandwich.WebDriver.Internal.Ports
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util

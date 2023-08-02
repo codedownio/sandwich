@@ -25,7 +25,9 @@ import System.FilePath
 import System.IO.Temp
 import System.Process
 import Test.Sandwich.Logging
-import Test.Sandwich.WebDriver.Internal.Binaries.Util
+import Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome
+import Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox
+import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 

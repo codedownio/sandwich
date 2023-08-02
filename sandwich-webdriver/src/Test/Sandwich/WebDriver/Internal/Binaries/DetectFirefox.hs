@@ -1,13 +1,7 @@
 {-# LANGUAGE CPP #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries.Util (
-  detectPlatform
-  , detectChromeVersion
-  , getChromeDriverVersion
-  , getChromeDriverDownloadUrl
-  , Platform(..)
-
-  , detectFirefoxVersion
+module Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox (
+  detectFirefoxVersion
   , getGeckoDriverVersion
   , getGeckoDriverDownloadUrl
   ) where
@@ -16,20 +10,15 @@ import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Except
 import qualified Data.Aeson as A
-import Data.Function
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Encoding as TL
 import Network.HTTP.Client
 import Network.HTTP.Client.TLS
-import Network.HTTP.Conduit (simpleHttp)
 import Safe
-import System.Directory (findExecutable)
 import System.Exit
-import qualified System.Info as SI
 import System.Process
+import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
@@ -39,69 +28,6 @@ import qualified Data.Aeson.KeyMap          as HM
 import qualified Data.HashMap.Strict        as HM
 #endif
 
-
-data Platform = Linux | OSX | Windows deriving (Show, Eq)
-
-detectPlatform :: Platform
-detectPlatform =  case SI.os of
-  "windows" -> Windows
-  "linux" -> Linux
-  "darwin" -> OSX
-  _ -> error [i|Couldn't determine host platform from string: '#{SI.os}'|]
-
--- * Chrome
-
-findChromeInEnvironment :: IO String
-findChromeInEnvironment =
-  flip fix candidates $ \loop cs -> case cs of
-    [] -> pure "google-chrome" -- Give up
-    (candidate:rest) -> findExecutable candidate >>= \case
-      Nothing -> loop rest
-      Just _ -> pure candidate
-  where
-    candidates = [
-      "google-chrome"
-      , "google-chrome-stable" -- May be found on NixOS
-      ]
-
-detectChromeVersion :: Maybe FilePath -> IO (Either T.Text ChromeVersion)
-detectChromeVersion maybeChromePath = leftOnException $ runExceptT $ do
-  chromeToUse <- liftIO $ maybe findChromeInEnvironment pure maybeChromePath
-
-  (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell (chromeToUse <> " --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"")) ""
-
-  rawString <- case exitCode of
-    ExitFailure _ -> throwE [i|Couldn't parse google-chrome version. Stdout: '#{stdout}'. Stderr: '#{stderr}'|]
-    ExitSuccess -> return $ T.strip $ T.pack stdout
-
-  case T.splitOn "." rawString of
-    [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ ChromeVersion (w, x, y, z)
-    _ -> throwE [i|Failed to parse google-chrome version from string: '#{rawString}'|]
-
-getChromeDriverVersion :: Maybe FilePath -> IO (Either T.Text ChromeDriverVersion)
-getChromeDriverVersion maybeChromePath = runExceptT $ do
-  chromeVersion <- ExceptT $ liftIO $ detectChromeVersion maybeChromePath
-  ExceptT $ getChromeDriverVersion' chromeVersion
-
-getChromeDriverVersion' :: ChromeVersion -> IO (Either T.Text ChromeDriverVersion)
-getChromeDriverVersion' (ChromeVersion (w, x, y, _)) = do
-  let url = [i|https://chromedriver.storage.googleapis.com/LATEST_RELEASE_#{w}.#{x}.#{y}|]
-  handle (\(e :: HttpException) -> do
-            return $ Left [i|Error when requesting '#{url}': '#{e}'|]
-         )
-         (do
-             result :: T.Text <- (TL.toStrict . TL.decodeUtf8) <$> simpleHttp url
-             case T.splitOn "." result of
-               [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ Right $ ChromeDriverVersion (w, x, y, z)
-               _ -> return $ Left [i|Failed to parse chromedriver version from string: '#{result}'|]
-         )
-
-getChromeDriverDownloadUrl :: ChromeDriverVersion -> Platform -> T.Text
-getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Linux = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_linux64.zip|]
-getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) OSX = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_mac64.zip|]
-getChromeDriverDownloadUrl (ChromeDriverVersion (w, x, y, z)) Windows = [i|https://chromedriver.storage.googleapis.com/#{w}.#{x}.#{y}.#{z}/chromedriver_win32.zip|]
-
--- * Firefox
 
 detectFirefoxVersion :: Maybe FilePath -> IO (Either T.Text FirefoxVersion)
 detectFirefoxVersion maybeFirefoxPath = leftOnException $ runExceptT $ do

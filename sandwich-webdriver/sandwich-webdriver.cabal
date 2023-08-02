@@ -31,7 +31,9 @@ library
       Test.Sandwich.WebDriver.Config
       Test.Sandwich.WebDriver.Internal.Action
       Test.Sandwich.WebDriver.Internal.Binaries
-      Test.Sandwich.WebDriver.Internal.Binaries.Util
+      Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome
+      Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox
+      Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
       Test.Sandwich.WebDriver.Internal.Capabilities
       Test.Sandwich.WebDriver.Internal.Ports
       Test.Sandwich.WebDriver.Internal.Screenshots
@@ -63,6 +65,7 @@ library
   build-depends:
       aeson
     , base <5
+    , bytestring
     , containers
     , data-default
     , directory
@@ -139,6 +142,7 @@ executable sandwich-webdriver-exe
   build-depends:
       aeson
     , base <5
+    , bytestring
     , containers
     , data-default
     , directory
@@ -217,6 +221,7 @@ test-suite sandwich-webdriver-test
   build-depends:
       aeson
     , base <5
+    , bytestring
     , containers
     , data-default
     , directory
