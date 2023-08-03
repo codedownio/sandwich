@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-webdriver
-version:        0.2.2.0
+version:        0.2.3.0
 synopsis:       Sandwich integration with Selenium WebDriver
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver documentation>.
 category:       Testing
