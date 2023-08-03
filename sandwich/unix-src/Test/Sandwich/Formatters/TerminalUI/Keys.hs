@@ -1,4 +1,3 @@
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.Keys where
 

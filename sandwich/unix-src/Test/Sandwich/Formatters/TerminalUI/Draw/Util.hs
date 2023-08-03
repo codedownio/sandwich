@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
--- |
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.Util where
 

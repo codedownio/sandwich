@@ -313,7 +313,7 @@ appEvent s (VtyEvent e) =
       & appShowFileLocations %~ not
     V.EvKey c [] | c == toggleVisibilityThresholdsKey -> continue $ s
       & appShowVisibilityThresholds %~ not
-    V.EvKey c [] | c `elem` [V.KEsc, exitKey]-> do
+    V.EvKey c [] | c `elem` [V.KEsc, exitKey] -> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
       forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
