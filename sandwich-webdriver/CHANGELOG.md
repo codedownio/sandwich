@@ -2,9 +2,14 @@
 
 # Unreleased
 
+# 0.2.3.0
+
+* When autodetecting Chrome, look for `google-chrome-stable` as well as `google-chrome`. (It's found on NixOS.)
+* Be able to detect chrome/chromedriver for versions >= 115, with the new Google JSON API.
+
 # 0.2.2.0
 
-* Fix browser path calculation in addCommandLineOptionsToWdOptions
+* Fix browser path calculation in addCommandLineOptionsToWdOptions.
 
 # 0.2.1.0
 
