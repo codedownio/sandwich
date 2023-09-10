@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.5.1
+
+* Logging: add readCreateProcessWithLogging
+
 ## 0.1.5.0
 
 * GHC 9.6 support

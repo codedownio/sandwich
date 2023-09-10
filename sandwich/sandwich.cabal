@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich
-version:        0.1.5.0
+version:        0.1.5.1
 synopsis:       Yet another test framework for Haskell
 description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 category:       Testing
@@ -101,6 +101,7 @@ library
     , bytestring
     , colour
     , containers
+    , deepseq
     , directory
     , exceptions
     , filepath
@@ -178,6 +179,7 @@ executable sandwich-demo
     , bytestring
     , colour
     , containers
+    , deepseq
     , directory
     , exceptions
     , filepath
@@ -236,6 +238,7 @@ executable sandwich-discover
     , bytestring
     , colour
     , containers
+    , deepseq
     , directory
     , exceptions
     , filepath
@@ -299,6 +302,7 @@ executable sandwich-test
     , bytestring
     , colour
     , containers
+    , deepseq
     , directory
     , exceptions
     , filepath
@@ -363,6 +367,7 @@ test-suite sandwich-test-suite
     , bytestring
     , colour
     , containers
+    , deepseq
     , directory
     , exceptions
     , filepath

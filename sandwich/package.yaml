@@ -1,5 +1,5 @@
 name:                sandwich
-version:             0.1.5.0
+version:             0.1.5.1
 github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
@@ -32,6 +32,7 @@ dependencies:
 - colour
 - containers
 - bytestring
+- deepseq
 - directory
 - exceptions
 - filepath

@@ -2,9 +2,23 @@
 
 -- | Logging functions.
 
-module Test.Sandwich.Logging where
+module Test.Sandwich.Logging (
+  debug
+  , info
+  , warn
+  , Test.Sandwich.Logging.logError
+  , Test.Sandwich.Logging.logOther
 
+  -- * Process functions with logging
+  , createProcessWithLogging
+  , readCreateProcessWithLogging
+  , createProcessWithLoggingAndStdin
+  , callCommandWithLogging
+  ) where
+
+import Control.Concurrent
 import Control.Concurrent.Async.Lifted
+import Control.DeepSeq (rnf)
 import qualified Control.Exception as C
 import Control.Exception.Safe
 import Control.Monad
@@ -17,6 +31,7 @@ import Foreign.C.Error
 import GHC.IO.Exception
 import GHC.Stack
 import System.IO
+import System.IO.Error (mkIOError)
 import System.Process
 
 #if !MIN_VERSION_base(4,13,0)
@@ -52,8 +67,8 @@ logOther = logOtherCS callStack
 --
 -- | Functions for launching processes while capturing their output in the logs.
 
--- | Spawn a process with its stdout and stderr connected to the logging system. Every line output by the process
--- will be fed to a 'debug' call.
+-- | Spawn a process with its stdout and stderr connected to the logging system.
+-- Every line output by the process will be fed to a 'debug' call.
 createProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> m ProcessHandle
 createProcessWithLogging cp = do
   (hRead, hWrite) <- liftIO createPipe
@@ -69,8 +84,58 @@ createProcessWithLogging cp = do
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
 
--- | Spawn a process with its stdout and stderr connected to the logging system. Every line output by the process
--- will be fed to a 'debug' call.
+-- | Like 'readCreateProcess', but capture the stderr output in the logs.
+-- Every line output by the process will be fed to a 'debug' call.
+readCreateProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> String -> m String
+readCreateProcessWithLogging cp input = do
+  (hReadErr, hWriteErr) <- liftIO createPipe
+
+  let name = case cmdspec cp of
+        ShellCommand {} -> "shell"
+        RawCommand path _ -> path
+
+  _ <- async $ forever $ do
+    line <- liftIO $ hGetLine hReadErr
+    debug [i|#{name}: #{line}|]
+
+  -- Do this just like 'readCreateProcess'
+  -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
+  (ex, output) <- liftIO $ withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin sout _ p -> do
+    case (sin, sout) of
+      (Just hIn, Just hOut) -> do
+        output  <- hGetContents hOut
+        withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
+          -- now write any input
+          unless (Prelude.null input) $
+            ignoreSigPipe $ hPutStr hIn input
+          -- hClose performs implicit hFlush, and thus may trigger a SIGPIPE
+          ignoreSigPipe $ hClose hIn
+
+          -- wait on the output
+          waitOut
+          hClose hOut
+
+        -- wait on the process
+        ex <- waitForProcess p
+        return (ex, output)
+      (Nothing, _) -> liftIO $ throw $ userError "readCreateProcessWithStderrLogging: Failed to get a stdin handle."
+      (_, Nothing) -> liftIO $ throw $ userError "readCreateProcessWithStderrLogging: Failed to get a stdout handle."
+
+  case ex of
+    ExitSuccess -> return output
+    ExitFailure r -> liftIO $ processFailedException "readCreateProcessWithLogging" cmd args r
+
+  where
+    cmd = case cp of
+            CreateProcess { cmdspec = ShellCommand sc } -> sc
+            CreateProcess { cmdspec = RawCommand fp _ } -> fp
+    args = case cp of
+             CreateProcess { cmdspec = ShellCommand _ } -> []
+             CreateProcess { cmdspec = RawCommand _ args' } -> args'
+
+
+-- | Spawn a process with its stdout and stderr connected to the logging system.
+-- Every line output by the process will be fed to a 'debug' call.
 createProcessWithLoggingAndStdin :: (MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> String -> m ProcessHandle
 createProcessWithLoggingAndStdin cp input = do
   (hRead, hWrite) <- liftIO createPipe
@@ -96,14 +161,6 @@ createProcessWithLoggingAndStdin cp input = do
 
   return p
 
-  where
-    -- Copied from System.Process
-    ignoreSigPipe :: IO () -> IO ()
-    ignoreSigPipe = C.handle $ \case
-      IOError { ioe_type  = ResourceVanished, ioe_errno = Just ioe } | Errno ioe == ePIPE -> return ()
-      e -> throwIO e
-
-
 -- | Higher level version of 'createProcessWithLogging', accepting a shell command.
 callCommandWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
 callCommandWithLogging cmd = do
@@ -122,3 +179,29 @@ callCommandWithLogging cmd = do
   liftIO (waitForProcess p) >>= \case
     ExitSuccess -> return ()
     ExitFailure r -> liftIO $ throw $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]
+
+
+-- * Util
+
+-- Copied from System.Process
+withForkWait :: IO () -> (IO () ->  IO a) -> IO a
+withForkWait async body = do
+  waitVar <- newEmptyMVar :: IO (MVar (Either SomeException ()))
+  mask $ \restore -> do
+    tid <- forkIO $ try (restore async) >>= putMVar waitVar
+    let wait = takeMVar waitVar >>= either throwIO return
+    restore (body wait) `C.onException` killThread tid
+
+-- Copied from System.Process
+ignoreSigPipe :: IO () -> IO ()
+ignoreSigPipe = C.handle $ \case
+  IOError { ioe_type  = ResourceVanished, ioe_errno = Just ioe } | Errno ioe == ePIPE -> return ()
+  e -> throwIO e
+
+-- Copied from System.Process
+processFailedException :: String -> String -> [String] -> Int -> IO a
+processFailedException fun cmd args exit_code =
+      ioError (mkIOError OtherError (fun ++ ": " ++ cmd ++
+                                     Prelude.concatMap ((' ':) . show) args ++
+                                     " (exit " ++ show exit_code ++ ")")
+                                 Nothing Nothing)
