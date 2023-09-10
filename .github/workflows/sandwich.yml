@@ -80,8 +80,8 @@ jobs:
           resolver: "lts-19.33"
         - ghc: "9.2.8"
           resolver: "lts-20.26"
-        - ghc: "9.4.5"
-          resolver: "lts-21.0"
+        - ghc: "9.4.6"
+          resolver: "lts-21.11"
 
     steps:
     - uses: actions/checkout@v3
