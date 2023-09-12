@@ -2,6 +2,11 @@
 
 # Unreleased
 
+# 0.2.3.1
+
+* Binary fetching: don't create the toolsRoot directory unless necessary.
+* Binary fetching: use logging instead of stdout/stderr so it doesn't mess up the TUI interface.
+
 # 0.2.3.0
 
 * When autodetecting Chrome, look for `google-chrome-stable` as well as `google-chrome`. (It's found on NixOS.)
