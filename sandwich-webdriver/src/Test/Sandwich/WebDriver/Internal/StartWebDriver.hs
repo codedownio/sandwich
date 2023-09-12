@@ -73,7 +73,6 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
 
   -- Get selenium and chromedriver
   debug [i|Preparing to create the Selenium process|]
-  liftIO $ createDirectoryIfMissing True toolsRoot
   seleniumPath <- obtainSelenium toolsRoot seleniumToUse >>= \case
     Left err -> error [i|Failed to obtain selenium: '#{err}'|]
     Right p -> return p
