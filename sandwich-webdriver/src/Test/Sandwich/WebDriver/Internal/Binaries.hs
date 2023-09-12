@@ -122,11 +122,11 @@ downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
   let seleniumPath = [i|#{toolsDir}/selenium-server.jar|]
   liftIO (doesFileExist seleniumPath) >>= flip unless (downloadSelenium seleniumPath)
   return seleniumPath
-
-downloadSelenium :: Constraints m => FilePath -> m ()
-downloadSelenium seleniumPath = void $ do
-  info [i|Downloading selenium-server.jar to #{seleniumPath}|]
-  curlDownloadToPath defaultSeleniumJarUrl seleniumPath
+  where
+    downloadSelenium :: Constraints m => FilePath -> m ()
+    downloadSelenium seleniumPath = void $ do
+      info [i|Downloading selenium-server.jar to #{seleniumPath}|]
+      curlDownloadToPath defaultSeleniumJarUrl seleniumPath
 
 downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
 downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
