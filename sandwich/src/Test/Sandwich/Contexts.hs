@@ -1,4 +1,5 @@
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Functions for retrieving context information from within tests.
 
@@ -36,3 +37,15 @@ getCommandLineOptions = getContext commandLineOptions
 -- This just calls 'getCommandLineOptions' and pulls out the user options.
 getUserCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m, MonadIO m) => m a
 getUserCommandLineOptions = optUserOptions <$> getContext commandLineOptions
+
+-- * Low-level context management helpers
+
+-- | Push a label to the context.
+pushContext :: forall m l a intro context. (Monad m) => Label l intro -> intro -> ExampleT (LabelValue l intro :> context) m a -> ExampleT context m a
+pushContext _label value (ExampleT action) = do
+  ExampleT $ withReaderT (\context -> LabelValue value :> context) $ action
+
+-- | Remove a label from the context.
+popContext :: forall m l a intro context. (Monad m) => Label l intro -> ExampleT context m a -> ExampleT (LabelValue l intro :> context) m a
+popContext _label (ExampleT action) = do
+  ExampleT $ withReaderT (\(_ :> context) -> context) $ action
