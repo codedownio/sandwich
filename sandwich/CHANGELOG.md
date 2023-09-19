@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.1.5.2
+
+* Contexts: add pushContext and popContext helpers.
+
 ## 0.1.5.1
 
 * Logging: add readCreateProcessWithLogging
