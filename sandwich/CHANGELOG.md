@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+* Allow any formatter except TUI to be used with --repeat N.
+
 ## 0.1.5.2
 
 * Contexts: add pushContext and popContext helpers.

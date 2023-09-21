@@ -236,7 +236,12 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let silentFormatter = SomeFormatter defaultSilentFormatter
 
   let mainFormatter = case (optRepeatCount, optFormatter) of
-        (x, _) | x /= 1 -> printFormatter
+        (x, _) | x /= 1 -> case optFormatter of
+                   TUI -> printFormatter
+                   PrintFailures -> failureReportFormatter
+                   Silent -> silentFormatter
+                   Print -> printFormatter
+                   Auto -> printFormatter
         (_, Auto) ->
           -- Formerly this tried to use the TUI formatter by default after checking isTuiFormatterSupported.
           -- Unfortunately, this function returns true under "cabal test", which also redirects stdout. So
