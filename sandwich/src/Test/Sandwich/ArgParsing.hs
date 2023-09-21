@@ -235,29 +235,29 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let failureReportFormatter = SomeFormatter $ defaultFailureReportFormatter { failureReportLogLevel = optLogLevel }
   let silentFormatter = SomeFormatter defaultSilentFormatter
 
-  maybeMainFormatter <- case (optRepeatCount, optFormatter) of
-    (x, _) | x /= 1 -> return $ Just printFormatter
-    (_, Auto) ->
-      -- Formerly this tried to use the TUI formatter by default after checking isTuiFormatterSupported.
-      -- Unfortunately, this function returns true under "cabal test", which also redirects stdout. So
-      -- you end up with no output and a hanging process (until you hit 'q'; stdin is still attached).
-      -- Seems like the best default is just the print formatter.
-      return $ Just printFormatter
+  let mainFormatter = case (optRepeatCount, optFormatter) of
+        (x, _) | x /= 1 -> printFormatter
+        (_, Auto) ->
+          -- Formerly this tried to use the TUI formatter by default after checking isTuiFormatterSupported.
+          -- Unfortunately, this function returns true under "cabal test", which also redirects stdout. So
+          -- you end up with no output and a hanging process (until you hit 'q'; stdin is still attached).
+          -- Seems like the best default is just the print formatter.
+          printFormatter
 #ifndef mingw32_HOST_OS
-    (_, TUI) -> do
-      let mainTerminalUiFormatter = headMay [x | SomeFormatter (cast -> Just x@(TerminalUIFormatter {})) <- optionsFormatters baseOptions]
-      return $ Just $ SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) { terminalUILogLevel = optLogLevel }
+        (_, TUI) ->
+          let mainTerminalUiFormatter = headMay [x | SomeFormatter (cast -> Just x@(TerminalUIFormatter {})) <- optionsFormatters baseOptions]
+          in SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) { terminalUILogLevel = optLogLevel }
 #endif
-    (_, Print) -> return $ Just printFormatter
-    (_, PrintFailures) -> return $ Just failureReportFormatter
-    (_, Silent) -> return $ Just silentFormatter
+        (_, Print) -> printFormatter
+        (_, PrintFailures) -> failureReportFormatter
+        (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
   let baseFormatters = optionsFormatters baseOptions
                      & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
                      & filter (not . isMainFormatter)
 
-  let finalFormatters = baseFormatters <> catMaybes [maybeMainFormatter]
+  let finalFormatters = baseFormatters <> [mainFormatter]
                       & fmap (setVisibilityThreshold optVisibilityThreshold)
 
   let options = baseOptions {
