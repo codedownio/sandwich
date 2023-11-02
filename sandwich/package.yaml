@@ -29,6 +29,7 @@ dependencies:
 - ansi-terminal
 - async
 - base >= 4.11 && < 5
+- brick
 - colour
 - containers
 - bytestring
@@ -56,6 +57,8 @@ dependencies:
 - transformers-base
 - unliftio-core
 - vector
+- vty >= 6
+- vty-crossplatform
 
 # For spec discovery. Move to its own package?
 - template-haskell
@@ -64,9 +67,7 @@ dependencies:
 when:
 - condition: "!os(windows)"
   dependencies:
-  - brick
   - unix
-  - vty
 
 library:
   source-dirs: src

@@ -1,5 +1,5 @@
 
-resolver: lts-20.24
+resolver: nightly-2023-11-01
 
 nix:
   pure: false
@@ -38,3 +38,9 @@ packages:
 - ./demos/demo-webdriver-pool
 - ./demos/demo-webdriver-positioning
 - ./demos/demo-webdriver-video
+
+extra-deps:
+- brick-2.0
+- vty-6.0
+- vty-crossplatform-0.1.0.0
+- vty-unix-0.1.0.0

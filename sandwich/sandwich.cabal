@@ -98,6 +98,7 @@ library
     , ansi-terminal
     , async
     , base >=4.11 && <5
+    , brick
     , bytestring
     , colour
     , containers
@@ -127,12 +128,12 @@ library
     , transformers-base
     , unliftio-core
     , vector
+    , vty >=6
+    , vty-crossplatform
   default-language: Haskell2010
   if !os(windows)
     build-depends:
-        brick
-      , unix
-      , vty
+        unix
   if os(windows)
     build-depends:
         Win32
@@ -176,6 +177,7 @@ executable sandwich-demo
     , ansi-terminal
     , async
     , base >=4.11 && <5
+    , brick
     , bytestring
     , colour
     , containers
@@ -206,12 +208,12 @@ executable sandwich-demo
     , transformers-base
     , unliftio-core
     , vector
+    , vty >=6
+    , vty-crossplatform
   default-language: Haskell2010
   if !os(windows)
     build-depends:
-        brick
-      , unix
-      , vty
+        unix
 
 executable sandwich-discover
   main-is: Main.hs
@@ -235,6 +237,7 @@ executable sandwich-discover
     , ansi-terminal
     , async
     , base >=4.11 && <5
+    , brick
     , bytestring
     , colour
     , containers
@@ -265,12 +268,12 @@ executable sandwich-discover
     , transformers-base
     , unliftio-core
     , vector
+    , vty >=6
+    , vty-crossplatform
   default-language: Haskell2010
   if !os(windows)
     build-depends:
-        brick
-      , unix
-      , vty
+        unix
 
 executable sandwich-test
   main-is: Main.hs
@@ -299,6 +302,7 @@ executable sandwich-test
     , ansi-terminal
     , async
     , base >=4.11 && <5
+    , brick
     , bytestring
     , colour
     , containers
@@ -329,12 +333,12 @@ executable sandwich-test
     , transformers-base
     , unliftio-core
     , vector
+    , vty >=6
+    , vty-crossplatform
   default-language: Haskell2010
   if !os(windows)
     build-depends:
-        brick
-      , unix
-      , vty
+        unix
 
 test-suite sandwich-test-suite
   type: exitcode-stdio-1.0
@@ -364,6 +368,7 @@ test-suite sandwich-test-suite
     , ansi-terminal
     , async
     , base >=4.11 && <5
+    , brick
     , bytestring
     , colour
     , containers
@@ -394,9 +399,9 @@ test-suite sandwich-test-suite
     , transformers-base
     , unliftio-core
     , vector
+    , vty >=6
+    , vty-crossplatform
   default-language: Haskell2010
   if !os(windows)
     build-depends:
-        brick
-      , unix
-      , vty
+        unix

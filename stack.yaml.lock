@@ -3,10 +3,38 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: brick-2.0@sha256:194ac889676e11849139577a78ee82906802a0beed5db877d721e854e0fd10c1,17986
+    pantry-tree:
+      sha256: 9a1cd1f3bbf6c3c54dc3a3179b81a150b19d31cad4e249f7baa15ad4b2d21018
+      size: 4671
+  original:
+    hackage: brick-2.0
+- completed:
+    hackage: vty-6.0@sha256:3c4ee4ffd6e38720e227c45e85eb91ff611125dbff178e9f2fadc993160e1464,3661
+    pantry-tree:
+      sha256: 3475a1ae91d416fb39a65789519af72fe257398d2a5dde3775d28c3effaaac25
+      size: 2104
+  original:
+    hackage: vty-6.0
+- completed:
+    hackage: vty-crossplatform-0.1.0.0@sha256:e07531db732ee44a40e8ef3a2fd3b3db6d2615a9f8f83b87de574e204f19be7c,3178
+    pantry-tree:
+      sha256: db3f1dd6fb6881bcc73eeb4e60ba10aff518aa099adacceefc345be5e4f6a3f9
+      size: 581
+  original:
+    hackage: vty-crossplatform-0.1.0.0
+- completed:
+    hackage: vty-unix-0.1.0.0@sha256:8d1dd971d49b4d3575ec76994a8dd5d330d7b81a30ece40344ee170d73a28ac3,2932
+    pantry-tree:
+      sha256: 4d19b54f88bbd031f2f764c23daef5f30a61ef9be23b11a5825657fd42468fb7
+      size: 1925
+  original:
+    hackage: vty-unix-0.1.0.0
 snapshots:
 - completed:
-    sha256: e019cd29e3f7f9dbad500225829a3f7a50f73c674614f2f452e21bb8bf5d99ea
-    size: 650253
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/24.yaml
-  original: lts-20.24
+    sha256: db24246b8a51793001a4f5c16de787e024f07614e7250102b8affc40f1e12849
+    size: 697672
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/11/1.yaml
+  original: nightly-2023-11-01

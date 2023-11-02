@@ -46,6 +46,7 @@ import Data.Time
 import qualified Data.Vector as Vec
 import GHC.Stack
 import qualified Graphics.Vty as V
+import qualified Graphics.Vty.CrossPlatform as V
 import Lens.Micro
 import Safe
 import System.FilePath
