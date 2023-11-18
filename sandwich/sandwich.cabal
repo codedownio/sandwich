@@ -38,6 +38,7 @@ library
       Test.Sandwich.Formatters.LogSaver
       Test.Sandwich.Formatters.Print
       Test.Sandwich.Formatters.Silent
+      Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.TH
   other-modules:
@@ -54,6 +55,17 @@ library
       Test.Sandwich.Formatters.Print.PrintPretty
       Test.Sandwich.Formatters.Print.Types
       Test.Sandwich.Formatters.Print.Util
+      Test.Sandwich.Formatters.TerminalUI.AttrMap
+      Test.Sandwich.Formatters.TerminalUI.CrossPlatform
+      Test.Sandwich.Formatters.TerminalUI.Draw
+      Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+      Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
+      Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
+      Test.Sandwich.Formatters.TerminalUI.Draw.Util
+      Test.Sandwich.Formatters.TerminalUI.Filter
+      Test.Sandwich.Formatters.TerminalUI.Keys
+      Test.Sandwich.Formatters.TerminalUI.OpenInEditor
+      Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Golden.Update
       Test.Sandwich.Internal.Formatters
       Test.Sandwich.Internal.Running
@@ -137,23 +149,6 @@ library
   if os(windows)
     build-depends:
         Win32
-  if !os(windows)
-    exposed-modules:
-        Test.Sandwich.Formatters.TerminalUI
-    other-modules:
-        Test.Sandwich.Formatters.TerminalUI.AttrMap
-        Test.Sandwich.Formatters.TerminalUI.CrossPlatform
-        Test.Sandwich.Formatters.TerminalUI.Draw
-        Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
-        Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
-        Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
-        Test.Sandwich.Formatters.TerminalUI.Draw.Util
-        Test.Sandwich.Formatters.TerminalUI.Filter
-        Test.Sandwich.Formatters.TerminalUI.Keys
-        Test.Sandwich.Formatters.TerminalUI.OpenInEditor
-        Test.Sandwich.Formatters.TerminalUI.Types
-    hs-source-dirs:
-        unix-src
 
 executable sandwich-demo
   main-is: Main.hs
