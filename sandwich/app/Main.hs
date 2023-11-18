@@ -15,10 +15,7 @@ import Test.Sandwich
 import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.LogSaver
 import Test.Sandwich.Formatters.Print
-
-#ifndef mingw32_HOST_OS
 import Test.Sandwich.Formatters.TerminalUI
-#endif
 
 
 data Database = Database String

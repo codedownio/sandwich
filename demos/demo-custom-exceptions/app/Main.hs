@@ -3,14 +3,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE CPP #-}
 
 module Main where
 
-#ifdef mingw32_HOST_OS
-main :: IO ()
-main = putStrLn "Demo not enabled on Windows."
-#else
 import Brick
 import Control.Exception
 import Control.Monad.IO.Class
@@ -60,4 +55,3 @@ testOptions = defaultOptions {
 
 main :: IO ()
 main = runSandwich testOptions customExceptionsDemo
-#endif

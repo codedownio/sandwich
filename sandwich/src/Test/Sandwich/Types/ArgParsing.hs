@@ -11,9 +11,7 @@ import GHC.Int
 
 data FormatterType =
   Print
-#ifndef mingw32_HOST_OS
   | TUI
-#endif
   | PrintFailures
   | Auto
   | Silent
@@ -21,17 +19,13 @@ data FormatterType =
 instance Show FormatterType where
   show Print = "print"
   show PrintFailures = "print-failures"
-#ifndef mingw32_HOST_OS
   show TUI = "tui"
-#endif
   show Auto = "auto"
   show Silent = "silent"
 
 instance Read FormatterType where
   readsPrec _ "print" = [(Print, "")]
-#ifndef mingw32_HOST_OS
   readsPrec _ "tui" = [(TUI, "")]
-#endif
   readsPrec _ "auto" = [(Auto, "")]
   readsPrec _ "silent" = [(Silent, "")]
   readsPrec _ _ = []
