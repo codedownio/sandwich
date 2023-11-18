@@ -25,9 +25,14 @@ pc color msg = printWithColor (Just (SetRGBColor Foreground color)) msg
 pn msg = printWithColor Nothing (msg <> "\n")
 pcn color msg = printWithColor (Just (SetRGBColor Foreground color)) (msg <> "\n")
 
-pGreenLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Green)) (msg <> "\n")
-pYellowLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Yellow)) (msg <> "\n")
-pRedLn msg = printIndentedWithColor (Just (SetColor Foreground Dull Red)) (msg <> "\n") -- Tried solarizedRed here but it was too orange
+pGreen msg = printIndentedWithColor (Just (SetColor Foreground Dull Green)) msg
+pGreenLn msg = pGreen (msg <> "\n")
+
+pYellow msg = printIndentedWithColor (Just (SetColor Foreground Dull Yellow)) msg
+pYellowLn msg = pYellow (msg <> "\n")
+
+pRed msg = printIndentedWithColor (Just (SetColor Foreground Dull Red)) msg -- Tried solarizedRed here but it was too orange
+pRedLn msg = pRed (msg <> "\n")
 
 printIndentedWithColor maybeColor msg = do
   (PrintFormatter {}, indent, h) <- ask

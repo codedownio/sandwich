@@ -27,7 +27,7 @@ import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.Print.Common
 import Test.Sandwich.Formatters.Print.FailureReason
-import Test.Sandwich.Formatters.Print.Printing
+import Test.Sandwich.Formatters.Print.Printing as Printing
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Print.Util
 import Test.Sandwich.Interpreters.RunTree.Util
@@ -76,16 +76,34 @@ runWithIndentation :: RunNode context -> ReaderT (PrintFormatter, Int, Handle) I
 runWithIndentation node@(RunNodeIt {..}) = do
   let common@(RunNodeCommonWithStatus {..}) = runNodeCommon
 
+  (PrintFormatter {..}, _, _) <- ask
+
   result <- liftIO $ waitForTree node
+
+  let printTiming = liftIO (readTVarIO runTreeStatus) >>= \case
+        Done {..} -> p [i| (#{diffUTCTime statusEndTime statusStartTime})|]
+        _ -> return () -- Shouldn't happen
 
   -- Print the main header
   case result of
-    Success -> pGreenLn runTreeLabel
-    DryRun -> pin runTreeLabel
-    Cancelled -> pin runTreeLabel
+    Success -> do
+      pGreen runTreeLabel
+      when (printFormatterIncludeTimestamps == IncludeTimestampsAlways) printTiming
+      p "\n"
+    DryRun -> do
+      Printing.pi runTreeLabel
+      when (printFormatterIncludeTimestamps == IncludeTimestampsAlways) printTiming
+      p "\n"
+    Cancelled -> do
+      Printing.pi runTreeLabel
+      when (printFormatterIncludeTimestamps == IncludeTimestampsAlways) printTiming
+      p "\n"
     (Failure (Pending _ _)) -> pYellowLn runTreeLabel
     (Failure reason) -> do
-      pRedLn runTreeLabel
+      pRed runTreeLabel
+      when (printFormatterIncludeTimestamps /= IncludeTimestampsNever) printTiming
+      p "\n"
+
       withBumpIndent $ printFailureReason reason
 
   finishPrinting common result

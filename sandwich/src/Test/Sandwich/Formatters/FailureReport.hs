@@ -46,6 +46,7 @@ data FailureReportFormatter = FailureReportFormatter {
   , failureReportIncludeCallStacks :: Bool
   , failureReportIndentSize :: Int
   , failureReportVisibilityThreshold :: Int
+  , failureReportIncludeTimestamps :: IncludeTimestamps
   } deriving (Show)
 
 defaultFailureReportFormatter :: FailureReportFormatter
@@ -55,6 +56,7 @@ defaultFailureReportFormatter = FailureReportFormatter {
   , failureReportIncludeCallStacks = True
   , failureReportIndentSize = 4
   , failureReportVisibilityThreshold = 50
+  , failureReportIncludeTimestamps = IncludeTimestampsNever
   }
 
 instance Formatter FailureReportFormatter where
@@ -72,6 +74,7 @@ printFailureReport frf@(FailureReportFormatter {..}) rts _bc = do
         , printFormatterVisibilityThreshold = maxBound
         , printFormatterIncludeCallStacks = failureReportIncludeCallStacks
         , printFormatterIndentSize = failureReportIndentSize
+        , printFormatterIncludeTimestamps = failureReportIncludeTimestamps
         }
 
   let extractFromNode node = let RunNodeCommonWithStatus {..} = runNodeCommon node in (runTreeId, (T.pack runTreeLabel, runTreeVisibilityLevel))

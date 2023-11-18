@@ -14,7 +14,15 @@ data PrintFormatter = PrintFormatter {
   -- ^ Whether to include callstacks with failures.
   , printFormatterIndentSize :: Int
   -- ^ The indentation unit in spaces. Defaults to 4.
+  , printFormatterIncludeTimestamps :: IncludeTimestamps
+  -- ^ Whether to include timestamps in output. Defaults to 'IncludeTimestampsNever'.
   } deriving (Show)
+
+data IncludeTimestamps =
+  IncludeTimestampsAlways
+  | IncludeTimestampsNever
+  | IncludeTimestampsFailuresOnly
+  deriving (Show, Eq)
 
 defaultPrintFormatter :: PrintFormatter
 defaultPrintFormatter = PrintFormatter {
@@ -23,4 +31,5 @@ defaultPrintFormatter = PrintFormatter {
   , printFormatterVisibilityThreshold = 50
   , printFormatterIncludeCallStacks = True
   , printFormatterIndentSize = 4
+  , printFormatterIncludeTimestamps = IncludeTimestampsNever
   }
