@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -28,6 +28,7 @@ library
   exposed-modules:
       Test.Sandwich.Hedgehog
   other-modules:
+      Test.Sandwich.Hedgehog.Render
       Paths_sandwich_hedgehog
   hs-source-dirs:
       src
@@ -51,16 +52,9 @@ library
     , string-interpolate
     , text
     , time
+    , vty
     , wl-pprint-annotated
   default-language: Haskell2010
-  if !os(windows)
-    build-depends:
-        vty
-  if !os(windows)
-    other-modules:
-        Test.Sandwich.Hedgehog.Render
-    hs-source-dirs:
-        unix-src
 
 test-suite sandwich-hedgehog-test
   type: exitcode-stdio-1.0
@@ -90,8 +84,6 @@ test-suite sandwich-hedgehog-test
     , string-interpolate
     , text
     , time
+    , vty
     , wl-pprint-annotated
   default-language: Haskell2010
-  if !os(windows)
-    build-depends:
-        vty
