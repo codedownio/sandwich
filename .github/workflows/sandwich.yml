@@ -21,13 +21,13 @@ jobs:
         - "9.4.7"
         - "9.6.3"
         exclude:
-        # ghc-9.4.4.exe: C:\sr\ghc-9.4.4\hashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348\lib\libHShashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348.a(#7:LowLevel.o): Not a x86_64 PE+ file.
-        # ghc-9.4.4.exe: Unknown COFF 4 type in getHeaderInfo.
-        - os: windows-latest
-          ghc: 9.4.4
-
         # Access violation in generated code when executing data at 0x6d88
         - os: windows-latest
+          ghc: 8.8.4
+
+        - os: macOS-latest
+          ghc: 8.6.5
+        - os: macOS-latest
           ghc: 8.8.4
 
     steps:
@@ -101,9 +101,9 @@ jobs:
     - name: Build
       run: |
         cd sandwich
-        stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml ../${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
         cd sandwich
-        stack test --stack-yaml ${{matrix.yaml}} --system-ghc
+        stack test --stack-yaml ../${{matrix.yaml}} --system-ghc

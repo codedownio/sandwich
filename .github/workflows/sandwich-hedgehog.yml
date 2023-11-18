@@ -20,15 +20,10 @@ jobs:
         - "8.8.4"
         - "8.10.7"
         - "9.0.2"
-        - "9.2.7"
-        - "9.4.5"
-        - "9.6.2"
+        - "9.2.8"
+        - "9.4.7"
+        - "9.6.3"
         exclude:
-        # ghc-9.4.4.exe: C:\sr\ghc-9.4.4\hashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348\lib\libHShashable-1.4.2.0-caea75de59bac447a2475c023cb3e922a3a24348.a(#7:LowLevel.o): Not a x86_64 PE+ file.
-        # ghc-9.4.4.exe: Unknown COFF 4 type in getHeaderInfo.
-        # - os: windows-latest
-        #   ghc: 9.4.4
-
         - os: macOS-latest
           ghc: 8.6.5
         - os: macOS-latest
@@ -74,18 +69,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ghc: "8.6.5"
-          resolver: "lts-14.27"
-        - ghc: "8.8.4"
-          resolver: "lts-16.31"
-        - ghc: "8.10.7"
-          resolver: "lts-18.28"
-        - ghc: "9.0.2"
-          resolver: "lts-19.33"
         - ghc: "9.2.8"
-          resolver: "lts-20.26"
-        - ghc: "9.4.5"
-          resolver: "lts-21.0"
+          yaml: "stack-9.2.8.yaml"
+        - ghc: "9.4.7"
+          yaml: "stack-9.4.7-yaml"
+        - ghc: "9.6.3"
+          yaml: "stack-9.6.3.yaml"
 
     steps:
     - uses: actions/checkout@v3
@@ -106,9 +95,9 @@ jobs:
     - name: Build
       run: |
         cd sandwich-hedgehog
-        stack build --resolver ${{matrix.resolver}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml ../${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
         cd sandwich-hedgehog
-        stack test --resolver ${{matrix.resolver}} --system-ghc
+        stack test --stack-yaml ../${{matrix.yaml}} --system-ghc
