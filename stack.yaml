@@ -1,5 +1,5 @@
 
-resolver: nightly-2023-11-01
+resolver: nightly-2023-11-17
 
 nix:
   pure: false
@@ -40,7 +40,8 @@ packages:
 - ./demos/demo-webdriver-video
 
 extra-deps:
-- brick-2.0
-- vty-6.0
-- vty-crossplatform-0.1.0.0
-- vty-unix-0.1.0.0
+- brick-2.1.1
+- vty-6.1
+- vty-crossplatform-0.4.0.0
+- vty-unix-0.2.0.0
+- vty-windows-0.2.0.0

@@ -5,36 +5,43 @@
 
 packages:
 - completed:
-    hackage: brick-2.0@sha256:194ac889676e11849139577a78ee82906802a0beed5db877d721e854e0fd10c1,17986
+    hackage: brick-2.1.1@sha256:ff36d64f1027eac17a14a83de053067413accb58b79e5002dce2a79cb8a3dcb3,17385
     pantry-tree:
-      sha256: 9a1cd1f3bbf6c3c54dc3a3179b81a150b19d31cad4e249f7baa15ad4b2d21018
+      sha256: c70beaff3ad9126bc2a9a57649ef63becd534b7eb6b015092cb28437fe3f916d
       size: 4671
   original:
-    hackage: brick-2.0
+    hackage: brick-2.1.1
 - completed:
-    hackage: vty-6.0@sha256:3c4ee4ffd6e38720e227c45e85eb91ff611125dbff178e9f2fadc993160e1464,3661
+    hackage: vty-6.1@sha256:524d124223c02373260ebc409ddd622fbe97cacd1ea0ee98476b5992bddbc4f3,3661
     pantry-tree:
-      sha256: 3475a1ae91d416fb39a65789519af72fe257398d2a5dde3775d28c3effaaac25
+      sha256: 4ed3b229066617a0f3429b7b7dadc8e01d14111ac675801053cd35fbb6ee3f14
       size: 2104
   original:
-    hackage: vty-6.0
+    hackage: vty-6.1
 - completed:
-    hackage: vty-crossplatform-0.1.0.0@sha256:e07531db732ee44a40e8ef3a2fd3b3db6d2615a9f8f83b87de574e204f19be7c,3178
+    hackage: vty-crossplatform-0.4.0.0@sha256:50593f91ad16777d921138475a8d2784d538fd206addd30664c620278d6c8544,3172
     pantry-tree:
-      sha256: db3f1dd6fb6881bcc73eeb4e60ba10aff518aa099adacceefc345be5e4f6a3f9
-      size: 581
+      sha256: ff010cf0ab3f48c43432268a00113e051599285d6ed60cfada7f53e44dbe00f8
+      size: 582
   original:
-    hackage: vty-crossplatform-0.1.0.0
+    hackage: vty-crossplatform-0.4.0.0
 - completed:
-    hackage: vty-unix-0.1.0.0@sha256:8d1dd971d49b4d3575ec76994a8dd5d330d7b81a30ece40344ee170d73a28ac3,2932
+    hackage: vty-unix-0.2.0.0@sha256:2af3d0bdae3c4b7b7e567ee374efe32c7439fabdf9096465ce011a6c6736e9ae,2932
     pantry-tree:
-      sha256: 4d19b54f88bbd031f2f764c23daef5f30a61ef9be23b11a5825657fd42468fb7
-      size: 1925
+      sha256: 0e3dd52406c263fd4b54d03123e71423d1ef6939fb8c179745486243c519fdf7
+      size: 1926
   original:
-    hackage: vty-unix-0.1.0.0
+    hackage: vty-unix-0.2.0.0
+- completed:
+    hackage: vty-windows-0.2.0.0@sha256:91a11bab7bb79f8ee0d4a8166824ed855251cbac101eed3fdf607ad519a13557,2815
+    pantry-tree:
+      sha256: 50d343eb4df5d1901b1773baeaff8ae7c6a88204d0997430e26f0dc50a1a63eb
+      size: 2160
+  original:
+    hackage: vty-windows-0.2.0.0
 snapshots:
 - completed:
-    sha256: db24246b8a51793001a4f5c16de787e024f07614e7250102b8affc40f1e12849
-    size: 697672
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/11/1.yaml
-  original: nightly-2023-11-01
+    sha256: c2e1f24aaacdb9b102211cc79a46de9e906be677d9702ac3aa102bfb8e1fb1c9
+    size: 698982
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/11/17.yaml
+  original: nightly-2023-11-17

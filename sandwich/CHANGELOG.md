@@ -2,7 +2,11 @@
 
 ## Unreleased changes
 
+## 0.2.0.0
+
 * Allow any formatter except TUI to be used with --repeat N.
+* Be able to include timestamps with print formatter and failure report formatter.
+* Support vty-6.x/brick-2.x. This change adds Windows support, but forces us to do a major version bump.
 
 ## 0.1.5.2
 
