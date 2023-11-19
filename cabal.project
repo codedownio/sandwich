@@ -20,6 +20,7 @@ packages:
   demos/demo-landing
   demos/demo-paralleln
   demos/demo-quickcheck
+  demos/demo-setup-teardown
   demos/demo-slack
   demos/demo-timing
   demos/demo-timing-parallel

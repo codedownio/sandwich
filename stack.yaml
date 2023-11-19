@@ -28,6 +28,7 @@ packages:
 - ./demos/demo-landing
 - ./demos/demo-paralleln
 - ./demos/demo-quickcheck
+- ./demos/demo-setup-teardown
 - ./demos/demo-slack
 - ./demos/demo-stack-test
 - ./demos/demo-timing
