@@ -93,7 +93,7 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
                   (ret, teardownTime) <- timed $ runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
                   writeIORef result (ret, ExtraTimingInfo (Just setupTime) (Just teardownTime))
             )
-            (\(result, _setupTime) -> case result of
+            (\(ret, _setupTime) -> case ret of
                 Left failureReason@(Pending {}) -> do
                   -- TODO: add note about failure in allocation
                   markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
@@ -120,15 +120,30 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
                 Just fr@(Pending {}) -> Failure fr
                 _ -> Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
+            beginningCleanupVar <- liftIO $ newIORef Nothing
             startTime <- liftIO getCurrentTime
-            runNodeIntroduceAction $ \intro -> do
+            results <- runNodeIntroduceAction $ \intro -> do
               afterMakingIntroTime <- liftIO getCurrentTime
               let setupTime = diffUTCTime afterMakingIntroTime startTime
+
               results <- liftIO $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
+
+              beginningCleanupTs <- liftIO getCurrentTime
+              liftIO $ writeIORef beginningCleanupVar (Just beginningCleanupTs)
+
               liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupTime)
               return results
 
-          (liftIO $ readIORef didRunWrappedAction) >>= \case
+            endTime <- liftIO getCurrentTime
+            liftIO (readIORef beginningCleanupVar) >>= \case
+              Nothing -> return ()
+              Just beginningCleanupTs ->
+                liftIO $ modifyIORef' didRunWrappedAction $
+                  \(ret, timingInfo) -> (ret, timingInfo { teardownTime = Just (diffUTCTime endTime beginningCleanupTs) })
+
+            return results
+
+          liftIO (readIORef didRunWrappedAction) >>= \case
             (Left (), timingInfo) -> return (Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|], timingInfo)
             (Right _, timingInfo) -> return (Success, timingInfo)
     runExampleM' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|]) >>= \case

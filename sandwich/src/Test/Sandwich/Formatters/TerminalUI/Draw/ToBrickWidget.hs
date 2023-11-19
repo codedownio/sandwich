@@ -28,7 +28,13 @@ class ToBrickWidget a where
 instance ToBrickWidget Status where
   toBrickWidget (NotStarted {}) = return $ strWrap "Not started"
   toBrickWidget (Running {statusStartTime}) = return $ strWrap [i|Started at #{statusStartTime}|]
-  toBrickWidget (Done startTime endTime setupTime teardownTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}. setup: #{setupTime}. teardown: #{teardownTime}|])
+  toBrickWidget (Done startTime endTime setupTime teardownTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}.#{setupTeardownInfo}|])
+    where
+      setupInfo :: Maybe T.Text = (\t -> [i|Setup: #{formatNominalDiffTime t}.|]) <$> setupTime
+      teardownInfo :: Maybe T.Text = (\t -> [i|Teardown: #{formatNominalDiffTime t}.|]) <$> teardownTime
+      setupTeardownInfo = case catMaybes [setupInfo, teardownInfo] of
+        [] -> ""
+        xs -> " (" <> T.intercalate " " xs <> ")"
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
   toBrickWidget (Done {statusResult=DryRun}) = return $ strWrap "Not started due to dry run"
   toBrickWidget (Done {statusResult=Cancelled}) = return $ strWrap "Cancelled"

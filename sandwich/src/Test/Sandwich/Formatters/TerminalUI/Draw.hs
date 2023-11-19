@@ -96,9 +96,9 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
 
                   actualWorkTime = (diffUTCTime statusEndTime statusStartTime) - (fromMaybe 0 statusSetupTime) - (fromMaybe 0 statusTeardownTime)
 
-                  setupWork = maybe mempty (\dt -> V.string (getAttr dt) [i|#{formatNominalDiffTime dt} + |]) statusSetupTime
+                  setupWork = maybe mempty (\dt -> V.string (getAttr dt) [i|(#{formatNominalDiffTime dt}) + |]) statusSetupTime
                   actualWork = V.string (getAttr actualWorkTime) $ formatNominalDiffTime actualWorkTime
-                  teardownWork = maybe mempty (\dt -> V.string (getAttr dt) [i| + #{formatNominalDiffTime dt}|]) statusTeardownTime
+                  teardownWork = maybe mempty (\dt -> V.string (getAttr dt) [i| + (#{formatNominalDiffTime dt})|]) statusTeardownTime
           _ -> Nothing
       ]
 
