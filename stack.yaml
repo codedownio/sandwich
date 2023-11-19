@@ -20,7 +20,7 @@ packages:
 - ./demos/demo-command-line-args
 - ./demos/demo-contexts
 - ./demos/demo-context-dependencies
-- ./demos/demo-context-nested-dependencies
+- ./demos/demo-context-nested
 - ./demos/demo-custom-exceptions
 - ./demos/demo-discover
 - ./demos/demo-golden
