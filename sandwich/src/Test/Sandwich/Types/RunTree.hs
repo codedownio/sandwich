@@ -28,9 +28,12 @@ import Test.Sandwich.Types.TestTimer
 
 data Status = NotStarted
             | Running { statusStartTime :: UTCTime
+                      , statusSetupTime :: Maybe NominalDiffTime
                       , statusAsync :: Async Result }
             | Done { statusStartTime :: UTCTime
                    , statusEndTime :: UTCTime
+                   , statusSetupTime :: Maybe NominalDiffTime
+                   , statusTeardownTime :: Maybe NominalDiffTime
                    , statusResult :: Result }
             deriving (Show, Eq)
 

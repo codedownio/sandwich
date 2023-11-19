@@ -76,19 +76,29 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ str $ show statusStartTime
-          Done {..} -> Just $ raw $ V.string attr $ formatNominalDiffTime (diffUTCTime statusEndTime statusStartTime)
+          Done {..} -> Just (raw setupWork <+> raw actualWork <+> raw teardownWork)
             where totalElapsed = realToFrac (max (app ^. appTimeSinceStart) (diffUTCTime statusEndTime (app ^. appStartTime)))
-                  duration = realToFrac (diffUTCTime statusEndTime statusStartTime)
-                  intensity :: Double = logBase (totalElapsed + 1) (duration + 1)
                   minGray :: Int = 50
                   maxGray :: Int = 255
-                  level :: Int = min maxGray $ max minGray $ round (fromIntegral minGray + (intensity * (fromIntegral (maxGray - minGray))))
-                  attr = V.Attr {
+
+                  getLevel :: Double -> Int
+                  getLevel duration = min maxGray $ max minGray $ round (fromIntegral minGray + (intensity * (fromIntegral (maxGray - minGray))))
+                    where
+                      intensity :: Double = logBase (totalElapsed + 1) (duration + 1)
+
+                  getAttr :: NominalDiffTime -> V.Attr
+                  getAttr dt = V.Attr {
                     V.attrStyle = V.Default
-                    , V.attrForeColor = V.SetTo (grayAt level)
+                    , V.attrForeColor = V.SetTo $ grayAt $ getLevel (realToFrac dt)
                     , V.attrBackColor = V.Default
                     , V.attrURL = V.Default
                     }
+
+                  actualWorkTime = (diffUTCTime statusEndTime statusStartTime) - (fromMaybe 0 statusSetupTime) - (fromMaybe 0 statusTeardownTime)
+
+                  setupWork = maybe mempty (\dt -> V.string (getAttr dt) [i|#{formatNominalDiffTime dt} + |]) statusSetupTime
+                  actualWork = V.string (getAttr actualWorkTime) $ formatNominalDiffTime actualWorkTime
+                  teardownWork = maybe mempty (\dt -> V.string (getAttr dt) [i| + #{formatNominalDiffTime dt}|]) statusTeardownTime
           _ -> Nothing
       ]
 

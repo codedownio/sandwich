@@ -296,7 +296,7 @@ appEvent s (VtyEvent e) =
       case (listSelectedElement (s ^. appMainList)) of
         Nothing -> continue s
         Just (_i, MainListElem {status}) -> case status of
-          Done _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
+          Done _ _ _ _ (Failure (failureCallStack -> Just (getCallStack -> ((_, loc):_)))) -> openSrcLoc s loc
           _ -> continue s
 
     -- Column 3

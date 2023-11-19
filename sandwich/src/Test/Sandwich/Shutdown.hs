@@ -13,5 +13,5 @@ cancelNode node = readTVarIO (runTreeStatus $ runNodeCommon node) >>= \case
   Running {..} -> cancel statusAsync
   NotStarted -> do
     now <- getCurrentTime
-    atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now Cancelled)
+    atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now Nothing Nothing Cancelled)
   Done {} -> return ()

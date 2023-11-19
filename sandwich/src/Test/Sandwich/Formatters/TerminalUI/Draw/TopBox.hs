@@ -162,7 +162,7 @@ selectedTestDone s = case L.listSelectedElement (s ^. appMainList) of
 selectedTestHasCallStack s = case L.listSelectedElement (s ^. appMainList) of
   Nothing -> False
   Just (_, MainListElem {..}) -> case status of
-    (Done _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
+    (Done _ _ _ _ (Failure failureReason)) -> isJust $ failureCallStack failureReason
     _ -> False
 
 selectedTestToggled s = case L.listSelectedElement (s ^. appMainList) of

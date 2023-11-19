@@ -30,6 +30,7 @@ import Data.Functor.Classes
 import Data.Kind (Type)
 import Data.Maybe
 import Data.String.Interpolate
+import Data.Time
 import GHC.Stack
 import GHC.TypeLits
 import Graphics.Vty.Image (Image)
@@ -78,6 +79,14 @@ data Result = Success
             | DryRun
             | Cancelled
   deriving (Show, Eq)
+
+data ExtraTimingInfo = ExtraTimingInfo {
+  setupTime :: Maybe NominalDiffTime
+  , teardownTime :: Maybe NominalDiffTime
+  }
+emptyExtraTimingInfo = ExtraTimingInfo Nothing Nothing
+mkSetupTimingInfo dt = ExtraTimingInfo (Just dt) Nothing
+mkTeardownTimingInfo dt = ExtraTimingInfo Nothing (Just dt)
 
 data ShowEqBox = forall s. (Show s, Eq s) => SEB s
 instance Show ShowEqBox where show (SEB x) = show x

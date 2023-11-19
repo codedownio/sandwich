@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TupleSections #-}
 
 module Test.Sandwich.Interpreters.StartTree (
   startTree
@@ -51,44 +52,48 @@ startTree node@(RunNodeBefore {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|])) >>= \case
-      result@(Failure fr@(Pending {..})) -> do
+    (timed (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|]))) >>= \case
+      (result@(Failure fr@(Pending {..})), setupTime) -> do
         markAllChildrenWithResult runNodeChildren ctx (Failure fr)
-        return result
-      result@(Failure fr) -> do
+        return (result, mkSetupTimingInfo setupTime)
+      (result@(Failure fr), setupTime) -> do
         markAllChildrenWithResult runNodeChildren ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException fr))
-        return result
-      Success -> do
+        return (result, mkSetupTimingInfo setupTime)
+      (Success, setupTime) -> do
         void $ runNodesSequentially runNodeChildren ctx
-        return Success
-      Cancelled -> do
-        return Cancelled
-      DryRun -> do
+        return (Success, mkSetupTimingInfo setupTime)
+      (Cancelled, setupTime) -> do
+        return (Cancelled, mkSetupTimingInfo setupTime)
+      (DryRun, setupTime) -> do
         void $ runNodesSequentially runNodeChildren ctx
-        return DryRun
+        return (DryRun, mkSetupTimingInfo setupTime)
 startTree node@(RunNodeAfter {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    result <- liftIO $ newIORef Success
+    result <- liftIO $ newIORef (Success, emptyExtraTimingInfo)
     finally (void $ runNodesSequentially runNodeChildren ctx)
-            ((runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])) >>= writeIORef result)
+            (do
+                (ret, dt) <- timed (runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|]))
+                writeIORef result (ret, mkTeardownTimingInfo dt)
+            )
     liftIO $ readIORef result
 startTree node@(RunNodeIntroduce {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    result <- liftIO $ newIORef Success
+    result <- liftIO $ newIORef (Success, emptyExtraTimingInfo)
     bracket (do
                 let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
                 flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
-                  runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|]))
-            (\case
-                Left failureReason -> writeIORef result (Failure failureReason)
-                Right intro ->
-                  (runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])) >>= writeIORef result
+                  timed (runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])))
+            (\(ret, setupTime) -> case ret of
+                Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupTime)
+                Right intro -> do
+                  (ret, teardownTime) <- timed $ runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
+                  writeIORef result (ret, ExtraTimingInfo (Just setupTime) (Just teardownTime))
             )
-            (\case
+            (\(result, _setupTime) -> case result of
                 Left failureReason@(Pending {}) -> do
                   -- TODO: add note about failure in allocation
                   markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
@@ -108,61 +113,71 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  didRunWrappedAction <- liftIO $ newIORef (Left ())
+  didRunWrappedAction <- liftIO $ newIORef (Left (), emptyExtraTimingInfo)
   runInAsync node ctx $ do
     let wrappedAction = do
           let failureResult e = case fromException e of
                 Just fr@(Pending {}) -> Failure fr
                 _ -> Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
+            startTime <- liftIO getCurrentTime
             runNodeIntroduceAction $ \intro -> do
+              afterMakingIntroTime <- liftIO getCurrentTime
+              let setupTime = diffUTCTime afterMakingIntroTime startTime
               results <- liftIO $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
-              liftIO $ writeIORef didRunWrappedAction (Right results)
+              liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupTime)
               return results
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
-            Left () -> return $ Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|]
-            Right _ -> return Success
-    runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
+            (Left (), timingInfo) -> return (Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler didn't call action|], timingInfo)
+            (Right _, timingInfo) -> return (Success, timingInfo)
+    runExampleM' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|]) >>= \case
+      Left err -> return (Failure err, emptyExtraTimingInfo)
+      Right x -> pure x
 startTree node@(RunNodeAround {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
-  didRunWrappedAction <- liftIO $ newIORef (Left ())
+  didRunWrappedAction <- liftIO $ newIORef (Left (), emptyExtraTimingInfo)
   runInAsync node ctx $ do
     let wrappedAction = do
           let failureResult e = case fromException e of
                 Just fr@(Pending {}) -> Failure fr
                 _ -> Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
+            startTime <- liftIO getCurrentTime
             runNodeActionWith $ do
+              setupEndTime <- liftIO getCurrentTime
+              let setupTime = diffUTCTime setupEndTime startTime
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
-              liftIO $ writeIORef didRunWrappedAction (Right results)
+              liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupTime)
               return results
 
           (liftIO $ readIORef didRunWrappedAction) >>= \case
-            Left () -> return $ Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler didn't call action|]
-            Right _ -> return Success
-    runExampleM'' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|])
+            (Left (), timingInfo) -> return (Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler didn't call action|], timingInfo)
+            (Right _, timingInfo) -> return (Success, timingInfo)
+    runExampleM' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|]) >>= \case
+      Left err -> return (Failure err, emptyExtraTimingInfo)
+      Right x -> pure x
 startTree node@(RunNodeDescribe {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesSequentially runNodeChildren ctx) >>= \case
-      0 -> return Success
-      n -> return $ Failure (ChildrenFailed Nothing n)
+      0 -> return (Success, emptyExtraTimingInfo)
+      n -> return (Failure (ChildrenFailed Nothing n), emptyExtraTimingInfo)
 startTree node@(RunNodeParallel {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeChildren ctx) >>= \case
-      0 -> return Success
-      n -> return $ Failure (ChildrenFailed Nothing n)
+      0 -> return (Success, emptyExtraTimingInfo)
+      n -> return (Failure (ChildrenFailed Nothing n), emptyExtraTimingInfo)
 startTree node@(RunNodeIt {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    runExampleM runNodeExample ctx (runTreeLogs runNodeCommon) Nothing
+    (, emptyExtraTimingInfo) <$> runExampleM runNodeExample ctx (runTreeLogs runNodeCommon) Nothing
 
 -- * Util
 
-runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context -> IO Result -> m (Async Result)
+runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context -> IO (Result, ExtraTimingInfo) -> m (Async Result)
 runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
@@ -174,9 +189,9 @@ runInAsync node ctx action = do
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
     flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
       readMVar mvar
-      result <- timerFn action
+      (result, extraTimingInfo) <- timerFn action
       endTime <- liftIO getCurrentTime
-      liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime result
+      liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime endTime (setupTime extraTimingInfo) (teardownTime extraTimingInfo) result
 
       whenFailure result $ \reason -> do
         -- Make sure the folder exists, if configured
@@ -230,7 +245,7 @@ runInAsync node ctx action = do
               printLogs runTreeLogs
 
       return result
-  liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime myAsync
+  liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime Nothing myAsync
   liftIO $ putMVar mvar ()
   return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
 
@@ -252,7 +267,7 @@ markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode co
 markAllChildrenWithResult children baseContext status = do
   now <- liftIO getCurrentTime
   forM_ (L.filter (shouldRunChild' baseContext) $ concatMap getCommons children) $ \child ->
-    liftIO $ atomically $ writeTVar (runTreeStatus child) (Done now now status)
+    liftIO $ atomically $ writeTVar (runTreeStatus child) (Done now now Nothing Nothing status)
 
 cancelAllChildrenWith :: [RunNode context] -> SomeAsyncException -> IO ()
 cancelAllChildrenWith children e = do
@@ -262,7 +277,7 @@ cancelAllChildrenWith children e = do
       NotStarted -> do
         now <- getCurrentTime
         let reason = GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e)
-        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now (Failure reason))
+        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now now Nothing Nothing (Failure reason))
       _ -> return ()
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
@@ -279,11 +294,6 @@ runExampleM :: HasBaseContext r => ExampleM r () -> r -> TVar (Seq LogEntry) -> 
 runExampleM ex ctx logs exceptionMessage = runExampleM' ex ctx logs exceptionMessage >>= \case
   Left err -> return $ Failure err
   Right () -> return Success
-
-runExampleM'' :: HasBaseContext r => ExampleM r Result -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
-runExampleM'' ex ctx logs exceptionMessage = runExampleM' ex ctx logs exceptionMessage >>= \case
-  Left err -> return $ Failure err
-  Right x -> return x
 
 runExampleM' :: HasBaseContext r => ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
 runExampleM' ex ctx logs exceptionMessage = do
@@ -327,5 +337,12 @@ recordExceptionInStatus status e = do
           Just (e' :: FailureReason) -> Failure e'
           _ -> Failure (GotException Nothing Nothing (SomeExceptionWithEq e))
   liftIO $ atomically $ modifyTVar status $ \case
-    Running {statusStartTime} -> Done statusStartTime endTime ret
-    _ -> Done endTime endTime ret
+    Running {statusStartTime, statusSetupTime} -> Done statusStartTime endTime statusSetupTime Nothing ret
+    _ -> Done endTime endTime Nothing Nothing ret
+
+timed :: (MonadMask m, MonadIO m) => m a -> m (a, NominalDiffTime)
+timed action = do
+  startTime <- liftIO getCurrentTime
+  ret <- action
+  endTime <- liftIO getCurrentTime
+  pure (ret, diffUTCTime endTime startTime)

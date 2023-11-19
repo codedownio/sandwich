@@ -28,10 +28,13 @@ class ToBrickWidget a where
 instance ToBrickWidget Status where
   toBrickWidget (NotStarted {}) = return $ strWrap "Not started"
   toBrickWidget (Running {statusStartTime}) = return $ strWrap [i|Started at #{statusStartTime}|]
-  toBrickWidget (Done startTime endTime Success) = return $ strWrap [i|Succeeded in #{formatNominalDiffTime (diffUTCTime endTime startTime)}|]
+  toBrickWidget (Done startTime endTime setupTime teardownTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}. setup: #{setupTime}. teardown: #{teardownTime}|])
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
   toBrickWidget (Done {statusResult=DryRun}) = return $ strWrap "Not started due to dry run"
   toBrickWidget (Done {statusResult=Cancelled}) = return $ strWrap "Cancelled"
+
+showTimeDiff :: UTCTime -> UTCTime -> String
+showTimeDiff startTime endTime = formatNominalDiffTime (diffUTCTime endTime startTime)
 
 instance ToBrickWidget FailureReason where
   toBrickWidget (ExpectedButGot _ (SEB x1) (SEB x2)) = do
