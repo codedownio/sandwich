@@ -26,7 +26,7 @@ timingParallelDemo = parallel $ do
       pauseSeconds 0.3
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

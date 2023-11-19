@@ -10,7 +10,6 @@ import Common
 import Control.Exception.Lifted
 import Control.Monad
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich
 
 -- For the commented type signature
@@ -56,7 +55,7 @@ contextNestedDepsDemo = describe "Nested dependencies" $ do
         debug [i|Got server: #{s}|]
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

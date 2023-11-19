@@ -31,7 +31,7 @@ manualVideo = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
         findElem (ByCSS [i|input[type="submit"]|]) >>= click
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

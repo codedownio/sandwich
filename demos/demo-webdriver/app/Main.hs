@@ -9,7 +9,6 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
-import Data.Time.Clock
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.WebDriver
@@ -31,7 +30,7 @@ simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
     liftIO $ threadDelay 3000000
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

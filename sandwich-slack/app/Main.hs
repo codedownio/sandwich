@@ -5,7 +5,6 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad.IO.Class
-import Data.Time
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
@@ -43,7 +42,7 @@ main :: IO ()
 main = runSandwich options simple
   where
     options = defaultOptions {
-      optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+      optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
       , optionsFormatters = [SomeFormatter defaultTerminalUIFormatter, SomeFormatter slackFormatter]
       }
 

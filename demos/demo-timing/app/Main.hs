@@ -5,7 +5,6 @@
 module Main where
 
 import Common
-import Data.Time.Clock
 import Test.Sandwich
 
 timingDemo :: TopSpec
@@ -21,7 +20,7 @@ timingDemo = describe "Dinner tests" $ do
     pauseSeconds 1
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

@@ -7,7 +7,6 @@ import Common
 import Control.Exception.Lifted
 import Control.Monad
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich
 
 data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
@@ -28,7 +27,7 @@ contextsDemo = describe "Contexts" $ do
       info [i|Got database: '#{db}'|]
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

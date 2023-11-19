@@ -10,7 +10,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger (LogLevel(..))
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.LogSaver
@@ -197,7 +196,7 @@ main :: IO ()
 main = runSandwichWithCommandLineArgs options documentation
   where
     options = defaultOptions {
-      optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+      optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
       , optionsFormatters = [SomeFormatter defaultLogSaverFormatter]
       , optionsProjectRoot = Just "sandwich"
       }

@@ -8,7 +8,6 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Maybe
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.WebDriver
@@ -91,7 +90,7 @@ wdOptions = (defaultWdOptions "/tmp/tools") {
   }
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   -- , optionsFormatters = [SomeFormatter defaultTerminalUIFormatter]
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   }

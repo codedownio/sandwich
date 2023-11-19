@@ -3,7 +3,6 @@
 
 module Main (Main.main) where
 
-import Data.Time.Clock
 import Test.Sandwich
 
 import qualified SeleniumTests
@@ -16,7 +15,7 @@ discoverDemo = describe "Discover" $ do
   SeleniumTests.tests
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

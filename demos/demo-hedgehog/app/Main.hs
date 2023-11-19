@@ -6,7 +6,6 @@ module Main where
 
 import Control.Monad.IO.Class
 import Data.String.Interpolate
-import Data.Time.Clock
 import Hedgehog
 import qualified Hedgehog.Gen as Gen
 import qualified Hedgehog.Range as Range
@@ -25,7 +24,7 @@ quickCheckDemo = describe "Hedgehog tests" $ introduceHedgehog $ do
     reverse xs === xs
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

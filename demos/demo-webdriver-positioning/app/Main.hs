@@ -5,7 +5,6 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad.IO.Class
-import Data.Time.Clock
 import Test.Sandwich
 import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Windows
@@ -27,7 +26,7 @@ positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
       liftIO $ threadDelay 5000000
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

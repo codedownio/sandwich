@@ -10,11 +10,11 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Maybe
 import Data.String.Interpolate
-import Data.Time.Clock
 import System.Random
 import Test.Sandwich
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Formatters.TerminalUI
+
 
 simple :: TopSpec
 simple = parallel $ do
@@ -30,7 +30,7 @@ simple = parallel $ do
     it "tests bar #2" $ pauseRandomAndSucceed
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

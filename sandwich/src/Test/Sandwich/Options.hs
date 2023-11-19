@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Options (
   Options
@@ -6,6 +7,7 @@ module Test.Sandwich.Options (
   -- * Artifacts
   , optionsTestArtifactsDirectory
   , TestArtifactsDirectory(..)
+  , defaultTestArtifactsDirectory
 
   -- * Logging
   , optionsSavedLogLevel
@@ -34,6 +36,7 @@ module Test.Sandwich.Options (
   ) where
 
 import Control.Monad.Logger
+import Data.Time.Clock
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Types.RunTree
 
@@ -51,3 +54,18 @@ defaultOptions = Options {
   , optionsProjectRoot = Nothing
   , optionsTestTimerType = SpeedScopeTestTimerType { speedScopeTestTimerWriteRawTimings = False }
   }
+
+defaultTestArtifactsDirectory :: TestArtifactsDirectory
+defaultTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" getFolderName
+  where
+#ifndef mingw32_HOST_OS
+    getFolderName = show <$> getCurrentTime
+#else
+    getFolderName = do
+      ts <- show <$> getCurrentTime
+      return $ ts
+        & replace ':' '_'
+
+    replace :: Eq a => a -> a -> [a] -> [a]
+    replace a b = map $ \c -> if c == a then b else c
+#endif

@@ -7,7 +7,6 @@ module Main where
 import Common
 import Control.Concurrent
 import Control.Monad.IO.Class
-import Data.Time.Clock
 import System.Random
 import Test.Sandwich
 
@@ -37,7 +36,7 @@ sleepRandom = liftIO $ do
   threadDelay timeToSleep
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

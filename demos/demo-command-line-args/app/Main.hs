@@ -5,7 +5,6 @@
 module Main where
 
 import Data.String.Interpolate
-import Data.Time.Clock
 import Options.Applicative
 import Test.Sandwich
 
@@ -30,5 +29,5 @@ main :: IO ()
 main = runSandwichWithCommandLineArgs' testOptions myArgsParser commandLineArgsDemo
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }

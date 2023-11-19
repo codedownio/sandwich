@@ -10,7 +10,6 @@ import Brick
 import Control.Exception
 import Control.Monad.IO.Class
 import Data.Text as T
-import Data.Time.Clock
 import GHC.Stack
 import Graphics.Vty.Attributes
 import Test.Sandwich
@@ -47,7 +46,7 @@ formatMyColoredException e = case fromException e of
   Nothing -> Nothing
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   , optionsFormatters = [SomeFormatter $ defaultTerminalUIFormatter {
       terminalUICustomExceptionFormatters = [formatMyException, formatMyColoredException]
       }]

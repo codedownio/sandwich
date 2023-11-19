@@ -9,7 +9,6 @@ import Common
 import Control.Exception.Lifted
 import Control.Monad
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich
 
 data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
@@ -46,7 +45,7 @@ databaseTest2 = do
   it "uses the database 2" $ getContext database >>= \db -> info [i|Got database: '#{db}'|]
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

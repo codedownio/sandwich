@@ -6,7 +6,6 @@ module Main where
 
 import Control.Monad.IO.Class
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.QuickCheck
 import Test.Sandwich
 import Test.Sandwich.QuickCheck
@@ -18,7 +17,7 @@ quickCheckDemo = describe "QuickCheck tests" $ introduceQuickCheck $ do
   prop "Failing list reversal" $ \(xs :: [Int]) -> (reverse xs) == xs
 
 testOptions = defaultOptions {
-  optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+  optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }
 
 main :: IO ()

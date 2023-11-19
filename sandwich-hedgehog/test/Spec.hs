@@ -12,5 +12,5 @@ main :: IO ()
 main = runSandwich options verySimple
   where
     options = defaultOptions {
-      optionsTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" (show <$> getCurrentTime)
+      optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
       }
