@@ -26,8 +26,8 @@ class ToBrickWidget a where
   toBrickWidget :: a -> Reader CustomExceptionFormatters (Widget n)
 
 instance ToBrickWidget Status where
-  toBrickWidget (NotStarted {}) = return $ strWrap "Not started"
-  toBrickWidget (Running {statusStartTime}) = return $ strWrap [i|Started at #{statusStartTime}|]
+  toBrickWidget (NotStarted {}) = return $ strWrap "Not started."
+  toBrickWidget (Running {statusStartTime}) = return $ strWrap [i|Started at #{statusStartTime}.|]
   toBrickWidget (Done startTime endTime setupTime teardownTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}.#{setupTeardownInfo}|])
     where
       setupInfo :: Maybe T.Text = (\t -> [i|Setup: #{formatNominalDiffTime t}.|]) <$> setupTime
@@ -36,8 +36,8 @@ instance ToBrickWidget Status where
         [] -> ""
         xs -> " (" <> T.intercalate " " xs <> ")"
   toBrickWidget (Done {statusResult=(Failure failureReason)}) = toBrickWidget failureReason
-  toBrickWidget (Done {statusResult=DryRun}) = return $ strWrap "Not started due to dry run"
-  toBrickWidget (Done {statusResult=Cancelled}) = return $ strWrap "Cancelled"
+  toBrickWidget (Done {statusResult=DryRun}) = return $ strWrap "Not started due to dry run."
+  toBrickWidget (Done {statusResult=Cancelled}) = return $ strWrap "Cancelled."
 
 showTimeDiff :: UTCTime -> UTCTime -> String
 showTimeDiff startTime endTime = formatNominalDiffTime (diffUTCTime endTime startTime)
