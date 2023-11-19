@@ -159,4 +159,4 @@ introduceServer :: (HasDatabase context, MonadIO m, MonadBaseControl IO m)
   => SpecFree (LabelValue "server" Server :> context) m () -> SpecFree context m ()
 ```
 
-The full code for this example can be found [here](https://github.com/codedownio/sandwich/blob/master/demos/demo-context-nested-dependencies/app/Main.hs).
+The full code for this example can be found [here](https://github.com/codedownio/sandwich/blob/master/demos/demo-context-nested/app/Main.hs).

@@ -27,6 +27,6 @@ ghc-options:
 - -with-rtsopts=-N
 
 executables:
-  demo-context-nested-dependencies:
+  demo-context-nested:
     main: Main.hs
     source-dirs: app
