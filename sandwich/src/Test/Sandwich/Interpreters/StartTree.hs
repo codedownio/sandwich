@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Interpreters.StartTree (
   startTree
@@ -204,7 +205,12 @@ runInAsync node ctx action = do
                   exists <- doesPathExist symlinkPath
                   when exists $ removePathForcibly symlinkPath
 
+#ifndef mingw32_HOST_OS
+                  -- Don't do createDirectoryLink on Windows, as creating symlinks is generally not allowed for users.
+                  -- See https://security.stackexchange.com/questions/10194/why-do-you-have-to-be-an-admin-to-create-a-symlink-in-windows
+                  -- TODO: could we detect if this permission is available?
                   liftIO $ createDirectoryLink relativePath symlinkPath
+#endif
 
         -- Write failure info
         whenJust baseContextPath $ \dir -> do
