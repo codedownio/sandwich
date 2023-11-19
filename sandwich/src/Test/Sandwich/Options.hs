@@ -40,6 +40,11 @@ import Data.Time.Clock
 import Test.Sandwich.Formatters.Print
 import Test.Sandwich.Types.RunTree
 
+#ifdef mingw32_HOST_OS
+import Data.Function ((&))
+#endif
+
+
 -- | A reasonable default set of options.
 defaultOptions :: Options
 defaultOptions = Options {
