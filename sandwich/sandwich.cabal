@@ -59,6 +59,7 @@ library
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.Draw
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+      Test.Sandwich.Formatters.TerminalUI.Draw.RunTimes
       Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
       Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
       Test.Sandwich.Formatters.TerminalUI.Draw.Util

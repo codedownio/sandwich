@@ -18,13 +18,13 @@ import Data.String.Interpolate
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import GHC.Stack
-import qualified Graphics.Vty as V
 import Lens.Micro
 import Safe
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
+import Test.Sandwich.Formatters.TerminalUI.Draw.RunTimes
 import Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget
 import Test.Sandwich.Formatters.TerminalUI.Draw.TopBox
 import Test.Sandwich.Formatters.TerminalUI.Draw.Util
@@ -75,30 +75,8 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
                       , str "]"]
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
-          Running {..} -> Just $ str $ show statusStartTime
-          Done {..} -> Just (raw setupWork <+> raw actualWork <+> raw teardownWork)
-            where totalElapsed = realToFrac (max (app ^. appTimeSinceStart) (diffUTCTime statusEndTime (app ^. appStartTime)))
-                  minGray :: Int = 50
-                  maxGray :: Int = 255
-
-                  getLevel :: Double -> Int
-                  getLevel duration = min maxGray $ max minGray $ round (fromIntegral minGray + (intensity * (fromIntegral (maxGray - minGray))))
-                    where
-                      intensity :: Double = logBase (totalElapsed + 1) (duration + 1)
-
-                  getAttr :: NominalDiffTime -> V.Attr
-                  getAttr dt = V.Attr {
-                    V.attrStyle = V.Default
-                    , V.attrForeColor = V.SetTo $ grayAt $ getLevel (realToFrac dt)
-                    , V.attrBackColor = V.Default
-                    , V.attrURL = V.Default
-                    }
-
-                  actualWorkTime = (diffUTCTime statusEndTime statusStartTime) - (fromMaybe 0 statusSetupTime) - (fromMaybe 0 statusTeardownTime)
-
-                  setupWork = maybe mempty (\dt -> V.string (getAttr dt) [i|(#{formatNominalDiffTime dt}) + |]) statusSetupTime
-                  actualWork = V.string (getAttr actualWorkTime) $ formatNominalDiffTime actualWorkTime
-                  teardownWork = maybe mempty (\dt -> V.string (getAttr dt) [i| + (#{formatNominalDiffTime dt})|]) statusTeardownTime
+          Running {..} -> Just $ getRunTimes app statusStartTime (app ^. appCurrentTime) statusSetupTime Nothing True
+          Done {..} -> Just $ getRunTimes app statusStartTime statusEndTime statusSetupTime statusTeardownTime False
           _ -> Nothing
       ]
 
@@ -146,7 +124,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
 borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of |]
                                                                                                           , withAttr totalAttr $ str $ show totalNumTests
                                                                                                           , str [i| in |]
-                                                                                                          , withAttr timeAttr $ str $ formatNominalDiffTime (app ^. appTimeSinceStart)])
+                                                                                                          , withAttr timeAttr $ str $ formatNominalDiffTime (diffUTCTime (app ^. appCurrentTime) (app ^. appStartTime))])
   where
     countWidgets =
       (if totalSucceededTests > 0 then [[withAttr successAttr $ str $ show totalSucceededTests, str " succeeded"]] else mempty)

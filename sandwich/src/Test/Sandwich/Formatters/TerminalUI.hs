@@ -91,7 +91,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appBaseContext = baseContext
 
           , _appStartTime = startTime
-          , _appTimeSinceStart = 0
+          , _appCurrentTime = startTime
 
           , _appVisibilityThresholdSteps = L.sort $ L.nub $ terminalUIVisibilityThreshold : (fmap runTreeVisibilityLevel $ concatMap getCommons rts)
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
@@ -130,8 +130,16 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           liftIO $ V.setMode output V.Mouse True
         return v
   initialVty <- liftIO buildVty
-  liftIO $ flip onException (cancel eventAsync) $
-    void $ customMain initialVty buildVty (Just eventChan) app initialState
+
+  let updateCurrentTimeForever period = forever $ do
+        now <- getCurrentTime
+        writeBChan eventChan (CurrentTimeUpdated now)
+        threadDelay period
+
+  liftIO $
+    (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> withAsync (updateCurrentTimeForever ts) (\_ -> action)) $
+      flip onException (cancel eventAsync) $
+        void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ClickableName
 app = App {
@@ -171,8 +179,11 @@ appEvent s (AppEvent (RunTreeUpdated newTree)) = do
   now <- liftIO getCurrentTime
   continue $ s
     & appRunTree .~ newTree
-    & appTimeSinceStart .~ (diffUTCTime now (s ^. appStartTime))
+    & appCurrentTime .~ now
     & updateFilteredTree
+appEvent s (AppEvent (CurrentTimeUpdated ts)) = do
+  continue $ s
+    & appCurrentTime .~ ts
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case

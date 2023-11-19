@@ -32,7 +32,11 @@ data TerminalUIFormatter = TerminalUIFormatter {
   , terminalUILogLevel :: Maybe LogLevel
   -- ^ Log level for test log displays.
   , terminalUIRefreshPeriod :: Int
-  -- ^ Time in microseconds between UI refreshes. Defaults to 100ms. Can be increased if CPU usage of the UI is too high.
+  -- ^ Time in microseconds between test tree renders. Defaults to 100ms. Can be increased if CPU usage of the UI is too high.
+  , terminalUIClockUpdatePeriod :: Maybe Int
+  -- ^ Time in microseconds between clock ticks. This causes the app's current time to be updated, which powers the
+  -- run time displays and the overall app uptime displayed at the top. Defaults to Just 1s. If Nothing, the clock timer is disabled.
+  -- Can be increased if CPU usage of the UI is too high.
   , terminalUIDefaultEditor :: Maybe String
   -- ^ Default value to use for the EDITOR environment variable when one is not provided.
   -- If 'Nothing' and EDITOR can't be found, edit commands will do nothing.
@@ -70,6 +74,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowVisibilityThresholds = False
   , terminalUILogLevel = Just LevelWarn
   , terminalUIRefreshPeriod = 100000
+  , terminalUIClockUpdatePeriod = Just 1000000
   , terminalUIDefaultEditor = Just "emacsclient +$((LINE+1)):COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
   , terminalUICustomExceptionFormatters = []
@@ -80,10 +85,13 @@ type CustomExceptionFormatters = [SomeException -> Maybe CustomTUIException]
 data CustomTUIException = CustomTUIExceptionMessageAndCallStack T.Text (Maybe CallStack)
                         | CustomTUIExceptionBrick (forall n. B.Widget n)
 
-newtype AppEvent = RunTreeUpdated [RunNodeFixed BaseContext]
+data AppEvent =
+  RunTreeUpdated [RunNodeFixed BaseContext]
+  | CurrentTimeUpdated UTCTime
 
 instance Show AppEvent where
   show (RunTreeUpdated {}) = "<RunTreeUpdated>"
+  show (CurrentTimeUpdated {}) = "<CurrentTimeUpdated>"
 
 data MainListElem = MainListElem {
   label :: String
@@ -110,7 +118,7 @@ data AppState = AppState {
   , _appBaseContext :: BaseContext
 
   , _appStartTime :: UTCTime
-  , _appTimeSinceStart :: NominalDiffTime
+  , _appCurrentTime :: UTCTime
 
   , _appVisibilityThresholdSteps :: [Int]
   , _appVisibilityThreshold :: Int
