@@ -30,7 +30,7 @@ basic = describe "Simple tests" $ do
   before "Pauses before" (p 3) $ do
     it "adds" $ (2 + 2) `shouldBe` 4
 
-  after "Pauses after" (p 3) $ do
+  after "Pauses after" (p 60) $ do
     it "adds" $ (2 + 2) `shouldBe` 4
 
   introduceDatabase $ do
