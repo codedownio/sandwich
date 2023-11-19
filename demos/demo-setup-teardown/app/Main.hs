@@ -27,7 +27,10 @@ introduceDatabase = introduceWith "introduceWith database" database $ \action ->
 
 basic :: TopSpec
 basic = describe "Simple tests" $ do
-  before "Pauses" (p 3) $ do
+  before "Pauses before" (p 3) $ do
+    it "adds" $ (2 + 2) `shouldBe` 4
+
+  after "Pauses after" (p 3) $ do
     it "adds" $ (2 + 2) `shouldBe` 4
 
   introduceDatabase $ do

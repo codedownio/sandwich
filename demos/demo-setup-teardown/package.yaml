@@ -25,6 +25,6 @@ ghc-options:
 - -with-rtsopts=-N
 
 executables:
-  demo-basic:
+  demo-setup-teardown:
     main: Main.hs
     source-dirs: app

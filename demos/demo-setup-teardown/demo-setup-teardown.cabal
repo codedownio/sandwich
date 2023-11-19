@@ -10,7 +10,7 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-executable demo-basic
+executable demo-setup-teardown
   main-is: Main.hs
   other-modules:
       Paths_demo_setup_teardown
