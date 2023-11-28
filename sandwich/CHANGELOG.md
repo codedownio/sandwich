@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+* Add primed versions of createProcessWithLogging etc. with customizable log level
+
 ## 0.2.1.0
 
 * Improve clock management; don't keep incrementing it when nothing and restart it when r/R are pressed.
