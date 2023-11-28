@@ -35,6 +35,8 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
+import Control.Monad.Trans
+import Control.Monad.Trans.State hiding (get, put)
 import Data.Either
 import Data.Foldable
 import qualified Data.List as L
@@ -81,7 +83,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   liftIO $ setInitialFolding terminalUIInitialFolding rts
 
-  rtsFixed <- liftIO $ atomically $ mapM fixRunTree rts
+  (rtsFixed, initialSomethingRunning) <- liftIO $ atomically $ runStateT (mapM fixRunTree' rts) False
 
   let initialState = updateFilteredTree $
         AppState {
@@ -92,6 +94,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
           , _appStartTime = startTime
           , _appCurrentTime = startTime
+          , _appSomethingRunning = initialSomethingRunning
 
           , _appVisibilityThresholdSteps = L.sort $ L.nub $ terminalUIVisibilityThreshold : (fmap runTreeVisibilityLevel $ concatMap getCommons rts)
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
@@ -114,13 +117,13 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   eventAsync <- liftIO $ async $
     forever $ do
       handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
-        newFixedTree <- atomically $ do
-          currentFixed <- readTVar currentFixedTree
-          newFixed <- mapM fixRunTree rts
-          when (fmap getCommons newFixed == fmap getCommons currentFixed) retry
-          writeTVar currentFixedTree newFixed
+        (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
+          currentFixed <- lift $ readTVar currentFixedTree
+          newFixed <- mapM fixRunTree' rts
+          when (fmap getCommons newFixed == fmap getCommons currentFixed) (lift retry)
+          lift $ writeTVar currentFixedTree newFixed
           return newFixed
-        writeBChan eventChan (RunTreeUpdated newFixedTree)
+        writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
         threadDelay terminalUIRefreshPeriod
 
   let buildVty = do
@@ -175,15 +178,17 @@ appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableNam
 #else
 appEvent :: AppState -> BrickEvent ClickableName AppEvent -> EventM ClickableName (Next AppState)
 #endif
-appEvent s (AppEvent (RunTreeUpdated newTree)) = do
+appEvent s (AppEvent (RunTreeUpdated newTree somethingRunning)) = do
   now <- liftIO getCurrentTime
   continue $ s
     & appRunTree .~ newTree
     & appCurrentTime .~ now
+    & appSomethingRunning .~ somethingRunning
     & updateFilteredTree
 appEvent s (AppEvent (CurrentTimeUpdated ts)) = do
-  continue $ s
-    & appCurrentTime .~ ts
+  continue $ case (s ^. appSomethingRunning) of
+    True -> s & appCurrentTime .~ ts
+    False -> s
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
@@ -255,25 +260,33 @@ appEvent s (VtyEvent e) =
         (readTVarIO $ runTreeStatus node) >>= \case
           Running {..} -> cancel statusAsync
           _ -> return ()
-    V.EvKey c [] | c == runAllKey -> withContinueS s $ do
+    V.EvKey c [] | c == runAllKey -> do
+      now <- liftIO getCurrentTime
       when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
         mapM_ clearRecursively (s ^. appRunTreeBase)
         void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
-    V.EvKey c [] | c == runSelectedKey -> withContinueS s $
+      continue $ s
+        & appStartTime .~ now
+        & appCurrentTime .~ now
+    V.EvKey c [] | c == runSelectedKey ->
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
-        Running {} -> return ()
+        Running {} -> continue s
         _ -> do
           -- Get the set of IDs for only this node's ancestors and children
           let ancestorIds = S.fromList $ toList $ runTreeAncestors node
           case findRunNodeChildrenById ident (s ^. appRunTree) of
-            Nothing -> return ()
+            Nothing -> continue s
             Just childIds -> do
               let allIds = ancestorIds <> childIds
               -- Clear the status of all affected nodes
               liftIO $ mapM_ (clearRecursivelyWhere (\x -> runTreeId x `S.member` allIds)) (s ^. appRunTreeBase)
               -- Start a run for all affected nodes
+              now <- liftIO getCurrentTime
               let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
               void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
+              continue $ s
+                & appStartTime .~ now
+                & appCurrentTime .~ now
     V.EvKey c [] | c == clearSelectedKey -> withContinueS s $ do
       whenJust (listSelectedElement (s ^. appMainList)) $ \(_, MainListElem {..}) -> case status of
         Running {} -> return ()

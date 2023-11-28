@@ -86,8 +86,9 @@ data CustomTUIException = CustomTUIExceptionMessageAndCallStack T.Text (Maybe Ca
                         | CustomTUIExceptionBrick (forall n. B.Widget n)
 
 data AppEvent =
-  RunTreeUpdated [RunNodeFixed BaseContext]
-  | CurrentTimeUpdated UTCTime
+  RunTreeUpdated { runTreeUpdateTree :: [RunNodeFixed BaseContext]
+                 , runTreeUpdateSomethingRunning :: Bool }
+  | CurrentTimeUpdated { currentTimeUpdatedTs :: UTCTime}
 
 instance Show AppEvent where
   show (RunTreeUpdated {}) = "<RunTreeUpdated>"
@@ -117,8 +118,11 @@ data AppState = AppState {
   , _appMainList :: L.List ClickableName MainListElem
   , _appBaseContext :: BaseContext
 
+  -- | Set at formatter initialization and never changed
   , _appStartTime :: UTCTime
+  -- | Only incremented when some test is running
   , _appCurrentTime :: UTCTime
+  , _appSomethingRunning :: Bool
 
   , _appVisibilityThresholdSteps :: [Int]
   , _appVisibilityThreshold :: Int
