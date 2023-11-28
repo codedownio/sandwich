@@ -2,6 +2,10 @@
 
 ## Unreleased changes
 
+## 0.2.1.0
+
+* Improve clock management; don't keep incrementing it when nothing and restart it when r/R are pressed.
+
 ## 0.2.0.0
 
 * Allow any formatter except TUI to be used with --repeat N.
