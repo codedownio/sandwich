@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+## 0.2.2.0
+
 * Add primed versions of createProcessWithLogging etc. with customizable log level
 * Add `Test.Sandwich.Util.Process` with `gracefullyStopProcess` and `gracefullyWaitForProcess` (and remove these from an internal `sandwich-webdriver` module).
 
