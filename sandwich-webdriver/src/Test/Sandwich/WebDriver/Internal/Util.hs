@@ -6,16 +6,12 @@ import Control.Exception
 import qualified Control.Exception.Lifted as E
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Retry
-import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import System.Directory
 import System.Process
 import qualified System.Random as R
-import Test.Sandwich.Logging
 
 #ifdef mingw32_HOST_OS
 import System.IO
@@ -67,31 +63,3 @@ whenRight (Right x) action = action x
 
 makeUUID :: IO T.Text
 makeUUID = (T.pack . take 10 . R.randomRs ('a','z')) <$> R.newStdGen
-
--- * Stopping processes
-
-gracefullyStopProcess :: (MonadIO m, MonadLogger m) => ProcessHandle -> Int -> m ()
-gracefullyStopProcess p gracePeriodUs = do
-  liftIO $ interruptProcessGroupOf p
-  gracefullyWaitForProcess p gracePeriodUs
-
-gracefullyWaitForProcess :: (MonadIO m, MonadLogger m) => ProcessHandle -> Int -> m ()
-gracefullyWaitForProcess p gracePeriodUs = do
-  let waitForExit = do
-        let policy = limitRetriesByCumulativeDelay gracePeriodUs $ capDelay 200_000 $ exponentialBackoff 1_000
-        retrying policy (\_ x -> return $ isNothing x) $ \_ -> do
-          liftIO $ getProcessExitCode p
-
-  waitForExit >>= \case
-    Just _ -> return ()
-    Nothing -> do
-      pid <- liftIO $ getPid p
-      warn [i|(#{pid}) Process didn't stop after #{gracePeriodUs}us; trying to interrupt|]
-
-      liftIO $ interruptProcessGroupOf p
-      waitForExit >>= \case
-        Just _ -> return ()
-        Nothing -> void $ do
-          warn [i|(#{pid}) Process didn't stop after a further #{gracePeriodUs}us; going to kill|]
-          liftIO $ terminateProcess p
-          liftIO $ waitForProcess p

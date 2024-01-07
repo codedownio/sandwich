@@ -41,6 +41,7 @@ library
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.TH
+      Test.Sandwich.Util.Process
   other-modules:
       Test.Sandwich.ArgParsing
       Test.Sandwich.Formatters.Common.Count
@@ -96,14 +97,15 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
       ViewPatterns
   ghc-options: -W
   build-depends:
@@ -130,6 +132,7 @@ library
     , optparse-applicative
     , pretty-show
     , process
+    , retry
     , safe
     , safe-exceptions
     , stm
@@ -158,14 +161,15 @@ executable sandwich-demo
   hs-source-dirs:
       app
   default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
       ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -192,6 +196,7 @@ executable sandwich-demo
     , optparse-applicative
     , pretty-show
     , process
+    , retry
     , safe
     , safe-exceptions
     , sandwich
@@ -218,14 +223,15 @@ executable sandwich-discover
   hs-source-dirs:
       discover
   default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
       ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -252,6 +258,7 @@ executable sandwich-discover
     , optparse-applicative
     , pretty-show
     , process
+    , retry
     , safe
     , safe-exceptions
     , sandwich
@@ -283,14 +290,15 @@ executable sandwich-test
   hs-source-dirs:
       test
   default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
       ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -317,6 +325,7 @@ executable sandwich-test
     , optparse-applicative
     , pretty-show
     , process
+    , retry
     , safe
     , safe-exceptions
     , sandwich
@@ -349,14 +358,15 @@ test-suite sandwich-test-suite
   hs-source-dirs:
       test
   default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
       FlexibleContexts
       FlexibleInstances
       LambdaCase
+      NamedFieldPuns
+      NumericUnderscores
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
       ViewPatterns
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
@@ -383,6 +393,7 @@ test-suite sandwich-test-suite
     , optparse-applicative
     , pretty-show
     , process
+    , retry
     , safe
     , safe-exceptions
     , sandwich

@@ -14,14 +14,15 @@ extra-source-files:
 - CHANGELOG.md
 
 default-extensions:
-- OverloadedStrings
-- QuasiQuotes
-- NamedFieldPuns
-- RecordWildCards
-- ScopedTypeVariables
 - FlexibleContexts
 - FlexibleInstances
 - LambdaCase
+- NamedFieldPuns
+- NumericUnderscores
+- OverloadedStrings
+- QuasiQuotes
+- RecordWildCards
+- ScopedTypeVariables
 - ViewPatterns
 
 dependencies:
@@ -47,6 +48,7 @@ dependencies:
 - optparse-applicative
 - pretty-show
 - process
+- retry
 - safe
 - safe-exceptions
 - stm
@@ -89,6 +91,7 @@ library:
   - Test.Sandwich.Formatters.TerminalUI
   - Test.Sandwich.Internal
   - Test.Sandwich.TH
+  - Test.Sandwich.Util.Process
   when:
   - condition: "os(windows)"
     dependencies:
