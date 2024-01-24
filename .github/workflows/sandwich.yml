@@ -20,6 +20,7 @@ jobs:
         - "9.2.8"
         - "9.4.7"
         - "9.6.3"
+        - "9.8.1"
         exclude:
         # Access violation in generated code when executing data at 0x6d88
         - os: windows-latest
@@ -75,6 +76,8 @@ jobs:
           yaml: "stack-9.4.7.yaml"
         - ghc: "9.6.3"
           yaml: "stack-9.6.3.yaml"
+        - ghc: "9.8.1"
+          yaml: "stack-9.8.1.yaml"
 
     steps:
     - uses: actions/checkout@v3

@@ -1,0 +1,26 @@
+
+resolver: nightly-2024-01-23
+
+nix:
+  pure: false
+  packages:
+  - pkg-config
+  - zlib
+
+packages:
+- ./sandwich
+- ./sandwich-hedgehog
+- ./sandwich-quickcheck
+- ./sandwich-slack
+- ./sandwich-webdriver
+
+extra-deps:
+- vty-windows-0.2.0.1
+
+- git: https://github.com/codedownio/microlens-aeson
+  commit: 3be74d8f9f7fcbfa5e04b08201cd5b87147f508b
+
+- barbies-2.0.5.0@sha256:2a6c67af6b12b7771ca8c4503819055800bd47c03cb7cab095d45f129bdaa310,4407 # For hedgehog-1.4
+- hedgehog-1.4@sha256:47633efec27b49fe5a21d51f3b9fce428ca4b945d39eaa163b2b6a1d3e1465be,4724
+
+- string-interpolate-0.3.2.1@sha256:284f6d3efe228f96680bc6e4b46b4357d5ad1724770734cba718acf72b43fdff,4268

@@ -23,6 +23,7 @@ jobs:
         - "9.2.8"
         - "9.4.7"
         - "9.6.3"
+        - "9.8.1"
         exclude:
         - os: macOS-latest
           ghc: 8.6.5
@@ -74,6 +75,8 @@ jobs:
           yaml: "stack-9.4.7.yaml"
         - ghc: "9.6.3"
           yaml: "stack-9.6.3.yaml"
+        - ghc: "9.8.1"
+          yaml: "stack-9.8.1.yaml"
 
     steps:
     - uses: actions/checkout@v3
