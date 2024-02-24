@@ -1,0 +1,32 @@
+name:                demo-processes
+version:             0.1.0.0
+license:             BSD3
+
+dependencies:
+- base
+- monad-logger
+- process
+- sandwich
+- sandwich-demos
+- string-interpolate
+- time
+
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+
+ghc-options:
+- -threaded
+- -rtsopts
+- -with-rtsopts=-N
+
+executables:
+  demo-processes:
+    main: Main.hs
+    source-dirs: app

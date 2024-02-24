@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+* Make createProcessWithLogging, readCreateProcessWithLogging etc. log with the callstack from the line where they're called (and not an internal line).
+
 ## 0.2.2.0
 
 * Add primed versions of createProcessWithLogging etc. with customizable log level

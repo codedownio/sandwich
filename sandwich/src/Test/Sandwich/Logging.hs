@@ -74,11 +74,11 @@ logOther = logOtherCS callStack
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> m ProcessHandle
-createProcessWithLogging = createProcessWithLogging' LevelDebug
+createProcessWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> m ProcessHandle
+createProcessWithLogging = withFrozenCallStack (createProcessWithLogging' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLogging' :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => LogLevel -> CreateProcess -> m ProcessHandle
+createProcessWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> m ProcessHandle
 createProcessWithLogging' logLevel cp = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -88,18 +88,18 @@ createProcessWithLogging' logLevel cp = do
 
   _ <- async $ forever $ do
     line <- liftIO $ hGetLine hRead
-    logOther logLevel [i|#{name}: #{line}|]
+    logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
 -- Every line output by the process will be fed to a 'debug' call.
-readCreateProcessWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> String -> m String
-readCreateProcessWithLogging = readCreateProcessWithLogging' LevelDebug
+readCreateProcessWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> String -> m String
+readCreateProcessWithLogging = withFrozenCallStack (readCreateProcessWithLogging' LevelDebug)
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
-readCreateProcessWithLogging' :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => LogLevel -> CreateProcess -> String -> m String
+readCreateProcessWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m String
 readCreateProcessWithLogging' logLevel cp input = do
   (hReadErr, hWriteErr) <- liftIO createPipe
 
@@ -109,7 +109,7 @@ readCreateProcessWithLogging' logLevel cp input = do
 
   _ <- async $ forever $ do
     line <- liftIO $ hGetLine hReadErr
-    logOther logLevel [i|#{name}: #{line}|]
+    logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
   -- Do this just like 'readCreateProcess'
   -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
@@ -149,11 +149,11 @@ readCreateProcessWithLogging' logLevel cp input = do
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLoggingAndStdin :: (MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => CreateProcess -> String -> m ProcessHandle
-createProcessWithLoggingAndStdin = createProcessWithLoggingAndStdin' LevelDebug
+createProcessWithLoggingAndStdin :: (HasCallStack, MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin = withFrozenCallStack (createProcessWithLoggingAndStdin' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLoggingAndStdin' :: (MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m, HasCallStack) => LogLevel -> CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin' :: (HasCallStack, MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m ProcessHandle
 createProcessWithLoggingAndStdin' logLevel cp input = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -163,7 +163,7 @@ createProcessWithLoggingAndStdin' logLevel cp input = do
 
   _ <- async $ forever $ do
     line <- liftIO $ hGetLine hRead
-    logOther logLevel [i|#{name}: #{line}|]
+    logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
   (Just inh, _, _, p) <- liftIO $ createProcess (
     cp { std_out = UseHandle hWrite
@@ -179,11 +179,11 @@ createProcessWithLoggingAndStdin' logLevel cp input = do
   return p
 
 -- | Higher level version of 'createProcessWithLogging', accepting a shell command.
-callCommandWithLogging :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
-callCommandWithLogging = callCommandWithLogging' LevelDebug
+callCommandWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
+callCommandWithLogging = withFrozenCallStack (callCommandWithLogging' LevelDebug)
 
 -- | Higher level version of 'createProcessWithLogging'', accepting a shell command.
-callCommandWithLogging' :: (MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> String -> m ()
+callCommandWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> String -> m ()
 callCommandWithLogging' logLevel cmd = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -195,7 +195,7 @@ callCommandWithLogging' logLevel cmd = do
 
   _ <- async $ forever $ do
     line <- liftIO $ hGetLine hRead
-    logOther logLevel [i|#{cmd}: #{line}|]
+    logOtherCS callStack logLevel [i|#{cmd}: #{line}|]
 
   liftIO (waitForProcess p) >>= \case
     ExitSuccess -> return ()
