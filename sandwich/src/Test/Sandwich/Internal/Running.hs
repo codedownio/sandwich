@@ -65,13 +65,13 @@ runWithRepeat 0 totalTests action = do
      | otherwise -> exitFailure
 -- | For 1 repeat, run once and return
 runWithRepeat n totalTests action = do
-  (successes, total) <- (flip execStateT (0 :: Int, 0 :: Int)) $ flip fix (n - 1) $ \loop n -> do
+  (successes, total) <- (flip execStateT (0 :: Int, 0 :: Int)) $ flip fix (n - 1) $ \loop n' -> do
     (exitReason, numFailures) <- liftIO action
 
     modify $ \(successes, total) -> (successes + (if numFailures == 0 then 1 else 0), total + 1)
 
     if | exitReason == SignalExit -> return ()
-       | n > 0 -> loop (n - 1)
+       | n' > 0 -> loop (n' - 1)
        | otherwise -> return ()
 
   putStrLn [i|#{successes} runs succeeded out of #{total} repeat#{if n > 1 then ("s" :: String) else ""} (#{totalTests} tests)|]
@@ -98,8 +98,8 @@ baseContextFromOptions options@(Options {..}) = do
           here <- getCurrentDirectory
           return $ here </> base'
 
-      name <- f
-      let dir = base </> name
+      name' <- f
+      let dir = base </> name'
       createDirectoryIfMissing True dir
       return $ Just dir
 

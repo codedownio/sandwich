@@ -12,9 +12,11 @@ import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.Types
 
 
-minGray :: Int = 50
-maxGray :: Int = 255
+minGray, maxGray :: Int
+minGray = 50
+maxGray = 255
 
+getRunTimes :: AppState -> UTCTime -> UTCTime -> Maybe NominalDiffTime -> Maybe NominalDiffTime -> Bool -> Widget n
 getRunTimes app startTime endTime statusSetupTime statusTeardownTime showEllipses = raw setupWork <+> raw actualWork <+> raw teardownWork
   where
     totalElapsed = diffUTCTime (app ^. appCurrentTime) (app ^. appStartTime)

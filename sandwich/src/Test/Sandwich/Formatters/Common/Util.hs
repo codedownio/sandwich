@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
--- |
 
 module Test.Sandwich.Formatters.Common.Util (
   formatNominalDiffTime
@@ -10,13 +9,14 @@ import Data.Time.Clock
 import Text.Printf
 
 formatNominalDiffTime :: NominalDiffTime -> String
-formatNominalDiffTime diff | diff < ps = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^15)) <> "ps"
-formatNominalDiffTime diff | diff < ns = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^12)) <> "ns"
-formatNominalDiffTime diff | diff < us = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^9)) <> "ns"
-formatNominalDiffTime diff | diff < ms = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^6)) <> "us"
-formatNominalDiffTime diff | diff < second = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^3)) <> "ms"
+formatNominalDiffTime diff | diff < ps = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^(15 :: Integer))) <> "ps"
+formatNominalDiffTime diff | diff < ns = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^(12 :: Integer))) <> "ns"
+formatNominalDiffTime diff | diff < us = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^(9 :: Integer))) <> "ns"
+formatNominalDiffTime diff | diff < ms = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^(6 :: Integer))) <> "us"
+formatNominalDiffTime diff | diff < second = (roundFixed ((nominalDiffTimeToSeconds diff) * 10^(3 :: Integer))) <> "ms"
 formatNominalDiffTime diff = (roundFixed (nominalDiffTimeToSeconds diff)) <> "s"
 
+second, ms, us, ns, ps :: NominalDiffTime
 second = secondsToNominalDiffTime 1
 ms = secondsToNominalDiffTime 0.001
 us = secondsToNominalDiffTime 0.000001

@@ -107,7 +107,7 @@ library
       RecordWildCards
       ScopedTypeVariables
       ViewPatterns
-  ghc-options: -W
+  ghc-options: -Wall
   build-depends:
       aeson
     , ansi-terminal

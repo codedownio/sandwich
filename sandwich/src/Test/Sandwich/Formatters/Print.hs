@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- | The print formatter prints all results from the test tree from top to bottom, as they become available.
 --
@@ -44,7 +45,7 @@ instance Formatter PrintFormatter where
   finalizeFormatter _ _ _ = return ()
 
 runApp :: (MonadIO m, MonadLogger m) => PrintFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
-runApp pf@(PrintFormatter {..}) rts _maybeCommandLineOptions bc = liftIO $ do
+runApp pf rts _maybeCommandLineOptions bc = liftIO $ do
   let total = countWhere isItBlock rts
 
   startTime <- getCurrentTime

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Formatters.Print.Color where
 

@@ -10,6 +10,7 @@ import Data.Function
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
+import Data.Time (UTCTime)
 import Data.Time.Clock.POSIX
 import Data.Typeable
 import Options.Applicative
@@ -29,8 +30,10 @@ import Test.Sandwich.Types.Spec
 
 #if MIN_VERSION_time(1,9,0)
 import Data.Time.Format.ISO8601
+formatTime :: UTCTime -> String
 formatTime = T.unpack . T.replace ":" "_" . T.pack . iso8601Show
 #else
+formatTime :: UTCTime -> String
 formatTime = show
 #endif
 

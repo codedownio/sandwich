@@ -53,7 +53,7 @@ startTree node@(RunNodeBefore {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     (timed (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|]))) >>= \case
-      (result@(Failure fr@(Pending {..})), setupTime) -> do
+      (result@(Failure fr@(Pending {})), setupTime) -> do
         markAllChildrenWithResult runNodeChildren ctx (Failure fr)
         return (result, mkSetupTimingInfo setupTime)
       (result@(Failure fr), setupTime) -> do
@@ -90,8 +90,8 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
             (\(ret, setupTime) -> case ret of
                 Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupTime)
                 Right intro -> do
-                  (ret, teardownTime) <- timed $ runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
-                  writeIORef result (ret, ExtraTimingInfo (Just setupTime) (Just teardownTime))
+                  (ret', teardownTime) <- timed $ runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
+                  writeIORef result (ret', ExtraTimingInfo (Just setupTime) (Just teardownTime))
             )
             (\(ret, _setupTime) -> case ret of
                 Left failureReason@(Pending {}) -> do
@@ -340,7 +340,7 @@ runExampleM' ex ctx logs exceptionMessage = do
     wrapInFailureReasonIfNecessary msg e = return $ Left $ case fromException e of
       Just (x :: FailureReason) -> x
       _ -> case fromException e of
-        Just (SomeExceptionWithCallStack e cs) -> GotException (Just cs) msg (SomeExceptionWithEq (SomeException e))
+        Just (SomeExceptionWithCallStack e' cs) -> GotException (Just cs) msg (SomeExceptionWithEq (SomeException e'))
         _ -> GotException Nothing msg (SomeExceptionWithEq e)
 
 recordExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()

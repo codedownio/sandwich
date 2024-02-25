@@ -1,6 +1,7 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.Formatters.TerminalUI (
   -- | The terminal UI formatter produces an interactive UI for running tests and inspecting their results.
@@ -165,11 +166,13 @@ continue = put
 continueNoChange :: AppState -> EventM ClickableName AppState ()
 continueNoChange _ = return ()
 
+doHalt :: p -> EventM n s ()
 doHalt _ = halt
 #else
 continueNoChange :: AppState -> EventM ClickableName (Next AppState)
 continueNoChange = continue
 
+doHalt :: p -> EventM n s
 doHalt = halt
 #endif
 
@@ -209,8 +212,8 @@ appEvent s (MouseDown (ListRow _i) V.BScrollUp _ _) = do
 appEvent s (MouseDown (ListRow _i) V.BScrollDown _ _) = do
   vScrollBy (viewportScroll MainList) 1
   continueNoChange s
-appEvent s (MouseDown (ListRow i) V.BLeft _ _) = do
-  continue (s & appMainList %~ (listMoveTo i))
+appEvent s (MouseDown (ListRow n) V.BLeft _ _) = do
+  continue (s & appMainList %~ (listMoveTo n))
 appEvent s (VtyEvent e) =
   case e of
     -- Column 1
@@ -219,7 +222,7 @@ appEvent s (VtyEvent e) =
     V.EvKey c [] | c == nextFailureKey -> do
       let ls = Vec.toList $ listElements (s ^. appMainList)
       let listToSearch = case listSelectedElement (s ^. appMainList) of
-            Just (i, MainListElem {}) -> let (front, back) = L.splitAt (i + 1) (zip [0..] ls) in back <> front
+            Just (n, MainListElem {}) -> let (front, back) = L.splitAt (n + 1) (zip [0..] ls) in back <> front
             Nothing -> zip [0..] ls
       case L.find (isFailureStatus . status . snd) listToSearch of
         Nothing -> continue s
@@ -227,7 +230,7 @@ appEvent s (VtyEvent e) =
     V.EvKey c [] | c == previousFailureKey -> do
       let ls = Vec.toList $ listElements (s ^. appMainList)
       let listToSearch = case listSelectedElement (s ^. appMainList) of
-            Just (i, MainListElem {}) -> let (front, back) = L.splitAt i (zip [0..] ls) in (L.reverse front) <> (L.reverse back)
+            Just (n, MainListElem {}) -> let (front, back) = L.splitAt n (zip [0..] ls) in (L.reverse front) <> (L.reverse back)
             Nothing -> L.reverse (zip [0..] ls)
       case L.find (isFailureStatus . status . snd) listToSearch of
         Nothing -> continue s
@@ -325,7 +328,7 @@ appEvent s (VtyEvent e) =
 
     -- Column 3
     V.EvKey c [] | c == cycleVisibilityThresholdKey -> do
-      let newVisibilityThreshold =  case [(i, x) | (i, x) <- zip [0..] (s ^. appVisibilityThresholdSteps)
+      let newVisibilityThreshold =  case [(n, x) | (n, x) <- zip [(0 :: Integer)..] (s ^. appVisibilityThresholdSteps)
                                                  , x > s ^. appVisibilityThreshold] of
             [] -> 0
             xs -> minimum $ fmap snd xs
@@ -354,19 +357,21 @@ appEvent s (VtyEvent e) =
     ev -> handleEventLensed s appMainList handleListEvent ev >>= continue
 #endif
 
-  where withContinueS s action = action >> continue s
+  where withContinueS s' action = action >> continue s'
 #if MIN_VERSION_brick(1,0,0)
 appEvent _ _ = return ()
 #else
 appEvent s _ = continue s
 #endif
 
+modifyToggled :: AppState -> (Bool -> Bool) -> EventM ClickableName AppState ()
 modifyToggled s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
   Just (_i, MainListElem {..}) -> do
     liftIO $ atomically $ modifyTVar (runTreeToggled node) f
     continue s
 
+modifyOpen :: AppState -> (Bool -> Bool) -> EventM ClickableName AppState ()
 modifyOpen s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
   Just (_i, MainListElem {..}) -> do
@@ -455,6 +460,7 @@ withScroll s action = do
   continue s
 #endif
 
+openSrcLoc :: Ord n => AppState -> SrcLoc -> EventM n AppState ()
 openSrcLoc s loc' = do
   -- Try to make the file path in the SrcLoc absolute
   loc <- case isRelative (srcLocFile loc') of

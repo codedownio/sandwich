@@ -18,7 +18,7 @@ import Data.String.Interpolate
 import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import GHC.Stack
-import Lens.Micro
+import Lens.Micro hiding (ix)
 import Safe
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
@@ -43,6 +43,7 @@ drawUI app = [ui]
       , clickable ColorBar $ bottomProgressBarColored app
       ]
 
+mainList :: AppState -> Widget ClickableName
 mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (app ^. appMainList)
   where
     listDrawElement ix isSelected x@(MainListElem {..}) = clickable (ListRow ix) $ padLeft (Pad (4 * depth)) $ (if isSelected then border else id) $ vBox $ catMaybes [
@@ -121,6 +122,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
     logLevelWidget (LevelOther x) = withAttr infoAttr $ str [i|#{x}|]
 
 
+borderWithCounts :: AppState -> Widget n
 borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [str ", "] countWidgets <> [str [i| of |]
                                                                                                           , withAttr totalAttr $ str $ show totalNumTests
                                                                                                           , str [i| in |]
