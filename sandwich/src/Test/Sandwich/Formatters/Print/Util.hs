@@ -24,11 +24,13 @@ isSingleLine (Quote s) = '\n' `L.notElem` s
 
 isSingleLine _ = True
 
+withBumpIndent :: MonadReader (PrintFormatter, Int, c) m => m b -> m b
 withBumpIndent action = do
   (PrintFormatter {..}, _, _) <- ask
   withBumpIndent' printFormatterIndentSize action
 
+withBumpIndent' :: (MonadReader (a, Int, c) m) => Int -> m b -> m b
 withBumpIndent' n = local (\(pf, indent, h) -> (pf, indent + n, h))
 
-
+fst3 :: (a, b, c) -> a
 fst3 (x, _, _) = x

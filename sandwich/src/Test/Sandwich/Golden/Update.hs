@@ -29,7 +29,7 @@ updateGolden (fromMaybe defaultDirGoldenTest -> dir) = do
   putStrLnColor enableColor green "Done!"
 
   where
-    go enableColor dir = listDirectory dir >>= mapM_ (processEntry enableColor)
+    go enableColor dir' = listDirectory dir' >>= mapM_ (processEntry enableColor)
 
     processEntry enableColor (((dir ++ "/") ++) -> entryInDir) = do
       isDir <- doesDirectoryExist entryInDir
@@ -55,9 +55,11 @@ green = SetColor Foreground Dull Green
 red = SetColor Foreground Dull Red
 magenta = SetColor Foreground Dull Magenta
 
+putStrColor :: EnableColor -> SGR -> String -> IO ()
 putStrColor EnableColor color s = bracket_ (setSGR [color]) (setSGR [Reset]) (putStr s)
 putStrColor DisableColor _ s = putStr s
 
+putStrLnColor :: EnableColor -> SGR -> String -> IO ()
 putStrLnColor EnableColor color s = bracket_ (setSGR [color]) (setSGR [Reset]) (putStrLn s)
 putStrLnColor DisableColor _ s = putStrLn s
 

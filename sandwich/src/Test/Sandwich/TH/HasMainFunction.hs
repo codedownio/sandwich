@@ -19,6 +19,7 @@ data ShouldWarnOnParseError = WarnOnParseError | NoWarnOnParseError
 
 -- | Use haskell-src-exts to determine if a give Haskell file has an exported main function
 -- Parse with all extensions enabled, which will hopefully parse anything
+fileHasMainFunction :: FilePath -> ShouldWarnOnParseError -> Q Bool
 fileHasMainFunction path shouldWarnOnParseError = runIO (parseFileWithExts [x | x@(EnableExtension _) <- knownExtensions] path) >>= \case
   x@(ParseFailed {}) -> do
     when (shouldWarnOnParseError == WarnOnParseError) $

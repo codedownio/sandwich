@@ -7,6 +7,7 @@ module Test.Sandwich.Formatters.Print.PrintPretty (
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Data.Colour
 import qualified Data.List as L
 import System.IO
 import Test.Sandwich.Formatters.Print.Color
@@ -39,10 +40,10 @@ printPretty indentFirst (Rec name tuples) = do
   (if indentFirst then pic else pc) recordNameColor name
   pcn braceColor " {"
   withBumpIndent $
-    forM_ tuples $ \(name, val) -> do
-      pic fieldNameColor name
+    forM_ tuples $ \(name', val) -> do
+      pic fieldNameColor name'
       p " = "
-      withBumpIndent' (L.length name + L.length (" = " :: String)) $ do
+      withBumpIndent' (L.length name' + L.length (" = " :: String)) $ do
         printPretty False val
         p "\n"
   pic braceColor "}"
@@ -67,6 +68,9 @@ printPretty (getPrintFn -> f) (Neg s) = do
     printPretty False s
 
 
+printListWrappedIn :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => (String, String) -> Bool -> [Value] -> m ()
 printListWrappedIn (begin, end) (getPrintFn -> f) values | all isSingleLine values = do
   f listBracketColor begin
   sequence_ (L.intercalate [p ", "] [[printPretty False v] | v <- values])
@@ -80,5 +84,8 @@ printListWrappedIn (begin, end) (getPrintFn -> f) values = do
       p "\n"
   pic listBracketColor end
 
+getPrintFn :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => Bool -> Colour Float -> String -> m ()
 getPrintFn True = pic
 getPrintFn False = pc

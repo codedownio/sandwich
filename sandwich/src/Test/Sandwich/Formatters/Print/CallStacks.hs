@@ -1,14 +1,25 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Formatters.Print.CallStacks where
 
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.Reader
 import GHC.Stack
+import System.IO (Handle)
 import Test.Sandwich.Formatters.Print.Color
 import Test.Sandwich.Formatters.Print.Printing
+import Test.Sandwich.Formatters.Print.Types
 
 
+printCallStack :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => CallStack -> m ()
 printCallStack cs = forM_ (getCallStack cs) printCallStackLine
 
+printCallStackLine :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => (String, SrcLoc) -> m ()
 printCallStackLine (f, (SrcLoc {..})) = do
   pic logFunctionColor f
 

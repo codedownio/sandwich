@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Formatters.Print.Logs where
 
@@ -30,6 +31,9 @@ printLogs runTreeLogs = do
           when (logEntryLevel entry >= logLevel) $ printLogEntry entry
 
 
+printLogEntry :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => LogEntry -> m ()
 printLogEntry (LogEntry {..}) = do
   pic logTimestampColor (show logEntryTime)
 
