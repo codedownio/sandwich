@@ -11,7 +11,7 @@ module Test.Sandwich.WebDriver.Windows (
   , getScreenResolution
   ) where
 
-import Control.Exception.Safe
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Reader
@@ -23,6 +23,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Resolution
 import Test.WebDriver
 import qualified Test.WebDriver.Class as W
+import UnliftIO.Exception
 
 
 -- | Position the window on the left 50% of the screen.

@@ -19,10 +19,10 @@ dependencies:
 - monad-control
 - mtl
 - QuickCheck
-- safe-exceptions
 - sandwich >= 0.1.0.4
 - text
 - time
+- unliftio
 
 default-extensions:
 - OverloadedStrings

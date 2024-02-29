@@ -6,8 +6,8 @@
 module Test.Sandwich.TestTimer where
 
 import Control.Concurrent
-import Control.Exception.Safe
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Control.Monad.Trans.State
 import qualified Data.Aeson as A
@@ -26,6 +26,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
+import UnliftIO.Exception
 
 
 type EventName = T.Text
@@ -34,14 +35,14 @@ type ProfileName = T.Text
 -- * User functions
 
 -- | Time a given action with a given event name. This name will be the "stack frame" of the given action in the profiling results. This function will use the current timing profile name.
-timeAction :: (MonadMask m, MonadIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => EventName -> m a -> m a
+timeAction :: (MonadUnliftIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => EventName -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
   BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
   timeAction' tt baseContextTestTimerProfile eventName action
 
 -- | Time a given action with a given profile name and event name. Use when you want to manually specify the profile name.
-timeActionByProfile :: (MonadMask m, MonadIO m, MonadReader context m, HasTestTimer context) => ProfileName -> EventName -> m a -> m a
+timeActionByProfile :: (MonadUnliftIO m, MonadReader context m, HasTestTimer context) => ProfileName -> EventName -> m a -> m a
 timeActionByProfile profileName eventName action = do
   tt <- asks getTestTimer
   timeAction' tt profileName eventName action
@@ -81,7 +82,7 @@ finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
   whenJust testTimerHandle hClose
   readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
 
-timeAction' :: (MonadMask m, MonadIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
+timeAction' :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
 timeAction' (SpeedScopeTestTimer {..}) profileName eventName = bracket_
   (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do

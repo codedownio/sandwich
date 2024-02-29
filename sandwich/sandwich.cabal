@@ -123,7 +123,6 @@ library
     , filepath
     , free
     , haskell-src-exts
-    , lifted-async
     , microlens
     , microlens-th
     , monad-control
@@ -134,7 +133,6 @@ library
     , process
     , retry
     , safe
-    , safe-exceptions
     , stm
     , string-interpolate
     , template-haskell
@@ -142,6 +140,7 @@ library
     , time
     , transformers
     , transformers-base
+    , unliftio
     , unliftio-core
     , vector
     , vty >=6
@@ -187,7 +186,6 @@ executable sandwich-demo
     , filepath
     , free
     , haskell-src-exts
-    , lifted-async
     , microlens
     , microlens-th
     , monad-control
@@ -198,7 +196,6 @@ executable sandwich-demo
     , process
     , retry
     , safe
-    , safe-exceptions
     , sandwich
     , stm
     , string-interpolate
@@ -207,6 +204,7 @@ executable sandwich-demo
     , time
     , transformers
     , transformers-base
+    , unliftio
     , unliftio-core
     , vector
     , vty >=6
@@ -249,7 +247,6 @@ executable sandwich-discover
     , filepath
     , free
     , haskell-src-exts
-    , lifted-async
     , microlens
     , microlens-th
     , monad-control
@@ -260,7 +257,6 @@ executable sandwich-discover
     , process
     , retry
     , safe
-    , safe-exceptions
     , sandwich
     , stm
     , string-interpolate
@@ -269,6 +265,7 @@ executable sandwich-discover
     , time
     , transformers
     , transformers-base
+    , unliftio
     , unliftio-core
     , vector
     , vty >=6
@@ -316,7 +313,6 @@ executable sandwich-test
     , filepath
     , free
     , haskell-src-exts
-    , lifted-async
     , microlens
     , microlens-th
     , monad-control
@@ -327,7 +323,6 @@ executable sandwich-test
     , process
     , retry
     , safe
-    , safe-exceptions
     , sandwich
     , stm
     , string-interpolate
@@ -336,6 +331,7 @@ executable sandwich-test
     , time
     , transformers
     , transformers-base
+    , unliftio
     , unliftio-core
     , vector
     , vty >=6
@@ -384,7 +380,6 @@ test-suite sandwich-test-suite
     , filepath
     , free
     , haskell-src-exts
-    , lifted-async
     , microlens
     , microlens-th
     , monad-control
@@ -395,7 +390,6 @@ test-suite sandwich-test-suite
     , process
     , retry
     , safe
-    , safe-exceptions
     , sandwich
     , stm
     , string-interpolate
@@ -404,6 +398,7 @@ test-suite sandwich-test-suite
     , time
     , transformers
     , transformers-base
+    , unliftio
     , unliftio-core
     , vector
     , vty >=6

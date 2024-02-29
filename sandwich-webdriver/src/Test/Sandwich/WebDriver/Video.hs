@@ -18,11 +18,9 @@ module Test.Sandwich.WebDriver.Video (
   , defaultGdigrabOptions
   ) where
 
-import Control.Exception.Safe
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import System.Exit
 import System.FilePath
@@ -35,9 +33,10 @@ import Test.Sandwich.WebDriver.Internal.Video
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Class as W
 import Test.WebDriver.Commands
+import UnliftIO.Exception
 
 
-type BaseVideoConstraints context m = (MonadLoggerIO m, MonadReader context m, HasWebDriverContext context, MonadBaseControl IO m)
+type BaseVideoConstraints context m = (MonadLoggerIO m, MonadReader context m, HasWebDriverContext context)
 
 -- | Wrapper around 'startVideoRecording' which uses the full screen dimensions.
 startFullScreenVideoRecording :: (

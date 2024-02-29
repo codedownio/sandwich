@@ -6,7 +6,7 @@ module Introduce where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.Foldable

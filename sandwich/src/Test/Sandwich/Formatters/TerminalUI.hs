@@ -31,7 +31,7 @@ import Brick.Widgets.List
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)

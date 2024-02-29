@@ -1,19 +1,18 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 
 import Control.Concurrent
-import Control.Exception
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import qualified Data.Aeson as A
 import Data.Default
@@ -40,6 +39,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Firefox.Profile as FF
+import UnliftIO.Exception
 
 #ifndef mingw32_HOST_OS
 import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
@@ -57,7 +57,7 @@ fromText = id
 #endif
 
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
 startWebDriver :: Constraints m => WdOptions -> FilePath -> m WebDriver

@@ -23,7 +23,7 @@ module Test.Sandwich.WebDriver.Types (
   , WebDriverSessionMonad
   ) where
 
-import Control.Exception.Safe as ES
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -35,6 +35,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
+import UnliftIO.Exception as ES
 
 
 type ContextWithSession context = LabelValue "webdriverSession" WebDriverSession :> context

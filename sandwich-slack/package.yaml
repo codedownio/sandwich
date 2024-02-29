@@ -23,12 +23,12 @@ dependencies:
 - monad-logger
 - mtl
 - safe
-- safe-exceptions
 - sandwich
 - stm
 - string-interpolate
 - text
 - time
+- unliftio
 - vector
 - wreq
 

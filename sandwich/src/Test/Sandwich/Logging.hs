@@ -22,14 +22,12 @@ module Test.Sandwich.Logging (
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.Async.Lifted hiding (wait)
 import Control.DeepSeq (rnf)
 import qualified Control.Exception as C
-import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logOther)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import Data.Text
 import Foreign.C.Error
@@ -38,6 +36,8 @@ import GHC.Stack
 import System.IO
 import System.IO.Error (mkIOError)
 import System.Process
+import UnliftIO.Async hiding (wait)
+import UnliftIO.Exception
 
 #if !MIN_VERSION_base(4,13,0)
 import Control.Monad.Fail
@@ -74,11 +74,11 @@ logOther = logOtherCS callStack
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> m ProcessHandle
+createProcessWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => CreateProcess -> m ProcessHandle
 createProcessWithLogging = withFrozenCallStack (createProcessWithLogging' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> m ProcessHandle
+createProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => LogLevel -> CreateProcess -> m ProcessHandle
 createProcessWithLogging' logLevel cp = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -95,11 +95,11 @@ createProcessWithLogging' logLevel cp = do
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
 -- Every line output by the process will be fed to a 'debug' call.
-readCreateProcessWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> String -> m String
+readCreateProcessWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => CreateProcess -> String -> m String
 readCreateProcessWithLogging = withFrozenCallStack (readCreateProcessWithLogging' LevelDebug)
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
-readCreateProcessWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m String
+readCreateProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m String
 readCreateProcessWithLogging' logLevel cp input = do
   (hReadErr, hWriteErr) <- liftIO createPipe
 
@@ -131,8 +131,8 @@ readCreateProcessWithLogging' logLevel cp input = do
         -- wait on the process
         ex <- waitForProcess p
         return (ex, output)
-      (Nothing, _) -> liftIO $ throw $ userError "readCreateProcessWithStderrLogging: Failed to get a stdin handle."
-      (_, Nothing) -> liftIO $ throw $ userError "readCreateProcessWithStderrLogging: Failed to get a stdout handle."
+      (Nothing, _) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdin handle."
+      (_, Nothing) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdout handle."
 
   case ex of
     ExitSuccess -> return output
@@ -149,11 +149,11 @@ readCreateProcessWithLogging' logLevel cp input = do
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLoggingAndStdin :: (HasCallStack, MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m) => CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m) => CreateProcess -> String -> m ProcessHandle
 createProcessWithLoggingAndStdin = withFrozenCallStack (createProcessWithLoggingAndStdin' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLoggingAndStdin' :: (HasCallStack, MonadIO m, MonadFail m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin' :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m) => LogLevel -> CreateProcess -> String -> m ProcessHandle
 createProcessWithLoggingAndStdin' logLevel cp input = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -179,11 +179,11 @@ createProcessWithLoggingAndStdin' logLevel cp input = do
   return p
 
 -- | Higher level version of 'createProcessWithLogging', accepting a shell command.
-callCommandWithLogging :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => String -> m ()
+callCommandWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => String -> m ()
 callCommandWithLogging = withFrozenCallStack (callCommandWithLogging' LevelDebug)
 
 -- | Higher level version of 'createProcessWithLogging'', accepting a shell command.
-callCommandWithLogging' :: (HasCallStack, MonadIO m, MonadBaseControl IO m, MonadLogger m) => LogLevel -> String -> m ()
+callCommandWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => LogLevel -> String -> m ()
 callCommandWithLogging' logLevel cmd = do
   (hRead, hWrite) <- liftIO createPipe
 
@@ -199,7 +199,7 @@ callCommandWithLogging' logLevel cmd = do
 
   liftIO (waitForProcess p) >>= \case
     ExitSuccess -> return ()
-    ExitFailure r -> liftIO $ throw $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]
+    ExitFailure r -> liftIO $ throwIO $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]
 
 
 -- * Util

@@ -20,8 +20,8 @@
 module Test.Sandwich.Types.Spec where
 
 import Control.Applicative
-import Control.Exception.Safe
 import Control.Monad.Base
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Monad.Free
 import Control.Monad.Free.TH
 import Control.Monad.IO.Unlift
@@ -37,6 +37,7 @@ import GHC.Stack
 import GHC.TypeLits
 import Graphics.Vty.Image (Image)
 import Safe
+import UnliftIO.Exception
 
 #if !MIN_VERSION_base(4,13,0)
 import Control.Monad.Fail
@@ -70,7 +71,7 @@ instance (MonadBaseControl b m) => MonadBaseControl b (ExampleT context m) where
   liftBaseWith = defaultLiftBaseWith
   restoreM = defaultRestoreM
 
-instance (Monad m, MonadThrow m) => MonadFail (ExampleT context m) where
+instance (MonadIO m) => MonadFail (ExampleT context m) where
   fail :: (HasCallStack) => String -> ExampleT context m a
   fail = throwIO . Reason (Just callStack)
 

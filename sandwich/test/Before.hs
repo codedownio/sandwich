@@ -2,7 +2,7 @@
 
 module Before where
 
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import qualified Data.List as L

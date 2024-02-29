@@ -67,7 +67,7 @@ module Test.Sandwich (
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class

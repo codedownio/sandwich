@@ -2,7 +2,7 @@
 
 module Describe where
 
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.String.Interpolate

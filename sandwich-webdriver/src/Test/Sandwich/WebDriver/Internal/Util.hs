@@ -2,16 +2,16 @@
 
 module Test.Sandwich.WebDriver.Internal.Util where
 
-import Control.Exception
-import qualified Control.Exception.Lifted as E
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import qualified Data.Text as T
 import System.Directory
 import System.Process
 import qualified System.Random as R
+import UnliftIO.Exception
 
 #ifdef mingw32_HOST_OS
 import System.IO
@@ -29,8 +29,8 @@ moveAndTruncate from to = do
 
   where
     tryTruncateFile :: FilePath -> IO ()
-    tryTruncateFile path = E.catch (truncateFile path)
-                                   (\(e :: E.SomeException) -> putStrLn [i|Failed to truncate file #{path}: #{e}|])
+    tryTruncateFile path = catch (truncateFile path)
+                                 (\(e :: SomeException) -> putStrLn [i|Failed to truncate file #{path}: #{e}|])
 
     truncateFile :: FilePath -> IO ()
 #ifdef mingw32_HOST_OS
@@ -41,11 +41,11 @@ moveAndTruncate from to = do
 
 -- * Exceptions
 
-leftOnException :: (MonadIO m, MonadBaseControl IO m) => m (Either T.Text a) -> m (Either T.Text a)
-leftOnException = E.handle (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
+leftOnException :: (MonadUnliftIO m) => m (Either T.Text a) -> m (Either T.Text a)
+leftOnException = handle (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
 
-leftOnException' :: (MonadIO m, MonadBaseControl IO m) => m a -> m (Either T.Text a)
-leftOnException' action = E.catch (Right <$> action) (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
+leftOnException' :: (MonadUnliftIO m) => m a -> m (Either T.Text a)
+leftOnException' action = catch (Right <$> action) (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
 
 -- * Util
 

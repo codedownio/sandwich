@@ -39,7 +39,6 @@ dependencies:
 - exceptions
 - filepath
 - free
-- lifted-async
 - microlens
 - microlens-th
 - monad-control
@@ -50,13 +49,13 @@ dependencies:
 - process
 - retry
 - safe
-- safe-exceptions
 - stm
 - string-interpolate
 - text
 - time
 - transformers
 - transformers-base
+- unliftio
 - unliftio-core
 - vector
 - vty >= 6

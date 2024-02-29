@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 -- | Wrapper around 'parallel' for limiting the threads using a semaphore.
 
@@ -20,24 +20,25 @@ module Test.Sandwich.ParallelN (
   ) where
 
 import Control.Concurrent.QSem
-import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Test.Sandwich.Contexts
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import UnliftIO.Exception
 
 
 
 -- | Wrapper around 'parallel'. Introduces a semaphore to limit the parallelism to N threads.
 parallelN :: (
-  MonadIO m, MonadMask m
+  MonadUnliftIO m
   ) => Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
 parallelN = parallelN' defaultParallelNodeOptions
 
 parallelN' :: (
-  MonadIO m, MonadMask m
+  MonadUnliftIO m
   ) => NodeOptions -> Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
 parallelN' nodeOptions n children = introduce "Introduce parallel semaphore" parallelSemaphore (liftIO $ newQSem n) (const $ return ()) $
   parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
@@ -47,12 +48,12 @@ parallelN' nodeOptions n children = introduce "Introduce parallel semaphore" par
 
 -- | Same as 'parallelN', but extracts the semaphore size from the command line options.
 parallelNFromArgs :: forall context a m. (
-  MonadIO m, MonadMask m, HasCommandLineOptions context a
+  MonadUnliftIO m, HasCommandLineOptions context a
   ) => (CommandLineOptions a -> Int) -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
 parallelNFromArgs = parallelNFromArgs' @context @a defaultParallelNodeOptions
 
 parallelNFromArgs' :: forall context a m. (
-  MonadIO m, MonadMask m, HasCommandLineOptions context a
+  MonadUnliftIO m, HasCommandLineOptions context a
   ) => NodeOptions -> (CommandLineOptions a -> Int) -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
 parallelNFromArgs' nodeOptions getParallelism children = introduce "Introduce parallel semaphore" parallelSemaphore getQSem (const $ return ()) $
   parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children

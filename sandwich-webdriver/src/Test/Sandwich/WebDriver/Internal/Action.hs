@@ -2,10 +2,10 @@
 
 module Test.Sandwich.WebDriver.Internal.Action where
 
-import Control.Concurrent.MVar.Lifted
-import Control.Exception.Safe
 import Control.Monad
+import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -16,10 +16,12 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
+import UnliftIO.Concurrent
+import UnliftIO.Exception
 
 
 -- | Close the given sessions
-closeSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => Session -> WebDriver -> m ()
+closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => Session -> WebDriver -> m ()
 closeSession session (WebDriver {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
     case M.lookup session sessionMap of
@@ -29,7 +31,7 @@ closeSession session (WebDriver {wdSessionMap}) = do
   whenJust toClose $ \sess -> liftIO $ W.runWD sess W.closeSession
 
 -- | Close all sessions except those listed
-closeAllSessionsExcept :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => [Session] -> WebDriver -> m ()
+closeAllSessionsExcept :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => [Session] -> WebDriver -> m ()
 closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
 
@@ -38,11 +40,11 @@ closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
           (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
 
 -- | Close all sessions
-closeAllSessions :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m) => WebDriver -> m ()
+closeAllSessions :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => WebDriver -> m ()
 closeAllSessions = closeAllSessionsExcept []
 
 -- | Close the current session
-closeCurrentSession :: (HasCallStack, MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadCatch m, MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession) => m ()
+closeCurrentSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession) => m ()
 closeCurrentSession = do
   webDriver <- getContext webdriver
   (session, _) <- getContext webdriverSession

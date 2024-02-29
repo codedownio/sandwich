@@ -47,11 +47,11 @@ library
     , hedgehog
     , monad-control
     , mtl
-    , safe-exceptions
     , sandwich >=0.1.0.4
     , string-interpolate
     , text
     , time
+    , unliftio
     , vty
     , wl-pprint-annotated
   default-language: Haskell2010
@@ -79,11 +79,11 @@ test-suite sandwich-hedgehog-test
     , hedgehog
     , monad-control
     , mtl
-    , safe-exceptions
     , sandwich >=0.1.0.4
     , string-interpolate
     , text
     , time
+    , unliftio
     , vty
     , wl-pprint-annotated
   default-language: Haskell2010

@@ -11,6 +11,7 @@ module Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb (
 import Control.Exception
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
@@ -39,7 +40,7 @@ newtype Fd = Fd FD
 handleToFd h = Fd <$> HFD.handleToFd h
 #endif
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadMask m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 
 
 makeXvfbSession :: Constraints m => Maybe (Int, Int) -> Bool -> FilePath -> m (XvfbSession, [(String, String)])

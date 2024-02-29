@@ -11,7 +11,7 @@ module Test.Sandwich.Interpreters.StartTree (
 import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Concurrent.STM
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger

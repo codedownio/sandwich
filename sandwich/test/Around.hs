@@ -4,7 +4,7 @@ module Around where
 
 
 import Control.Concurrent
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer

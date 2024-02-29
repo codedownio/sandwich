@@ -25,7 +25,6 @@ dependencies:
 - http-client
 - http-client-tls
 - http-conduit
-- lifted-base
 - microlens
 - microlens-aeson
 - monad-control
@@ -36,13 +35,13 @@ dependencies:
 - random
 - retry
 - safe
-- safe-exceptions
 - sandwich >= 0.1.0.3
 - string-interpolate
 - temporary
 - text
 - time
 - transformers
+- unliftio
 - unordered-containers
 - vector
 - webdriver

@@ -14,6 +14,7 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.Catch
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
@@ -23,7 +24,6 @@ import GHC.Stack
 import System.Directory
 import System.Exit
 import System.FilePath
-import System.IO.Temp
 import System.Process
 import Test.Sandwich.Expectations
 import Test.Sandwich.Logging
@@ -32,14 +32,13 @@ import Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox
 import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
+import UnliftIO.Temporary
 
 
 type Constraints m = (
   HasCallStack
   , MonadLogger m
-  , MonadIO m
-  , MonadBaseControl IO m
-  , MonadMask m
+  , MonadUnliftIO m
   )
 
 -- * Obtaining binaries
@@ -51,7 +50,7 @@ defaultSeleniumJarUrl = "https://selenium-release.storage.googleapis.com/3.141/s
 
 -- | Manually obtain a Selenium server JAR file, according to the 'SeleniumToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
-obtainSelenium :: (MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadThrow m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
+obtainSelenium :: (MonadUnliftIO m, MonadLogger m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
 obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
   let path = [i|#{toolsDir}/selenium-server-standalone.jar|]
   unlessM (liftIO $ doesFileExist path) $
@@ -69,7 +68,7 @@ obtainSelenium _ (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainChromeDriver :: (
-  MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadMask m
+  MonadUnliftIO m, MonadLogger m
   ) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
 obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
@@ -93,7 +92,7 @@ obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= 
 
 -- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
-obtainGeckoDriver :: (MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadThrow m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
+obtainGeckoDriver :: (MonadUnliftIO m, MonadLogger m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
 obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
   unlessM (liftIO $ doesFileExist path) $
@@ -160,7 +159,7 @@ geckoDriverExecutable = case detectPlatform of
   Windows -> "geckodriver.exe"
   _ -> "geckodriver"
 
-downloadAndUnzipToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, MonadMask m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUnzipToPath :: (MonadUnliftIO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
@@ -180,7 +179,7 @@ downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
           >>= liftIO . waitForProcess >>= (`shouldBe` ExitSuccess)
       xs -> liftIO $ throwIO $ userError [i|Found multiple executable found in file downloaded from #{downloadPath}: #{xs}|]
 
-downloadAndUntarballToPath :: (MonadIO m, MonadBaseControl IO m, MonadLogger m, MonadThrow m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUntarballToPath :: (MonadUnliftIO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
@@ -189,7 +188,7 @@ downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do
   createProcessWithLogging (shell [i|chmod u+x #{localPath}|])
     >>= liftIO . waitForProcess >>= (`shouldBe` ExitSuccess)
 
-curlDownloadToPath :: (MonadIO m, MonadLogger m, MonadBaseControl IO m, MonadThrow m) => String -> FilePath -> m ()
+curlDownloadToPath :: (MonadUnliftIO m, MonadLogger m) => String -> FilePath -> m ()
 curlDownloadToPath downloadPath localPath = do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)

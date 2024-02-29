@@ -6,13 +6,13 @@ module Test.Sandwich.Golden.Update (
   , defaultDirGoldenTest
   ) where
 
-import Control.Exception.Safe
 import Control.Monad
 import Data.Maybe
 import Data.String.Interpolate
 import System.Console.ANSI
 import System.Directory
 import System.Environment
+import UnliftIO.Exception
 
 
 defaultDirGoldenTest :: FilePath

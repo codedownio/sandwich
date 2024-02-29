@@ -19,11 +19,11 @@ dependencies:
 - hedgehog
 - monad-control
 - mtl
-- safe-exceptions
 - sandwich >= 0.1.0.4
 - string-interpolate
 - text
 - time
+- unliftio
 - wl-pprint-annotated
 - vty
 

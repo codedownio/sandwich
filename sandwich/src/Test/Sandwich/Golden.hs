@@ -22,7 +22,6 @@ module Test.Sandwich.Golden (
   , goldenFailFirstTime
   ) where
 
-import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
@@ -37,6 +36,7 @@ import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Golden.Update
 import Test.Sandwich.Types.Spec
+import UnliftIO.Exception
 
 
 data Golden a = Golden {
@@ -90,7 +90,7 @@ goldenShowable = mkGolden (\f x -> writeFile f (show x)) ((read <$>) . readFile)
 
 -- | Runs a Golden test.
 
-golden :: (MonadIO m, MonadThrow m, Eq str, Show str) => Golden str -> Free (SpecCommand context m) ()
+golden :: (MonadIO m, Eq str, Show str) => Golden str -> Free (SpecCommand context m) ()
 golden (Golden {..}) = it goldenName $ do
   let goldenTestDir = takeDirectory goldenFile
   liftIO $ createDirectoryIfMissing True goldenTestDir

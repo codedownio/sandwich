@@ -74,7 +74,6 @@ library
     , http-client
     , http-client-tls
     , http-conduit
-    , lifted-base
     , microlens
     , microlens-aeson
     , monad-control
@@ -85,13 +84,13 @@ library
     , random
     , retry
     , safe
-    , safe-exceptions
     , sandwich >=0.1.0.3
     , string-interpolate
     , temporary
     , text
     , time
     , transformers
+    , unliftio
     , unordered-containers
     , vector
     , webdriver
@@ -151,7 +150,6 @@ executable sandwich-webdriver-exe
     , http-client
     , http-client-tls
     , http-conduit
-    , lifted-base
     , microlens
     , microlens-aeson
     , monad-control
@@ -162,7 +160,6 @@ executable sandwich-webdriver-exe
     , random
     , retry
     , safe
-    , safe-exceptions
     , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate
@@ -170,6 +167,7 @@ executable sandwich-webdriver-exe
     , text
     , time
     , transformers
+    , unliftio
     , unordered-containers
     , vector
     , webdriver
@@ -230,7 +228,6 @@ test-suite sandwich-webdriver-test
     , http-client
     , http-client-tls
     , http-conduit
-    , lifted-base
     , microlens
     , microlens-aeson
     , monad-control
@@ -241,7 +238,6 @@ test-suite sandwich-webdriver-test
     , random
     , retry
     , safe
-    , safe-exceptions
     , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate

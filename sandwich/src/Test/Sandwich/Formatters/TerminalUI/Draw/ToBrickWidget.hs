@@ -5,7 +5,7 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget where
 
 import Brick
 import Brick.Widgets.Border
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.Reader
 import qualified Data.List as L
 import Data.Maybe

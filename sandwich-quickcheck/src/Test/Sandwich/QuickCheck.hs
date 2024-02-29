@@ -32,7 +32,7 @@ module Test.Sandwich.QuickCheck (
   , modifyMaxShrinks
   ) where
 
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Reader

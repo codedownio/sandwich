@@ -6,7 +6,7 @@ module Test.Sandwich.Formatters.Print.FailureReason (
   printFailureReason
   ) where
 
-import Control.Exception.Safe
+import UnliftIO.Exception
 import Control.Monad.Reader
 import qualified Data.List as L
 import Data.String.Interpolate
