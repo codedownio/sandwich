@@ -7,7 +7,6 @@ dependencies:
 - sandwich
 - sandwich-quickcheck
 - string-interpolate
-- time
 - QuickCheck
 
 default-extensions:

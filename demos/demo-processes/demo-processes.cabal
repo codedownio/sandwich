@@ -33,5 +33,4 @@ executable demo-processes
     , sandwich
     , sandwich-demos
     , string-interpolate
-    , time
   default-language: Haskell2010

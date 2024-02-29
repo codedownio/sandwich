@@ -9,7 +9,6 @@ dependencies:
 - sandwich
 - sandwich-demos
 - string-interpolate
-- time
 
 default-extensions:
 - OverloadedStrings

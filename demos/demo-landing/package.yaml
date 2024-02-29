@@ -7,7 +7,6 @@ dependencies:
 - random
 - sandwich
 - sandwich-demos
-- time
 
 default-extensions:
 - OverloadedStrings
