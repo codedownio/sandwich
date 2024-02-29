@@ -1,0 +1,86 @@
+name: sandwich-contexts
+version: 0.1.0.0
+synopsis: Sandwich test contexts
+description: Please see README.md
+author: Tom McLaughlin
+maintainer: tom@codedown.io
+copyright: 2023 Tom McLaughlin
+dependencies:
+- base
+- sandwich
+- unliftio
+
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- LambdaCase
+- MultiWayIf
+- ViewPatterns
+- TupleSections
+- FlexibleContexts
+- NoImplicitPrelude
+- NumericUnderscores
+
+ghc-options:
+- -Wunused-packages # For GHC 8.10.1 and above
+- -Wall
+# - -Wpartial-fields
+# - -Wredundant-constraints # Reports HasCallStack, so keep it off normally
+
+library:
+  source-dirs: lib
+  exposed-modules:
+  - Sandwich.Contexts.FakeSmtpServer
+  - Sandwich.Contexts.Container.MinioS3Server
+  - Sandwich.Contexts.Container.PostgreSQL
+  - Sandwich.Contexts.Nix
+  - Sandwich.Contexts.Nix.PostgreSQL
+  - Sandwich.Contexts.Waits
+  dependencies:
+  - aeson
+  - bytestring
+  - containers
+  - crypton-connection
+  - exceptions
+  - filepath
+  - hostname
+  - http-client
+  - http-conduit
+  - http-types
+  - HTTP
+  - lifted-base
+  - minio-hs
+  - monad-control
+  - monad-logger
+  - mtl
+  - network
+  - process
+  - random
+  - relude
+  - retry
+  - safe
+  - string-interpolate
+  - temporary
+  - text
+  - time
+  - unix
+  - unliftio-core
+  - vector
+
+tests:
+  tests:
+    main: Main.hs
+    source-dirs: test
+    ghc-options:
+    - -Wall
+    - -rtsopts
+    - -threaded
+    dependencies:
+    - filepath
+    - postgresql-simple
+    - relude
+    - sandwich-contexts
+    - string-interpolate

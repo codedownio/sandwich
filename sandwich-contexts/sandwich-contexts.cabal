@@ -1,0 +1,119 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           sandwich-contexts
+version:        0.1.0.0
+synopsis:       Sandwich test contexts
+description:    Please see README.md
+author:         Tom McLaughlin
+maintainer:     tom@codedown.io
+copyright:      2023 Tom McLaughlin
+build-type:     Simple
+
+library
+  exposed-modules:
+      Sandwich.Contexts.FakeSmtpServer
+      Sandwich.Contexts.Container.MinioS3Server
+      Sandwich.Contexts.Container.PostgreSQL
+      Sandwich.Contexts.Nix
+      Sandwich.Contexts.Nix.PostgreSQL
+      Sandwich.Contexts.Waits
+  other-modules:
+      Sandwich.Contexts.Nix.CaddyProxy
+      Sandwich.Contexts.Nix.MinIO
+      Sandwich.Contexts.Util.Aeson
+      Sandwich.Contexts.Util.Container
+      Sandwich.Contexts.Util.Exception
+      Sandwich.Contexts.Util.Nix
+      Sandwich.Contexts.Util.Ports
+      Sandwich.Contexts.Util.SocketUtil
+      Sandwich.Contexts.Util.UUID
+      Paths_sandwich_contexts
+  hs-source-dirs:
+      lib
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      LambdaCase
+      MultiWayIf
+      ViewPatterns
+      TupleSections
+      FlexibleContexts
+      NoImplicitPrelude
+      NumericUnderscores
+  ghc-options: -Wunused-packages -Wall
+  build-depends:
+      HTTP
+    , aeson
+    , base
+    , bytestring
+    , containers
+    , crypton-connection
+    , exceptions
+    , filepath
+    , hostname
+    , http-client
+    , http-conduit
+    , http-types
+    , lifted-base
+    , minio-hs
+    , monad-control
+    , monad-logger
+    , mtl
+    , network
+    , process
+    , random
+    , relude
+    , retry
+    , safe
+    , sandwich
+    , string-interpolate
+    , temporary
+    , text
+    , time
+    , unix
+    , unliftio
+    , unliftio-core
+    , vector
+  default-language: Haskell2010
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Spec
+      Spec.Nix
+      Spec.NixContexts.PostgreSQL
+      Paths_sandwich_contexts
+  hs-source-dirs:
+      test
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      LambdaCase
+      MultiWayIf
+      ViewPatterns
+      TupleSections
+      FlexibleContexts
+      NoImplicitPrelude
+      NumericUnderscores
+  ghc-options: -Wunused-packages -Wall -Wall -rtsopts -threaded
+  build-depends:
+      base
+    , filepath
+    , postgresql-simple
+    , relude
+    , sandwich
+    , sandwich-contexts
+    , string-interpolate
+    , unliftio
+  default-language: Haskell2010
