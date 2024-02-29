@@ -1,10 +1,11 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.Types.RunTree where
 
@@ -160,6 +161,7 @@ type TopSpec = forall context. HasBaseContext context => SpecFree context IO ()
 
 -- * Specs with command line options provided
 
+commandLineOptions :: Label "commandLineOptions" (CommandLineOptions a)
 commandLineOptions = Label :: Label "commandLineOptions" (CommandLineOptions a)
 
 -- | Has-* class for asserting a 'CommandLineOptions a' is available.
@@ -224,21 +226,21 @@ defaultLogEntryFormatter ts loc src level msg = fromLogStr $
   <> "] ("
   <> toLogStr src
   <> ") "
-  <> (if isDefaultLoc loc then "" else "@(" <> toLogStr (BS8.pack $ fileLocStr loc) <> ") ")
+  <> (if isDefaultLoc loc then "" else "@(" <> toLogStr (BS8.pack fileLocStr) <> ") ")
   <> msg
   <> "\n"
 
   where
     defaultLogLevelStr :: LogLevel -> LogStr
-    defaultLogLevelStr level = case level of
+    defaultLogLevelStr lev = case lev of
       LevelOther t -> toLogStr t
-      _ -> toLogStr $ BS8.pack $ Prelude.drop 5 $ show level
+      _ -> toLogStr $ BS8.pack $ Prelude.drop 5 $ show lev
 
     isDefaultLoc :: Loc -> Bool
     isDefaultLoc (Loc "<unknown>" "<unknown>" "<unknown>" (0,0) (0,0)) = True
     isDefaultLoc _ = False
 
-    fileLocStr loc = (loc_package loc) ++ ':' : (loc_module loc) ++
+    fileLocStr = (loc_package loc) ++ ':' : (loc_module loc) ++
       ' ' : (loc_filename loc) ++ ':' : (line loc) ++ ':' : (char loc)
       where
         line = show . fst . loc_start

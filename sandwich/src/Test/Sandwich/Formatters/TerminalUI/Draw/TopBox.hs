@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
--- |
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.TopBox (
   topBox

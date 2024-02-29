@@ -24,13 +24,13 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 
-extractValues :: (forall context. RunNodeWithStatus context s l t -> a) -> RunNodeWithStatus context s l t -> [a]
+extractValues :: (forall ctx. RunNodeWithStatus ctx s l t -> a) -> RunNodeWithStatus context s l t -> [a]
 extractValues f node@(RunNodeIt {}) = [f node]
 extractValues f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node@(RunNodeIntroduceWith {runNodeChildrenAugmented}) = (f node) : (concatMap (extractValues f) runNodeChildrenAugmented)
 extractValues f node = (f node) : (concatMap (extractValues f) (runNodeChildren node))
 
-extractValuesControlRecurse :: (forall context. RunNodeWithStatus context s l t -> (Bool, a)) -> RunNodeWithStatus context s l t -> [a]
+extractValuesControlRecurse :: (forall ctx. RunNodeWithStatus ctx s l t -> (Bool, a)) -> RunNodeWithStatus context s l t -> [a]
 extractValuesControlRecurse f node@(RunNodeIt {}) = [snd $ f node]
 extractValuesControlRecurse f node@(RunNodeIntroduce {runNodeChildrenAugmented}) = case f node of
   (True, x) -> x : (concatMap (extractValuesControlRecurse f) runNodeChildrenAugmented)

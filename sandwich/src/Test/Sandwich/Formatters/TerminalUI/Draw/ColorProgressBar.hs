@@ -1,5 +1,5 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar (
   bottomProgressBarColored
@@ -82,14 +82,17 @@ maxBy = maximumBy . comparing
 -- two_eighth = "▎"
 -- one_eighth = "▏"
 
+full_five_eighth_height :: String
 full_five_eighth_height = "▆"
 
 -- * Exports
 
+bottomProgressBarColored :: AppState -> Widget n
 bottomProgressBarColored app = Widget Greedy Fixed $ do
   c <- getContext
   render $ bottomProgressBarColoredWidth app (c ^. availWidthL)
 
+bottomProgressBarColoredWidth :: Integral p => AppState -> p -> Widget n
 bottomProgressBarColoredWidth app width = hBox [getCharForChunk chunk | chunk <- chunks]
   where
     statuses = concatMap getStatuses (app ^. appRunTree)

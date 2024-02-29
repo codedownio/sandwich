@@ -8,8 +8,8 @@ module Test.Sandwich.TH.HasMainFunction (
 
 import Control.Monad
 import Data.String.Interpolate
-import Language.Haskell.Exts
-import Language.Haskell.TH (runIO, reportWarning)
+import Language.Haskell.Exts hiding (name)
+import Language.Haskell.TH (Q, runIO, reportWarning)
 
 -- import Debug.Trace
 

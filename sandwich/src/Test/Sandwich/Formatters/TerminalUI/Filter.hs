@@ -39,7 +39,7 @@ hideIfThresholdAbove visibilityThreshold node@(RunNodeCommonWithStatus {..}) =
                          }
 
 markClosed :: RunNodeCommonWithStatus s l Bool -> RunNodeCommonWithStatus s l Bool
-markClosed node@(RunNodeCommonWithStatus {..}) = node { runTreeVisible = False }
+markClosed node@(RunNodeCommonWithStatus {}) = node { runTreeVisible = False }
 
 hideClosed :: RunNodeWithStatus context s l Bool -> RunNodeWithStatus context s l Bool
 hideClosed node@(RunNodeIt {}) = node

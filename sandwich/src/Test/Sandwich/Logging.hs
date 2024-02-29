@@ -22,7 +22,7 @@ module Test.Sandwich.Logging (
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.Async.Lifted
+import Control.Concurrent.Async.Lifted hiding (wait)
 import Control.DeepSeq (rnf)
 import qualified Control.Exception as C
 import Control.Exception.Safe
@@ -113,8 +113,8 @@ readCreateProcessWithLogging' logLevel cp input = do
 
   -- Do this just like 'readCreateProcess'
   -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
-  (ex, output) <- liftIO $ withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin sout _ p -> do
-    case (sin, sout) of
+  (ex, output) <- liftIO $ withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p -> do
+    case (sin', sout) of
       (Just hIn, Just hOut) -> do
         output  <- hGetContents hOut
         withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
@@ -206,10 +206,10 @@ callCommandWithLogging' logLevel cmd = do
 
 -- Copied from System.Process
 withForkWait :: IO () -> (IO () ->  IO a) -> IO a
-withForkWait async body = do
+withForkWait asy body = do
   waitVar <- newEmptyMVar :: IO (MVar (Either SomeException ()))
   mask $ \restore -> do
-    tid <- forkIO $ try (restore async) >>= putMVar waitVar
+    tid <- forkIO $ try (restore asy) >>= putMVar waitVar
     let wait = takeMVar waitVar >>= either throwIO return
     restore (body wait) `C.onException` killThread tid
 

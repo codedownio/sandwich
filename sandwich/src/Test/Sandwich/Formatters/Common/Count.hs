@@ -6,10 +6,10 @@ module Test.Sandwich.Formatters.Common.Count where
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
-countWhere :: (forall context. RunNodeWithStatus context s l t -> Bool) -> [RunNodeWithStatus context s l t] -> Int
+countWhere :: (forall ctx. RunNodeWithStatus ctx s l t -> Bool) -> [RunNodeWithStatus context s l t] -> Int
 countWhere p rts = sum $ fmap (countWhere' p) rts
   where
-    countWhere' :: (forall context. RunNodeWithStatus context s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
+    countWhere' :: (forall ctx. RunNodeWithStatus ctx s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
     countWhere' p rt@(RunNodeIt {..}) = if p rt then 1 else 0
     countWhere' p rt@(RunNodeIntroduce {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented
     countWhere' p rt@(RunNodeIntroduceWith {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented

@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 
 module Test.Sandwich.Formatters.TerminalUI.AttrMap where
 
@@ -141,7 +143,6 @@ chooseAttr (Done _ _ _ _ Cancelled) = failureAttr
 
 -- * Logging and callstacks
 
-debugAttr, infoAttr, warnAttr, errorAttr, otherAttr :: AttrName
 debugAttr = attrName"log_debug"
 infoAttr = attrName"log_info"
 warnAttr = attrName"log_warn"
@@ -151,7 +152,6 @@ otherAttr = mkAttrName "log_other"
 logTimestampAttr :: AttrName
 logTimestampAttr = mkAttrName "log_timestamp"
 
-logFilenameAttr, logModuleAttr, logPackageAttr, logLineAttr, logChAttr :: AttrName
 logFilenameAttr = mkAttrName "logFilename"
 logModuleAttr = mkAttrName "logModule"
 logPackageAttr = mkAttrName "logPackage"
@@ -165,8 +165,6 @@ expectedAttr, sawAttr :: AttrName
 expectedAttr = mkAttrName "expected"
 sawAttr = mkAttrName "saw"
 
-integerAttr, timeAttr, dateAttr, stringAttr, charAttr, floatAttr, quoteAttr, slashAttr, negAttr :: AttrName
-listBracketAttr, tupleBracketAttr, braceAttr, ellipsesAttr, recordNameAttr, fieldNameAttr, constructorNameAttr :: AttrName
 integerAttr = mkAttrName "integer"
 floatAttr = mkAttrName "float"
 charAttr = mkAttrName "char"

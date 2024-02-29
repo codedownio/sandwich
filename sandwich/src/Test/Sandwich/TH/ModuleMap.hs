@@ -24,7 +24,7 @@ addModuleToMap relativeTo modulePrefix mm path@(takeExtension -> ".hs") = case p
     relativePath = (takeFileName relativeTo) </> (makeRelative relativeTo path)
     pathParts = splitDirectories $ dropExtension relativePath
     baseModuleName = last pathParts
-    moduleName = head $ filter doesNotExist (baseModuleName : [baseModuleName <> show n | n <- [1..]])
+    moduleName = head $ filter doesNotExist (baseModuleName : [baseModuleName <> show n | n <- [(1 :: Integer)..]])
     doesNotExist x = isNothing (M.lookup x mm)
 addModuleToMap _ _ mm _ = mm
 

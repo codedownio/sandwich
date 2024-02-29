@@ -93,6 +93,7 @@ $(deriveJSON (A.defaultOptions {
                  }) ''SpeedScopeFile)
 $(makeLensesWith testTimerLensRules ''SpeedScopeFile)
 
+emptySpeedScopeFile :: SpeedScopeFile
 emptySpeedScopeFile =
   SpeedScopeFile {
     _exporter = "sandwich-test-exporter"
@@ -131,6 +132,7 @@ defaultProfileName = "default"
 class HasTestTimer context where
   getTestTimer :: context -> TestTimer
 
+testTimerProfile :: Label "testTimerProfile" TestTimerProfile
 testTimerProfile = Label :: Label "testTimerProfile" TestTimerProfile
 
 newtype TestTimerProfile = TestTimerProfile T.Text

@@ -1,17 +1,18 @@
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
 
@@ -84,8 +85,14 @@ data ExtraTimingInfo = ExtraTimingInfo {
   setupTime :: Maybe NominalDiffTime
   , teardownTime :: Maybe NominalDiffTime
   }
+
+emptyExtraTimingInfo :: ExtraTimingInfo
 emptyExtraTimingInfo = ExtraTimingInfo Nothing Nothing
+
+mkSetupTimingInfo :: NominalDiffTime -> ExtraTimingInfo
 mkSetupTimingInfo dt = ExtraTimingInfo (Just dt) Nothing
+
+mkTeardownTimingInfo :: NominalDiffTime -> ExtraTimingInfo
 mkTeardownTimingInfo dt = ExtraTimingInfo Nothing (Just dt)
 
 data ShowEqBox = forall s. (Show s, Eq s) => SEB s
@@ -703,10 +710,12 @@ aroundEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec nex
 
 -- * ----------------------------------------------------------
 
-unwrapContext :: forall m introduce context. (Monad m) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
+unwrapContext :: forall m introduce context. (
+  Monad m
+  ) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do
-  i :> _ <- ask
-  ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i :>) action)
+  i' :> _ <- ask
+  ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i' :>) action)
 
 
 -- | Convert a spec to a run tree

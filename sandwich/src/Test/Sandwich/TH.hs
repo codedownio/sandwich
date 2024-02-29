@@ -32,6 +32,7 @@ import Test.Sandwich.TH.ModuleMap
 import Test.Sandwich.Types.Spec hiding (location)
 
 
+constId :: b -> a -> a
 constId = const id
 
 data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
