@@ -375,7 +375,7 @@ introduce :: (HasCallStack, Typeable intro) =>
   -- ^ 'Label' under which to introduce the value
   -> ExampleT context m intro
   -- ^ Action to produce the new value (of type 'intro')
-  -> (intro -> ExampleT context m ())
+  -> ((HasCallStack) => intro -> ExampleT context m ())
   -- ^ Action to clean up the new value
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -392,7 +392,7 @@ introduce' :: (HasCallStack, Typeable intro) =>
   -- ^ 'Label' under which to introduce the value
   -> ExampleT context m intro
   -- ^ Action to produce the new value (of type 'intro')
-  -> (intro -> ExampleT context m ())
+  -> ((HasCallStack) => intro -> ExampleT context m ())
   -- ^ Action to clean up the new value
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -411,7 +411,7 @@ introduce'' :: (HasCallStack, Typeable intro) =>
   -- ^ 'Label' under which to introduce the value
   -> ExampleT context m intro
   -- ^ Action to produce the new value (of type 'intro')
-  -> (intro -> ExampleT context m ())
+  -> ((HasCallStack) => intro -> ExampleT context m ())
   -- ^ Action to clean up the new value
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -425,7 +425,7 @@ introduceWith :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
-  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -440,7 +440,7 @@ introduceWith' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
-  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -457,7 +457,7 @@ introduceWith'' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
-  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+  -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
