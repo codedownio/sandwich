@@ -41,9 +41,9 @@ shouldFail action = do
 
 -- | Assert that a given action should fail with some 'FailureReason' matching a predicate.
 shouldFailPredicate :: (HasCallStack, MonadCatch m, MonadThrow m) => (FailureReason -> Bool) -> m () -> m ()
-shouldFailPredicate pred action = do
+shouldFailPredicate p action = do
   try action >>= \case
-    Left (err :: FailureReason) -> case pred err of
+    Left (err :: FailureReason) -> case p err of
       True -> return ()
       False -> expectationFailure [i|Expected test to fail with a failure matching the predicate, but got a different failure: '#{err}'|]
     Right () -> expectationFailure [i|Expected test to fail, but it succeeded|]
@@ -83,7 +83,7 @@ shouldContain haystack needle = case needle `L.isInfixOf` haystack of
 
 -- | Asserts that the given list contains an item matching a predicate.
 shouldContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
-shouldContainPredicate haystack pred = case L.find pred haystack of
+shouldContainPredicate haystack p = case L.find p haystack of
   Just _ -> return ()
   Nothing -> expectationFailure [i|Expected #{show haystack} to contain an item matching the predicate|]
 
@@ -95,7 +95,7 @@ shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
 
 -- | Asserts that the given list contains an item matching a predicate.
 shouldNotContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
-shouldNotContainPredicate haystack pred = case L.find pred haystack of
+shouldNotContainPredicate haystack p = case L.find p haystack of
   Nothing -> return ()
   Just _ -> expectationFailure [i|Expected #{show haystack} not to contain an item matching the predicate|]
 

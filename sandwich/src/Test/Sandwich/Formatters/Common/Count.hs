@@ -1,5 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
--- |
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Formatters.Common.Count where
 
@@ -10,10 +10,10 @@ countWhere :: (forall ctx. RunNodeWithStatus ctx s l t -> Bool) -> [RunNodeWithS
 countWhere p rts = sum $ fmap (countWhere' p) rts
   where
     countWhere' :: (forall ctx. RunNodeWithStatus ctx s l t -> Bool) -> RunNodeWithStatus context s l t -> Int
-    countWhere' p rt@(RunNodeIt {..}) = if p rt then 1 else 0
-    countWhere' p rt@(RunNodeIntroduce {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented
-    countWhere' p rt@(RunNodeIntroduceWith {..}) = (if p rt then 1 else 0) + countWhere p runNodeChildrenAugmented
-    countWhere' p rt = (if p rt then 1 else 0) + countWhere p (runNodeChildren rt)
+    countWhere' p' rt@(RunNodeIt {}) = if p' rt then 1 else 0
+    countWhere' p' rt@(RunNodeIntroduce {..}) = (if p' rt then 1 else 0) + countWhere p' runNodeChildrenAugmented
+    countWhere' p' rt@(RunNodeIntroduceWith {..}) = (if p' rt then 1 else 0) + countWhere p' runNodeChildrenAugmented
+    countWhere' p' rt = (if p' rt then 1 else 0) + countWhere p' (runNodeChildren rt)
 
 isItBlock (RunNodeIt {}) = True
 isItBlock _ = False

@@ -1,7 +1,7 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE MonoLocalBinds #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.TestTimer where
 
@@ -48,7 +48,7 @@ timeActionByProfile profileName eventName action = do
 
 -- | Introduce a new timing profile name.
 withTimingProfile :: (Monad m) => ProfileName -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
-withTimingProfile name = introduce' timingNodeOptions [i|Switch test timer profile to '#{name}'|] testTimerProfile (pure $ TestTimerProfile name) (\_ -> return ())
+withTimingProfile pn = introduce' timingNodeOptions [i|Switch test timer profile to '#{pn}'|] testTimerProfile (pure $ TestTimerProfile pn) (\_ -> return ())
 
 -- | Introduce a new timing profile name dynamically. The given 'ExampleT' should come up with the name and return it.
 withTimingProfile' :: (Monad m) => ExampleT context m ProfileName -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m () -> SpecFree context m ()
@@ -104,7 +104,7 @@ timeAction' (SpeedScopeTestTimer {..}) profileName eventName = bracket_
     -- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
     -- so we don't have to do O(N) L.length and S.findIndexL
     handleSpeedScopeEvent :: SpeedScopeFile -> POSIXTime -> SpeedScopeEventType -> SpeedScopeFile
-    handleSpeedScopeEvent initialFile time typ = flip execState initialFile $ do
+    handleSpeedScopeEvent initialFile time eventType = flip execState initialFile $ do
       frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
         Just j -> return j
         Nothing -> do
@@ -117,5 +117,5 @@ timeAction' (SpeedScopeTestTimer {..}) profileName eventName = bracket_
           modify' $ over profiles (\x -> x <> [newProfile profileName time])
           return $ L.length (f ^. profiles)
 
-      modify' $ over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent typ frameID time))
+      modify' $ over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent eventType frameID time))
               . over (profiles . ix profileIndex . endValue) (max time)
