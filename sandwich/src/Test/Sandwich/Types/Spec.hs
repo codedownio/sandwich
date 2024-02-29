@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 -- | The core Spec/SpecCommand types, used to define the test free monad.
 

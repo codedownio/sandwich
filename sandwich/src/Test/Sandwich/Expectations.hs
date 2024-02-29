@@ -5,7 +5,6 @@
 module Test.Sandwich.Expectations where
 
 import Control.Exception.Safe
-import Control.Monad.IO.Class
 import qualified Data.List as L
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -27,20 +26,20 @@ pendingWith :: (HasCallStack, MonadThrow m) => String -> m a
 pendingWith msg = throwIO $ Pending (Just callStack) (Just msg)
 
 -- | Shorthand for a pending test example. You can quickly mark an 'it' node as pending by putting an "x" in front of it.
-xit :: (HasCallStack, Monad m, MonadThrow m) => String -> ExampleT context m1 () -> SpecFree context m ()
+xit :: (HasCallStack, MonadThrow m) => String -> ExampleT context m1 () -> SpecFree context m ()
 xit name _ex = it name (throwIO $ Pending (Just callStack) Nothing)
 
 -- * Expecting failures
 
 -- | Assert that a given action should fail with some 'FailureReason'.
-shouldFail :: (HasCallStack, MonadCatch m, MonadThrow m) => m () -> m ()
+shouldFail :: (HasCallStack, MonadCatch m) => m () -> m ()
 shouldFail action = do
   try action >>= \case
     Left (_ :: FailureReason) -> return ()
     Right () -> expectationFailure [i|Expected test to fail|]
 
 -- | Assert that a given action should fail with some 'FailureReason' matching a predicate.
-shouldFailPredicate :: (HasCallStack, MonadCatch m, MonadThrow m) => (FailureReason -> Bool) -> m () -> m ()
+shouldFailPredicate :: (HasCallStack, MonadCatch m) => (FailureReason -> Bool) -> m () -> m ()
 shouldFailPredicate p action = do
   try action >>= \case
     Left (err :: FailureReason) -> case p err of
@@ -49,7 +48,7 @@ shouldFailPredicate p action = do
     Right () -> expectationFailure [i|Expected test to fail, but it succeeded|]
 
 -- | Asserts that an action should throw an exception. Accepts a predicate to determine if the exception matches.
-shouldThrow :: (HasCallStack, MonadThrow m, MonadCatch m, MonadIO m, Exception e) =>
+shouldThrow :: (HasCallStack, MonadCatch m, Exception e) =>
   m a
   -- ^ The action to run.
   -> (e -> Bool)
@@ -82,7 +81,7 @@ shouldContain haystack needle = case needle `L.isInfixOf` haystack of
   False -> expectationFailure [i|Expected #{show haystack} to contain #{show needle}|] -- TODO: custom exception type
 
 -- | Asserts that the given list contains an item matching a predicate.
-shouldContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
+shouldContainPredicate :: (HasCallStack, MonadThrow m, Show a) => [a] -> (a -> Bool) -> m ()
 shouldContainPredicate haystack p = case L.find p haystack of
   Just _ -> return ()
   Nothing -> expectationFailure [i|Expected #{show haystack} to contain an item matching the predicate|]
@@ -94,7 +93,7 @@ shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
   False -> return ()
 
 -- | Asserts that the given list contains an item matching a predicate.
-shouldNotContainPredicate :: (HasCallStack, MonadThrow m, Eq a, Show a) => [a] -> (a -> Bool) -> m ()
+shouldNotContainPredicate :: (HasCallStack, MonadThrow m, Show a) => [a] -> (a -> Bool) -> m ()
 shouldNotContainPredicate haystack p = case L.find p haystack of
   Nothing -> return ()
   Just _ -> expectationFailure [i|Expected #{show haystack} not to contain an item matching the predicate|]
@@ -105,7 +104,7 @@ shouldBeNothing Nothing = return ()
 shouldBeNothing x = expectationFailure [i|Expected Nothing but got #{x}|]
 
 -- | Asserts that the given 'Maybe' is 'Just'.
-shouldBeJust :: (HasCallStack, MonadThrow m, Show a) => Maybe a -> m ()
+shouldBeJust :: (HasCallStack, MonadThrow m) => Maybe a -> m ()
 shouldBeJust (Just _) = return ()
 shouldBeJust Nothing = expectationFailure [i|Expected Just but got Nothing.|]
 

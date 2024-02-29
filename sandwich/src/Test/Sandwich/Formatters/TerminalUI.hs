@@ -34,7 +34,6 @@ import Control.Concurrent.STM
 import Control.Exception.Safe
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Trans
 import Control.Monad.Trans.State hiding (get, put)
@@ -78,7 +77,7 @@ instance Formatter TerminalUIFormatter where
 isTuiFormatterSupported :: IO Bool
 isTuiFormatterSupported = isRight <$> tryAny (V.mkVty V.defaultConfig)
 
-runApp :: (MonadLoggerIO m, MonadUnliftIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp :: (MonadLoggerIO m) => TerminalUIFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
 runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   startTime <- liftIO getCurrentTime
 

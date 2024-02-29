@@ -65,7 +65,7 @@ instance Formatter LogSaverFormatter where
   runFormatter = runApp
   finalizeFormatter _ _ _ = return ()
 
-runApp :: (MonadIO m, MonadLogger m) => LogSaverFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+runApp :: (MonadIO m) => LogSaverFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
 runApp lsf@(LogSaverFormatter {..}) rts _maybeCommandLineOptions bc = do
   let maybePath = case logSaverPath of
         LogPathAbsolute p -> Just p

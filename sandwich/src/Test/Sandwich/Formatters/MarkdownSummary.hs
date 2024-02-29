@@ -17,9 +17,7 @@ module Test.Sandwich.Formatters.MarkdownSummary (
   ) where
 
 import Control.Concurrent.STM
-import Control.Monad.Catch
 import Control.Monad.IO.Class
-import Control.Monad.Logger
 import Data.String.Interpolate
 import Data.Text as T
 import Data.Time
@@ -51,7 +49,7 @@ instance Formatter MarkdownSummaryFormatter where
   runFormatter = run
   finalizeFormatter _ _ _ = return ()
 
-run :: (MonadIO m, MonadLogger m, MonadCatch m) => MarkdownSummaryFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
+run :: (MonadIO m) => MarkdownSummaryFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
 run (MarkdownSummaryFormatter {..}) rts _ _bc = do
   let total = countWhere isItBlock rts
 

@@ -17,7 +17,6 @@ module Test.Sandwich.Formatters.FailureReport (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -64,7 +63,7 @@ instance Formatter FailureReportFormatter where
   runFormatter _ _ _ _ = return ()
   finalizeFormatter = printFailureReport
 
-printFailureReport :: (MonadIO m, MonadLogger m, MonadCatch m) => FailureReportFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
+printFailureReport :: (MonadIO m) => FailureReportFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 printFailureReport frf@(FailureReportFormatter {..}) rts _bc = do
   liftIO $ putStrLn [i|\n\nFailure report:|]
 

@@ -53,7 +53,7 @@ isMainFunctionName (Ident _ "main") = True
 isMainFunctionName (Symbol _ "main") = True
 isMainFunctionName _ = False
 
-isMainDecl :: (Show l) => Decl l -> Bool
+isMainDecl :: Decl l -> Bool
 isMainDecl (PatBind _ (PVar _ (Ident _ "main")) _ _) = True
 -- isMainDecl decl = trace [i|Looking at decl: #{decl}|] False
 isMainDecl _ = False

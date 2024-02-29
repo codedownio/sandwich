@@ -2,3 +2,4 @@
 dist-newstyle/
 test_runs/
 *~
+.hie

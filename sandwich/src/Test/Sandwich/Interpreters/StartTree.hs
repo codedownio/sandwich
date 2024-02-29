@@ -355,7 +355,7 @@ recordExceptionInStatus status e = do
     Running {statusStartTime, statusSetupTime} -> Done statusStartTime endTime statusSetupTime Nothing ret
     _ -> Done endTime endTime Nothing Nothing ret
 
-timed :: (MonadMask m, MonadIO m) => m a -> m (a, NominalDiffTime)
+timed :: (MonadIO m) => m a -> m (a, NominalDiffTime)
 timed action = do
   startTime <- liftIO getCurrentTime
   ret <- action

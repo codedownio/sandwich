@@ -1,6 +1,13 @@
 
 resolver: nightly-2023-11-17
 
+ghc-options:
+  "$locals": >-
+    -fwrite-ide-info
+    -hiedir .hie
+    -dumpdir .ghcdump
+    -Wredundant-constraints
+
 nix:
   pure: false
   packages:

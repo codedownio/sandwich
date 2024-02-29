@@ -9,7 +9,6 @@ import Brick
 import Data.Foldable
 import Data.Ord (comparing)
 import Data.String.Interpolate
-import GHC.Stack
 import Lens.Micro
 import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
@@ -102,5 +101,5 @@ bottomProgressBarColoredWidth app width = hBox [getCharForChunk chunk | chunk <-
 
     testsPerChar :: Rational = fromIntegral width / fromIntegral (length statuses)
 
-    getStatuses :: (HasCallStack) => RunNodeWithStatus context a l t -> [a]
+    getStatuses :: RunNodeWithStatus context a l t -> [a]
     getStatuses = extractValues (runTreeStatus . runNodeCommon)
