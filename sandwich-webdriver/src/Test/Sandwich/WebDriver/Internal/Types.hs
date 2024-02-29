@@ -25,8 +25,11 @@ import qualified Test.WebDriver.Session as W
 type Session = String
 
 -- * Labels
-webdriver = Label :: Label "webdriver" WebDriver
-webdriverSession = Label :: Label "webdriverSession" WebDriverSession
+webdriver :: Label "webdriver" WebDriver
+webdriver = Label
+
+webdriverSession :: Label "webdriverSession" WebDriverSession
+webdriverSession = Label
 
 type WebDriverContext context wd = (HasLabel context "webdriver" WebDriver, W.WebDriver (ExampleT context wd))
 
@@ -136,6 +139,7 @@ data HeadlessConfig = HeadlessConfig {
   }
 
 -- | Default headless config.
+defaultHeadlessConfig :: HeadlessConfig
 defaultHeadlessConfig = HeadlessConfig Nothing
 
 data XvfbConfig = XvfbConfig {
@@ -147,6 +151,7 @@ data XvfbConfig = XvfbConfig {
   }
 
 -- | Default Xvfb settings.
+defaultXvfbConfig :: XvfbConfig
 defaultXvfbConfig = XvfbConfig Nothing False
 
 -- | The default 'WdOptions' object.
@@ -213,6 +218,7 @@ instance Show XvfbSession where
 -- * Video stuff
 
 -- | Default options for fast X11 video recording.
+fastX11VideoOptions :: [String]
 fastX11VideoOptions = ["-an"
                       , "-r", "30"
                       , "-vcodec"
@@ -221,6 +227,7 @@ fastX11VideoOptions = ["-an"
                       , "-threads", "0"]
 
 -- | Default options for quality X11 video recording.
+qualityX11VideoOptions :: [String]
 qualityX11VideoOptions = ["-an"
                          , "-r", "30"
                          , "-vcodec", "libx264"
@@ -229,6 +236,7 @@ qualityX11VideoOptions = ["-an"
                          , "-threads", "0"]
 
 -- | Default options for AVFoundation recording (for Darwin).
+defaultAvfoundationOptions :: [String]
 defaultAvfoundationOptions = ["-r", "30"
                              , "-an"
                              , "-vcodec", "libxvid"
@@ -236,6 +244,7 @@ defaultAvfoundationOptions = ["-r", "30"
                              , "-threads", "0"]
 
 -- | Default options for gdigrab recording (for Windows).
+defaultGdigrabOptions :: [String]
 defaultGdigrabOptions = ["-framerate", "30"]
 
 data VideoSettings = VideoSettings {
@@ -252,6 +261,7 @@ data VideoSettings = VideoSettings {
   }
 
 -- | Default video settings.
+defaultVideoSettings :: VideoSettings
 defaultVideoSettings = VideoSettings {
   x11grabOptions = fastX11VideoOptions
   , avfoundationOptions = defaultAvfoundationOptions

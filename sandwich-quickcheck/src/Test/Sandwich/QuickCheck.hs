@@ -32,11 +32,9 @@ module Test.Sandwich.QuickCheck (
   , modifyMaxShrinks
   ) where
 
-import UnliftIO.Exception
 import Control.Monad.Free
 import Control.Monad.IO.Class
-import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.IO.Unlift
 import Data.Maybe
 import qualified Data.Text as T
 import GHC.Stack
@@ -44,11 +42,13 @@ import Test.QuickCheck as QC
 import Test.QuickCheck.Random as QC
 import Test.Sandwich
 import Test.Sandwich.Internal
+import UnliftIO.Exception
 
 
 data QuickCheckContext = QuickCheckContext Args
   deriving Show
-quickCheckContext = Label :: Label "quickCheckContext" QuickCheckContext
+quickCheckContext :: Label "quickCheckContext" QuickCheckContext
+quickCheckContext = Label
 type HasQuickCheckContext context = HasLabel context "quickCheckContext" QuickCheckContext
 
 data QuickCheckException = QuickCheckException
@@ -56,43 +56,43 @@ data QuickCheckException = QuickCheckException
 instance Exception QuickCheckException
 
 -- | Same as 'introduceQuickCheck'' but with default args.
-introduceQuickCheck :: (MonadIO m, MonadBaseControl IO m)
+introduceQuickCheck :: (MonadIO m)
   => SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 introduceQuickCheck = introduceQuickCheck'' "Introduce QuickCheck context" stdArgs
 
 -- | Same as 'introduceQuickCheck''' but with a default message.
-introduceQuickCheck' :: (MonadIO m, MonadBaseControl IO m)
+introduceQuickCheck' :: (MonadIO m)
   => Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 introduceQuickCheck' = introduceQuickCheck'' "Introduce QuickCheck context"
 
 -- | Introduce QuickCheck args with configurable message.
-introduceQuickCheck'' :: (MonadIO m, MonadBaseControl IO m)
+introduceQuickCheck'' :: (MonadIO m)
   => String -> Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 introduceQuickCheck'' msg args = introduce msg quickCheckContext (return $ QuickCheckContext args) (const $ return ())
 
 
 -- | Same as 'introduceQuickCheckCommandLineOptions'' but with default args.
-introduceQuickCheckCommandLineOptions :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceQuickCheckCommandLineOptions :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 introduceQuickCheckCommandLineOptions = introduceQuickCheckCommandLineOptions'' @a "Introduce QuickCheck context with command line options" stdArgs
 
 -- | Same as 'introduceQuickCheckCommandLineOptions''' but with a default message.
-introduceQuickCheckCommandLineOptions' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceQuickCheckCommandLineOptions' :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
 introduceQuickCheckCommandLineOptions' = introduceQuickCheckCommandLineOptions'' @a "Introduce QuickCheck context with command line options"
 
 -- | Introduce QuickCheck args with configurable message, overriding those args with any command line options passed.
-introduceQuickCheckCommandLineOptions'' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceQuickCheckCommandLineOptions'' :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => String -> Args -> SpecFree (LabelValue "quickCheckContext" QuickCheckContext :> context) m () -> SpecFree context m ()
-introduceQuickCheckCommandLineOptions'' msg args = introduce msg quickCheckContext getContext (const $ return ())
+introduceQuickCheckCommandLineOptions'' msg args = introduce msg quickCheckContext getContext' (const $ return ())
   where
-    getContext = do
+    getContext' = do
       clo <- getCommandLineOptions @a
       return $ QuickCheckContext $ addCommandLineOptions clo args
 
 
 -- | Similar to 'it'. Runs the given prop with QuickCheck using the currently introduced 'Args'. Throws an appropriate exception on failure.
-prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, MonadThrow m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
+prop :: (HasCallStack, HasQuickCheckContext context, MonadUnliftIO m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
 prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
   liftIO (quickCheckWithResult (args { QC.chatty = False }) p) >>= \case

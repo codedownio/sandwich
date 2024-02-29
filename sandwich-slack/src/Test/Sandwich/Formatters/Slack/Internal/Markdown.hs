@@ -19,7 +19,7 @@ toMarkdown (DidNotExpectButGot {..}) = [i|Did not expect *#{failureValue1}*|]
 toMarkdown (GotException {..}) = case failureMessage of
   Just msg -> [i|Got exception (_#{msg}_): #{failureException}|]
   Nothing -> [i|Got exception (no message): #{failureException}|]
-toMarkdown (Pending {..}) = "Example was pending"
+toMarkdown (Pending {}) = "Example was pending"
 toMarkdown (GetContextException {..}) = [i|Context exception: #{failureException}|]
 toMarkdown (GotAsyncException {..}) = case failureMessage of
   Just msg -> [i|Got async exception (_#{msg}_): #{failureAsyncException}|]
@@ -30,6 +30,7 @@ callStackToMarkdown SlackFormatterNoCallStacks _cs = ""
 callStackToMarkdown (SlackFormatterTopNCallStackFrames n) cs = "\n\n" <> showCallStack (fromCallSiteList $ L.take n $ getCallStack cs)
 callStackToMarkdown SlackFormatterFullCallStack cs = "\n\n" <> showCallStack cs
 
+showCallStack :: CallStack -> T.Text
 showCallStack (getCallStack -> rows) = ["> *" <> (T.pack name) <> "*, called at "
                                         <> [i|_#{srcLocPackage}_:*#{srcLocFile}*:#{srcLocStartLine}:#{srcLocStartCol}|]
                                        | (name, SrcLoc {..}) <- rows]

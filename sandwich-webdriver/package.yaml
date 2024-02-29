@@ -42,6 +42,7 @@ dependencies:
 - time
 - transformers
 - unliftio
+- unliftio-core
 - unordered-containers
 - vector
 - webdriver

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 module Test.Sandwich.WebDriver.Resolution (
   getResolution
@@ -9,6 +10,7 @@ import Data.Function
 import qualified Data.List as L
 import Data.String.Interpolate
 import qualified Data.Text as T
+import GHC.Stack
 import Safe
 import System.Directory
 import System.Exit
@@ -27,14 +29,14 @@ import Text.Regex
 -- https://github.com/rr-/screeninfo/blob/master/screeninfo/enumerators/xinerama.py
 -- but again, that would require users to install those libraries. xrandr itself seems like an easier
 -- dependency.
-getResolution :: IO (Int, Int, Int, Int)
+getResolution :: (HasCallStack) => IO (Int, Int, Int, Int)
 getResolution = getResolution' Nothing
 
 getResolutionForDisplay :: Int -> IO (Int, Int, Int, Int)
 getResolutionForDisplay n = getResolution' (Just [("DISPLAY", ":" <> show n)])
 
 -- | Note: this doesn't pick up display scaling on Ubuntu 20.04.
-getResolution' :: Maybe [(String, String)] -> IO (Int, Int, Int, Int)
+getResolution' :: (HasCallStack) => Maybe [(String, String)] -> IO (Int, Int, Int, Int)
 getResolution' xrandrEnv = do
   xrandrPath <- findExecutable "xrandr" >>= \case
     Just x -> return x

@@ -1,5 +1,5 @@
--- | Functions for manipulating browser windows.
 
+-- | Functions for manipulating browser windows.
 
 module Test.Sandwich.WebDriver.Windows (
   -- * Window positioning
@@ -11,9 +11,7 @@ module Test.Sandwich.WebDriver.Windows (
   , getScreenResolution
   ) where
 
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
-import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Reader
 import Data.Bits as B
 import Data.Maybe
@@ -23,11 +21,10 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Resolution
 import Test.WebDriver
 import qualified Test.WebDriver.Class as W
-import UnliftIO.Exception
 
 
 -- | Position the window on the left 50% of the screen.
-setWindowLeftSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowLeftSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
 setWindowLeftSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -38,7 +35,7 @@ setWindowLeftSide = do
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
 -- | Position the window on the right 50% of the screen.
-setWindowRightSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowRightSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
 setWindowRightSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -50,7 +47,7 @@ setWindowRightSide = do
   setWindowSize (fromIntegral $ B.shift width (-1), fromIntegral height)
 
 -- | Fullscreen the browser window.
-setWindowFullScreen :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd, MonadLogger wd, MonadMask wd) => wd ()
+setWindowFullScreen :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
 setWindowFullScreen = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -61,7 +58,7 @@ setWindowFullScreen = do
   setWindowSize (fromIntegral width, fromIntegral height)
 
 -- | Get the screen resolution as (x, y, width, height). (The x and y coordinates may be nonzero in multi-monitor setups.)
-getScreenResolution :: (HasCallStack, MonadIO m, MonadMask m, MonadLogger m) => WebDriver -> m (Int, Int, Int, Int)
+getScreenResolution :: (MonadIO m) => WebDriver -> m (Int, Int, Int, Int)
 getScreenResolution (WebDriver {wdWebDriver=(_, _, _, _, _, maybeXvfbSession)}) = case maybeXvfbSession of
   Nothing -> liftIO getResolution
   Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum

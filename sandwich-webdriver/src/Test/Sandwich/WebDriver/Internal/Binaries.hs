@@ -12,11 +12,9 @@ module Test.Sandwich.WebDriver.Internal.Binaries (
 
 import Control.Exception
 import Control.Monad
-import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except
 import Data.String.Interpolate
 import qualified Data.Text as T

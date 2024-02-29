@@ -79,5 +79,5 @@ barSized n = (T.replicate darkBlocks $ T.singleton $ chr 9608)
         lightBlocks = round $ (100 - n) * multiplier
         multiplier = 0.5
 
-        roundTo :: (Fractional a, RealFrac a) => Integer -> a -> a
+        roundTo :: (RealFrac a) => Integer -> a -> a
         roundTo places num = (fromInteger $ round $ num * (10^places)) / (10.0^^places)

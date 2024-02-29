@@ -19,6 +19,7 @@ module Test.Sandwich.WebDriver.Video (
   ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Reader
 import Data.String.Interpolate
@@ -36,11 +37,11 @@ import Test.WebDriver.Commands
 import UnliftIO.Exception
 
 
-type BaseVideoConstraints context m = (MonadLoggerIO m, MonadReader context m, HasWebDriverContext context)
+type BaseVideoConstraints context m = (MonadLoggerIO m, MonadUnliftIO m, MonadReader context m, HasWebDriverContext context)
 
 -- | Wrapper around 'startVideoRecording' which uses the full screen dimensions.
 startFullScreenVideoRecording :: (
-  BaseVideoConstraints context m, MonadMask m
+  BaseVideoConstraints context m
   ) => FilePath -> VideoSettings -> m ProcessHandle
 startFullScreenVideoRecording path videoSettings = do
   sess <- getContext webdriver
@@ -54,7 +55,7 @@ startFullScreenVideoRecording path videoSettings = do
 
 -- | Wrapper around 'startVideoRecording' which uses WebDriver to find the rectangle corresponding to the browser.
 startBrowserVideoRecording :: (
-  BaseVideoConstraints context m, MonadThrow m, HasWebDriverSessionContext context, W.WebDriver m
+  BaseVideoConstraints context m, W.WebDriver m
   ) => FilePath -> VideoSettings -> m ProcessHandle
 startBrowserVideoRecording path videoSettings = do
   (x, y) <- getWindowPos
@@ -86,7 +87,7 @@ startVideoRecording path (width, height, x, y) vs = do
 
 -- | Gracefully stop the 'ProcessHandle' returned by 'startVideoRecording'.
 endVideoRecording :: (
-  MonadLoggerIO m, MonadCatch m
+  MonadLoggerIO m, MonadUnliftIO m
   ) => ProcessHandle -> m ()
 endVideoRecording p = do
   catchAny (liftIO $ interruptProcessGroupOf p)

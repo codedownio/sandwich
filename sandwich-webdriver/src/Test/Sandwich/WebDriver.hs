@@ -35,7 +35,6 @@ module Test.Sandwich.WebDriver (
   ) where
 
 import Control.Applicative
-import Control.Concurrent.MVar.Lifted
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -54,6 +53,7 @@ import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
+import UnliftIO.MVar
 
 
 -- | This is the main 'introduce' method for creating a WebDriver.
@@ -81,7 +81,7 @@ allocateWebDriver' runRoot wdOptions = do
   runNoLoggingT $ startWebDriver wdOptions runRoot
 
 -- | Clean up the given WebDriver.
-cleanupWebDriver :: (HasBaseContext context, BaseMonad m) => WebDriver -> ExampleT context m ()
+cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
@@ -94,7 +94,7 @@ cleanupWebDriver' sess = do
     stopWebDriver sess
 
 -- | Run a given example using a given Selenium session.
-withSession :: forall m context a. WebDriverMonad m context => Session -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withSession :: forall m context a. (WebDriverMonad m context) => Session -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
 withSession session (ExampleT readerMonad) = do
   WebDriver {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
@@ -124,7 +124,7 @@ withSession2 :: WebDriverMonad m context => ExampleT (ContextWithSession context
 withSession2 = withSession "session2"
 
 -- | Get all existing session names
-getSessions :: (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriver" WebDriver) => m [Session]
+getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
 getSessions = do
   WebDriver {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)

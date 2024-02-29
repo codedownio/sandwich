@@ -56,11 +56,9 @@ module Test.Sandwich.Hedgehog (
   ) where
 
 import Control.Applicative
-import UnliftIO.Exception
+import Control.Monad.Catch (MonadCatch)
 import Control.Monad.Free
 import Control.Monad.IO.Class
-import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Maybe
 import Data.String.Interpolate
 import GHC.Stack
@@ -72,6 +70,7 @@ import Hedgehog.Internal.Runner as HR
 import Hedgehog.Internal.Seed as Seed
 import Test.Sandwich
 import Test.Sandwich.Internal
+import UnliftIO.Exception
 
 #ifndef mingw32_HOST_OS
 import Test.Sandwich.Hedgehog.Render
@@ -97,6 +96,7 @@ data HedgehogParams = HedgehogParams {
 #endif
   } deriving (Show)
 
+defaultHedgehogParams :: HedgehogParams
 defaultHedgehogParams = HedgehogParams {
   hedgehogSize = Nothing
   , hedgehogSeed = Nothing
@@ -111,41 +111,42 @@ defaultHedgehogParams = HedgehogParams {
 
 newtype HedgehogContext = HedgehogContext HedgehogParams
   deriving Show
-hedgehogContext = Label :: Label "hedgehogContext" HedgehogContext
+hedgehogContext :: Label "hedgehogContext" HedgehogContext
+hedgehogContext = Label
 type HasHedgehogContext context = HasLabel context "hedgehogContext" HedgehogContext
 
 -- | Same as 'introduceHedgehog'' but with default 'HedgehogParams'.
-introduceHedgehog :: (MonadIO m, MonadBaseControl IO m)
+introduceHedgehog :: (MonadIO m)
   => SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 introduceHedgehog = introduceHedgehog'' "Introduce Hedgehog context" defaultHedgehogParams
 
 -- | Same as 'introduceHedgehog''' but with a default message.
-introduceHedgehog' :: (MonadIO m, MonadBaseControl IO m)
+introduceHedgehog' :: (MonadIO m)
   => HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 introduceHedgehog' = introduceHedgehog'' "Introduce Hedgehog context"
 
 -- | Introduce 'HedgehogParams' with configurable message.
-introduceHedgehog'' :: (MonadIO m, MonadBaseControl IO m)
+introduceHedgehog'' :: (MonadIO m)
   => String -> HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 introduceHedgehog'' msg params = introduce msg hedgehogContext (return $ HedgehogContext params) (const $ return ())
 
 
 -- | Same as 'introduceHedgehogCommandLineOptions'' but with default 'HedgehogParams'.
-introduceHedgehogCommandLineOptions :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceHedgehogCommandLineOptions :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 introduceHedgehogCommandLineOptions = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options" defaultHedgehogParams
 
 -- | Same as 'introduceHedgehogCommandLineOptions''' but with a default message.
-introduceHedgehogCommandLineOptions' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceHedgehogCommandLineOptions' :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
 introduceHedgehogCommandLineOptions' = introduceHedgehogCommandLineOptions'' @a "Introduce Hedgehog context with command line options"
 
 -- | Introduce 'HedgehogParams' with configurable message, overriding those parameters with any command line options passed.
-introduceHedgehogCommandLineOptions'' :: forall a m context. (MonadIO m, MonadBaseControl IO m, HasLabel context "commandLineOptions" (CommandLineOptions a), MonadReader context m)
+introduceHedgehogCommandLineOptions'' :: forall a m context. (MonadIO m, HasLabel context "commandLineOptions" (CommandLineOptions a))
   => String -> HedgehogParams -> SpecFree (LabelValue "hedgehogContext" HedgehogContext :> context) m () -> SpecFree context m ()
-introduceHedgehogCommandLineOptions'' msg args = introduce msg hedgehogContext getContext (const $ return ())
+introduceHedgehogCommandLineOptions'' msg args = introduce msg hedgehogContext getContext' (const $ return ())
   where
-    getContext = do
+    getContext' = do
       clo <- getCommandLineOptions @a
       return $ HedgehogContext $ addCommandLineOptions clo args
 
@@ -170,7 +171,7 @@ prop msg p = it msg $ do
   let size = fromMaybe 0 hedgehogSize
   seed <- maybe Seed.random return hedgehogSeed
 
-  finalReport <- checkReport config size seed p $ \progressReport@(Report {..}) -> do
+  finalReport <- checkReport config size seed p $ \progressReport@(Report {}) -> do
     -- image <- (return . renderHedgehogToImage) =<< ppProgress Nothing progressReport
 
     progress <- renderProgress DisableColor Nothing progressReport

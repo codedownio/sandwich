@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6f60d0ac0ceda196b8e70c79a5da77af10c4d52a9cba4791ffb053f667b9600f
+-- hash: c5b28ce371e2107a70ce7c86f1dd571d891de77ba47c359fb9de1030286263aa
 
 name:           sandwich-quickcheck
 version:        0.1.0.7
@@ -52,6 +52,7 @@ library
     , text
     , time
     , unliftio
+    , unliftio-core
   default-language: Haskell2010
 
 test-suite sandwich-quickcheck-test
@@ -81,4 +82,5 @@ test-suite sandwich-quickcheck-test
     , text
     , time
     , unliftio
+    , unliftio-core
   default-language: Haskell2010

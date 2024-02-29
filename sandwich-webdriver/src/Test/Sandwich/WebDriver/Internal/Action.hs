@@ -3,12 +3,10 @@
 module Test.Sandwich.WebDriver.Internal.Action where
 
 import Control.Monad
-import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as M
 import Data.String.Interpolate
 import GHC.Stack

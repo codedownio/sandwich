@@ -30,9 +30,9 @@ module Test.Sandwich.Formatters.Slack (
 import Control.Applicative
 import Control.Concurrent
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
 import qualified Data.Aeson as A
 import Data.Foldable
@@ -50,6 +50,7 @@ import Test.Sandwich.Formatters.Slack.Internal.Markdown
 import Test.Sandwich.Formatters.Slack.Internal.ProgressBar
 import Test.Sandwich.Formatters.Slack.Internal.Types
 import Test.Sandwich.Internal
+import UnliftIO.Exception
 
 
 data SlackFormatter = SlackFormatter {
@@ -121,7 +122,7 @@ addCommandLineOptions (CommandLineOptions {optSlackOptions=(CommandLineSlackOpti
   , slackFormatterMaxMessageSize = optSlackMaxMessageSize <|> slackFormatterMaxMessageSize
   }
 
-runApp :: (MonadIO m, MonadCatch m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
+runApp :: (MonadUnliftIO m, MonadLogger m) => SlackFormatter -> [RunNode BaseContext] -> BaseContext -> m ()
 runApp sf@(SlackFormatter {..}) rts _bc = do
   startTime <- liftIO getCurrentTime
 
@@ -159,12 +160,13 @@ runApp sf@(SlackFormatter {..}) rts _bc = do
              loop
 
 
+publishTree :: SlackFormatter -> M.Map Int (T.Text, Int) -> NominalDiffTime -> [RunNodeWithStatus context Status l t] -> ProgressBarInfo
 publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
   where
     pbi = ProgressBarInfo {
       progressBarInfoTopMessage = T.pack <$> (slackFormatterTopMessage sf)
       , progressBarInfoBottomMessage = Just fullBottomMessage
-      , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending + failed) / (fromIntegral total)))
+      , progressBarInfoSize = Just (100.0 * (fromIntegral (succeeded + pending' + failed) / (fromIntegral total)))
       , progressBarInfoAttachments = Nothing
       , progressBarInfoBlocks = Just $ case slackFormatterMaxFailures sf of
           Nothing -> mconcat blocks
@@ -179,7 +181,7 @@ publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
     fullBottomMessage = case runningMessage of
       Nothing -> bottomMessage
       Just t -> T.pack t <> "\n" <> bottomMessage
-    bottomMessage = [i|#{succeeded} succeeded, #{failed} failed, #{pending} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
+    bottomMessage = [i|#{succeeded} succeeded, #{failed} failed, #{pending'} pending, #{totalRunningTests} running of #{total} (#{formatNominalDiffTime elapsed} elapsed)|]
 
     blocks = catMaybes $ flip concatMap tree $ extractValuesControlRecurse $ \case
       -- Recurse into grouping nodes, because their failures are actually just derived from child failures
@@ -192,12 +194,13 @@ publishTree sf idToLabelAndVisibilityThreshold elapsed tree = pbi
 
     total = countWhere isItBlock tree
     succeeded = countWhere isSuccessItBlock tree
-    pending = countWhere isPendingItBlock tree
+    pending' = countWhere isPendingItBlock tree
     failed = countWhere isFailedItBlock tree
     totalRunningTests = countWhere isRunningItBlock tree
     -- totalNotStartedTests = countWhere isNotStartedItBlock tree
 
 
+singleFailureBlocks :: SlackFormatter -> M.Map Int (T.Text, Int) -> RunNodeWithStatus context s l t -> FailureReason -> [A.Value]
 singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
   Just $ markdownSectionWithLines [":red_circle: *" <> label <> "*"]
 
@@ -235,10 +238,13 @@ singleFailureBlocks sf idToLabelAndVisibilityThreshold node reason = catMaybes [
         _ -> Just l
     label = T.intercalate ", " $ mapMaybe filterFn $ toList $ runTreeAncestors $ runNodeCommon node
 
+extraFailuresBlock :: Int -> A.Value
 extraFailuresBlock numExtraFailures = markdownSectionWithLines [[i|+ #{numExtraFailures} more failure|]]
 
+markdownBlockWithLines :: [T.Text] -> A.Value
 markdownBlockWithLines ls = A.object [("type", A.String "mrkdwn"), ("text", A.String $ T.unlines ls)]
 
+markdownSectionWithLines :: [T.Text] -> A.Value
 markdownSectionWithLines ls = A.object [("type", A.String "section"), ("text", markdownBlockWithLines ls)]
 
 addToLastLine :: [T.Text] -> T.Text -> [T.Text]

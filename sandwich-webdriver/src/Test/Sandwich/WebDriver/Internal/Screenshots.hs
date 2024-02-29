@@ -8,7 +8,6 @@ module Test.Sandwich.WebDriver.Internal.Screenshots where
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -26,5 +25,5 @@ saveScreenshots screenshotName (WebDriver {..}) resultsDir = do
   forM_ (M.toList sessionMap) $ \(browser, sess) ->
     handle (\(e :: HttpException) -> case e of
                (HttpExceptionRequest _ content) -> liftIO $ putStrLn [i|HttpException when trying to take a screenshot: '#{content}'|]
-               e -> liftIO $ putStrLn [i|HttpException when trying to take a screenshot: '#{e}'|])
+               e' -> liftIO $ putStrLn [i|HttpException when trying to take a screenshot: '#{e'}'|])
            (runWD sess $ saveScreenshot $ resultsDir </> [i|#{browser}_#{screenshotName}.png|])

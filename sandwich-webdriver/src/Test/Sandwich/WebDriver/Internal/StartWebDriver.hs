@@ -13,6 +13,7 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import qualified Data.Aeson as A
 import Data.Default
@@ -57,7 +58,7 @@ fromText = id
 #endif
 
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
 startWebDriver :: Constraints m => WdOptions -> FilePath -> m WebDriver
@@ -117,6 +118,9 @@ startWebDriver wdOptions@(WdOptions {..}) runRoot = do
     liftIO $ createDirectoryIfMissing True webdriverProcessRoot
     startWebDriver' wdOptions webdriverName webdriverProcessRoot downloadDir seleniumPath driverArgs maybeXvfbSession javaEnv
 
+startWebDriver' :: (
+  MonadLogger m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  ) => WdOptions -> T.Text -> [Char] -> [Char] -> [Char] -> [String] -> Maybe XvfbSession -> Maybe [(String, String)] -> m WebDriver
 startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriverName webdriverRoot downloadDir seleniumPath driverArgs maybeXvfbSession javaEnv = do
   port <- liftIO findFreePortOrException
   let wdCreateProcess = (proc "java" (driverArgs <> ["-jar", seleniumPath
@@ -150,7 +154,7 @@ startWebDriver' wdOptions@(WdOptions {capabilities=capabilities', ..}) webdriver
         t | readyMessage `T.isInfixOf` t -> return True
         _ -> return False
   unless success $ liftIO $ do
-    interruptProcessGroupOf p >> waitForProcess p
+    _ <- interruptProcessGroupOf p >> waitForProcess p
     error [i|Selenium server failed to start after 60 seconds|]
 
   capabilities <- configureHeadlessCapabilities wdOptions runMode capabilities'
@@ -211,18 +215,18 @@ configureHeadlessCapabilities wdOptions (RunHeadless (HeadlessConfig {..})) caps
     (w, h) = fromMaybe (1920, 1080) headlessResolution
 
 -- | Add headless configuration to the Firefox capabilities
-configureHeadlessCapabilities _ (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=(W.Firefox {..}), W.additionalCaps=ac}) = return (caps { W.additionalCaps = additionalCaps })
+configureHeadlessCapabilities _ (RunHeadless (HeadlessConfig {})) caps@(W.Capabilities {W.browser=(W.Firefox {}), W.additionalCaps=ac}) = return (caps { W.additionalCaps = additionalCaps })
   where
     additionalCaps = case L.findIndex (\x -> fst x == "moz:firefoxOptions") ac of
       Nothing -> ("moz:firefoxOptions", A.object [("args", A.Array ["-headless"])]) : ac
-      Just i -> let ffOptions' = snd (ac !! i)
-                               & ensureKeyExists "args" (A.Array [])
-                               & ((key "args" . _Array) %~ addHeadlessArg) in
+      Just i' -> let ffOptions' = snd (ac !! i')
+                                & ensureKeyExists "args" (A.Array [])
+                                & ((key "args" . _Array) %~ addHeadlessArg) in
         L.nubBy (\x y -> fst x == fst y) (("moz:firefoxOptions", ffOptions') : ac)
 
     ensureKeyExists :: T.Text -> A.Value -> A.Value -> A.Value
-    ensureKeyExists key _ val@(A.Object (HM.lookup (fromText key) -> Just _)) = val
-    ensureKeyExists key defaultVal (A.Object m@(HM.lookup (fromText key) -> Nothing)) = A.Object (HM.insert (fromText key) defaultVal m)
+    ensureKeyExists key' _ val@(A.Object (HM.lookup (fromText key') -> Just _)) = val
+    ensureKeyExists key' defaultVal (A.Object m@(HM.lookup (fromText key') -> Nothing)) = A.Object (HM.insert (fromText key') defaultVal m)
     ensureKeyExists _ _ _ = error "Expected Object in ensureKeyExists"
 
     addHeadlessArg :: V.Vector A.Value -> V.Vector A.Value
@@ -233,6 +237,9 @@ configureHeadlessCapabilities _ (RunHeadless {}) browser = error [i|Headless mod
 configureHeadlessCapabilities _ _ browser = return browser
 
 
+configureDownloadCapabilities :: (
+  MonadIO m, MonadBaseControl IO m
+  ) => [Char] -> W.Capabilities -> m W.Capabilities
 configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Firefox {..})}) = do
   case ffProfile of
     Nothing -> return ()

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Sandwich.Hedgehog.Render (
   renderHedgehogToImage
@@ -11,7 +11,7 @@ module Test.Sandwich.Hedgehog.Render (
 import Data.Function
 import qualified Data.List as L
 import qualified Data.Text as T
-import Graphics.Vty.Attributes
+import Graphics.Vty.Attributes hiding (currentAttr)
 import Graphics.Vty.Image
 import Hedgehog.Internal.Report
 import Text.PrettyPrint.Annotated.WL (Doc)
@@ -39,7 +39,7 @@ renderHedgehogToTokens doc =
     joinAdjacentStrings [] = []
 
     splitNewlines :: [Token] -> [Token]
-    splitNewlines ((Str s):xs) = [Str s | s <- parts, s /= ""] <> splitNewlines xs
+    splitNewlines ((Str s):xs) = [Str s' | s' <- parts, s' /= ""] <> splitNewlines xs
       where parts = L.intersperse "\n" $ T.splitOn "\n" s
     splitNewlines (x:xs) = x : splitNewlines xs
     splitNewlines [] = []

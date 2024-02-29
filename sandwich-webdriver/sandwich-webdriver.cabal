@@ -91,6 +91,7 @@ library
     , time
     , transformers
     , unliftio
+    , unliftio-core
     , unordered-containers
     , vector
     , webdriver
@@ -168,6 +169,7 @@ executable sandwich-webdriver-exe
     , time
     , transformers
     , unliftio
+    , unliftio-core
     , unordered-containers
     , vector
     , webdriver
@@ -246,6 +248,7 @@ test-suite sandwich-webdriver-test
     , time
     , transformers
     , unliftio
+    , unliftio-core
     , unordered-containers
     , vector
     , webdriver

@@ -74,4 +74,5 @@ getGeckoDriverDownloadUrl (GeckoDriverVersion (x, y, z)) Windows = [i|https://gi
 
 -- * Util
 
+tReadMay :: T.Text -> Maybe Int
 tReadMay = readMay . T.unpack

@@ -91,7 +91,7 @@ getChromeDriverVersion' (ChromeVersion (w, x, y, z))
              (do
                  result :: T.Text <- (TL.toStrict . TL.decodeUtf8) <$> simpleHttp url
                  case T.splitOn "." result of
-                   [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ Right $ ChromeDriverVersionTuple (w, x, y, z)
+                   [tReadMay -> Just w', tReadMay -> Just x', tReadMay -> Just y', tReadMay -> Just z'] -> return $ Right $ ChromeDriverVersionTuple (w', x', y', z')
                    _ -> return $ Left [i|Failed to parse chromedriver version from string: '#{result}'|]
              )
   | otherwise = do
@@ -107,15 +107,15 @@ getChromeDriverVersion' (ChromeVersion (w, x, y, z))
                      let matchingVersions = [v | v@(Version {..}) <- versions response
                                                , [i|#{w}.#{x}.#{y}.|] `T.isPrefixOf` version]
 
-                     let exactMatch = headMay [x | x@(Version {..}) <- matchingVersions
-                                               , [i|#{w}.#{x}.#{y}.#{z}|] == version]
+                     let exactMatch = headMay [v | v@(Version {..}) <- matchingVersions
+                                                 , [i|#{w}.#{x}.#{y}.#{z}|] == version]
 
                      let versionList :: [Version]
-                         versionList = (case exactMatch of Nothing -> id; Just x -> (x :)) matchingVersions
+                         versionList = (case exactMatch of Nothing -> id; Just v -> (v :)) matchingVersions
 
                      case headMay (mapMaybe extractSuitableChromeDriver versionList) of
                        Nothing -> return $ Left [i|Couldn't find chromedriver associated with any Chrome release|]
-                       Just (tup, url) -> return $ Right $ ChromeDriverVersionExactUrl tup url
+                       Just (tup, url') -> return $ Right $ ChromeDriverVersionExactUrl tup url'
              )
 
 extractSuitableChromeDriver :: Version -> Maybe ((Int, Int, Int, Int), Text)
@@ -154,4 +154,5 @@ getChromeDriverDownloadUrl (ChromeDriverVersionExactUrl _ url) _ = url
 
 -- * Util
 
+tReadMay :: T.Text -> Maybe Int
 tReadMay = readMay . T.unpack

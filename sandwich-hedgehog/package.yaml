@@ -15,6 +15,7 @@ extra-source-files:
 
 dependencies:
 - base < 5
+- exceptions
 - free
 - hedgehog
 - monad-control
@@ -24,6 +25,7 @@ dependencies:
 - text
 - time
 - unliftio
+- unliftio-core
 - wl-pprint-annotated
 - vty
 

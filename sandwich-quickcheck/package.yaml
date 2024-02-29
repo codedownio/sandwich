@@ -23,6 +23,7 @@ dependencies:
 - text
 - time
 - unliftio
+- unliftio-core
 
 default-extensions:
 - OverloadedStrings

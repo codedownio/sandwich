@@ -3,9 +3,7 @@
 module Test.Sandwich.WebDriver.Internal.Util where
 
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import qualified Data.Text as T
 import System.Directory

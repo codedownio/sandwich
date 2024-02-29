@@ -3,6 +3,7 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.WebDriver.Types (
   ExampleWithWebDriver
@@ -23,8 +24,9 @@ module Test.Sandwich.WebDriver.Types (
   , WebDriverSessionMonad
   ) where
 
-import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
@@ -49,7 +51,7 @@ instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession) => W.
     liftIO $ writeIORef sessVar sess
 
 -- Implementation copied from that of the WD monad implementation
-instance (MonadIO m, MonadThrow m, HasLabel context "webdriverSession" WebDriverSession, MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
+instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession, MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
   doCommand method path args = WI.mkRequest method path args
     >>= WI.sendHTTPRequest
     >>= either throwIO return
@@ -64,7 +66,7 @@ hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) I
 hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
-type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadIO m, MonadBaseControl IO m)
+type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadUnliftIO m, MonadBaseControl IO m)
 type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriverSession" WebDriverSession)
-type BaseMonad m = (HasCallStack, MonadIO m, MonadCatch m, MonadBaseControl IO m, MonadMask m)
+type BaseMonad m = (HasCallStack, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)

@@ -17,6 +17,7 @@ getMacScreenNumber = undefined
 #endif
 
 
+getVideoArgs :: (MonadIO m) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m CreateProcess
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
 #ifdef linux_HOST_OS
   displayNum <- case maybeXvfbSession of

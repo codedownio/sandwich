@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: edb46ab628d2fbd67e7d2aaf706c9613379157b0dc955e7dc14e7793778b163e
+-- hash: fcdf5ae347bc0a4c0ad7121ecde0a71859cb7369fa2fe48e8e16a82ecc86b628
 
 name:           sandwich-slack
 version:        0.1.2.0
@@ -66,6 +66,7 @@ library
     , text
     , time
     , unliftio
+    , unliftio-core
     , vector
     , wreq
   default-language: Haskell2010
@@ -105,6 +106,7 @@ executable sandwich-slack-exe
     , text
     , time
     , unliftio
+    , unliftio-core
     , vector
     , wreq
   default-language: Haskell2010
@@ -144,6 +146,7 @@ test-suite sandwich-slack-test
     , text
     , time
     , unliftio
+    , unliftio-core
     , vector
     , wreq
   default-language: Haskell2010
