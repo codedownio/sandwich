@@ -11,10 +11,10 @@ import Test.Sandwich
 pauseSeconds :: (MonadIO m) => Double -> m ()
 pauseSeconds s = liftIO $ threadDelay $ round (s * 1000000)
 
-pauseRandomAndSucceed :: (MonadIO m, MonadThrow m) => ExampleT context m ()
+pauseRandomAndSucceed :: (MonadIO m) => ExampleT context m ()
 pauseRandomAndSucceed = pauseRandom >> 2 `shouldBe` 2
 
-pauseRandomAndFail :: (MonadIO m, MonadThrow m) => ExampleT context m ()
+pauseRandomAndFail :: (MonadIO m) => ExampleT context m ()
 pauseRandomAndFail = pauseRandom >> 2 `shouldBe` 3
 
 pauseRandom :: (MonadIO m) => m ()
