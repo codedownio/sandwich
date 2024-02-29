@@ -37,7 +37,6 @@ dependencies:
 - safe
 - sandwich >= 0.1.0.3
 - string-interpolate
-- temporary
 - text
 - time
 - transformers
@@ -70,6 +69,8 @@ library:
   when:
   - condition: "!os(windows)"
     source-dirs: unix-src
+    dependencies:
+    - temporary
   # exposed-modules:
   #   - Test.Sandwich.Webdriver
   #   - Test.Sandwich.Webdriver.Video

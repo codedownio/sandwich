@@ -7,7 +7,6 @@ dependencies:
 - optparse-applicative
 - sandwich
 - string-interpolate
-- time
 
 default-extensions:
 - OverloadedStrings

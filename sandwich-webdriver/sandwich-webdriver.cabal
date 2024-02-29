@@ -86,7 +86,6 @@ library
     , safe
     , sandwich >=0.1.0.3
     , string-interpolate
-    , temporary
     , text
     , time
     , transformers
@@ -117,6 +116,8 @@ library
         Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
     hs-source-dirs:
         unix-src
+    build-depends:
+        temporary
 
 executable sandwich-webdriver-exe
   main-is: Main.hs
@@ -164,7 +165,6 @@ executable sandwich-webdriver-exe
     , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate
-    , temporary
     , text
     , time
     , transformers
@@ -243,7 +243,6 @@ test-suite sandwich-webdriver-test
     , sandwich >=0.1.0.3
     , sandwich-webdriver
     , string-interpolate
-    , temporary
     , text
     , time
     , transformers

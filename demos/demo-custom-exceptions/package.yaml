@@ -7,7 +7,6 @@ dependencies:
 - brick
 - sandwich
 - text
-- time
 - vty
 
 default-extensions:

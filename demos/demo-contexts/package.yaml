@@ -7,7 +7,6 @@ dependencies:
 - sandwich
 - sandwich-demos
 - string-interpolate
-- time
 - unliftio
 
 default-extensions:

@@ -16,12 +16,9 @@ extra-source-files:
 dependencies:
 - base < 5
 - free
-- monad-control
-- mtl
 - QuickCheck
 - sandwich >= 0.1.0.4
 - text
-- time
 - unliftio
 - unliftio-core
 

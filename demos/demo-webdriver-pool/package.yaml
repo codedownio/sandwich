@@ -5,12 +5,10 @@ license:             BSD3
 dependencies:
 - base
 - filepath
-- monad-control
 - resource-pool
 - sandwich
 - sandwich-webdriver
 - string-interpolate
-- time
 - unliftio
 - unliftio-core
 - webdriver

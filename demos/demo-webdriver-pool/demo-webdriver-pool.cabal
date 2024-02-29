@@ -29,12 +29,10 @@ executable demo-webdriver-pool
   build-depends:
       base
     , filepath
-    , monad-control
     , resource-pool
     , sandwich
     , sandwich-webdriver
     , string-interpolate
-    , time
     , unliftio
     , unliftio-core
     , webdriver

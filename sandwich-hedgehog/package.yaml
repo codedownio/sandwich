@@ -18,14 +18,11 @@ dependencies:
 - exceptions
 - free
 - hedgehog
-- monad-control
-- mtl
 - sandwich >= 0.1.0.4
 - string-interpolate
 - text
 - time
 - unliftio
-- unliftio-core
 - wl-pprint-annotated
 - vty
 

@@ -9,7 +9,6 @@ dependencies:
 - sandwich
 - sandwich-webdriver
 - string-interpolate
-- time
 - webdriver
 
 default-extensions:

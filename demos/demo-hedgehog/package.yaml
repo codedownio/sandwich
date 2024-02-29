@@ -8,7 +8,6 @@ dependencies:
 - sandwich
 - sandwich-hedgehog
 - string-interpolate
-- time
 
 default-extensions:
 - OverloadedStrings

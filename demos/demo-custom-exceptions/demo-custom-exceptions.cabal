@@ -31,6 +31,5 @@ executable demo-custom-exceptions
     , brick
     , sandwich
     , text
-    , time
     , vty
   default-language: Haskell2010
