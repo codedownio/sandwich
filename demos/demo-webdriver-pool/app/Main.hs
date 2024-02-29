@@ -1,15 +1,14 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main where
 
 import Control.Concurrent
-import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -22,6 +21,7 @@ import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Video
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands
+import UnliftIO.Exception
 
 
 -- * Introducing the pool

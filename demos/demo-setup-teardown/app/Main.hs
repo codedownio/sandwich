@@ -4,12 +4,12 @@
 module Main where
 
 import Control.Concurrent
-import Control.Exception.Lifted
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Data.String.Interpolate
 import Test.Sandwich
+import UnliftIO.Exception
 
 data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
   deriving Show

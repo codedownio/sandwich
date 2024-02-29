@@ -1,13 +1,14 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+
 module Main where
 
 import Common
-import Control.Exception.Lifted
 import Control.Monad
 import Data.String.Interpolate
 import Test.Sandwich
+import UnliftIO.Exception
 
 data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
   deriving Show

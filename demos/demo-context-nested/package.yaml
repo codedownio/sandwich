@@ -4,12 +4,13 @@ license:             BSD3
 
 dependencies:
 - base
-- lifted-base
 - monad-control
 - sandwich
 - sandwich-demos
 - string-interpolate
 - time
+- unliftio
+- unliftio-core
 
 default-extensions:
 - OverloadedStrings

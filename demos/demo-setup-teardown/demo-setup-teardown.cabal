@@ -28,8 +28,8 @@ executable demo-setup-teardown
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
-    , lifted-base
     , monad-logger
     , sandwich
     , string-interpolate
+    , unliftio
   default-language: Haskell2010

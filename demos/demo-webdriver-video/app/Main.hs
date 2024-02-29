@@ -4,7 +4,6 @@
 module Main where
 
 import Control.Concurrent
-import Control.Exception.Lifted
 import Control.Monad.IO.Class
 import Data.String.Interpolate
 import Data.Time.Clock
@@ -14,6 +13,7 @@ import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Video
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands
+import UnliftIO.Exception
 
 
 manualVideo :: TopSpec

@@ -4,10 +4,10 @@ license:             BSD3
 
 dependencies:
 - base
-- lifted-base
 - monad-logger
 - sandwich
 - string-interpolate
+- unliftio
 
 default-extensions:
 - OverloadedStrings

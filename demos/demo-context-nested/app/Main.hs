@@ -1,20 +1,18 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
+
 module Main where
 
 import Common
-import Control.Exception.Lifted
 import Control.Monad
+import Control.Monad.IO.Unlift
 import Data.String.Interpolate
 import Test.Sandwich
-
--- For the commented type signature
-import Control.Monad.IO.Class
-import Control.Monad.Trans.Control (MonadBaseControl)
+import UnliftIO.Exception
 
 -- * Database
 
@@ -33,7 +31,7 @@ introduceDatabase = introduceWith "Introduce database" database $ \action ->
 data Server = Server DatabaseContext deriving Show
 server = Label :: Label "server" Server
 
-introduceServer :: (HasDatabase context, MonadIO m, MonadBaseControl IO m)
+introduceServer :: (HasDatabase context, MonadUnliftIO m)
   => SpecFree (LabelValue "server" Server :> context) m () -> SpecFree context m ()
 introduceServer = introduceWith "Introduce server" server $ \action -> do
   bracket (do
