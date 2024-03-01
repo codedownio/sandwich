@@ -1,9 +1,9 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
 
 module TestUtil where
 
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Writer
@@ -13,10 +13,11 @@ import GHC.Stack
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Internal
+import UnliftIO.Exception
 
 -- * Main function
 
-mainWith :: (HasCallStack) => WriterT [SomeException] IO () -> IO ()
+mainWith :: (HasCallStack) => (HasCallStack => WriterT [SomeException] IO ()) -> IO ()
 mainWith tests = do
   results <- execWriterT tests
 
@@ -67,10 +68,10 @@ getResultsAndMessages fixedTree = (results, msgs)
 
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
-getStatuses :: (HasCallStack) => RunNodeWithStatus context s l t -> [(String, s)]
+getStatuses :: RunNodeWithStatus context s l t -> [(String, s)]
 getStatuses = extractValues $ \node -> (runTreeLabel $ runNodeCommon node, runTreeStatus $ runNodeCommon node)
 
-getLogs :: (HasCallStack) => RunNodeWithStatus context s l t -> [l]
+getLogs :: RunNodeWithStatus context s l t -> [l]
 getLogs = extractValues $ \node -> runTreeLogs $ runNodeCommon node
 
 statusToResult :: (HasCallStack) => (String, Status) -> Result

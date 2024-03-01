@@ -24,7 +24,6 @@ import qualified Control.Monad.Catch as MC
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import qualified Data.Map as M
 import Data.String.Interpolate
@@ -94,13 +93,13 @@ defaultMinioContextOptions = MinioContextOptions {
 -- * Functions
 
 introduceContainerMinioS3Server :: (
-  HasBaseContext context, MonadMask m, MonadBaseControl IO m, MonadUnliftIO m
+  HasBaseContext context, MonadMask m, MonadUnliftIO m
   ) => MinioContextOptions -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> context) m () -> SpecFree context m ()
 introduceContainerMinioS3Server options = introduceWith "minio S3 server" fakeS3Server $ \action -> do
   withContainerMinioS3Server options action
 
 withContainerMinioS3Server :: (
-  MonadLoggerIO m, MonadMask m, HasBaseContext context, MonadReader context m, MonadBaseControl IO m, MonadUnliftIO m
+  MonadLoggerIO m, MonadMask m, HasBaseContext context, MonadReader context m, MonadUnliftIO m
   ) => MinioContextOptions -> (FakeS3Server -> m [Result]) -> m ()
 withContainerMinioS3Server (MinioContextOptions {..}) action = do
   folder <- getCurrentFolder >>= \case

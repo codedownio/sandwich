@@ -61,9 +61,7 @@ library
     , http-client
     , http-conduit
     , http-types
-    , lifted-base
     , minio-hs
-    , monad-control
     , monad-logger
     , mtl
     , network

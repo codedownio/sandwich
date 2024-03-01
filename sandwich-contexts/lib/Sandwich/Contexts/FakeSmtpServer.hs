@@ -20,7 +20,6 @@ import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import qualified Data.Aeson as A
 import qualified Data.Aeson.TH as A
@@ -65,7 +64,7 @@ fakeSmtpServer = Label
 -- * Functions
 
 introduceFakeSmtpServer :: (
-  HasBaseContext context, MonadMask m, MonadBaseControl IO m, MonadUnliftIO m
+  HasBaseContext context, MonadMask m, MonadUnliftIO m
   ) => Bool -> Bool -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
 introduceFakeSmtpServer auth allowInsecureLogin = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer auth allowInsecureLogin)
 
@@ -74,7 +73,7 @@ authUsername = "user"
 authPassword = "pass"
 
 withFakeSMTPServer :: (
-  HasBaseContext context, MonadReader context m, MonadLoggerIO m, MonadThrow m, MonadBaseControl IO m, MonadUnliftIO m
+  HasBaseContext context, MonadReader context m, MonadLoggerIO m, MonadThrow m, MonadUnliftIO m
   ) => Bool -> Bool -> (FakeSmtpServer -> m [Result]) -> m ()
 withFakeSMTPServer auth allowInsecureLogin action = do
   folder <- getCurrentFolder >>= \case

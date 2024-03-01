@@ -51,9 +51,7 @@ library:
   - http-conduit
   - http-types
   - HTTP
-  - lifted-base
   - minio-hs
-  - monad-control
   - monad-logger
   - mtl
   - network

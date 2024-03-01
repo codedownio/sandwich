@@ -16,7 +16,6 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
@@ -64,7 +63,7 @@ data PostgresDatabaseTestContext = PostgresDatabaseTestContext {
 -- * Functions
 
 withPostgresContainer :: (
-  HasCallStack, MonadUnliftIO m, MonadBaseControl IO m, MonadLoggerIO m, MonadMask m, MonadReader context m, HasBaseContext context
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadMask m, MonadReader context m, HasBaseContext context
   ) => PostgresContextOptions -> (PostgresDatabaseTestContext -> m a) -> m a
 withPostgresContainer options action = do
   bracket (createPostgresDatabase options)

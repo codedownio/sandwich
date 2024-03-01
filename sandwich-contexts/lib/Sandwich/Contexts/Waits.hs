@@ -1,17 +1,14 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Sandwich.Contexts.Waits where
 
 import Control.Concurrent
-import qualified Control.Exception.Lifted as EL
 import Control.Monad
-import Control.Monad.Catch
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Retry
 import Data.Maybe
 import Data.String.Interpolate
 import Data.Time
@@ -23,16 +20,16 @@ import Network.HTTP.Types.Status (statusCode)
 import Network.Stream hiding (Result)
 import Relude
 import System.Timeout (Timeout)
-import qualified System.Timeout.Lifted as ST
 import Test.Sandwich
 import UnliftIO.Exception
+import UnliftIO.Retry
 import UnliftIO.Timeout
 
 
 timePerRequest :: Int
 timePerRequest = 10000000
 
-type WaitConstraints m = (HasCallStack, MonadLogger m, MonadIO m, MonadBaseControl IO m, MonadThrow m)
+type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadThrow m)
 
 data VerifyCerts = YesVerify | NoVerify
   deriving (Eq)
@@ -52,7 +49,7 @@ waitUntilStatusCode code verifyCerts url = do
   debug [i|Beginning waitUntilStatusCode request to #{url}|]
   req <- parseRequest url
   man <- liftIO $ newManager (if verifyCerts == YesVerify then tlsManagerSettings else tlsNoVerifySettings)
-  ST.timeout timePerRequest (handleException $ (Right <$>) $ httpLbs req man) >>= \case
+  timeout timePerRequest (handleException $ (Right <$>) $ httpLbs req man) >>= \case
     Just (Right resp)
       | statusCode (responseStatus resp) == statusToInt code -> return ()
       | otherwise -> do
@@ -66,7 +63,7 @@ waitUntilStatusCode code verifyCerts url = do
       retry
   where
     retry = liftIO (threadDelay 1_000_000) >> waitUntilStatusCode code verifyCerts url
-    handleException = EL.handle (\(e :: EL.SomeException) -> return $ Left $ ErrorMisc [i|Exception in waitUntilStatusCode: #{e}|])
+    handleException = handle (\(e :: SomeException) -> return $ Left $ ErrorMisc [i|Exception in waitUntilStatusCode: #{e}|])
     statusToInt (x, y, z) = 100 * x + 10 * y + z
 
 waitUntil200 :: (WaitConstraints m) => String -> m ()
@@ -79,7 +76,7 @@ waitUntil200WithTimeout = waitUntil200WithTimeout' 30_000_000
 -- | Same as waitUntil200WithTimeout, but with a customizable timeout
 waitUntil200WithTimeout' :: (WaitConstraints m) => Int -> String -> m ()
 waitUntil200WithTimeout' timeInMicroseconds url = do
-  maybeSuccess <- ST.timeout timeInMicroseconds $ waitUntil200 url
+  maybeSuccess <- timeout timeInMicroseconds $ waitUntil200 url
   when (isNothing maybeSuccess) $
     expectationFailure [i|Failed to connect to URL "#{url}" in waitUntil200WithTimeout'...|]
 
@@ -89,14 +86,14 @@ waitUntilStatusCodeWithTimeout code = waitUntilStatusCodeWithTimeout' 30000000 c
 -- | Same as waitUntilStatusCodeWithTimeout, but with a customizable timeout
 waitUntilStatusCodeWithTimeout' :: (WaitConstraints m) => Int -> (Int, Int, Int) -> VerifyCerts -> String -> m ()
 waitUntilStatusCodeWithTimeout' timeInMicroseconds code verifyCerts url = do
-  maybeSuccess <- ST.timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url
+  maybeSuccess <- timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url
   when (isNothing maybeSuccess) $
     expectationFailure [i|Failed to connect to URL "#{url}" in waitUntilStatusCodeWithTimeout'...|]
 
 
 -- | Keep trying an action up to a timeout while it
 -- a) fails with a FailureReason in the MonadError monad
-waitUntil :: forall m a. (HasCallStack, MonadMask m, MonadUnliftIO m) => Double -> m a -> m a
+waitUntil :: forall m a. (HasCallStack, MonadUnliftIO m) => Double -> m a -> m a
 waitUntil timeInSeconds action = do
   startTime <- liftIO getCurrentTime
 
