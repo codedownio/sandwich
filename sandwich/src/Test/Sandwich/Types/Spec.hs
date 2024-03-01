@@ -227,7 +227,15 @@ data SpecCommand context m next where
     , nodeOptions :: NodeOptions
     , label :: String
     , contextLabel :: Label l intro
+#if MIN_VERSION_base(4,16,0)
+    -- Only include HasCallStack here for GHC 9.2 or greater.
+    -- Ran into a problem in the RunTree stuff with
+    -- "Cannot instantiate unification variable ‘a0’
+    -- with a type involving polytypes:"
+    , introduceAction :: (HasCallStack => intro -> ExampleT context m [Result]) -> ExampleT context m ()
+#else
     , introduceAction :: (intro -> ExampleT context m [Result]) -> ExampleT context m ()
+#endif
     , subspecAugmented :: SpecFree (LabelValue l intro :> context) m ()
     , next :: next
     } -> SpecCommand context m next
@@ -425,7 +433,11 @@ introduceWith :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if MIN_VERSION_base(4,16,0)
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -440,7 +452,11 @@ introduceWith' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if MIN_VERSION_base(4,16,0)
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -457,7 +473,11 @@ introduceWith'' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if MIN_VERSION_base(4,16,0)
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
