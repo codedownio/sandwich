@@ -15,8 +15,6 @@ module Sandwich.Contexts.FakeSmtpServer (
   , authPassword
   ) where
 
-import Sandwich.Contexts.Util.Aeson
-import Sandwich.Contexts.Waits
 import Control.Monad
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Unlift
@@ -30,6 +28,8 @@ import Data.String.Interpolate
 import Network.HTTP.Client
 import Network.Socket (PortNumber)
 import Relude
+import Sandwich.Contexts.Util.Aeson
+import Sandwich.Contexts.Waits
 import System.FilePath
 import System.IO
 import System.Process
