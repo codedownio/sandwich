@@ -5,15 +5,19 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Sandwich.Contexts.FakeSmtpServer (
-  introduceFakeSmtpServer'
+  introduceFakeSmtpServerNix
+  , introduceFakeSmtpServer'
+
+  , FakeSmtpServerOptions(..)
+  , defaultFakeSmtpServerOptions
+
   , withFakeSMTPServer
+
   , fakeSmtpServer
   , FakeSmtpServer(..)
   , EmailInfo(..)
 
   , getEmails
-  , authUsername
-  , authPassword
   ) where
 
 import Control.Monad
@@ -25,10 +29,13 @@ import Control.Retry
 import qualified Data.Aeson as A
 import qualified Data.Aeson.TH as A
 import Data.String.Interpolate
+import GHC.TypeLits
 import Network.HTTP.Client
 import Network.Socket (PortNumber)
 import Relude
+import Sandwich.Contexts.FakeSmtpServer.Derivation
 import Sandwich.Contexts.Files
+import Sandwich.Contexts.Nix
 import Sandwich.Contexts.Util.Aeson
 import Sandwich.Contexts.Waits
 import System.FilePath
@@ -40,6 +47,19 @@ import UnliftIO.Exception
 
 
 -- * Types
+
+data FakeSmtpServerOptions = FakeSmtpServerOptions {
+  -- | Username and password. If not provided, the server will not be configured with authentication.
+  fakeSmtpServerAuth :: Maybe (String, String)
+  -- | Whether to allow insecure login.
+  , fakeSmtpServerAllowInsecureLogin :: Bool
+  } deriving (Show, Eq)
+
+defaultFakeSmtpServerOptions :: FakeSmtpServerOptions
+defaultFakeSmtpServerOptions = FakeSmtpServerOptions {
+  fakeSmtpServerAuth = Just ("user", "password")
+  , fakeSmtpServerAllowInsecureLogin = True
+  }
 
 data EmailInfo = EmailInfo {
   emailInfoAttachments :: A.Value
@@ -66,27 +86,25 @@ fakeSmtpServer = Label
 -- * Functions
 
 introduceFakeSmtpServerNix :: (
-  HasBaseContext context
+  HasBaseContext context, HasNixContext context
   , MonadMask m, MonadUnliftIO m
-  ) => Bool -> Bool -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
-introduceFakeSmtpServerNix auth allowInsecureLogin =
-  undefined
+  ) => FakeSmtpServerOptions
+    -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> LabelValue (AppendSymbol "file-" "fake-smtp-server") (EnvironmentFile "fake-smtp-server") :> context) m ()
+    -> SpecFree context m ()
+introduceFakeSmtpServerNix options =
+  introduceBinaryViaNixDerivation @"fake-smtp-server" fakeSmtpServerDerivation . introduceFakeSmtpServer' options
 
 introduceFakeSmtpServer' :: (
   HasBaseContext context, HasFile context "fake-smtp-server"
   , MonadMask m, MonadUnliftIO m
-  ) => Bool -> Bool -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
-introduceFakeSmtpServer' auth allowInsecureLogin = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer auth allowInsecureLogin)
-
-authUsername, authPassword :: Text
-authUsername = "user"
-authPassword = "pass"
+  ) => FakeSmtpServerOptions -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
+introduceFakeSmtpServer' options = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer options)
 
 withFakeSMTPServer :: (
   HasBaseContext context, MonadReader context m, HasFile context "fake-smtp-server"
   , MonadLoggerIO m, MonadThrow m, MonadUnliftIO m
-  ) => Bool -> Bool -> (FakeSmtpServer -> m [Result]) -> m ()
-withFakeSMTPServer auth allowInsecureLogin action = do
+  ) => FakeSmtpServerOptions -> (FakeSmtpServer -> m [Result]) -> m ()
+withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withFakeSMTPServer must be run with a run root"
     Just x -> return x
@@ -97,8 +115,10 @@ withFakeSMTPServer auth allowInsecureLogin action = do
   fakeSmtpServerPath <- askFile @"fake-smtp-server"
 
   bracket (do
-              let authFlag = if auth then ["--auth",  [i|#{authUsername}:#{authPassword}|]] else []
-              let insecureLoginFlag = if allowInsecureLogin then "--allow-insecure-login" else ""
+              let authFlag = case fakeSmtpServerAuth of
+                    Just (username, password) -> ["--auth",  [i|#{username}:#{password}|]]
+                    Nothing -> []
+              let insecureLoginFlag = if fakeSmtpServerAllowInsecureLogin then "--allow-insecure-login" else ""
               createProcessWithLogging ((proc fakeSmtpServerPath ([insecureLoginFlag
                                                                   , "--smtp-port", "0"
                                                                   , "--smtp-port-file", smtpPortFile
@@ -115,9 +135,9 @@ withFakeSMTPServer auth allowInsecureLogin action = do
               httpPort <- waitForPortFile 120.0 httpPortFile
               smtpPort <- waitForPortFile 120.0 smtpPortFile
 
-              let authPart = case auth of
-                    True -> [i|#{authUsername}:#{authPassword}@|] :: Text
-                    False -> ""
+              let authPart = case fakeSmtpServerAuth of
+                    Just (username, password) -> [i|#{username}:#{password}@|] :: Text
+                    Nothing -> ""
 
               waitUntil200WithTimeout' (1_000_000 * 60 * 2) [i|http://#{authPart}localhost:#{httpPort}/api/emails|]
 

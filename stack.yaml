@@ -31,6 +31,7 @@ packages:
 - ./demos/demo-context-nested
 - ./demos/demo-custom-exceptions
 - ./demos/demo-discover
+- ./demos/demo-fake-smtp-server
 - ./demos/demo-golden
 - ./demos/demo-hedgehog
 - ./demos/demo-landing

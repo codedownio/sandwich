@@ -10,9 +10,12 @@
 
 module Sandwich.Contexts.Files (
   introduceBinaryViaEnvironment
-  , introduceBinaryViaNix
-  , introduceBinaryViaNixProxy'
-  , introduceBinaryViaNixProxy''
+
+  , introduceBinaryViaNixPackage
+  , introduceBinaryViaNixPackage'
+
+  , introduceBinaryViaNixDerivation
+  , introduceBinaryViaNixDerivation'
 
   , askFile
   , askFileProxy
@@ -67,52 +70,55 @@ introduceBinaryViaEnvironment proxy = introduce [i|#{symbolVal proxy} (binary fr
 
 type NixPackageName = Text
 
--- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
--- Useful when you want to set up your own environment with binaries etc. to use in tests.
--- Throws an exception if the desired file is not available.
-introduceBinaryViaNix :: forall a context m. (
+-- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
+-- It's recommended to use this with -XTypeApplications.
+introduceBinaryViaNixPackage :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) =>
-    -- | Nix package name within the configured Nixpkgs version
+    -- | Nix package name which contains the desired binary.
+    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+    -- For example, you can use the "hello" binary from the "hello" package like this:
+    --
+    -- introduceBinaryViaNixPackage' @hello "hello"
     NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNix = introduceBinaryViaNixProxy (Proxy @a)
+introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' (Proxy @a)
 
--- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
--- Useful when you want to set up your own environment with binaries etc. to use in tests.
--- Throws an exception if the desired file is not available.
-introduceBinaryViaNixProxy :: forall a context m. (
+-- | Same as 'introduceBinaryViaNixPackage', but allows passing a 'Proxy'.
+introduceBinaryViaNixPackage' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) => Proxy a
-    -- | Nix package name within the configured Nixpkgs version
+    -- | Nix package name which contains the desired binary.
     -> NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixProxy proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
+introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
   where
-    alloc = buildNixEnvironment [packageName] >>= tryFindBinary (symbolVal proxy)
+    alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal proxy)
 
--- | Same as 'introduceBinaryViaNix', but using an arbitrary derivation.
-introduceBinaryViaNixProxy' :: forall a context m. (
+-- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
+-- It's recommended to use this with -XTypeApplications.
+introduceBinaryViaNixDerivation :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) =>
     -- | Nix derivation as a string.
     Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixProxy' = introduceBinaryViaNixProxy'' (Proxy @a)
+introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (Proxy @a)
 
-introduceBinaryViaNixProxy'' :: forall a context m. (
+-- | Same as 'introduceBinaryViaNixDerivation', but allows passing a 'Proxy'.
+introduceBinaryViaNixDerivation' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) => Proxy a
     -- | Nix derivation as a string.
     -> Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixProxy'' proxy derivation = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
+introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
   where
-    alloc = buildNixExpression derivation >>= tryFindBinary (symbolVal proxy)
+    alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal proxy)
 
 tryFindBinary :: (MonadLoggerIO m) => String -> FilePath -> m (EnvironmentFile a)
 tryFindBinary binaryName env = do

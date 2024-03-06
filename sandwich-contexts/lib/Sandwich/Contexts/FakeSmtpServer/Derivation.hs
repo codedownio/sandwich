@@ -1,12 +1,14 @@
 
-module Sandwich.Contexts.FakeSmtpServer.Derivation where
+module Sandwich.Contexts.FakeSmtpServer.Derivation (
+  fakeSmtpServerDerivation
+  ) where
 
 import Data.String.Interpolate
 import Relude
 
 
-expr :: Text
-expr = [iii|
+fakeSmtpServerDerivation :: Text
+fakeSmtpServerDerivation = [i|
 { callPackage
 , fetchFromGitHub
 , node2nix

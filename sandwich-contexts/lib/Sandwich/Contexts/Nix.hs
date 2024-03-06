@@ -11,7 +11,8 @@ module Sandwich.Contexts.Nix (
 
   -- * Nix environments
   , introduceNixEnvironment
-  , buildNixEnvironment
+  , buildNixSymlinkJoin
+  , buildNixCallPackageDerivation
   , buildNixExpression
   , nixEnvironment
   , HasNixEnvironment
@@ -30,6 +31,7 @@ import Data.Aeson as A
 import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import Relude
 import Sandwich.Contexts.Util.Aeson
@@ -98,18 +100,43 @@ introduceNixEnvironment :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m
   ) => [Text] -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m () -> SpecFree context m ()
-introduceNixEnvironment packageNames = introduce "Introduce Nix environment" nixEnvironment (buildNixEnvironment packageNames) (const $ return ())
+introduceNixEnvironment packageNames = introduce "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
 
 -- | Build a Nix environment containing the given list of packages, using the current 'NixContext'.
 -- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
 -- be found in "<environment path>/bin".
-buildNixEnvironment :: (
+buildNixSymlinkJoin :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
   ) => [Text] -> m FilePath
-buildNixEnvironment packageNames = do
+buildNixSymlinkJoin packageNames = do
   NixContext {..} <- getContext nixContext
-  buildNixExpression $ renderNixEnvironment nixContextNixpkgsDerivation packageNames
+  buildNixExpression $ renderNixSymlinkJoin nixContextNixpkgsDerivation packageNames
+
+-- | Build a Nix environment expressed as a derivation expecting a list of dependencies, as in the
+-- Nix "callPackage" design pattern. I.e.
+-- "{ git, gcc, stdenv, ... }: stdenv.mkDerivation {...}"
+buildNixCallPackageDerivation :: (
+  MonadReader context m, HasBaseContext context, HasNixContext context
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  ) => Text -> m FilePath
+buildNixCallPackageDerivation derivation = do
+  NixContext {..} <- getContext nixContext
+
+  wait =<< modifyMVar nixContextBuildCache (\m ->
+    case M.lookup derivation m of
+      Just x -> return (m, x)
+      Nothing -> do
+        asy <- async $ do
+          Just dir <- getCurrentFolder
+          gcrootDir <- liftIO $ createTempDirectory dir "nix-expression"
+          let derivationPath = gcrootDir </> "default.nix"
+          liftIO $ T.writeFile derivationPath derivation
+          runNixBuild (renderCallPackageDerivation nixContextNixpkgsDerivation derivationPath) (gcrootDir </> "gcroot")
+
+        return (M.insert derivation asy m, asy)
+    )
+
 
 -- | Build a Nix environment containing the given list of packages, using the current 'NixContext'.
 -- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
@@ -121,33 +148,37 @@ buildNixExpression :: (
 buildNixExpression expr = do
   NixContext {..} <- getContext nixContext
 
-  buildAsync <- modifyMVar nixContextBuildCache $ \m ->
+  wait =<< modifyMVar nixContextBuildCache (\m ->
     case M.lookup expr m of
       Just x -> return (m, x)
       Nothing -> do
         asy <- async $ do
           Just dir <- getCurrentFolder
           gcrootDir <- liftIO $ createTempDirectory dir "nix-expression"
-
-          output <- readCreateProcessWithLogging (
-            proc "nix" ["build"
-                       , "--impure"
-                       , "--expr", toString expr
-                       , "-o", gcrootDir </> "gcroot"
-                       , "--json"
-                       ]
-            ) ""
-
-          case A.eitherDecodeStrict (encodeUtf8 output) of
-            Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure (toString p)
-            x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{output})|]
+          runNixBuild expr (gcrootDir </> "gcroot")
 
         return (M.insert expr asy m, asy)
+    )
 
-  wait buildAsync
 
-renderNixEnvironment :: NixpkgsDerivation -> [Text] -> Text
-renderNixEnvironment (NixpkgsDerivationFetchFromGitHub {..}) packageNames = [i|
+runNixBuild :: (MonadUnliftIO m, MonadLogger m) => Text -> String -> m String
+runNixBuild expr outputPath = do
+  output <- readCreateProcessWithLogging (
+    proc "nix" ["build"
+               , "--impure"
+               , "--expr", toString expr
+               , "-o", outputPath
+               , "--json"
+               ]
+    ) ""
+
+  case A.eitherDecodeStrict (encodeUtf8 output) of
+    Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure (toString p)
+    x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{output})|]
+
+
+renderNixSymlinkJoin :: NixpkgsDerivation -> [Text] -> Text
+renderNixSymlinkJoin (NixpkgsDerivationFetchFromGitHub {..}) packageNames = [i|
 \# Use the ambient <nixpkgs> channel to bootstrap
 with {
   inherit (import (<nixpkgs>) {})
@@ -166,4 +197,26 @@ let
 in
 
 pkgs.symlinkJoin { name = "test-contexts-environment"; paths = with pkgs; [#{T.intercalate " " packageNames}]; }
+|]
+
+renderCallPackageDerivation :: NixpkgsDerivation -> FilePath -> Text
+renderCallPackageDerivation (NixpkgsDerivationFetchFromGitHub {..}) derivationPath = [i|
+\# Use the ambient <nixpkgs> channel to bootstrap
+with {
+  inherit (import (<nixpkgs>) {})
+  fetchgit fetchFromGitHub;
+};
+
+let
+  nixpkgs = fetchFromGitHub {
+    owner = "#{nixpkgsDerivationOwner}";
+    repo = "#{nixpkgsDerivationRepo}";
+    rev = "#{nixpkgsDerivationRev}";
+    sha256 = "#{nixpkgsDerivationSha256}";
+  };
+
+  pkgs = import nixpkgs {};
+in
+
+pkgs.callPackage #{show derivationPath :: String} {}
 |]

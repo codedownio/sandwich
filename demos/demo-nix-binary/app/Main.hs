@@ -13,7 +13,7 @@ import UnliftIO.Process
 
 spec :: TopSpec
 spec = describe "Introducing a Nix binary" $
-  introduceNixContext nixpkgsReleaseDefault $ introduceBinaryViaNix @"hello" "hello" $ do
+  introduceNixContext nixpkgsReleaseDefault $ introduceBinaryViaNixPackage @"hello" "hello" $ do
     it "uses the hello binary" $ do
       helloPath <- askFile @"hello"
       readCreateProcess (proc helloPath []) "" >>= (`shouldBe` "Hello, world!\n")

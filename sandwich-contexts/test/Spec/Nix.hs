@@ -12,7 +12,7 @@ tests :: TopSpec
 tests = describe "Nix" $ do
   introduceNixContext nixpkgsReleaseDefault $ do
     it "can build a Nix environment with some binaries" $ do
-      envPath <- buildNixEnvironment ["hello", "htop"]
+      envPath <- buildNixSymlinkJoin ["hello", "htop"]
       info [i|Got envPath: #{envPath}|]
 
       doesFileExist (envPath </> "bin" </> "hello") >>= (`shouldBe` True)

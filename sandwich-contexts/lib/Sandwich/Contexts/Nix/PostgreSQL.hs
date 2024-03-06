@@ -85,7 +85,7 @@ introducePostgres :: (
   , MonadUnliftIO m, MonadMask m
   ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
 introducePostgres opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
-  nixEnv <- buildNixEnvironment [postgresNixPostgres]
+  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
 
   withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
     debug [i|Got unix socket: #{unixSocket}|]
@@ -102,7 +102,7 @@ introducePostgresUnixSocket :: (
   , MonadUnliftIO m, MonadMask m
   ) => PostgresNixOptions -> SpecFree (LabelValue "postgresUnixSocket" PostgresContext :> context) m () -> SpecFree context m ()
 introducePostgresUnixSocket opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgresUnixSocket $ \action -> do
-  nixEnv <- buildNixEnvironment [postgresNixPostgres]
+  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
   withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
