@@ -12,7 +12,7 @@ fakeSmtpServerDerivation = [i|
 { callPackage
 , fetchFromGitHub
 , node2nix
-, nodejs
+, nodejs_18
 , stdenv
 }:
 
@@ -25,8 +25,8 @@ let
     src = fetchFromGitHub {
       owner = "codedownio";
       repo = "fake-smtp-server";
-      rev = "102b72c1ec852d88309b290b6b68ff5b4f50a431";
-      sha256 = "sha256-uTcYGs5OOQ/uKfKYdmgnGYvBPfTALDoZsytqJEDTwHA=";
+      rev = "1adbffb35d6c90bcb2ad9fac3049fa2028a34d2f";
+      sha256 = "sha256-zXaNM7sp2c3IEvmoZ81M+7LrcC1I0JhlqG0A+gOA38E=";
     };
 
     dontConfigure = true;
@@ -34,7 +34,7 @@ let
     buildInputs = [node2nix];
 
     buildPhase = ''
-      node2nix -- --nodejs-14 --lock package-lock.json
+      node2nix -- --nodejs-18 --lock package-lock.json
     '';
 
     installPhase = ''
@@ -44,5 +44,5 @@ let
 
 in
 
-(callPackage nixified { inherit nodejs; }).package
+(callPackage nixified { nodejs = nodejs_18; }).package
 |]
