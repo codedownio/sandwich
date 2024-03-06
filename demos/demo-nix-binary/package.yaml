@@ -4,6 +4,7 @@ license:             BSD3
 
 dependencies:
 - base
+- mtl
 - sandwich
 - sandwich-contexts
 - unliftio
