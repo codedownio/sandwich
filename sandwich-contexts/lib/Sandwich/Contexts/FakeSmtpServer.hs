@@ -1,10 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Sandwich.Contexts.FakeSmtpServer (
-  introduceFakeSmtpServer
+  introduceFakeSmtpServer'
   , withFakeSMTPServer
   , fakeSmtpServer
   , FakeSmtpServer(..)
@@ -27,6 +28,7 @@ import Data.String.Interpolate
 import Network.HTTP.Client
 import Network.Socket (PortNumber)
 import Relude
+import Sandwich.Contexts.Files
 import Sandwich.Contexts.Util.Aeson
 import Sandwich.Contexts.Waits
 import System.FilePath
@@ -63,17 +65,26 @@ fakeSmtpServer = Label
 
 -- * Functions
 
-introduceFakeSmtpServer :: (
-  HasBaseContext context, MonadMask m, MonadUnliftIO m
+introduceFakeSmtpServerNix :: (
+  HasBaseContext context
+  , MonadMask m, MonadUnliftIO m
   ) => Bool -> Bool -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
-introduceFakeSmtpServer auth allowInsecureLogin = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer auth allowInsecureLogin)
+introduceFakeSmtpServerNix auth allowInsecureLogin =
+  undefined
+
+introduceFakeSmtpServer' :: (
+  HasBaseContext context, HasFile context "fake-smtp-server"
+  , MonadMask m, MonadUnliftIO m
+  ) => Bool -> Bool -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
+introduceFakeSmtpServer' auth allowInsecureLogin = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer auth allowInsecureLogin)
 
 authUsername, authPassword :: Text
 authUsername = "user"
 authPassword = "pass"
 
 withFakeSMTPServer :: (
-  HasBaseContext context, MonadReader context m, MonadLoggerIO m, MonadThrow m, MonadUnliftIO m
+  HasBaseContext context, MonadReader context m, HasFile context "fake-smtp-server"
+  , MonadLoggerIO m, MonadThrow m, MonadUnliftIO m
   ) => Bool -> Bool -> (FakeSmtpServer -> m [Result]) -> m ()
 withFakeSMTPServer auth allowInsecureLogin action = do
   folder <- getCurrentFolder >>= \case
@@ -83,10 +94,12 @@ withFakeSMTPServer auth allowInsecureLogin action = do
   let httpPortFile = folder </> "http-port-file"
   let smtpPortFile = folder </> "smtp-port-file"
 
+  fakeSmtpServerPath <- askFile @"fake-smtp-server"
+
   bracket (do
               let authFlag = if auth then ["--auth",  [i|#{authUsername}:#{authPassword}|]] else []
               let insecureLoginFlag = if allowInsecureLogin then "--allow-insecure-login" else ""
-              createProcessWithLogging ((proc "fake-smtp-server" ([insecureLoginFlag
+              createProcessWithLogging ((proc fakeSmtpServerPath ([insecureLoginFlag
                                                                   , "--smtp-port", "0"
                                                                   , "--smtp-port-file", smtpPortFile
                                                                   , "--http-port", "0"

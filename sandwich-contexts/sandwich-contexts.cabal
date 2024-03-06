@@ -15,13 +15,15 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Sandwich.Contexts.FakeSmtpServer
       Sandwich.Contexts.Container.MinioS3Server
       Sandwich.Contexts.Container.PostgreSQL
+      Sandwich.Contexts.FakeSmtpServer
+      Sandwich.Contexts.Files
       Sandwich.Contexts.Nix
       Sandwich.Contexts.Nix.PostgreSQL
       Sandwich.Contexts.Waits
   other-modules:
+      Sandwich.Contexts.FakeSmtpServer.Derivation
       Sandwich.Contexts.Nix.CaddyProxy
       Sandwich.Contexts.Nix.MinIO
       Sandwich.Contexts.Util.Aeson

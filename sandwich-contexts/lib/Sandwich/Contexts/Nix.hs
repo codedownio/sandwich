@@ -12,6 +12,7 @@ module Sandwich.Contexts.Nix (
   -- * Nix environments
   , introduceNixEnvironment
   , buildNixEnvironment
+  , buildNixExpression
   , nixEnvironment
   , HasNixEnvironment
 
@@ -26,6 +27,7 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Aeson as A
+import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Vector as V
@@ -34,7 +36,9 @@ import Sandwich.Contexts.Util.Aeson
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import UnliftIO.Async
 import UnliftIO.Directory
+import UnliftIO.MVar (modifyMVar)
 import UnliftIO.Process
 
 -- * Types
@@ -44,8 +48,9 @@ nixContext = Label
 
 data NixContext = NixContext {
   nixContextNixBinary :: FilePath
-  , nixContextNixpkgsDerivations :: NixpkgsDerivation
-  } deriving (Show, Eq)
+  , nixContextNixpkgsDerivation :: NixpkgsDerivation
+  , nixContextBuildCache :: MVar (Map Text (Async FilePath))
+  }
 
 type HasNixContext context = HasLabel context "nixContext" NixContext
 
@@ -86,7 +91,8 @@ introduceNixContext nixpkgsDerivation = introduce "Introduce Nix context" nixCon
       Nothing -> expectationFailure [i|Couldn't find "nix" binary when introducing Nix context. A Nix binary and store must already be available in the environment.|]
       Just p -> do
         -- TODO: make sure the Nixpkgs derivation works
-        pure (NixContext p nixpkgsDerivation)
+        buildCache <- newMVar mempty
+        pure (NixContext p nixpkgsDerivation buildCache)
 
 introduceNixEnvironment :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
@@ -102,25 +108,45 @@ buildNixEnvironment :: (
   , MonadUnliftIO m, MonadLogger m, MonadFail m
   ) => [Text] -> m FilePath
 buildNixEnvironment packageNames = do
-  Just dir <- getCurrentFolder
-  gcrootDir <- liftIO $ createTempDirectory dir "nix-environment"
-
   NixContext {..} <- getContext nixContext
-  output <- readCreateProcessWithLogging (
-    proc "nix" ["build"
-               , "--impure"
-               , "--expr", renderNixEnvironment nixContextNixpkgsDerivations packageNames
-               , "-o", gcrootDir </> "gcroot"
-               , "--json"
-               ]
-    ) ""
+  buildNixExpression $ renderNixEnvironment nixContextNixpkgsDerivation packageNames
 
-  case A.eitherDecodeStrict (encodeUtf8 output) of
-    Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure (toString p)
-    x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{output})|]
+-- | Build a Nix environment containing the given list of packages, using the current 'NixContext'.
+-- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
+-- be found in "<environment path>/bin".
+buildNixExpression :: (
+  MonadReader context m, HasBaseContext context, HasNixContext context
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  ) => Text -> m FilePath
+buildNixExpression expr = do
+  NixContext {..} <- getContext nixContext
 
+  buildAsync <- modifyMVar nixContextBuildCache $ \m ->
+    case M.lookup expr m of
+      Just x -> return (m, x)
+      Nothing -> do
+        asy <- async $ do
+          Just dir <- getCurrentFolder
+          gcrootDir <- liftIO $ createTempDirectory dir "nix-expression"
 
-renderNixEnvironment :: NixpkgsDerivation -> [Text] -> String
+          output <- readCreateProcessWithLogging (
+            proc "nix" ["build"
+                       , "--impure"
+                       , "--expr", toString expr
+                       , "-o", gcrootDir </> "gcroot"
+                       , "--json"
+                       ]
+            ) ""
+
+          case A.eitherDecodeStrict (encodeUtf8 output) of
+            Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure (toString p)
+            x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{output})|]
+
+        return (M.insert expr asy m, asy)
+
+  wait buildAsync
+
+renderNixEnvironment :: NixpkgsDerivation -> [Text] -> Text
 renderNixEnvironment (NixpkgsDerivationFetchFromGitHub {..}) packageNames = [i|
 \# Use the ambient <nixpkgs> channel to bootstrap
 with {
