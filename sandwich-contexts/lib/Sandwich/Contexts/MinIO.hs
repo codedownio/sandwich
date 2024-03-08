@@ -4,15 +4,15 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
-module Sandwich.Contexts.Minio (
-  MinioContextOptions (..)
-  , defaultMinioContextOptions
+module Sandwich.Contexts.MinIO (
+  MinIOContextOptions (..)
+  , defaultMinIOContextOptions
 
-  , introduceMinioNix
-  , withMinioViaBinary
+  , introduceMinIONix
+  , withMinIOViaBinary
 
-  , introduceMinioContainer
-  , withMinioContainer
+  , introduceMinIOContainer
+  , withMinIOContainer
 
   , fakeS3Server
   , FakeS3Server(..)
@@ -88,14 +88,14 @@ fakeS3ConnectionInfo fakeServ@(FakeS3Server {..}) =
   & setCreds (CredentialValue (AccessKey fakeS3ServerAccessKeyId) (SecretKey (fromString (toString fakeS3ServerSecretAccessKey))) Nothing)
   & (if fakeS3ServerHttpMode == HttpModeHttpsNoValidate then disableTLSCertValidation else id)
 
-data MinioContextOptions = MinioContextOptions {
+data MinIOContextOptions = MinIOContextOptions {
   minioContextBucket :: Maybe Text
   , minioContextLabels :: Map Text Text
   , minioContextContainerName :: Maybe Text
   , minioContextContainerSystem :: ContainerSystem
   } deriving (Show, Eq)
-defaultMinioContextOptions :: MinioContextOptions
-defaultMinioContextOptions = MinioContextOptions {
+defaultMinIOContextOptions :: MinIOContextOptions
+defaultMinIOContextOptions = MinIOContextOptions {
   minioContextBucket = Just "bucket1"
   , minioContextLabels = mempty
   , minioContextContainerName = Nothing
@@ -104,21 +104,21 @@ defaultMinioContextOptions = MinioContextOptions {
 
 -- * Raw
 
-introduceMinioNix :: (
+introduceMinIONix :: (
   HasBaseContext context, HasNixContext context, MonadMask m, MonadUnliftIO m
-  ) => MinioContextOptions
+  ) => MinIOContextOptions
     -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> LabelValue (AppendSymbol "file-" "minio") (EnvironmentFile "minio") :> context) m ()
     -> SpecFree context m ()
-introduceMinioNix options = introduceBinaryViaNixPackage @"minio" "minio" .
-  introduceWith "Minio S3 server" fakeS3Server (withMinioViaBinary options)
+introduceMinIONix options = introduceBinaryViaNixPackage @"minio" "minio" .
+  introduceWith "MinIO S3 server" fakeS3Server (withMinIOViaBinary options)
 
-withMinioViaBinary :: (
+withMinIOViaBinary :: (
   MonadReader context m, HasBaseContext context, HasFile context "minio"
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => MinioContextOptions -> (FakeS3Server -> m [Result]) -> m ()
-withMinioViaBinary (MinioContextOptions {..}) action = do
+  ) => MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+withMinIOViaBinary (MinIOContextOptions {..}) action = do
   dir <- getCurrentFolder >>= \case
-    Nothing -> expectationFailure "withMinioViaBinary must be run with a current directory."
+    Nothing -> expectationFailure "withMinIOViaBinary must be run with a current directory."
     Just x -> return x
 
   minioDir <- liftIO $ createTempDirectory dir "minio-storage"
@@ -170,7 +170,7 @@ withMinioViaBinary (MinioContextOptions {..}) action = do
             , fakeS3ServerHttpMode = HttpModeHttp
             }
 
-      waitForMinioReady server
+      waitForMinIOReady server
 
       void $ action server
 
@@ -185,19 +185,19 @@ withMinioViaBinary (MinioContextOptions {..}) action = do
 
 -- * Container
 
-introduceMinioContainer :: (
+introduceMinIOContainer :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
-  ) => MinioContextOptions -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> context) m () -> SpecFree context m ()
-introduceMinioContainer options = introduceWith "Minio S3 server" fakeS3Server $ \action -> do
-  withMinioContainer options action
+  ) => MinIOContextOptions -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> context) m () -> SpecFree context m ()
+introduceMinIOContainer options = introduceWith "MinIO S3 server" fakeS3Server $ \action -> do
+  withMinIOContainer options action
 
-withMinioContainer :: (
+withMinIOContainer :: (
   MonadReader context m, HasBaseContext context
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => MinioContextOptions -> (FakeS3Server -> m [Result]) -> m ()
-withMinioContainer (MinioContextOptions {..}) action = do
+  ) => MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+withMinIOContainer (MinIOContextOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
-    Nothing -> expectationFailure "withMinioContainer must be run with a current directory."
+    Nothing -> expectationFailure "withMinIOContainer must be run with a current directory."
     Just x -> return x
 
   let mockDir = folder </> "mock_root"
@@ -240,7 +240,7 @@ withMinioContainer (MinioContextOptions {..}) action = do
           (\p -> do
               waitForProcess p >>= \case
                 ExitSuccess -> return ()
-                ExitFailure n -> expectationFailure [i|Failed to start Minio container (exit code #{n})|]
+                ExitFailure n -> expectationFailure [i|Failed to start MinIO container (exit code #{n})|]
 
               localPort <- containerPortToHostPort minioContextContainerSystem containerName innerPort
 
@@ -253,14 +253,14 @@ withMinioContainer (MinioContextOptions {..}) action = do
                     , fakeS3ServerHttpMode = HttpModeHttp
                     }
 
-              waitForMinioReady server
+              waitForMinIOReady server
 
               void $ action server
           )
 
 
-waitForMinioReady :: (MonadLogger m, MonadUnliftIO m, MonadMask m) => FakeS3Server -> m ()
-waitForMinioReady server@(FakeS3Server {..}) = do
+waitForMinIOReady :: (MonadLogger m, MonadUnliftIO m, MonadMask m) => FakeS3Server -> m ()
+waitForMinIOReady server@(FakeS3Server {..}) = do
   -- The minio image seems not to have a healthcheck?
   -- waitForHealth containerName
   waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify [i|http://#{fakeS3ServerHostname}:#{fakeS3ServerPort}/minio/health/live|]
@@ -275,7 +275,7 @@ waitForMinioReady server@(FakeS3Server {..}) = do
     recovering policy handlers $ \retryStatus@(RetryStatus {}) -> do
       info [i|About to try making S3 bucket with retry status: #{retryStatus}|]
       liftIO $ doMakeBucket connInfo bucket
-    debug [i|Got Minio S3 server: #{server}|]
+    debug [i|Got MinIO S3 server: #{server}|]
 
 
 doMakeBucket :: ConnectInfo -> Bucket -> IO ()
