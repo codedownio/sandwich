@@ -79,7 +79,7 @@ introduceBinaryViaNixPackage :: forall a context m. (
     -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
     -- For example, you can use the "hello" binary from the "hello" package like this:
     --
-    -- introduceBinaryViaNixPackage' @hello "hello"
+    -- introduceBinaryViaNixPackage' @"hello" "hello"
     NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()

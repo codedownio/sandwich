@@ -24,8 +24,8 @@ library
       Sandwich.Contexts.Waits
   other-modules:
       Sandwich.Contexts.FakeSmtpServer.Derivation
+      Sandwich.Contexts.MinioS3Server
       Sandwich.Contexts.Nix.CaddyProxy
-      Sandwich.Contexts.Nix.MinIO
       Sandwich.Contexts.Util.Aeson
       Sandwich.Contexts.Util.Container
       Sandwich.Contexts.Util.Exception
@@ -67,6 +67,7 @@ library
     , monad-logger
     , mtl
     , network
+    , network-uri
     , process
     , random
     , relude
