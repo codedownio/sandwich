@@ -24,7 +24,7 @@ library
       Sandwich.Contexts.Waits
   other-modules:
       Sandwich.Contexts.FakeSmtpServer.Derivation
-      Sandwich.Contexts.MinioS3Server
+      Sandwich.Contexts.Minio
       Sandwich.Contexts.Nix.CaddyProxy
       Sandwich.Contexts.Util.Aeson
       Sandwich.Contexts.Util.Container

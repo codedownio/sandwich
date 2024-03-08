@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
-module Sandwich.Contexts.MinioS3Server (
+module Sandwich.Contexts.Minio (
   MinioContextOptions (..)
   , defaultMinioContextOptions
 
