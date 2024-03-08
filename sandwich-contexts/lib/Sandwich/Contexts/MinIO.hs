@@ -275,7 +275,8 @@ waitForMinIOReady server@(FakeS3Server {..}) = do
     recovering policy handlers $ \retryStatus@(RetryStatus {}) -> do
       info [i|About to try making S3 bucket with retry status: #{retryStatus}|]
       liftIO $ doMakeBucket connInfo bucket
-    debug [i|Got MinIO S3 server: #{server}|]
+
+  debug [i|MinIO S3 server ready: #{server}|]
 
 
 doMakeBucket :: ConnectInfo -> Bucket -> IO ()

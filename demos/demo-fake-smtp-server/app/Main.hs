@@ -25,7 +25,7 @@ import UnliftIO.Process
 spec :: TopSpec
 spec = describe "Introducing a fake SMTP server" $
   introduceNixContext nixpkgsReleaseDefault $ introduceFakeSmtpServerNix defaultFakeSmtpServerOptions $ do
-    it "prints the SMTP server port" $ do
+    it "sends an email and verifies it was received" $ do
       FakeSmtpServer {..} <- getContext fakeSmtpServer
       info [i|Got fake SMTP server on port: #{fakeSmtpServerSmtpPort}|]
 

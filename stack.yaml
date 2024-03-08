@@ -35,6 +35,7 @@ packages:
 - ./demos/demo-golden
 - ./demos/demo-hedgehog
 - ./demos/demo-landing
+- ./demos/demo-minio
 - ./demos/demo-nix-binary
 - ./demos/demo-paralleln
 - ./demos/demo-processes
