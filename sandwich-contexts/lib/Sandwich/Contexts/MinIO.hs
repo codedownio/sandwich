@@ -10,6 +10,7 @@ module Sandwich.Contexts.MinIO (
 
   , introduceMinIONix
   , withMinIOViaBinary
+  , withMinIO
 
   , introduceMinIOContainer
   , withMinIOContainer
