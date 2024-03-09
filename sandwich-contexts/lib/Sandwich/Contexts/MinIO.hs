@@ -116,14 +116,20 @@ withMinIOViaBinary :: (
   MonadReader context m, HasBaseContext context, HasFile context "minio"
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   ) => MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
-withMinIOViaBinary (MinIOContextOptions {..}) action = do
+withMinIOViaBinary options action = do
+  minioPath <- askFile @"minio"
+  withMinIO minioPath options action
+
+withMinIO :: (
+  MonadReader context m, HasBaseContext context
+  , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
+  ) => FilePath -> MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+withMinIO minioPath (MinIOContextOptions {..}) action = do
   dir <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withMinIOViaBinary must be run with a current directory."
     Just x -> return x
 
   minioDir <- liftIO $ createTempDirectory dir "minio-storage"
-
-  minioPath <- askFile @"minio"
 
   (hReadErr, hWriteErr) <- liftIO createPipe
   let cp = proc minioPath [

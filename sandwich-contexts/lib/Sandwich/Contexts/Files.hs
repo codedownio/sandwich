@@ -13,6 +13,7 @@ module Sandwich.Contexts.Files (
 
   , introduceBinaryViaNixPackage
   , introduceBinaryViaNixPackage'
+  , withBinaryViaNixPackage
 
   , introduceBinaryViaNixDerivation
   , introduceBinaryViaNixDerivation'
@@ -96,6 +97,19 @@ introduceBinaryViaNixPackage' :: forall a context m. (
 introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
   where
     alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal proxy)
+
+-- | Same as 'introduceBinaryViaNixPackage', but allows passing a 'Proxy'.
+withBinaryViaNixPackage :: forall a b context m. (
+  MonadReader context m, HasBaseContext context, HasNixContext context
+  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  ) =>
+    -- | Nix package name which contains the desired binary.
+    NixPackageName
+    -> (FilePath -> m b)
+    -> m b
+withBinaryViaNixPackage packageName action = do
+  EnvironmentFile binary <- buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal (Proxy @a))
+  action binary
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
