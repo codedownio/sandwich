@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
-module Sandwich.Contexts.MinIO (
+module Test.Sandwich.Contexts.MinIO (
   MinIOContextOptions (..)
   , defaultMinIOContextOptions
 
@@ -44,12 +44,12 @@ import Network.Socket (PortNumber)
 import Network.URI (URI(..), URIAuth(..), parseURI)
 import Relude
 import Safe
-import Sandwich.Contexts.Files
-import Sandwich.Contexts.Nix
-import Sandwich.Contexts.Util.Aeson
-import Sandwich.Contexts.Util.Container
-import Sandwich.Contexts.Util.UUID
-import Sandwich.Contexts.Waits
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Util.Aeson
+import Test.Sandwich.Contexts.Util.Container
+import Test.Sandwich.Contexts.Util.UUID
+import Test.Sandwich.Contexts.Waits
 import System.Exit
 import System.FilePath
 import System.IO.Temp

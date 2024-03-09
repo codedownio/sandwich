@@ -1,5 +1,5 @@
 
-module Sandwich.Contexts.Util.Nix (
+module Test.Sandwich.Contexts.Util.Nix (
   withWritableBinaryCache
   ) where
 

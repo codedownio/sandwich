@@ -1,4 +1,4 @@
-module Sandwich.Contexts.Util.SocketUtil (
+module Test.Sandwich.Contexts.Util.SocketUtil (
   isPortOpen
   , simpleSockAddr
   ) where

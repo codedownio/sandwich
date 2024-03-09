@@ -14,10 +14,10 @@ import Network.HTTP.Client
 import Network.HaskellNet.SMTP
 import Network.Mail.Mime
 import Network.Socket (PortNumber)
-import Sandwich.Contexts.FakeSmtpServer
-import Sandwich.Contexts.Files
-import Sandwich.Contexts.Nix
-import Sandwich.Contexts.Waits
+import Test.Sandwich.Contexts.FakeSmtpServer
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Waits
 import Test.Sandwich
 import UnliftIO.Process
 

@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Sandwich.Contexts.Files (
+module Test.Sandwich.Contexts.Files (
   introduceBinaryViaEnvironment
 
   , introduceBinaryViaNixPackage
@@ -30,7 +30,7 @@ import Control.Monad.Logger
 import Data.String.Interpolate
 import GHC.TypeLits
 import Relude
-import Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Nix
 import System.FilePath
 import Test.Sandwich
 import UnliftIO.Directory

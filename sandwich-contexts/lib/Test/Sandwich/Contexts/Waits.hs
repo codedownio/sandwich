@@ -2,7 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Sandwich.Contexts.Waits where
+module Test.Sandwich.Contexts.Waits where
 
 import Control.Concurrent
 import Control.Monad

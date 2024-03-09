@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 
-module Sandwich.Contexts.Util.Container (
+module Test.Sandwich.Contexts.Util.Container (
   ContainerSystem (..)
 
   , isInContainer
@@ -30,7 +30,7 @@ import qualified Data.Vector as V
 import Network.Socket (PortNumber)
 import Relude
 import Safe
-import Sandwich.Contexts.Util.Aeson
+import Test.Sandwich.Contexts.Util.Aeson
 import System.Exit
 import System.FilePath
 import Test.Sandwich

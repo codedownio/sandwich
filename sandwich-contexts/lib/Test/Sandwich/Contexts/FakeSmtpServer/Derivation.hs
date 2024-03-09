@@ -1,5 +1,5 @@
 
-module Sandwich.Contexts.FakeSmtpServer.Derivation (
+module Test.Sandwich.Contexts.FakeSmtpServer.Derivation (
   fakeSmtpServerDerivation
   ) where
 

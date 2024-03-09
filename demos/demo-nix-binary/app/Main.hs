@@ -6,8 +6,8 @@ module Main where
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Sandwich.Contexts.Files
-import Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich
 import UnliftIO.Process
 

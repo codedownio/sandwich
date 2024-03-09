@@ -33,13 +33,13 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Sandwich.Contexts.Container.PostgreSQL
-  - Sandwich.Contexts.FakeSmtpServer
-  - Sandwich.Contexts.Files
-  - Sandwich.Contexts.MinIO
-  - Sandwich.Contexts.Nix
-  - Sandwich.Contexts.Nix.PostgreSQL
-  - Sandwich.Contexts.Waits
+  - Test.Sandwich.Contexts.Container.PostgreSQL
+  - Test.Sandwich.Contexts.FakeSmtpServer
+  - Test.Sandwich.Contexts.Files
+  - Test.Sandwich.Contexts.MinIO
+  - Test.Sandwich.Contexts.Nix
+  - Test.Sandwich.Contexts.Nix.PostgreSQL
+  - Test.Sandwich.Contexts.Waits
   dependencies:
   - aeson
   - bytestring

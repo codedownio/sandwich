@@ -15,23 +15,23 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Sandwich.Contexts.Container.PostgreSQL
-      Sandwich.Contexts.FakeSmtpServer
-      Sandwich.Contexts.Files
-      Sandwich.Contexts.MinIO
-      Sandwich.Contexts.Nix
-      Sandwich.Contexts.Nix.PostgreSQL
-      Sandwich.Contexts.Waits
+      Test.Sandwich.Contexts.Container.PostgreSQL
+      Test.Sandwich.Contexts.FakeSmtpServer
+      Test.Sandwich.Contexts.Files
+      Test.Sandwich.Contexts.MinIO
+      Test.Sandwich.Contexts.Nix
+      Test.Sandwich.Contexts.Nix.PostgreSQL
+      Test.Sandwich.Contexts.Waits
   other-modules:
-      Sandwich.Contexts.FakeSmtpServer.Derivation
-      Sandwich.Contexts.Nix.CaddyProxy
-      Sandwich.Contexts.Util.Aeson
-      Sandwich.Contexts.Util.Container
-      Sandwich.Contexts.Util.Exception
-      Sandwich.Contexts.Util.Nix
-      Sandwich.Contexts.Util.Ports
-      Sandwich.Contexts.Util.SocketUtil
-      Sandwich.Contexts.Util.UUID
+      Test.Sandwich.Contexts.FakeSmtpServer.Derivation
+      Test.Sandwich.Contexts.Nix.CaddyProxy
+      Test.Sandwich.Contexts.Util.Aeson
+      Test.Sandwich.Contexts.Util.Container
+      Test.Sandwich.Contexts.Util.Exception
+      Test.Sandwich.Contexts.Util.Nix
+      Test.Sandwich.Contexts.Util.Ports
+      Test.Sandwich.Contexts.Util.SocketUtil
+      Test.Sandwich.Contexts.Util.UUID
       Paths_sandwich_contexts
   hs-source-dirs:
       lib

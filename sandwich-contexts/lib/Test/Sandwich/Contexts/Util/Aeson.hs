@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-module Sandwich.Contexts.Util.Aeson where
+module Test.Sandwich.Contexts.Util.Aeson where
 
 import qualified Data.Aeson as A
 import Data.Char

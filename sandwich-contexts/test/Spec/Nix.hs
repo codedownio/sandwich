@@ -1,6 +1,6 @@
 module Spec.Nix where
 
-import Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Nix
 import Data.String.Interpolate
 import Relude
 import System.FilePath

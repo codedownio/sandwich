@@ -2,7 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Sandwich.Contexts.Nix (
+module Test.Sandwich.Contexts.Nix (
   -- * Nix contexts
   introduceNixContext
   , nixContext
@@ -34,7 +34,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import Relude
-import Sandwich.Contexts.Util.Aeson
+import Test.Sandwich.Contexts.Util.Aeson
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich

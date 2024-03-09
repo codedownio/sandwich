@@ -1,5 +1,5 @@
 
-module Sandwich.Contexts.Util.UUID where
+module Test.Sandwich.Contexts.Util.UUID where
 
 import qualified Data.List as L
 import Data.Text as T

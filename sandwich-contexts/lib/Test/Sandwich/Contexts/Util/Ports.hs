@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
-module Sandwich.Contexts.Util.Ports where
+module Test.Sandwich.Contexts.Util.Ports where
 
 import Control.Monad.Catch (MonadCatch, catch)
 import Control.Retry

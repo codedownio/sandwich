@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Sandwich.Contexts.Nix.PostgreSQL (
+module Test.Sandwich.Contexts.Nix.PostgreSQL (
   postgres
   , introducePostgres
 
@@ -21,7 +21,7 @@ import Control.Monad.Logger
 import Data.String.Interpolate
 import qualified Data.Text.IO as T
 import Relude hiding (withFile)
-import Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Nix
 import System.Exit
 import System.FilePath
 import System.IO.Temp

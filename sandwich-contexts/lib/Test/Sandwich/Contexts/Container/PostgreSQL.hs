@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module Sandwich.Contexts.Container.PostgreSQL (
+module Test.Sandwich.Contexts.Container.PostgreSQL (
   PostgresDatabaseTestContext (..)
   , withPostgresContainer
 
@@ -22,8 +22,8 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import Network.Socket (PortNumber)
 import Relude
-import Sandwich.Contexts.Util.Container
-import Sandwich.Contexts.Util.UUID
+import Test.Sandwich.Contexts.Util.Container
+import Test.Sandwich.Contexts.Util.UUID
 import System.Exit
 import Test.Sandwich
 import UnliftIO.Exception

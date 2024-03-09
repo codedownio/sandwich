@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Sandwich.Contexts.FakeSmtpServer (
+module Test.Sandwich.Contexts.FakeSmtpServer (
   introduceFakeSmtpServerNix
   , introduceFakeSmtpServer'
 
@@ -33,11 +33,11 @@ import GHC.TypeLits
 import Network.HTTP.Client
 import Network.Socket (PortNumber)
 import Relude
-import Sandwich.Contexts.FakeSmtpServer.Derivation
-import Sandwich.Contexts.Files
-import Sandwich.Contexts.Nix
-import Sandwich.Contexts.Util.Aeson
-import Sandwich.Contexts.Waits
+import Test.Sandwich.Contexts.FakeSmtpServer.Derivation
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Util.Aeson
+import Test.Sandwich.Contexts.Waits
 import System.FilePath
 import System.IO
 import System.Process

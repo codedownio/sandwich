@@ -9,11 +9,11 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
-import Sandwich.Contexts.FakeSmtpServer
-import Sandwich.Contexts.Files
-import Sandwich.Contexts.MinIO
-import Sandwich.Contexts.Nix
-import Sandwich.Contexts.Waits
+import Test.Sandwich.Contexts.FakeSmtpServer
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.MinIO
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Waits
 import Test.Sandwich
 
 

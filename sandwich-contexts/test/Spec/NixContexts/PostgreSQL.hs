@@ -1,8 +1,8 @@
 
 module Spec.NixContexts.PostgreSQL where
 
-import Sandwich.Contexts.Nix
-import Sandwich.Contexts.Nix.PostgreSQL
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Nix.PostgreSQL
 import Data.String.Interpolate
 import Database.PostgreSQL.Simple
 import Relude
