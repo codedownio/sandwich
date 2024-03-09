@@ -8,7 +8,7 @@ module Test.Sandwich.Contexts.MinIO (
   MinIOContextOptions (..)
   , defaultMinIOContextOptions
 
-  , introduceMinIONix
+  , introduceMinIOViaNix
   , withMinIOViaBinary
   , withMinIO
 
@@ -105,12 +105,12 @@ defaultMinIOContextOptions = MinIOContextOptions {
 
 -- * Raw
 
-introduceMinIONix :: (
+introduceMinIOViaNix :: (
   HasBaseContext context, HasNixContext context, MonadMask m, MonadUnliftIO m
   ) => MinIOContextOptions
     -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> LabelValue (AppendSymbol "file-" "minio") (EnvironmentFile "minio") :> context) m ()
     -> SpecFree context m ()
-introduceMinIONix options = introduceBinaryViaNixPackage @"minio" "minio" .
+introduceMinIOViaNix options = introduceBinaryViaNixPackage @"minio" "minio" .
   introduceWith "MinIO S3 server" fakeS3Server (withMinIOViaBinary options)
 
 withMinIOViaBinary :: (

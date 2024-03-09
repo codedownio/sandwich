@@ -19,7 +19,7 @@ import Test.Sandwich
 
 spec :: TopSpec
 spec = describe "Introducing a fake SMTP server" $
-  introduceNixContext nixpkgsReleaseDefault $ introduceMinIONix defaultMinIOContextOptions $ do
+  introduceNixContext nixpkgsReleaseDefault $ introduceMinIOViaNix defaultMinIOContextOptions $ do
     it "prints the MinIO server info" $ do
       server <- getContext fakeS3Server
       info [i|Got S3 server: #{server}|]
