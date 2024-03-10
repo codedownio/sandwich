@@ -12,16 +12,16 @@ module Test.Sandwich.Contexts.MinIO (
   , withMinIOViaBinary
   , withMinIO
 
-  , introduceMinIOContainer
+  , introduceMinIOViaContainer
   , withMinIOContainer
 
-  , fakeS3Server
-  , FakeS3Server(..)
-  , HasFakeS3Server
+  , testS3Server
+  , TestS3Server(..)
+  , HasTestS3Server
   , HttpMode(..)
 
-  , fakeS3ServerEndpoint
-  , fakeS3ConnectionInfo
+  , testS3ServerEndpoint
+  , testS3ConnectionInfo
   ) where
 
 import Control.Monad
@@ -44,16 +44,16 @@ import Network.Socket (PortNumber)
 import Network.URI (URI(..), URIAuth(..), parseURI)
 import Relude
 import Safe
+import System.Exit
+import System.FilePath
+import System.IO.Temp
+import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Util.Aeson
 import Test.Sandwich.Contexts.Util.Container
 import Test.Sandwich.Contexts.Util.UUID
 import Test.Sandwich.Contexts.Waits
-import System.Exit
-import System.FilePath
-import System.IO.Temp
-import Test.Sandwich
 import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
@@ -62,32 +62,32 @@ import UnliftIO.Process
 
 -- * Types
 
-fakeS3Server :: Label "fakeS3Server" FakeS3Server
-fakeS3Server = Label
+testS3Server :: Label "testS3Server" TestS3Server
+testS3Server = Label
 
-data FakeS3Server = FakeS3Server {
-  fakeS3ServerHostname :: HostName
-  , fakeS3ServerPort :: PortNumber
-  , fakeS3ServerAccessKeyId :: Text
-  , fakeS3ServerSecretAccessKey :: Text
-  , fakeS3ServerBucket :: Maybe Text
-  , fakeS3ServerHttpMode :: HttpMode
+data TestS3Server = TestS3Server {
+  testS3ServerHostname :: HostName
+  , testS3ServerPort :: PortNumber
+  , testS3ServerAccessKeyId :: Text
+  , testS3ServerSecretAccessKey :: Text
+  , testS3ServerBucket :: Maybe Text
+  , testS3ServerHttpMode :: HttpMode
   } deriving (Show, Eq)
 
 data HttpMode = HttpModeHttp | HttpModeHttps | HttpModeHttpsNoValidate
   deriving (Show, Eq)
 
-type HasFakeS3Server context = HasLabel context "fakeS3Server" FakeS3Server
+type HasTestS3Server context = HasLabel context "testS3Server" TestS3Server
 
-fakeS3ServerEndpoint :: FakeS3Server -> Text
-fakeS3ServerEndpoint (FakeS3Server {..}) = [i|#{protocol}://#{fakeS3ServerHostname}:#{fakeS3ServerPort}|]
-  where protocol :: Text = if fakeS3ServerHttpMode == HttpModeHttp then "http" else "https"
+testS3ServerEndpoint :: TestS3Server -> Text
+testS3ServerEndpoint (TestS3Server {..}) = [i|#{protocol}://#{testS3ServerHostname}:#{testS3ServerPort}|]
+  where protocol :: Text = if testS3ServerHttpMode == HttpModeHttp then "http" else "https"
 
-fakeS3ConnectionInfo :: FakeS3Server -> ConnectInfo
-fakeS3ConnectionInfo fakeServ@(FakeS3Server {..}) =
-  fromString (toString (fakeS3ServerEndpoint fakeServ))
-  & setCreds (CredentialValue (AccessKey fakeS3ServerAccessKeyId) (SecretKey (fromString (toString fakeS3ServerSecretAccessKey))) Nothing)
-  & (if fakeS3ServerHttpMode == HttpModeHttpsNoValidate then disableTLSCertValidation else id)
+testS3ConnectionInfo :: TestS3Server -> ConnectInfo
+testS3ConnectionInfo testServ@(TestS3Server {..}) =
+  fromString (toString (testS3ServerEndpoint testServ))
+  & setCreds (CredentialValue (AccessKey testS3ServerAccessKeyId) (SecretKey (fromString (toString testS3ServerSecretAccessKey))) Nothing)
+  & (if testS3ServerHttpMode == HttpModeHttpsNoValidate then disableTLSCertValidation else id)
 
 data MinIOContextOptions = MinIOContextOptions {
   minioContextBucket :: Maybe Text
@@ -108,15 +108,15 @@ defaultMinIOContextOptions = MinIOContextOptions {
 introduceMinIOViaNix :: (
   HasBaseContext context, HasNixContext context, MonadMask m, MonadUnliftIO m
   ) => MinIOContextOptions
-    -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> LabelValue (AppendSymbol "file-" "minio") (EnvironmentFile "minio") :> context) m ()
+    -> SpecFree (LabelValue "testS3Server" TestS3Server :> LabelValue (AppendSymbol "file-" "minio") (EnvironmentFile "minio") :> context) m ()
     -> SpecFree context m ()
 introduceMinIOViaNix options = introduceBinaryViaNixPackage @"minio" "minio" .
-  introduceWith "MinIO S3 server" fakeS3Server (withMinIOViaBinary options)
+  introduceWith "MinIO S3 server (via Nix binary)" testS3Server (withMinIOViaBinary options)
 
 withMinIOViaBinary :: (
   MonadReader context m, HasBaseContext context, HasFile context "minio"
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+  ) => MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIOViaBinary options action = do
   minioPath <- askFile @"minio"
   withMinIO minioPath options action
@@ -124,7 +124,7 @@ withMinIOViaBinary options action = do
 withMinIO :: (
   MonadReader context m, HasBaseContext context
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => FilePath -> MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+  ) => FilePath -> MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIO minioPath (MinIOContextOptions {..}) action = do
   dir <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withMinIOViaBinary must be run with a current directory."
@@ -168,13 +168,13 @@ withMinIO minioPath (MinIOContextOptions {..}) action = do
           Nothing -> expectationFailure [i|Couldn't parse URI port: '#{uriPort}'|]
         Just uri -> expectationFailure [i|MinIO URI didn't have hostname: #{uri}|]
 
-      let server = FakeS3Server {
-            fakeS3ServerHostname = hostname
-            , fakeS3ServerPort = port
-            , fakeS3ServerAccessKeyId = "minioadmin"
-            , fakeS3ServerSecretAccessKey = "minioadmin"
-            , fakeS3ServerBucket = minioContextBucket
-            , fakeS3ServerHttpMode = HttpModeHttp
+      let server = TestS3Server {
+            testS3ServerHostname = hostname
+            , testS3ServerPort = port
+            , testS3ServerAccessKeyId = "minioadmin"
+            , testS3ServerSecretAccessKey = "minioadmin"
+            , testS3ServerBucket = minioContextBucket
+            , testS3ServerHttpMode = HttpModeHttp
             }
 
       waitForMinIOReady server
@@ -192,16 +192,16 @@ withMinIO minioPath (MinIOContextOptions {..}) action = do
 
 -- * Container
 
-introduceMinIOContainer :: (
+introduceMinIOViaContainer :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
-  ) => MinIOContextOptions -> SpecFree (LabelValue "fakeS3Server" FakeS3Server :> context) m () -> SpecFree context m ()
-introduceMinIOContainer options = introduceWith "MinIO S3 server" fakeS3Server $ \action -> do
+  ) => MinIOContextOptions -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m () -> SpecFree context m ()
+introduceMinIOViaContainer options = introduceWith "MinIO S3 server (via container)" testS3Server $ \action -> do
   withMinIOContainer options action
 
 withMinIOContainer :: (
   MonadReader context m, HasBaseContext context
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => MinIOContextOptions -> (FakeS3Server -> m [Result]) -> m ()
+  ) => MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIOContainer (MinIOContextOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withMinIOContainer must be run with a current directory."
@@ -251,13 +251,13 @@ withMinIOContainer (MinIOContextOptions {..}) action = do
 
               localPort <- containerPortToHostPort minioContextContainerSystem containerName innerPort
 
-              let server = FakeS3Server {
-                    fakeS3ServerHostname = "127.0.0.1"
-                    , fakeS3ServerPort = localPort
-                    , fakeS3ServerAccessKeyId = "minioadmin"
-                    , fakeS3ServerSecretAccessKey = "minioadmin"
-                    , fakeS3ServerBucket = minioContextBucket
-                    , fakeS3ServerHttpMode = HttpModeHttp
+              let server = TestS3Server {
+                    testS3ServerHostname = "127.0.0.1"
+                    , testS3ServerPort = localPort
+                    , testS3ServerAccessKeyId = "minioadmin"
+                    , testS3ServerSecretAccessKey = "minioadmin"
+                    , testS3ServerBucket = minioContextBucket
+                    , testS3ServerHttpMode = HttpModeHttp
                     }
 
               waitForMinIOReady server
@@ -266,19 +266,19 @@ withMinIOContainer (MinIOContextOptions {..}) action = do
           )
 
 
-waitForMinIOReady :: (MonadLogger m, MonadUnliftIO m, MonadMask m) => FakeS3Server -> m ()
-waitForMinIOReady server@(FakeS3Server {..}) = do
+waitForMinIOReady :: (MonadLogger m, MonadUnliftIO m, MonadMask m) => TestS3Server -> m ()
+waitForMinIOReady server@(TestS3Server {..}) = do
   -- The minio image seems not to have a healthcheck?
   -- waitForHealth containerName
-  waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify [i|http://#{fakeS3ServerHostname}:#{fakeS3ServerPort}/minio/health/live|]
+  waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify [i|http://#{testS3ServerHostname}:#{testS3ServerPort}/minio/health/live|]
 
-  whenJust fakeS3ServerBucket $ \bucket -> do
+  whenJust testS3ServerBucket $ \bucket -> do
     -- Make the test bucket, retrying on ServiceErr
-    let connInfo :: ConnectInfo = setCreds (CredentialValue "minioadmin" "minioadmin" Nothing) [i|http://#{fakeS3ServerHostname}:#{fakeS3ServerPort}|]
+    let connInfo :: ConnectInfo = setCreds (CredentialValue "minioadmin" "minioadmin" Nothing) [i|http://#{testS3ServerHostname}:#{testS3ServerPort}|]
     let policy = limitRetriesByCumulativeDelay (1_000_000 * 60 * 5) $ capDelay 1_000_000 $ exponentialBackoff 50_000
     let handlers = [\_ -> MC.Handler (\case (ServiceErr {}) -> return True; _ -> return False)
                    , \_ -> MC.Handler (\case (MErrService (ServiceErr {})) -> return True; _ -> return False)]
-    debug [i|Starting to try to make bucket at http://#{fakeS3ServerHostname}:#{fakeS3ServerPort}|]
+    debug [i|Starting to try to make bucket at http://#{testS3ServerHostname}:#{testS3ServerPort}|]
     recovering policy handlers $ \retryStatus@(RetryStatus {}) -> do
       info [i|About to try making S3 bucket with retry status: #{retryStatus}|]
       liftIO $ doMakeBucket connInfo bucket
