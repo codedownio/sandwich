@@ -15,7 +15,7 @@ module Test.Sandwich.Contexts.PostgreSQL (
   , withPostgresUnixSocketViaNix
 
   -- * Containers
-  , PostgresContainerOptions
+  , PostgresContainerOptions(..)
   , defaultPostgresContainerOptions
   , introducePostgresViaContainer
   , withPostgresContainer
