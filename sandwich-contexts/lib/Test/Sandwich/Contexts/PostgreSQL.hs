@@ -9,7 +9,9 @@ module Test.Sandwich.Contexts.PostgreSQL (
   , PostgresNixOptions(..)
   , defaultPostgresNixOptions
   , introducePostgresViaNix
+  , withPostgresViaNix
   , introducePostgresUnixSocketViaNix
+  , withPostgresUnixSocketViaNix
 
   -- * Containers
   , PostgresContainerOptions
@@ -101,9 +103,7 @@ introducePostgres :: (
   , MonadUnliftIO m, MonadMask m
   ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
 introducePostgres opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
-  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
-
-  withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
+  withPostgresUnixSocketViaNix opts $ \unixSocket -> do
     debug [i|Got Postgres unix socket: #{unixSocket}|]
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
@@ -117,12 +117,17 @@ introducePostgresViaNix :: (
   HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadMask m
   ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
-introducePostgresViaNix opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
-  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
+introducePostgresViaNix opts = introduceWith "PostgreSQL via Nix" postgres $ \action ->
+  withPostgresViaNix opts (void . action)
 
-  withPostgresUnixSocket opts nixEnv $ \unixSocket ->
+withPostgresViaNix :: (
+  MonadReader context m, HasBaseContext context, HasNixContext context
+  , MonadUnliftIO m, MonadMask m, MonadFail m, MonadLogger m
+  ) => PostgresNixOptions -> (PostgresContext -> m a) -> m a
+withPostgresViaNix opts@(PostgresNixOptions {..}) action = do
+  withPostgresUnixSocketViaNix opts $ \unixSocket ->
     withProxyToUnixSocket unixSocket $ \port ->
-      void $ action $ PostgresContext {
+      action $ PostgresContext {
         postgresUsername = postgresNixUsername
         , postgresPassword = postgresNixPostgres
         , postgresDatabase = postgresNixDatabase
@@ -135,8 +140,7 @@ introducePostgresUnixSocketViaNix :: (
   , MonadUnliftIO m, MonadMask m
   ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
 introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
-  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
-  withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
+  withPostgresUnixSocketViaNix opts $ \unixSocket -> do
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
       , postgresPassword = postgresNixPostgres
@@ -145,11 +149,13 @@ introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith
       , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
       }
 
-withPostgresUnixSocket :: (
-  MonadReader context m, HasBaseContext context
+withPostgresUnixSocketViaNix :: (
+  MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadFail m, MonadMask m, MonadLogger m
-  ) => PostgresNixOptions -> FilePath -> (FilePath -> m a) -> m a
-withPostgresUnixSocket (PostgresNixOptions {..}) nixEnv action = do
+  ) => PostgresNixOptions -> (FilePath -> m a) -> m a
+withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
+  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
+
   Just dir <- getCurrentFolder
   baseDir <- liftIO $ createTempDirectory dir "postgres-nix"
   let dbDirName = baseDir </> "db"

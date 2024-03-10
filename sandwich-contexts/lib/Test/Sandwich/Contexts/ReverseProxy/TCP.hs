@@ -18,7 +18,7 @@ import UnliftIO.Async
 import UnliftIO.Exception
 
 
-withProxyToUnixSocket :: MonadUnliftIO m => FilePath -> (PortNumber -> m ()) -> m ()
+withProxyToUnixSocket :: MonadUnliftIO m => FilePath -> (PortNumber -> m a) -> m a
 withProxyToUnixSocket socketPath f = do
   portVar <- newEmptyMVar
   let ss = DCN.serverSettings 0 "*"
