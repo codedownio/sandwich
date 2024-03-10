@@ -33,16 +33,17 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Test.Sandwich.Contexts.Container.PostgreSQL
   - Test.Sandwich.Contexts.FakeSmtpServer
   - Test.Sandwich.Contexts.Files
   - Test.Sandwich.Contexts.MinIO
   - Test.Sandwich.Contexts.Nix
-  - Test.Sandwich.Contexts.Nix.PostgreSQL
+  - Test.Sandwich.Contexts.PostgreSQL
   - Test.Sandwich.Contexts.Waits
   dependencies:
   - aeson
   - bytestring
+  - conduit
+  - conduit-extra
   - containers
   - crypton-connection
   - exceptions
@@ -62,6 +63,7 @@ library:
   - relude
   - retry
   - safe
+  - streaming-commons
   - string-interpolate
   - temporary
   - text

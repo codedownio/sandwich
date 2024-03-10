@@ -38,6 +38,7 @@ packages:
 - ./demos/demo-minio
 - ./demos/demo-nix-binary
 - ./demos/demo-paralleln
+- ./demos/demo-postgres
 - ./demos/demo-processes
 - ./demos/demo-quickcheck
 - ./demos/demo-setup-teardown

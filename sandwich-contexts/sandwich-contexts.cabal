@@ -15,16 +15,15 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Test.Sandwich.Contexts.Container.PostgreSQL
       Test.Sandwich.Contexts.FakeSmtpServer
       Test.Sandwich.Contexts.Files
       Test.Sandwich.Contexts.MinIO
       Test.Sandwich.Contexts.Nix
-      Test.Sandwich.Contexts.Nix.PostgreSQL
+      Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Waits
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
-      Test.Sandwich.Contexts.Nix.CaddyProxy
+      Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Container
       Test.Sandwich.Contexts.Util.Exception
@@ -54,6 +53,8 @@ library
     , aeson
     , base
     , bytestring
+    , conduit
+    , conduit-extra
     , containers
     , crypton-connection
     , exceptions
@@ -73,6 +74,7 @@ library
     , retry
     , safe
     , sandwich
+    , streaming-commons
     , string-interpolate
     , temporary
     , text

@@ -1,16 +1,21 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.Contexts.Nix.PostgreSQL (
+module Test.Sandwich.Contexts.PostgreSQL (
   postgres
   , introducePostgres
 
-  , postgresUnixSocket
-  , introducePostgresUnixSocket
-
-  , PostgresNixOptions
-  , postgresNixPostgres
+  -- * Raw
+  , PostgresNixOptions(..)
   , defaultPostgresNixOptions
+  , introducePostgresViaNix
+  , introducePostgresUnixSocketViaNix
+
+  -- * Containers
+  , PostgresContainerOptions
+  , defaultPostgresContainerOptions
+  , introducePostgresViaContainer
+  , withPostgresContainer
 
   , PostgresContext(..)
   ) where
@@ -18,15 +23,21 @@ module Test.Sandwich.Contexts.Nix.PostgreSQL (
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import qualified Data.Map as M
 import Data.String.Interpolate
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Network.Socket (PortNumber)
 import Relude hiding (withFile)
-import Test.Sandwich.Contexts.Nix
 import System.Exit
 import System.FilePath
 import System.IO.Temp
 import System.Posix.Files
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.ReverseProxy.TCP
+import Test.Sandwich.Contexts.Util.Container
+import Test.Sandwich.Contexts.Util.UUID
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.Exception
@@ -37,9 +48,6 @@ import UnliftIO.Process
 
 postgres :: Label "postgres" PostgresContext
 postgres = Label
-
-postgresUnixSocket :: Label "postgresUnixSocket" PostgresContext
-postgresUnixSocket = Label
 
 -- * Types
 
@@ -65,14 +73,22 @@ defaultPostgresNixOptions = PostgresNixOptions {
   , postgresNixDatabase = "test"
   }
 
--- TODO: use the same context here as the container version
+data NetworkAddress =
+  NetworkAddressTCP { networkAddressTcpHostname :: String
+                    , networkAddressTcpPort :: PortNumber }
+  | NetworkAddressUnix { networkAddressUnixPath :: String }
+  deriving (Show)
+
 data PostgresContext = PostgresContext {
   postgresUsername :: Text
   , postgresPassword :: Text
-  , postgresConnString :: Text
   , postgresDatabase :: Text
+  , postgresAddress :: NetworkAddress
+  , postgresConnString :: Text
   } deriving (Show)
 
+
+-- * Binary
 
 -- initdb -D mydb
 -- echo "listen_addresses=''" >> mydb/postgresql.conf
@@ -88,27 +104,45 @@ introducePostgres opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via
   nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
 
   withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
-    debug [i|Got unix socket: #{unixSocket}|]
-    -- TODO: set up proxy
+    debug [i|Got Postgres unix socket: #{unixSocket}|]
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
       , postgresPassword = postgresNixPostgres
-      , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
       , postgresDatabase = postgresNixDatabase
+      , postgresAddress = NetworkAddressUnix unixSocket
+      , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
       }
 
-introducePostgresUnixSocket :: (
+introducePostgresViaNix :: (
   HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadMask m
-  ) => PostgresNixOptions -> SpecFree (LabelValue "postgresUnixSocket" PostgresContext :> context) m () -> SpecFree context m ()
-introducePostgresUnixSocket opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgresUnixSocket $ \action -> do
+  ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
+introducePostgresViaNix opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
+  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
+
+  withPostgresUnixSocket opts nixEnv $ \unixSocket ->
+    withProxyToUnixSocket unixSocket $ \port ->
+      void $ action $ PostgresContext {
+        postgresUsername = postgresNixUsername
+        , postgresPassword = postgresNixPostgres
+        , postgresDatabase = postgresNixDatabase
+        , postgresAddress = NetworkAddressTCP "localhost" port
+        , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@localhost:#{port}/#{postgresNixDatabase}|]
+        }
+
+introducePostgresUnixSocketViaNix :: (
+  HasBaseContext context, HasNixContext context
+  , MonadUnliftIO m, MonadMask m
+  ) => PostgresNixOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
+introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via Nix" postgres $ \action -> do
   nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
   withPostgresUnixSocket opts nixEnv $ \unixSocket -> do
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
       , postgresPassword = postgresNixPostgres
-      , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
       , postgresDatabase = postgresNixDatabase
+      , postgresAddress = NetworkAddressUnix unixSocket
+      , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
       }
 
 withPostgresUnixSocket :: (
@@ -183,3 +217,95 @@ withPostgresUnixSocket (PostgresNixOptions {..}) nixEnv action = do
                                                    ]) { cwd = Just dir }) ""
       )
       (\socketPath -> action socketPath)
+
+-- * Container
+
+data PostgresContainerOptions = PostgresContainerOptions {
+  postgresContainerUser :: Text
+  , postgresContainerPassword :: Text
+  , postgresContainerLabels :: Map Text Text
+  , postgresContainerContainerName :: Maybe Text
+  , postgresContainerContainerSystem :: ContainerSystem
+  , postgresContainerImage :: Text
+  } deriving (Show, Eq)
+defaultPostgresContainerOptions :: PostgresContainerOptions
+defaultPostgresContainerOptions = PostgresContainerOptions {
+  postgresContainerUser = "postgres"
+  , postgresContainerPassword = "password"
+  , postgresContainerLabels = mempty
+  , postgresContainerContainerName = Nothing
+  , postgresContainerContainerSystem = ContainerSystemPodman
+  , postgresContainerImage = "docker.io/postgres:15"
+  }
+
+introducePostgresViaContainer :: (
+  HasBaseContext context
+  , MonadUnliftIO m, MonadMask m
+  ) => PostgresContainerOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
+introducePostgresViaContainer opts = introduceWith "PostgreSQL via container" postgres $ \action -> do
+  withPostgresContainer opts (void . action)
+
+withPostgresContainer :: (
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadMask m, MonadReader context m, HasBaseContext context
+  ) => PostgresContainerOptions -> (PostgresContext -> m a) -> m a
+withPostgresContainer options action = do
+  bracket (createPostgresDatabase options)
+          (\(containerName, _p) -> timeAction "cleanup Postgres database" $ do
+              info [i|Doing #{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]
+              (exitCode, sout, serr) <-  liftIO $ readCreateProcessWithExitCode (shell [i|#{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]) ""
+              when (exitCode /= ExitSuccess) $
+                expectationFailure [i|Failed to destroy Postgres container. Stdout: '#{sout}'. Stderr: '#{serr}'|]
+          )
+          (waitForPostgresDatabase options >=> action)
+
+createPostgresDatabase :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context
+  ) => PostgresContainerOptions -> m (Text, ProcessHandle)
+createPostgresDatabase (PostgresContainerOptions {..}) = timeAction "create Postgres database" $ do
+  containerName <- maybe (("postgres-" <>) <$> makeUUID) return postgresContainerContainerName
+
+  let containerSystem = postgresContainerContainerSystem
+  let labelArgs = mconcat [["-l", [i|#{k}=#{v}|]] | (k, v) <- M.toList postgresContainerLabels]
+  let args = ["run"
+             , "-d"
+             , "-e", [i|POSTGRES_USER=#{postgresContainerUser}|]
+             , "-e", [i|POSTGRES_PASSWORD=#{postgresContainerPassword}|]
+             , "-p", "5432"
+             , "--health-cmd", [i|pg_isready -U #{postgresContainerUser}|]
+             , "--health-interval=100ms"
+             , "--name", containerName
+             ]
+             <> labelArgs
+             <> [postgresContainerImage]
+
+  info [i|cmd: #{containerSystem} #{T.unwords args}|]
+
+  p <- createProcessWithLogging (proc (show containerSystem) (fmap toString args))
+  return (containerName, p)
+
+waitForPostgresDatabase :: (
+  MonadUnliftIO m, MonadLoggerIO m, MonadMask m
+  ) => PostgresContainerOptions -> (Text, ProcessHandle) -> m PostgresContext
+waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p) = do
+  containerID <- waitForProcess p >>= \case
+    ExitSuccess -> containerNameToContainerId postgresContainerContainerSystem containerName
+    _ -> expectationFailure [i|Failed to start Postgres container.|]
+
+  debug [i|Postgres container ID: #{containerID}|]
+
+  localPort <- containerPortToHostPort postgresContainerContainerSystem containerName 5432
+
+  waitForHealth postgresContainerContainerSystem containerID
+
+  let pc = PostgresContext {
+        postgresUsername = postgresContainerUser
+        , postgresPassword = postgresContainerPassword
+        , postgresDatabase = postgresContainerUser
+        , postgresAddress = NetworkAddressTCP "localhost" localPort
+        , postgresConnString = [i|postgresql://#{postgresContainerUser}:#{postgresContainerPassword}@localhost:#{localPort}/#{postgresContainerUser}|]
+        }
+
+  -- TODO: might be a good idea to do this here, rather than wrap a retry around the initial migrate later on
+  -- waitForSimpleQuery pc
+
+  return pc
