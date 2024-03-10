@@ -4,6 +4,7 @@
 module Test.Sandwich.Contexts.PostgreSQL (
   postgres
   , introducePostgres
+  , PostgresContext(..)
 
   -- * Raw
   , PostgresNixOptions(..)
@@ -19,7 +20,8 @@ module Test.Sandwich.Contexts.PostgreSQL (
   , introducePostgresViaContainer
   , withPostgresContainer
 
-  , PostgresContext(..)
+  -- * Misc
+  , NetworkAddress(..)
   ) where
 
 import Control.Monad.Catch (MonadMask)
