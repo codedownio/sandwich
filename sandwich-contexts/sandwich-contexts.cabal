@@ -22,6 +22,7 @@ library
       Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Waits
   other-modules:
+      Sandwich.Contexts.Nix.PostgreSQL
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson

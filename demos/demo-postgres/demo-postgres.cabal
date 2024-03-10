@@ -31,6 +31,8 @@ executable demo-postgres
     , bytestring
     , monad-logger
     , network
+    , postgresql-simple
+    , relude
     , sandwich
     , sandwich-contexts
     , string-interpolate
