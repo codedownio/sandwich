@@ -1,20 +1,20 @@
 
 module Spec.NixContexts.PostgreSQL where
 
-import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Nix.PostgreSQL
 import Data.String.Interpolate
 import Database.PostgreSQL.Simple
 import Relude
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.PostgreSQL
 
 
 tests :: TopSpec
 tests = describe "PostgreSQL Nix" $ do
   introduceNixContext nixpkgsReleaseDefault $ do
-    introducePostgresUnixSocket defaultPostgresNixOptions $ do
+    introducePostgresUnixSocketViaNix defaultPostgresNixOptions $ do
       it "should have a working postgres Unix socket" $ do
-        ctx@(PostgresContext {..}) <- getContext postgresUnixSocket
+        ctx@(PostgresContext {..}) <- getContext postgres
         info [i|Got context: #{ctx}|]
         selectTwoPlusTwo (encodeUtf8 postgresConnString) >>= (`shouldBe` 4)
 
