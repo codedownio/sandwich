@@ -21,7 +21,8 @@ module Test.Sandwich.Contexts.MinIO (
   , HttpMode(..)
 
   , testS3ServerEndpoint
-  , testS3ConnectionInfo
+  , testS3ServerContainerEndpoint
+  , testS3ServerConnectInfo
   ) where
 
 import Control.Monad
@@ -38,7 +39,6 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import GHC.TypeLits
-import Network.HostName
 import Network.Minio
 import Network.Socket (PortNumber)
 import Network.URI (URI(..), URIAuth(..), parseURI)
@@ -50,6 +50,7 @@ import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.Contexts.Types
 import Test.Sandwich.Contexts.Util.Aeson
 import Test.Sandwich.Contexts.Util.Container
 import Test.Sandwich.Contexts.Util.UUID
@@ -66,8 +67,10 @@ testS3Server :: Label "testS3Server" TestS3Server
 testS3Server = Label
 
 data TestS3Server = TestS3Server {
-  testS3ServerHostname :: HostName
-  , testS3ServerPort :: PortNumber
+  testS3ServerAddress :: NetworkAddress
+  -- | The address of the S3 server within its container, if present.
+  -- Useful if you're doing container-to-container networking.
+  , testS3ServerContainerAddress :: Maybe NetworkAddress
   , testS3ServerAccessKeyId :: Text
   , testS3ServerSecretAccessKey :: Text
   , testS3ServerBucket :: Maybe Text
@@ -80,11 +83,23 @@ data HttpMode = HttpModeHttp | HttpModeHttps | HttpModeHttpsNoValidate
 type HasTestS3Server context = HasLabel context "testS3Server" TestS3Server
 
 testS3ServerEndpoint :: TestS3Server -> Text
-testS3ServerEndpoint (TestS3Server {..}) = [i|#{protocol}://#{testS3ServerHostname}:#{testS3ServerPort}|]
-  where protocol :: Text = if testS3ServerHttpMode == HttpModeHttp then "http" else "https"
+testS3ServerEndpoint serv@(TestS3Server {testS3ServerAddress=(NetworkAddressTCP hostname port)}) =
+  [i|#{s3Protocol serv}://#{hostname}:#{port}|]
+testS3ServerEndpoint serv@(TestS3Server {testS3ServerAddress=(NetworkAddressUnix path)}) =
+  [i|#{s3Protocol serv}://#{path}|]
 
-testS3ConnectionInfo :: TestS3Server -> ConnectInfo
-testS3ConnectionInfo testServ@(TestS3Server {..}) =
+testS3ServerContainerEndpoint :: TestS3Server -> Maybe Text
+testS3ServerContainerEndpoint serv@(TestS3Server {testS3ServerContainerAddress=(Just (NetworkAddressTCP hostname port))}) =
+  Just [i|#{s3Protocol serv}://#{hostname}:#{port}|]
+testS3ServerContainerEndpoint serv@(TestS3Server {testS3ServerContainerAddress=(Just (NetworkAddressUnix path))}) =
+  Just [i|#{s3Protocol serv}://#{path}|]
+testS3ServerContainerEndpoint _ = Nothing
+
+s3Protocol :: TestS3Server -> Text
+s3Protocol (TestS3Server {..}) = if testS3ServerHttpMode == HttpModeHttp then "http" else "https"
+
+testS3ServerConnectInfo :: TestS3Server -> ConnectInfo
+testS3ServerConnectInfo testServ@(TestS3Server {..}) =
   fromString (toString (testS3ServerEndpoint testServ))
   & setCreds (CredentialValue (AccessKey testS3ServerAccessKeyId) (SecretKey (fromString (toString testS3ServerSecretAccessKey))) Nothing)
   & (if testS3ServerHttpMode == HttpModeHttpsNoValidate then disableTLSCertValidation else id)
@@ -169,8 +184,8 @@ withMinIO minioPath (MinIOContextOptions {..}) action = do
         Just uri -> expectationFailure [i|MinIO URI didn't have hostname: #{uri}|]
 
       let server = TestS3Server {
-            testS3ServerHostname = hostname
-            , testS3ServerPort = port
+            testS3ServerAddress = NetworkAddressTCP hostname port
+            , testS3ServerContainerAddress = Nothing
             , testS3ServerAccessKeyId = "minioadmin"
             , testS3ServerSecretAccessKey = "minioadmin"
             , testS3ServerBucket = minioContextBucket
@@ -252,8 +267,8 @@ withMinIOContainer (MinIOContextOptions {..}) action = do
               localPort <- containerPortToHostPort minioContextContainerSystem containerName innerPort
 
               let server = TestS3Server {
-                    testS3ServerHostname = "127.0.0.1"
-                    , testS3ServerPort = localPort
+                    testS3ServerAddress = NetworkAddressTCP "127.0.0.1" localPort
+                    , testS3ServerContainerAddress = Nothing
                     , testS3ServerAccessKeyId = "minioadmin"
                     , testS3ServerSecretAccessKey = "minioadmin"
                     , testS3ServerBucket = minioContextBucket
@@ -268,17 +283,19 @@ withMinIOContainer (MinIOContextOptions {..}) action = do
 
 waitForMinIOReady :: (MonadLogger m, MonadUnliftIO m, MonadMask m) => TestS3Server -> m ()
 waitForMinIOReady server@(TestS3Server {..}) = do
+  let endpoint = testS3ServerEndpoint server
+
   -- The minio image seems not to have a healthcheck?
   -- waitForHealth containerName
-  waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify [i|http://#{testS3ServerHostname}:#{testS3ServerPort}/minio/health/live|]
+  waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify (toString endpoint <> [i|/minio/health/live|])
 
   whenJust testS3ServerBucket $ \bucket -> do
     -- Make the test bucket, retrying on ServiceErr
-    let connInfo :: ConnectInfo = setCreds (CredentialValue "minioadmin" "minioadmin" Nothing) [i|http://#{testS3ServerHostname}:#{testS3ServerPort}|]
+    let connInfo :: ConnectInfo = setCreds (CredentialValue "minioadmin" "minioadmin" Nothing) (fromString $ toString endpoint)
     let policy = limitRetriesByCumulativeDelay (1_000_000 * 60 * 5) $ capDelay 1_000_000 $ exponentialBackoff 50_000
     let handlers = [\_ -> MC.Handler (\case (ServiceErr {}) -> return True; _ -> return False)
                    , \_ -> MC.Handler (\case (MErrService (ServiceErr {})) -> return True; _ -> return False)]
-    debug [i|Starting to try to make bucket at http://#{testS3ServerHostname}:#{testS3ServerPort}|]
+    debug [i|Starting to try to make bucket at #{endpoint}|]
     recovering policy handlers $ \retryStatus@(RetryStatus {}) -> do
       info [i|About to try making S3 bucket with retry status: #{retryStatus}|]
       liftIO $ doMakeBucket connInfo bucket

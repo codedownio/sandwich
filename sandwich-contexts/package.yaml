@@ -48,7 +48,6 @@ library:
   - crypton-connection
   - exceptions
   - filepath
-  - hostname
   - http-client
   - http-conduit
   - http-types

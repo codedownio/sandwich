@@ -31,7 +31,6 @@ import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Network.Socket (PortNumber)
 import Relude hiding (withFile)
 import System.Exit
 import System.FilePath
@@ -40,6 +39,7 @@ import System.Posix.Files
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.ReverseProxy.TCP
+import Test.Sandwich.Contexts.Types
 import Test.Sandwich.Contexts.Util.Container
 import Test.Sandwich.Contexts.Util.UUID
 import UnliftIO.Directory
@@ -76,12 +76,6 @@ defaultPostgresNixOptions = PostgresNixOptions {
   , postgresNixPassword = "postgres"
   , postgresNixDatabase = "test"
   }
-
-data NetworkAddress =
-  NetworkAddressTCP { networkAddressTcpHostname :: String
-                    , networkAddressTcpPort :: PortNumber }
-  | NetworkAddressUnix { networkAddressUnixPath :: String }
-  deriving (Show)
 
 data PostgresContext = PostgresContext {
   postgresUsername :: Text

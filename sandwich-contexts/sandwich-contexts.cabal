@@ -24,6 +24,7 @@ library
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.ReverseProxy.TCP
+      Test.Sandwich.Contexts.Types
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Container
       Test.Sandwich.Contexts.Util.Exception
@@ -59,7 +60,6 @@ library
     , crypton-connection
     , exceptions
     , filepath
-    , hostname
     , http-client
     , http-conduit
     , http-types
