@@ -20,7 +20,7 @@ module Test.Sandwich.Contexts.PostgreSQL (
   , introducePostgresViaContainer
   , withPostgresContainer
 
-  -- * Misc
+  -- * Re-exports
   , NetworkAddress(..)
   ) where
 

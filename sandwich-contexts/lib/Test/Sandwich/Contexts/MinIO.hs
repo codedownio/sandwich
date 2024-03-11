@@ -23,6 +23,9 @@ module Test.Sandwich.Contexts.MinIO (
   , testS3ServerEndpoint
   , testS3ServerContainerEndpoint
   , testS3ServerConnectInfo
+
+  -- * Re-exports
+  , NetworkAddress(..)
   ) where
 
 import Control.Monad
