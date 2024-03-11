@@ -89,6 +89,10 @@ data PostgresContext = PostgresContext {
   , postgresDatabase :: Text
   , postgresAddress :: NetworkAddress
   , postgresConnString :: Text
+  -- | The address of the database server within its container (if it was started
+  -- using a container).
+  -- Useful when the test is also in a container, and containers are networked together.
+  , postgresContainerAddress :: Maybe NetworkAddress
   } deriving (Show)
 
 
@@ -113,6 +117,7 @@ introducePostgres opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via
       , postgresDatabase = postgresNixDatabase
       , postgresAddress = NetworkAddressUnix unixSocket
       , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
+      , postgresContainerAddress = Nothing
       }
 
 introducePostgresViaNix :: (
@@ -135,6 +140,7 @@ withPostgresViaNix opts@(PostgresNixOptions {..}) action = do
         , postgresDatabase = postgresNixDatabase
         , postgresAddress = NetworkAddressTCP "localhost" port
         , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@localhost:#{port}/#{postgresNixDatabase}|]
+        , postgresContainerAddress = Nothing
         }
 
 introducePostgresUnixSocketViaNix :: (
@@ -149,6 +155,7 @@ introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith
       , postgresDatabase = postgresNixDatabase
       , postgresAddress = NetworkAddressUnix unixSocket
       , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
+      , postgresContainerAddress = Nothing
       }
 
 withPostgresUnixSocketViaNix :: (
@@ -311,6 +318,7 @@ waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p) = do
         , postgresDatabase = postgresContainerUser
         , postgresAddress = NetworkAddressTCP "localhost" localPort
         , postgresConnString = [i|postgresql://#{postgresContainerUser}:#{postgresContainerPassword}@localhost:#{localPort}/#{postgresContainerUser}|]
+        , postgresContainerAddress = Just $ NetworkAddressTCP (toString containerName) 5432
         }
 
   -- TODO: might be a good idea to do this here, rather than wrap a retry around the initial migrate later on
