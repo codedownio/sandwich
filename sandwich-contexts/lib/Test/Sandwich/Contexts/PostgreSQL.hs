@@ -113,7 +113,7 @@ introducePostgres opts@(PostgresNixOptions {..}) = introduceWith "PostgreSQL via
     debug [i|Got Postgres unix socket: #{unixSocket}|]
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
-      , postgresPassword = postgresNixPostgres
+      , postgresPassword = postgresNixPassword
       , postgresDatabase = postgresNixDatabase
       , postgresAddress = NetworkAddressUnix unixSocket
       , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
@@ -136,7 +136,7 @@ withPostgresViaNix opts@(PostgresNixOptions {..}) action = do
     withProxyToUnixSocket unixSocket $ \port ->
       action $ PostgresContext {
         postgresUsername = postgresNixUsername
-        , postgresPassword = postgresNixPostgres
+        , postgresPassword = postgresNixPassword
         , postgresDatabase = postgresNixDatabase
         , postgresAddress = NetworkAddressTCP "localhost" port
         , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@localhost:#{port}/#{postgresNixDatabase}|]
@@ -151,7 +151,7 @@ introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith
   withPostgresUnixSocketViaNix opts $ \unixSocket -> do
     void $ action $ PostgresContext {
       postgresUsername = postgresNixUsername
-      , postgresPassword = postgresNixPostgres
+      , postgresPassword = postgresNixPassword
       , postgresDatabase = postgresNixDatabase
       , postgresAddress = NetworkAddressUnix unixSocket
       , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/#{postgresNixDatabase}?host=#{takeDirectory unixSocket}|]
