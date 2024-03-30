@@ -14,7 +14,6 @@ import qualified Data.Map as M
 import Data.String.Interpolate
 import Data.Text as T
 import Network.HTTP.Client (Manager)
-import System.IO
 import System.Process
 import Test.Sandwich
 import qualified Test.WebDriver as W
@@ -173,7 +172,7 @@ defaultWdOptions toolsRoot = WdOptions {
 
 data WebDriver = WebDriver {
   wdName :: String
-  , wdWebDriver :: (Handle, Handle, ProcessHandle, FilePath, FilePath, Maybe XvfbSession)
+  , wdWebDriver :: (ProcessHandle, Maybe XvfbSession)
   , wdOptions :: WdOptions
   , wdSessionMap :: MVar (M.Map Session W.WDSession)
   , wdConfig :: W.WDConfig
@@ -202,12 +201,12 @@ getWdOptions = wdOptions
 -- | Get the X11 display number associated with the 'WebDriver'.
 -- Only present if running in 'RunInXvfb' mode.
 getDisplayNumber :: WebDriver -> Maybe Int
-getDisplayNumber (WebDriver {wdWebDriver=(_, _, _, _, _, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
+getDisplayNumber (WebDriver {wdWebDriver=(_, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
 
 -- | Get the Xvfb session associated with the 'WebDriver', if present.
 getXvfbSession :: WebDriver -> Maybe XvfbSession
-getXvfbSession (WebDriver {wdWebDriver=(_, _, _, _, _, Just sess)}) = Just sess
+getXvfbSession (WebDriver {wdWebDriver=(_, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
 -- | Get the name of the 'WebDriver'.

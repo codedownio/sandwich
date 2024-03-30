@@ -39,9 +39,9 @@ library:
   - Test.Sandwich.Contexts.Nix
   - Test.Sandwich.Contexts.PostgreSQL
   - Test.Sandwich.Contexts.Waits
-
   - Test.Sandwich.Contexts.Types.Network
   - Test.Sandwich.Contexts.Types.S3
+  - Test.Sandwich.Contexts.Util.Ports
   dependencies:
   - aeson
   - conduit
