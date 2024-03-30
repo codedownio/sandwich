@@ -714,7 +714,9 @@ aroundEach' loc no l f (Free (Introduce'' loci noi li cl alloc clean subspec nex
 
 unwrapContext :: forall m introduce context. (
   Monad m
-  ) => (ExampleT context m [Result] -> ExampleT context m ()) -> ExampleT (introduce :> context) m [Result] -> ExampleT (introduce :> context) m ()
+  ) => (ExampleT context m [Result] -> ExampleT context m ())
+    -> ExampleT (introduce :> context) m [Result]
+    -> ExampleT (introduce :> context) m ()
 unwrapContext f (ExampleT action) = do
   i' :> _ <- ask
   ExampleT $ withReaderT (\(_ :> context) -> context) $ unExampleT $ f $ ExampleT (withReaderT (i' :>) action)
