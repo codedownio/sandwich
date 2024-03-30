@@ -6,6 +6,7 @@
 module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
+  , introduceWebDriverViaNix
   , introduceWebDriverOptions
   , addCommandLineOptionsToWdOptions
 
@@ -43,6 +44,8 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
@@ -60,10 +63,18 @@ import UnliftIO.MVar
 introduceWebDriver :: (
   BaseMonadContext m context
   ) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
-introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
+introduceWebDriver wdOptions = undefined -- introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
+
+introduceWebDriverViaNix :: (
+  BaseMonadContext m context, HasNixContext context, HasFile context "java"
+  ) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+introduceWebDriverViaNix wdOptions =
+  introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
-introduceWebDriverOptions :: forall a context m. (BaseMonadContext m context, HasCommandLineOptions context a)
+introduceWebDriverOptions :: forall a context m. (
+  BaseMonadContext m context, HasCommandLineOptions context a, HasFile context "java"
+  )
   => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
   where alloc = do
@@ -71,7 +82,7 @@ introduceWebDriverOptions wdOptions = introduce "Introduce WebDriver session" we
           allocateWebDriver (addCommandLineOptionsToWdOptions @a clo wdOptions)
 
 -- | Allocate a WebDriver using the given options.
-allocateWebDriver :: (HasBaseContext context, BaseMonad m) => WdOptions -> ExampleT context m WebDriver
+allocateWebDriver :: (BaseMonad m, HasBaseContext context, HasFile context "java") => WdOptions -> ExampleT context m WebDriver
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
   dir <- fromMaybe "/tmp" <$> getCurrentFolder
@@ -80,7 +91,7 @@ allocateWebDriver wdOptions = do
 -- | Allocate a WebDriver using the given options and putting logs under the given path.
 allocateWebDriver' :: FilePath -> WdOptions -> IO WebDriver
 allocateWebDriver' runRoot wdOptions = do
-  runNoLoggingT $ startWebDriver wdOptions runRoot
+  runNoLoggingT $ flip runReaderT (undefined :: LabelValue "file-java" (EnvironmentFile "java")) $ startWebDriver wdOptions runRoot
 
 -- | Clean up the given WebDriver.
 cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()

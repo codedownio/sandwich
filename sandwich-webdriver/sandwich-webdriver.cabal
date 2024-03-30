@@ -35,7 +35,7 @@ library
       Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox
       Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
       Test.Sandwich.WebDriver.Internal.Capabilities
-      Test.Sandwich.WebDriver.Internal.Ports
+      Test.Sandwich.WebDriver.Internal.Capabilities.Extra
       Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
       Test.Sandwich.WebDriver.Internal.Types
@@ -74,6 +74,8 @@ library
     , http-client
     , http-client-tls
     , http-conduit
+    , lens
+    , lens-regex-pcre
     , microlens
     , microlens-aeson
     , monad-control
@@ -85,6 +87,7 @@ library
     , retry
     , safe
     , sandwich >=0.1.0.3
+    , sandwich-contexts
     , string-interpolate
     , text
     , time
@@ -152,6 +155,8 @@ executable sandwich-webdriver-exe
     , http-client
     , http-client-tls
     , http-conduit
+    , lens
+    , lens-regex-pcre
     , microlens
     , microlens-aeson
     , monad-control
@@ -163,6 +168,7 @@ executable sandwich-webdriver-exe
     , retry
     , safe
     , sandwich >=0.1.0.3
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
     , text
@@ -230,6 +236,8 @@ test-suite sandwich-webdriver-test
     , http-client
     , http-client-tls
     , http-conduit
+    , lens
+    , lens-regex-pcre
     , microlens
     , microlens-aeson
     , monad-control
@@ -241,6 +249,7 @@ test-suite sandwich-webdriver-test
     , retry
     , safe
     , sandwich >=0.1.0.3
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
     , text

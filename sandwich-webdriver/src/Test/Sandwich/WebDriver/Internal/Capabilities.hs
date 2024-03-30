@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedLists #-}
--- |
 
 module Test.Sandwich.WebDriver.Internal.Capabilities (
   -- * Chrome

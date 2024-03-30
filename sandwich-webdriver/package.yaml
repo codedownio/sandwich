@@ -25,6 +25,8 @@ dependencies:
 - http-client
 - http-client-tls
 - http-conduit
+- lens
+- lens-regex-pcre
 - microlens
 - microlens-aeson
 - monad-control
@@ -36,6 +38,7 @@ dependencies:
 - retry
 - safe
 - sandwich >= 0.1.0.3
+- sandwich-contexts
 - string-interpolate
 - text
 - time
