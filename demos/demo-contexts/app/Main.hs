@@ -27,6 +27,13 @@ contextsDemo = describe "Contexts" $ do
       db <- getContext database
       info [i|Got database: '#{db}'|]
 
+      maybeDb <- getContextMaybe database
+      info [i|Got database from getContextMaybe: #{maybeDb}|]
+
+  it "Uses a maybe database" $ do
+    maybeDb <- getContextMaybe database
+    info [i|Got database from getContextMaybe: #{maybeDb}|]
+
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
   }

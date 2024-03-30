@@ -191,12 +191,12 @@ commandLineSlackOptions maybeInternal = CommandLineSlackOptions
 
 -- * Parse command line args
 
-parseCommandLineArgs :: forall a. Parser a -> TopSpecWithOptions' a -> IO (CommandLineOptions a)
+parseCommandLineArgs :: forall a. Typeable a => Parser a -> TopSpecWithOptions' a -> IO (CommandLineOptions a)
 parseCommandLineArgs parser spec = do
   (clo, _, _) <- parseCommandLineArgs' parser spec
   return clo
 
-parseCommandLineArgs' :: forall a. Parser a -> TopSpecWithOptions' a -> IO (
+parseCommandLineArgs' :: forall a. Typeable a => Parser a -> TopSpecWithOptions' a -> IO (
   CommandLineOptions a
   , Mod FlagFields (Maybe IndividualTestModule) -> Parser (Maybe IndividualTestModule)
   , [(NodeModuleInfo, T.Text)]

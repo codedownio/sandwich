@@ -6,6 +6,8 @@
 module Test.Sandwich.Contexts where
 
 import Control.Monad.Reader
+import Data.Typeable
+import GHC.TypeLits (KnownSymbol)
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -14,6 +16,10 @@ import Test.Sandwich.Types.Spec
 -- | Get a context by its label.
 getContext :: (HasLabel context l a, MonadReader context m) => Label l a -> m a
 getContext = asks . getLabelValue
+
+-- | Try to get a context by its label. If not is in scope, returns 'Nothing'.
+getContextMaybe :: (MonadReader context m, KnownSymbol l, Typeable context, Typeable a) => Label l a -> m (Maybe a)
+getContextMaybe = asks . getLabelValueMaybe
 
 -- | Get the root folder of the on-disk test tree for the current run.
 -- Will be 'Nothing' if the run isn't configured to use the disk.

@@ -67,7 +67,6 @@ module Test.Sandwich (
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import qualified Control.Exception as E
-import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
@@ -108,6 +107,7 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
+import UnliftIO.Exception
 
 #ifdef mingw32_HOST_OS
 import System.Win32.Console

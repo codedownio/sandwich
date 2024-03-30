@@ -157,7 +157,7 @@ instance HasBaseContext context => HasTestTimer context where
 
 type CoreSpec = Spec BaseContext IO
 
-type TopSpec = forall context. HasBaseContext context => SpecFree context IO ()
+type TopSpec = forall context. (HasBaseContext context, Typeable context) => SpecFree context IO ()
 
 -- * Specs with command line options provided
 
@@ -168,12 +168,14 @@ commandLineOptions = Label :: Label "commandLineOptions" (CommandLineOptions a)
 type HasCommandLineOptions context a = HasLabel context "commandLineOptions" (CommandLineOptions a)
 
 type TopSpecWithOptions = forall context. (
-  HasBaseContext context
+  Typeable context
+  , HasBaseContext context
   , HasCommandLineOptions context ()
   ) => SpecFree context IO ()
 
 type TopSpecWithOptions' a = forall context. (
-  HasBaseContext context
+  Typeable context
+  , HasBaseContext context
   , HasCommandLineOptions context a
   ) => SpecFree context IO ()
 

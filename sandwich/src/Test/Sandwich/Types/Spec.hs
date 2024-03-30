@@ -9,6 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -37,6 +38,7 @@ import GHC.Stack
 import GHC.TypeLits
 import Graphics.Vty.Image (Image)
 import Safe
+import Type.Reflection
 import UnliftIO.Exception
 
 #if !MIN_VERSION_base(4,13,0)
@@ -145,7 +147,7 @@ instance Eq SomeAsyncExceptionWithEq where
 
 data Label (l :: Symbol) a = Label
 
-data LabelValue (l :: Symbol) a = LabelValue a
+data LabelValue (l :: Symbol) a = LabelValue { unLabelValue :: a }
 
 -- TODO: get rid of overlapping instance
 -- Maybe look at https://kseo.github.io/posts/2017-02-05-avoid-overlapping-instances-with-closed-type-families.html
@@ -158,6 +160,37 @@ instance {-# OVERLAPPING #-} HasLabel (LabelValue l a :> context) l a where
 instance {-# OVERLAPPING #-} HasLabel context l a => HasLabel (intro :> context) l a where
   getLabelValue l (_ :> ctx) = getLabelValue l ctx
 
+getLabelValueMaybe :: forall context l a. (KnownSymbol l, Typeable a, Typeable context) => Label l a -> context -> Maybe a
+getLabelValueMaybe _ ctx = unLabelValue <$> decomposeContext @(LabelValue l a) ctx
+  where
+    -- | https://stackoverflow.com/questions/78224748/extract-a-maybe-from-a-heterogeneous-collection
+    decomposeContext :: forall needle haystack. (
+      Typeable needle, Typeable haystack
+      ) => haystack -> Maybe needle
+    decomposeContext haystack = case typeOf haystack of
+      (eqTypeRep (typeRep @needle) -> Just HRefl) -> Just haystack
+      App (App (eqTypeRep (typeRep @(:>)) -> Just HRefl) a) b -> let
+        part1 :> part2 = haystack
+        in
+        withTypeable a (decomposeContext part1) <|> withTypeable b (decomposeContext part2)
+      _ -> Nothing
+
+-- | https://stackoverflow.com/questions/78224748/extract-a-maybe-from-a-heterogeneous-collection
+-- extractContext :: forall c a b. (Typeable a, Typeable b, Typeable c) => a :> b -> Maybe c
+-- extractContext (a :> b)
+--   -- handle `Int :> a`
+--   | Just x <- cast a = Just x
+--   -- handle `x :> (y :> z)`
+--   --   extract type (of right-hand side) as:  c `op` d
+--   | App (App op c) d <- typeOf b
+--   --   check op ~ (:>)
+--   , Just HRefl <- eqTypeRep op (TypeRep @(:>))
+--   --   extract Typeable c, Typeable d, and recurse
+--     = withTypeable c $ withTypeable d $ extractContext b
+--   -- handle `x :> Int`
+--   | Just x <- cast b = Just x
+--   -- handle remaining cases
+--   | otherwise = Nothing
 
 -- * Free monad language
 
