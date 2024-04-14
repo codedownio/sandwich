@@ -212,7 +212,7 @@ withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
             >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 
-          files <- listDirectory (unixSockDir)
+          files <- listDirectory unixSockDir
           filterM ((isSocket <$>) . liftIO . getFileStatus) [unixSockDir </> f | f <- files] >>= \case
             [f] -> pure f
             [] -> expectationFailure [i|Couldn't find Unix socket for PostgreSQL server (check output and logfile for errors).|]
