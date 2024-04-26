@@ -17,6 +17,8 @@ nix:
 packages:
 - ./sandwich
 - ./sandwich-contexts
+- ./sandwich-contexts-docker
+- ./sandwich-contexts-kubernetes
 - ./sandwich-hedgehog
 - ./sandwich-quickcheck
 - ./sandwich-slack
@@ -56,6 +58,25 @@ packages:
 extra-deps:
 - vty-windows-0.2.0.0
 
-# For sandwich-contexts
+## For sandwich-contexts
+
 - git: https://github.com/codedownio/minio-hs
   commit: 768665c90321d118fdd3cde2c6ac6c01310d76a0
+
+## For sandwich-contexts-docker
+
+- git: https://github.com/codedownio/docker-openapi.git
+  commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+
+## For sandwich-contexts-kubernetes
+
+- git: https://github.com/codedownio/kubernetes-client-haskell.git
+  # codedown-feb-2024
+  commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+  subdirs:
+  - kubernetes
+  - kubernetes-client
+
+- git: https://github.com/codedownio/haskell-oidc-client
+  # codedown-jan-2024-ghc96
+  commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4

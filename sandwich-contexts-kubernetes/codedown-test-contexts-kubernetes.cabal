@@ -1,0 +1,100 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           codedown-test-contexts-kubernetes
+version:        0.1.0.0
+synopsis:       CodeDown test contexts
+description:    Please see README.md
+author:         Tom McLaughlin
+maintainer:     tom@codedown.io
+copyright:      2024 Tom McLaughlin
+build-type:     Simple
+
+library
+  exposed-modules:
+      Sandwich.Contexts.Kubernetes.Cluster
+      Sandwich.Contexts.Kubernetes.KindCluster
+      Sandwich.Contexts.Kubernetes.MinikubeCluster
+      Sandwich.Contexts.Kubernetes.MinioOperator
+      Sandwich.Contexts.Kubernetes.MinioS3Server
+      Sandwich.Contexts.Kubernetes.Namespace
+      Sandwich.Contexts.Kubernetes.SeaweedFS
+      Sandwich.Contexts.Kubernetes.Types
+  other-modules:
+      Sandwich.Contexts.Kubernetes.KindCluster.Config
+      Sandwich.Contexts.Kubernetes.KindCluster.Images
+      Sandwich.Contexts.Kubernetes.KindCluster.Network
+      Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress
+      Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward
+      Sandwich.Contexts.Kubernetes.KindCluster.Setup
+      Sandwich.Contexts.Kubernetes.KubectlLogs
+      Sandwich.Contexts.Kubernetes.KubectlPortForward
+      Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
+      Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
+      Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
+      Sandwich.Contexts.Kubernetes.Run
+      Sandwich.Contexts.Kubernetes.Util
+      Sandwich.Contexts.Kubernetes.Util.Aeson
+      Sandwich.Contexts.Kubernetes.Util.Container
+      Sandwich.Contexts.Kubernetes.Util.Exception
+      Sandwich.Contexts.Kubernetes.Util.Nix
+      Sandwich.Contexts.Kubernetes.Util.Ports
+      Sandwich.Contexts.Kubernetes.Util.SocketUtil
+      Sandwich.Contexts.Kubernetes.Util.UUID
+      Sandwich.Contexts.Kubernetes.Waits
+      Paths_codedown_test_contexts_kubernetes
+  hs-source-dirs:
+      lib
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      LambdaCase
+      MultiWayIf
+      ViewPatterns
+      TupleSections
+      FlexibleContexts
+      NoImplicitPrelude
+      NumericUnderscores
+  ghc-options: -Wunused-packages -Wall
+  build-depends:
+      aeson
+    , base
+    , base64-bytestring
+    , bytestring
+    , containers
+    , exceptions
+    , filepath
+    , hostname
+    , http-client
+    , kubernetes-client
+    , kubernetes-client-core
+    , lens
+    , lens-regex-pcre
+    , lifted-base
+    , minio-hs
+    , monad-control
+    , monad-logger
+    , mtl
+    , network
+    , network-uri
+    , process
+    , random
+    , relude
+    , retry
+    , safe
+    , sandwich
+    , sandwich-contexts
+    , string-interpolate
+    , temporary
+    , text
+    , unliftio
+    , unliftio-core
+    , vector
+    , yaml
+  default-language: Haskell2010

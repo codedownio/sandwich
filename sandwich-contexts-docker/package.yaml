@@ -1,4 +1,4 @@
-name: sandwich-contexts
+name: sandwich-contexts-docker
 version: 0.1.0.0
 synopsis: Sandwich test contexts
 description: Please see README.md
@@ -33,43 +33,30 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Test.Sandwich.Contexts.FakeSmtpServer
-  - Test.Sandwich.Contexts.Files
-  - Test.Sandwich.Contexts.MinIO
-  - Test.Sandwich.Contexts.Nix
-  - Test.Sandwich.Contexts.PostgreSQL
-  - Test.Sandwich.Contexts.Waits
-
-  - Test.Sandwich.Contexts.Util.Aeson
+  - Test.Sandwich.Contexts.Docker
+  - Test.Sandwich.Contexts.Docker.Container
+  - Test.Sandwich.Contexts.Docker.Registry
   dependencies:
   - aeson
   - bytestring
-  - conduit
-  - conduit-extra
   - containers
-  - crypton-connection
+  - docker-engine
   - exceptions
   - filepath
+  - hostname
   - http-client
-  - http-conduit
   - http-types
-  - HTTP
-  - minio-hs
+  - iproute
+  - monad-control
   - monad-logger
-  - mtl
   - network
-  - network-uri
-  - process
   - random
   - relude
   - retry
   - safe
-  - streaming-commons
+  - sandwich-contexts
   - string-interpolate
-  - temporary
   - text
-  - time
-  - unix
   - unliftio-core
   - vector
 

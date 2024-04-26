@@ -22,6 +22,54 @@ packages:
   original:
     commit: 768665c90321d118fdd3cde2c6ac6c01310d76a0
     git: https://github.com/codedownio/minio-hs
+- completed:
+    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    git: https://github.com/codedownio/docker-openapi.git
+    name: docker-engine
+    pantry-tree:
+      sha256: 54977c879b4e3054579f231a3c015c4262c1ad0e94417f78d4fe743d975f54d1
+      size: 3152
+    version: 1.36.0.0
+  original:
+    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    git: https://github.com/codedownio/docker-openapi.git
+- completed:
+    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    name: kubernetes-client-core
+    pantry-tree:
+      sha256: 0cb86401de40cab1f2b32e37fb1d181d778ddc2a9205ec16a6cb45f1a790bf58
+      size: 8368
+    subdir: kubernetes
+    version: 0.4.3.0
+  original:
+    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    subdir: kubernetes
+- completed:
+    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    name: kubernetes-client
+    pantry-tree:
+      sha256: e1205ba33bd552ba23227eae6297728f01ecc07ab87c56413d99cb2cec9e89d1
+      size: 2125
+    subdir: kubernetes-client
+    version: 0.4.3.1
+  original:
+    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    subdir: kubernetes-client
+- completed:
+    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+    git: https://github.com/codedownio/haskell-oidc-client
+    name: oidc-client
+    pantry-tree:
+      sha256: d2f194f36144d7da1608fe2060d59e1d64341758fa9adf3473ff6c3d6da345e3
+      size: 1846
+    version: 0.8.0.0
+  original:
+    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+    git: https://github.com/codedownio/haskell-oidc-client
 snapshots:
 - completed:
     sha256: e2c529ccfb21501f98f639e056cbde50470b86256d9849d7a82d414ca23e4276

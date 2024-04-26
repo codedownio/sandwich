@@ -1,12 +1,13 @@
-name: sandwich-contexts
+name: codedown-test-contexts-kubernetes
 version: 0.1.0.0
-synopsis: Sandwich test contexts
+synopsis: CodeDown test contexts
 description: Please see README.md
 author: Tom McLaughlin
 maintainer: tom@codedown.io
-copyright: 2023 Tom McLaughlin
+copyright: 2024 Tom McLaughlin
 dependencies:
 - base
+- containers
 - sandwich
 - unliftio
 
@@ -25,7 +26,7 @@ default-extensions:
 - NumericUnderscores
 
 ghc-options:
-- -Wunused-packages # For GHC 8.10.1 and above
+- -Wunused-packages
 - -Wall
 # - -Wpartial-fields
 # - -Wredundant-constraints # Reports HasCallStack, so keep it off normally
@@ -33,28 +34,31 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Test.Sandwich.Contexts.FakeSmtpServer
-  - Test.Sandwich.Contexts.Files
-  - Test.Sandwich.Contexts.MinIO
-  - Test.Sandwich.Contexts.Nix
-  - Test.Sandwich.Contexts.PostgreSQL
-  - Test.Sandwich.Contexts.Waits
-
-  - Test.Sandwich.Contexts.Util.Aeson
+  - Sandwich.Contexts.Kubernetes.Cluster
+  - Sandwich.Contexts.Kubernetes.KindCluster
+  - Sandwich.Contexts.Kubernetes.MinikubeCluster
+  - Sandwich.Contexts.Kubernetes.MinioOperator
+  - Sandwich.Contexts.Kubernetes.MinioS3Server
+  - Sandwich.Contexts.Kubernetes.Namespace
+  - Sandwich.Contexts.Kubernetes.SeaweedFS
+  - Sandwich.Contexts.Kubernetes.Types
   dependencies:
   - aeson
+  - base64-bytestring
   - bytestring
-  - conduit
-  - conduit-extra
+  - sandwich-contexts
   - containers
-  - crypton-connection
   - exceptions
   - filepath
+  - hostname
   - http-client
-  - http-conduit
-  - http-types
-  - HTTP
+  - kubernetes-client
+  - kubernetes-client-core
+  - lens
+  - lens-regex-pcre
+  - lifted-base
   - minio-hs
+  - monad-control
   - monad-logger
   - mtl
   - network
@@ -64,26 +68,9 @@ library:
   - relude
   - retry
   - safe
-  - streaming-commons
   - string-interpolate
   - temporary
   - text
-  - time
-  - unix
   - unliftio-core
   - vector
-
-tests:
-  tests:
-    main: Main.hs
-    source-dirs: test
-    ghc-options:
-    - -Wall
-    - -rtsopts
-    - -threaded
-    dependencies:
-    - filepath
-    - postgresql-simple
-    - relude
-    - sandwich-contexts
-    - string-interpolate
+  - yaml

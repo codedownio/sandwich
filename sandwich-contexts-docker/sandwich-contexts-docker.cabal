@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           sandwich-contexts
+name:           sandwich-contexts-docker
 version:        0.1.0.0
 synopsis:       Sandwich test contexts
 description:    Please see README.md
@@ -15,23 +15,11 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Test.Sandwich.Contexts.FakeSmtpServer
-      Test.Sandwich.Contexts.Files
-      Test.Sandwich.Contexts.MinIO
-      Test.Sandwich.Contexts.Nix
-      Test.Sandwich.Contexts.PostgreSQL
-      Test.Sandwich.Contexts.Waits
-      Test.Sandwich.Contexts.Util.Aeson
+      Test.Sandwich.Contexts.Docker
+      Test.Sandwich.Contexts.Docker.Container
+      Test.Sandwich.Contexts.Docker.Registry
   other-modules:
-      Test.Sandwich.Contexts.FakeSmtpServer.Derivation
-      Test.Sandwich.Contexts.ReverseProxy.TCP
-      Test.Sandwich.Contexts.Types
-      Test.Sandwich.Contexts.Util.Container
-      Test.Sandwich.Contexts.Util.Nix
-      Test.Sandwich.Contexts.Util.Ports
-      Test.Sandwich.Contexts.Util.SocketUtil
-      Test.Sandwich.Contexts.Util.UUID
-      Paths_sandwich_contexts
+      Paths_sandwich_contexts_docker
   hs-source-dirs:
       lib
   default-extensions:
@@ -49,36 +37,28 @@ library
       NumericUnderscores
   ghc-options: -Wunused-packages -Wall
   build-depends:
-      HTTP
-    , aeson
+      aeson
     , base
     , bytestring
-    , conduit
-    , conduit-extra
     , containers
-    , crypton-connection
+    , docker-engine
     , exceptions
     , filepath
+    , hostname
     , http-client
-    , http-conduit
     , http-types
-    , minio-hs
+    , iproute
+    , monad-control
     , monad-logger
-    , mtl
     , network
-    , network-uri
-    , process
     , random
     , relude
     , retry
     , safe
     , sandwich
-    , streaming-commons
+    , sandwich-contexts
     , string-interpolate
-    , temporary
     , text
-    , time
-    , unix
     , unliftio
     , unliftio-core
     , vector
@@ -89,9 +69,7 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Spec
-      Spec.Nix
-      Spec.NixContexts.PostgreSQL
-      Paths_sandwich_contexts
+      Paths_sandwich_contexts_docker
   hs-source-dirs:
       test
   default-extensions:

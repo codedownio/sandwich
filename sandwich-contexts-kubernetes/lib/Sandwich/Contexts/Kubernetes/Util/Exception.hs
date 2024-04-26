@@ -1,5 +1,5 @@
 
-module Test.Sandwich.Contexts.Util.Exception where
+module Sandwich.Contexts.Kubernetes.Util.Exception where
 
 import Control.Monad.IO.Unlift
 import Relude
