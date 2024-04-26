@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           codedown-test-contexts-kubernetes
+name:           sandwich-contexts-kubernetes
 version:        0.1.0.0
 synopsis:       CodeDown test contexts
 description:    Please see README.md
@@ -45,7 +45,7 @@ library
       Sandwich.Contexts.Kubernetes.Util.SocketUtil
       Sandwich.Contexts.Kubernetes.Util.UUID
       Sandwich.Contexts.Kubernetes.Waits
-      Paths_codedown_test_contexts_kubernetes
+      Paths_sandwich_contexts_kubernetes
   hs-source-dirs:
       lib
   default-extensions:
