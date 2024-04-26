@@ -13,6 +13,7 @@ dependencies:
 - sandwich-contexts
 - string-interpolate
 - text
+- time
 - unliftio
 
 default-extensions:

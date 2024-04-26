@@ -9,6 +9,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
+import Data.Time
 import Database.PostgreSQL.Simple
 import Relude
 import Test.Sandwich
@@ -29,6 +30,9 @@ spec = describe "Introducing PostgreSQL" $ do
 
         selectTwoPlusTwo (encodeUtf8 postgresConnString) >>= (`shouldBe` 4)
 
+        now <- selectUtcNow (encodeUtf8 postgresConnString)
+        info [i|Got now: #{now}|]
+
   describe "Via Nix" $
     introduceNixContext nixpkgsReleaseDefault $ introducePostgresViaNix defaultPostgresNixOptions $ do
       it "prints the server info and does a simple test" $ do
@@ -36,6 +40,9 @@ spec = describe "Introducing PostgreSQL" $ do
         info [i|Got PostgreSQL server: #{server}|]
 
         selectTwoPlusTwo (encodeUtf8 postgresConnString) >>= (`shouldBe` 4)
+
+        now <- selectUtcNow (encodeUtf8 postgresConnString)
+        info [i|Got now: #{now}|]
 
   describe "Via container" $
     introducePostgresViaContainer defaultPostgresContainerOptions $ do
@@ -47,11 +54,20 @@ spec = describe "Introducing PostgreSQL" $ do
 
         selectTwoPlusTwo (encodeUtf8 postgresConnString) >>= (`shouldBe` 4)
 
+        now <- selectUtcNow (encodeUtf8 postgresConnString)
+        info [i|Got now: #{now}|]
+
 
 selectTwoPlusTwo :: MonadIO m => ByteString -> m Int
 selectTwoPlusTwo connString = liftIO $ do
   conn <- connectPostgreSQL connString
   [Only n] <- query_ conn "select 2 + 2"
+  return n
+
+selectUtcNow :: MonadIO m => ByteString -> m UTCTime
+selectUtcNow connString = liftIO $ do
+  conn <- connectPostgreSQL connString
+  [Only n] <- query_ conn "select now()"
   return n
 
 
