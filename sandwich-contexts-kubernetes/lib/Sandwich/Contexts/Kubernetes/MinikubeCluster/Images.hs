@@ -5,8 +5,6 @@
 
 module Sandwich.Contexts.Kubernetes.MinikubeCluster.Images where
 
-import Sandwich.Contexts.Kubernetes.Types
-import Sandwich.Contexts.Kubernetes.Util.Container
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -14,9 +12,12 @@ import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
+import Sandwich.Contexts.Kubernetes.Types
+import Sandwich.Contexts.Kubernetes.Util.Container
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import UnliftIO.Directory
 import UnliftIO.Process
 
 
@@ -51,8 +52,16 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
     timeAction [i|Loading docker image '#{image}'|] $ do
       case isAbsolute (toString image) of
         True -> do
-          let cmd = [iii|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c .
-                         | minikube image load -
+          initialStream :: Text <- doesDirectoryExist (toString image) >>= \case
+            True ->
+              -- Uncompressed directory: tar it up (but don't zip)
+              pure [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c .|]
+            False -> case takeExtension (toString image) of
+              ".tar" -> pure [i|cat "#{image}"|]
+              ".tar.gz" -> pure [i|cat "#{image}" | gzip -d|]
+              _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
+
+          let cmd = [iii|#{initialStream} | minikube image load -
                          --profile #{kubernetesClusterName kcc}
                          --logtostderr
                          #{T.unwords extraFlags}
