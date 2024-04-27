@@ -58,7 +58,7 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
               pure [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c .|]
             False -> case takeExtension (toString image) of
               ".tar" -> pure [i|cat "#{image}"|]
-              ".tar.gz" -> pure [i|cat "#{image}" | gzip -d|]
+              ".gz" -> pure [i|cat "#{image}" | gzip -d|]
               _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
           let cmd = [iii|#{initialStream} | minikube image load -
