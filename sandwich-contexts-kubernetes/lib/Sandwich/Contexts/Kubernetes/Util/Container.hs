@@ -10,12 +10,12 @@ module Sandwich.Contexts.Kubernetes.Util.Container (
 
   , containerNameToContainerId
 
+  , readImageName
   , readUncompressedImageName
 
   , waitForHealth
   ) where
 
-import Sandwich.Contexts.Kubernetes.Util.Aeson
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -32,11 +32,14 @@ import qualified Data.Vector as V
 import Network.Socket (PortNumber)
 import Relude
 import Safe
+import Sandwich.Contexts.Kubernetes.Util.Aeson
 import System.Exit
 import System.FilePath
 import Test.Sandwich
 import qualified Text.Show
+import UnliftIO.Directory
 import UnliftIO.Process
+import UnliftIO.Temporary
 
 
 data ContainerSystem = ContainerSystemDocker | ContainerSystemPodman
@@ -110,9 +113,28 @@ containerNameToContainerId containerSystem containerName = do
     (ExitFailure n, sout, serr) -> expectationFailure [i|Failed to obtain container ID for container named '#{containerName}'. Code: #{n}. Stdout: '#{sout}'. Stderr: '#{serr}'.|]
 
 readUncompressedImageName :: (HasCallStack, MonadIO m) => FilePath -> m Text
-readUncompressedImageName path = do
-  contents <- liftIO $ BL.readFile (path </> "manifest.json")
+readUncompressedImageName path = liftIO (BL.readFile (path </> "manifest.json")) >>= getImageNameFromManifestJson path
 
+readImageName :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => FilePath -> m Text
+readImageName path = doesDirectoryExist path >>= \case
+  True -> readUncompressedImageName path
+  False -> case takeExtension path of
+    ".tar" -> extractFromTarball
+    ".gz" -> extractFromTarball
+    _ -> expectationFailure [i|readImageName: unexpected extension in #{path}. Wanted .tar, .tar.gz, or uncompressed directory.|]
+  where
+    extractFromTarball = do
+      files <- readCreateProcessWithLogging (proc "tar" ["tf", path]) ""
+      manifestFileName <- case headMay [t | t <- T.words (toText files), "manifest.json" `T.isInfixOf` t] of
+        Just f -> pure $ toString $ T.strip f
+        Nothing -> expectationFailure [i|readImageName: couldn't find manifest file in #{path}|]
+
+      withSystemTempDirectory "manifest.json" $ \dir -> do
+        _ <- readCreateProcessWithLogging ((proc "tar" ["xvf", path, manifestFileName]) { cwd = Just dir }) ""
+        liftIO (BL.readFile (dir </> "manifest.json")) >>= getImageNameFromManifestJson path
+
+getImageNameFromManifestJson :: (HasCallStack, MonadIO m) => FilePath -> LByteString -> m Text
+getImageNameFromManifestJson path contents = do
   case A.eitherDecode contents of
     Left err -> expectationFailure [i|Couldn't decode manifest.json: #{err}|]
     Right (A.Array entries) -> case concatMap getRepoTags entries of

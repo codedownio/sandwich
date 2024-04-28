@@ -10,8 +10,6 @@ module Test.Sandwich.Contexts.Docker.Container (
 
   , containerNameToContainerId
 
-  , readUncompressedImageName
-
   , waitForHealth
   ) where
 
@@ -22,19 +20,15 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import Data.Aeson as A
 import Data.Aeson.TH as A
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
-import qualified Data.Vector as V
 import Network.Socket (PortNumber)
 import Relude
 import Safe
 import System.Exit
-import System.FilePath
 import Test.Sandwich
-import Test.Sandwich.Contexts.Util.Aeson (aesonLookup)
 import qualified Text.Show
 import UnliftIO.Process
 
@@ -108,19 +102,3 @@ containerNameToContainerId containerSystem containerName = do
   liftIO (readCreateProcessWithExitCode (shell cmd) "") >>= \case
     (ExitSuccess, sout, _serr) -> return $ T.strip $ toText sout
     (ExitFailure n, sout, serr) -> expectationFailure [i|Failed to obtain container ID for container named '#{containerName}'. Code: #{n}. Stdout: '#{sout}'. Stderr: '#{serr}'.|]
-
-readUncompressedImageName :: (HasCallStack, MonadIO m) => FilePath -> m Text
-readUncompressedImageName path = do
-  contents <- liftIO $ BL.readFile (path </> "manifest.json")
-
-  case A.eitherDecode contents of
-    Left err -> expectationFailure [i|Couldn't decode manifest.json: #{err}|]
-    Right (A.Array entries) -> case concatMap getRepoTags entries of
-      (x:_) -> pure x
-      [] -> expectationFailure [i|Didn't find a repo tag for image at #{path}|]
-    Right x -> expectationFailure [i|Unexpected manifest.json format: #{x}|]
-
-  where
-    getRepoTags :: A.Value -> [Text]
-    getRepoTags (A.Object (aesonLookup "RepoTags" -> Just (A.Array repoItems))) = [t | A.String t <- V.toList repoItems]
-    getRepoTags _ = []

@@ -69,7 +69,7 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
                          |]
           debug [i|withLoadImages': #{cmd}|]
           createProcessWithLogging (shell cmd) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-          tweak <$> readUncompressedImageName (toString image)
+          tweak <$> readImageName (toString image)
 
         False -> do
           let cmd = [iii|minikube image load #{image}
