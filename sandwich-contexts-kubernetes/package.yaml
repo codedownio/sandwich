@@ -34,14 +34,14 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Sandwich.Contexts.Kubernetes.Cluster
-  - Sandwich.Contexts.Kubernetes.KindCluster
-  - Sandwich.Contexts.Kubernetes.MinikubeCluster
-  - Sandwich.Contexts.Kubernetes.MinioOperator
-  - Sandwich.Contexts.Kubernetes.MinioS3Server
-  - Sandwich.Contexts.Kubernetes.Namespace
-  - Sandwich.Contexts.Kubernetes.SeaweedFS
-  - Sandwich.Contexts.Kubernetes.Types
+  - Test.Sandwich.Contexts.Kubernetes.Cluster
+  - Test.Sandwich.Contexts.Kubernetes.KindCluster
+  - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+  - Test.Sandwich.Contexts.Kubernetes.MinioOperator
+  - Test.Sandwich.Contexts.Kubernetes.MinioS3Server
+  - Test.Sandwich.Contexts.Kubernetes.Namespace
+  - Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+  - Test.Sandwich.Contexts.Kubernetes.Types
   dependencies:
   - aeson
   - base64-bytestring

@@ -15,36 +15,36 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Sandwich.Contexts.Kubernetes.Cluster
-      Sandwich.Contexts.Kubernetes.KindCluster
-      Sandwich.Contexts.Kubernetes.MinikubeCluster
-      Sandwich.Contexts.Kubernetes.MinioOperator
-      Sandwich.Contexts.Kubernetes.MinioS3Server
-      Sandwich.Contexts.Kubernetes.Namespace
-      Sandwich.Contexts.Kubernetes.SeaweedFS
-      Sandwich.Contexts.Kubernetes.Types
+      Test.Sandwich.Contexts.Kubernetes.Cluster
+      Test.Sandwich.Contexts.Kubernetes.KindCluster
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+      Test.Sandwich.Contexts.Kubernetes.MinioOperator
+      Test.Sandwich.Contexts.Kubernetes.MinioS3Server
+      Test.Sandwich.Contexts.Kubernetes.Namespace
+      Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+      Test.Sandwich.Contexts.Kubernetes.Types
   other-modules:
-      Sandwich.Contexts.Kubernetes.KindCluster.Config
-      Sandwich.Contexts.Kubernetes.KindCluster.Images
-      Sandwich.Contexts.Kubernetes.KindCluster.Network
-      Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress
-      Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward
-      Sandwich.Contexts.Kubernetes.KindCluster.Setup
-      Sandwich.Contexts.Kubernetes.KubectlLogs
-      Sandwich.Contexts.Kubernetes.KubectlPortForward
-      Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
-      Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
-      Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
-      Sandwich.Contexts.Kubernetes.Run
-      Sandwich.Contexts.Kubernetes.Util
-      Sandwich.Contexts.Kubernetes.Util.Aeson
-      Sandwich.Contexts.Kubernetes.Util.Container
-      Sandwich.Contexts.Kubernetes.Util.Exception
-      Sandwich.Contexts.Kubernetes.Util.Nix
-      Sandwich.Contexts.Kubernetes.Util.Ports
-      Sandwich.Contexts.Kubernetes.Util.SocketUtil
-      Sandwich.Contexts.Kubernetes.Util.UUID
-      Sandwich.Contexts.Kubernetes.Waits
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Network
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
+      Test.Sandwich.Contexts.Kubernetes.KubectlLogs
+      Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
+      Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
+      Test.Sandwich.Contexts.Kubernetes.Run
+      Test.Sandwich.Contexts.Kubernetes.Util
+      Test.Sandwich.Contexts.Kubernetes.Util.Aeson
+      Test.Sandwich.Contexts.Kubernetes.Util.Container
+      Test.Sandwich.Contexts.Kubernetes.Util.Exception
+      Test.Sandwich.Contexts.Kubernetes.Util.Nix
+      Test.Sandwich.Contexts.Kubernetes.Util.Ports
+      Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
+      Test.Sandwich.Contexts.Kubernetes.Util.UUID
+      Test.Sandwich.Contexts.Kubernetes.Waits
       Paths_sandwich_contexts_kubernetes
   hs-source-dirs:
       lib

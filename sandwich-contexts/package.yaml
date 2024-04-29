@@ -43,7 +43,6 @@ library:
   - Test.Sandwich.Contexts.Util.Aeson
   dependencies:
   - aeson
-  - bytestring
   - conduit
   - conduit-extra
   - containers

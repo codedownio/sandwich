@@ -9,7 +9,8 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Files (
-  introduceBinaryViaEnvironment
+  introduceFile
+  , introduceBinaryViaEnvironment
 
   , introduceBinaryViaNixPackage
   , introduceBinaryViaNixPackage'
@@ -30,9 +31,9 @@ import Control.Monad.Logger
 import Data.String.Interpolate
 import GHC.TypeLits
 import Relude
-import Test.Sandwich.Contexts.Nix
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
 import UnliftIO.Directory
 
 
@@ -54,13 +55,31 @@ askFile = askFileProxy (Proxy @a)
 askFileProxy :: forall a context m. (MonadReader context m, HasFile context a) => Proxy a -> m FilePath
 askFileProxy _ = unEnvironmentFile <$> getContext (mkLabel @a)
 
+introduceFile :: forall a context m. (
+  MonadUnliftIO m, KnownSymbol a
+  ) => FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+introduceFile path = introduceFile' (Proxy @a) path
+
+introduceFile' :: forall a context m. (
+  MonadUnliftIO m, KnownSymbol a
+  ) => Proxy a -> FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+introduceFile' proxy path = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkLabel @a) (return $ EnvironmentFile path) (const $ return ())
+
 -- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
 -- Useful when you want to set up your own environment with binaries etc. to use in tests.
 -- Throws an exception if the desired file is not available.
 introduceBinaryViaEnvironment :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
+  ) => SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (Proxy @a)
+
+-- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
+-- Useful when you want to set up your own environment with binaries etc. to use in tests.
+-- Throws an exception if the desired file is not available.
+introduceBinaryViaEnvironment' :: forall a context m. (
+  MonadUnliftIO m, KnownSymbol a
   ) => Proxy a -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
-introduceBinaryViaEnvironment proxy = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkLabel @a) alloc cleanup
+introduceBinaryViaEnvironment' proxy = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkLabel @a) alloc cleanup
   where
     alloc = do
       liftIO (findExecutable (symbolVal proxy)) >>= \case

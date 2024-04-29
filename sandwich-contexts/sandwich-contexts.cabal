@@ -52,7 +52,6 @@ library
       HTTP
     , aeson
     , base
-    , bytestring
     , conduit
     , conduit-extra
     , containers
