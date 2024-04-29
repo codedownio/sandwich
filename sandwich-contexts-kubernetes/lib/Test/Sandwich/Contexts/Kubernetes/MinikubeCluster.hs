@@ -15,6 +15,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
 
   -- , introduceMinikubeClusterWithDockerRegistry
   , withMinikubeCluster
+  , withMinikubeCluster'
   -- , withNewMinikubeCluster
 
   -- * For creating permanent external clusters
@@ -101,20 +102,26 @@ withMinikubeCluster :: (
   MonadReader context m, HasBaseContext context, HasFile context "minikube"
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   ) => MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
-withMinikubeCluster options@(MinikubeClusterOptions {..}) action = do
+withMinikubeCluster options action = do
+  minikubeBinary <- askFile @"minikube"
+  withMinikubeCluster' minikubeBinary options action
+
+withMinikubeCluster' :: (
+  MonadReader context m, HasBaseContext context
+  , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
+  ) => FilePath -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+withMinikubeCluster' minikubeBinary options@(MinikubeClusterOptions {..}) action = do
   let prefix = fromMaybe "test-minikube-cluster" minikubeClusterNamePrefix
   clusterID <- makeUUID' 5
   let clusterName = [i|#{prefix}-#{clusterID}|]
-  withNewMinikubeCluster clusterName options action
+  withNewMinikubeCluster minikubeBinary clusterName options action
 
 withNewMinikubeCluster :: (
-  MonadReader context m, HasBaseContext context, HasFile context "minikube"
+  MonadReader context m, HasBaseContext context
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  ) => String -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
-withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action = do
+  ) => FilePath -> String -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+withNewMinikubeCluster minikubeBinary clusterName options@(MinikubeClusterOptions {..}) action = do
   Just dir <- getCurrentFolder
-
-  minikubeBinary <- askFile @"minikube"
 
   minikubeDir <- liftIO $ createTempDirectory dir "minikube"
 
@@ -125,7 +132,7 @@ withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action 
   let deleteLogFile = minikubeDir </> "minikube-delete.log"
 
   withFile startLogFile WriteMode $ \logH ->
-    (bracket (startMinikubeCluster logH clusterName minikubeKubeConfigFile options)
+    (bracket (startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile options)
              (\_ -> do
                  info [i|Deleting minikube cluster: #{clusterName}|]
 
@@ -170,9 +177,9 @@ withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action 
              )
 
 startMinikubeCluster :: (
-  MonadLoggerIO m, MonadReader context m, HasFile context "minikube"
-  ) => Handle -> String -> String -> MinikubeClusterOptions -> m ProcessHandle
-startMinikubeCluster logH clusterName minikubeKubeConfigFile (MinikubeClusterOptions {..}) = do
+  MonadLoggerIO m, MonadReader context m
+  ) => FilePath -> Handle -> String -> String -> MinikubeClusterOptions -> m ProcessHandle
+startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (MinikubeClusterOptions {..}) = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", minikubeKubeConfigFile) : baseEnv)
 
@@ -191,8 +198,6 @@ startMinikubeCluster logH clusterName minikubeKubeConfigFile (MinikubeClusterOpt
                   , [i|--memory=#{fromMaybe "16000mb" minikubeClusterMemory}|]
                   , [i|--cpus=#{fromMaybe "8" minikubeClusterCpus}|]
                   ]
-
-  minikubeBinary <- askFile @"minikube"
 
   let args = ["start"
              , "--profile", clusterName
