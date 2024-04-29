@@ -113,7 +113,7 @@ introduceBinaryViaNixPackage' :: forall a context m. (
     -> NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
+introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix package #{packageName})|] (mkLabel @a) alloc (const $ return ())
   where
     alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal proxy)
 
@@ -149,7 +149,7 @@ introduceBinaryViaNixDerivation' :: forall a context m. (
     -> Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{symbolVal proxy} (binary via Nix)|] (mkLabel @a) alloc (const $ return ())
+introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{symbolVal proxy} (binary via Nix derivation)|] (mkLabel @a) alloc (const $ return ())
   where
     alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal proxy)
 
