@@ -25,7 +25,8 @@ data KubernetesClusterType =
   KubernetesClusterKind { kindClusterName :: Text
                         , kindClusterDriver :: Text
                         , kindClusterEnvironment :: Maybe [(String, String)] }
-  | KubernetesClusterMinikube { minikubeProfileName :: Text
+  | KubernetesClusterMinikube { minikubeBinary :: FilePath
+                              , minikubeProfileName :: Text
                               , minikubeFlags :: [Text] }
   deriving (Show, Eq)
 

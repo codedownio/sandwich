@@ -114,6 +114,8 @@ withNewMinikubeCluster :: (
 withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action = do
   Just dir <- getCurrentFolder
 
+  minikubeBinary <- askFile @"minikube"
+
   minikubeDir <- liftIO $ createTempDirectory dir "minikube"
 
   let minikubeKubeConfigFile = minikubeDir </> "minikube-config"
@@ -132,10 +134,10 @@ withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action 
                        False -> []
 
                  withFile deleteLogFile WriteMode $ \deleteH -> do
-                   let deleteCp = (proc "minikube" (["delete"
-                                                    , "--profile", clusterName
-                                                    , "--logtostderr"
-                                                    ] <> extraFlags)) {
+                   let deleteCp = (proc minikubeBinary (["delete"
+                                                        , "--profile", clusterName
+                                                        , "--logtostderr"
+                                                        ] <> extraFlags)) {
                          delegate_ctlc = True
                          , create_group = True
                          , std_out = UseHandle deleteH
@@ -160,7 +162,8 @@ withNewMinikubeCluster clusterName options@(MinikubeClusterOptions {..}) action 
                    , kubernetesClusterNumNodes = minikubeClusterNumNodes
                    , kubernetesClusterClientConfig = (m, c)
                    , kubernetesClusterType = KubernetesClusterMinikube {
-                       minikubeProfileName = toText clusterName
+                       minikubeBinary = minikubeBinary
+                       , minikubeProfileName = toText clusterName
                        , minikubeFlags = minikubeClusterExtraFlags
                        }
                    }
@@ -189,7 +192,7 @@ startMinikubeCluster logH clusterName minikubeKubeConfigFile (MinikubeClusterOpt
                   , [i|--cpus=#{fromMaybe "8" minikubeClusterCpus}|]
                   ]
 
-  minikube <- askFile @"minikube"
+  minikubeBinary <- askFile @"minikube"
 
   let args = ["start"
              , "--profile", clusterName
@@ -200,10 +203,10 @@ startMinikubeCluster logH clusterName minikubeKubeConfigFile (MinikubeClusterOpt
              <> driverAndResourceFlags
              <> (fmap toString minikubeClusterExtraFlags)
 
-  debug [i|Starting minikube with args: #{minikube} #{T.unwords $ fmap toText args}|]
+  debug [i|Starting minikube with args: #{minikubeBinary} #{T.unwords $ fmap toText args}|]
 
   (_, _, _, p) <- createProcess (
-    (proc "minikube" args) {
+    (proc minikubeBinary args) {
         delegate_ctlc = True
         , create_group = True
         , env = Just env

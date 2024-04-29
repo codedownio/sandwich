@@ -5,7 +5,6 @@
 
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -17,6 +16,7 @@ import Relude hiding (withFile)
 import System.IO (hGetLine)
 import System.Process (getPid)
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Util.Process
 import UnliftIO.Async
 import UnliftIO.Environment
@@ -42,7 +42,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
         , "service"
         , toString service
         , "--url"]
-  info [i|minikube #{T.unwords $ fmap toText args}|]
+  info [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
 
   (stdoutRead, stdoutWrite) <- liftIO createPipe
   (stderrRead, stderrWrite) <- liftIO createPipe
@@ -52,7 +52,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
         info [i|minikube service stderr: #{line}|]
 
   withAsync forwardStderr $ \_ -> do
-    let cp = (proc "minikube" args) {
+    let cp = (proc minikubeBinary args) {
           env = Just env
           , std_out = UseHandle stdoutWrite
           , std_err = UseHandle stderrWrite

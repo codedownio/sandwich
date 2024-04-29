@@ -12,11 +12,11 @@ import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.Container
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Container
 import UnliftIO.Directory
 import UnliftIO.Process
 
@@ -61,7 +61,7 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
               ".gz" -> pure [i|cat "#{image}" | gzip -d|]
               _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
-          let cmd = [iii|#{initialStream} | minikube image load -
+          let cmd = [iii|#{initialStream} | #{minikubeBinary} image load -
                          --profile #{kubernetesClusterName kcc}
                          --logtostderr
                          #{T.unwords extraFlags}
@@ -72,7 +72,7 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
           tweak <$> readImageName (toString image)
 
         False -> do
-          let cmd = [iii|minikube image load #{image}
+          let cmd = [iii|#{minikubeBinary} image load #{image}
                          --profile #{kubernetesClusterName kcc}
                          --logtostderr
                          --daemon=true
@@ -84,7 +84,7 @@ withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(Kubernetes
           return $ tweak image
 
   -- TODO: remove this?
-  let cmd = [iii|minikube image ls --profile #{kubernetesClusterName kcc}|]
+  let cmd = [iii|#{minikubeBinary} image ls --profile #{kubernetesClusterName kcc}|]
   imageList <- readCreateProcessWithLogging (shell cmd) ""
   info [i|Loaded image list: #{imageList}|]
 
