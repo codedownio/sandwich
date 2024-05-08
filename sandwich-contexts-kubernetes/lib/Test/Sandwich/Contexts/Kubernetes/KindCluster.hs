@@ -21,12 +21,6 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , HasKubernetesClusterContext
   ) where
 
-import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
-import Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
-import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)
-import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Control.Exception.Lifted (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
@@ -39,8 +33,24 @@ import Relude
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
+import Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
+import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)
+import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import UnliftIO.Environment
 import UnliftIO.Process
+
+
+-- Note: when using kind with podman as a driver, it's possible to run into a low PID limit
+-- which isn't enough for all the processes in a Kubernetes cluster.
+-- I debugged this and found a kind patch to fix it, described here:
+-- https://github.com/kubernetes-sigs/kind/issues/3451#issuecomment-1855701939
+--
+-- You can also fix this at the podman level, with the following in `containers.conf`:
+-- [containers]
+-- pids_limit = 0
 
 
 data KindClusterOptions = KindClusterOptions {
