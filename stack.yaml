@@ -11,6 +11,7 @@ ghc-options:
 nix:
   pure: false
   packages:
+  - pcre
   - pkg-config
   - zlib
 
