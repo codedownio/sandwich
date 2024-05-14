@@ -42,7 +42,10 @@ closeAllSessions :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => WebDriver 
 closeAllSessions = closeAllSessionsExcept []
 
 -- | Close the current session
-closeCurrentSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession) => m ()
+closeCurrentSession :: (
+  HasCallStack, MonadLogger m, MonadUnliftIO m
+  , MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession
+  ) => m ()
 closeCurrentSession = do
   webDriver <- getContext webdriver
   (session, _) <- getContext webdriverSession

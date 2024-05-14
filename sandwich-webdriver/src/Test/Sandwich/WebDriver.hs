@@ -57,7 +57,9 @@ import UnliftIO.MVar
 
 
 -- | This is the main 'introduce' method for creating a WebDriver.
-introduceWebDriver :: (BaseMonadContext m context) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+introduceWebDriver :: (
+  BaseMonadContext m context
+  ) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
 introduceWebDriver wdOptions = introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
