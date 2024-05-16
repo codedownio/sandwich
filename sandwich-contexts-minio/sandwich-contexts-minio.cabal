@@ -4,22 +4,20 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           sandwich-contexts-docker
+name:           sandwich-contexts-minio
 version:        0.1.0.0
-synopsis:       Sandwich test contexts
+synopsis:       Sandwich test contexts for MinIO
 description:    Please see README.md
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2023 Tom McLaughlin
+copyright:      2024 Tom McLaughlin
 build-type:     Simple
 
 library
   exposed-modules:
-      Test.Sandwich.Contexts.Docker
-      Test.Sandwich.Contexts.Docker.Container
-      Test.Sandwich.Contexts.Docker.Registry
+      Test.Sandwich.Contexts.MinIO
   other-modules:
-      Paths_sandwich_contexts_docker
+      Paths_sandwich_contexts_minio
   hs-source-dirs:
       lib
   default-extensions:
@@ -39,23 +37,21 @@ library
   build-depends:
       aeson
     , base
-    , bytestring
     , containers
-    , docker-engine
     , exceptions
-    , hostname
-    , http-client
-    , http-types
-    , iproute
-    , monad-control
+    , filepath
+    , minio-hs
     , monad-logger
+    , mtl
     , network
-    , random
+    , network-uri
     , relude
     , retry
     , safe
     , sandwich
+    , sandwich-contexts
     , string-interpolate
+    , temporary
     , text
     , unliftio
     , unliftio-core
@@ -66,7 +62,8 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Spec
-      Paths_sandwich_contexts_docker
+      Spec.Basic
+      Paths_sandwich_contexts_minio
   hs-source-dirs:
       test
   default-extensions:

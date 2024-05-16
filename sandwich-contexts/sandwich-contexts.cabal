@@ -17,20 +17,20 @@ library
   exposed-modules:
       Test.Sandwich.Contexts.FakeSmtpServer
       Test.Sandwich.Contexts.Files
-      Test.Sandwich.Contexts.MinIO
       Test.Sandwich.Contexts.Nix
       Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Waits
+      Test.Sandwich.Contexts.Types
+      Test.Sandwich.Contexts.Types.S3
       Test.Sandwich.Contexts.Util.Aeson
+      Test.Sandwich.Contexts.Util.Container
+      Test.Sandwich.Contexts.Util.UUID
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.ReverseProxy.TCP
-      Test.Sandwich.Contexts.Types
-      Test.Sandwich.Contexts.Util.Container
       Test.Sandwich.Contexts.Util.Nix
       Test.Sandwich.Contexts.Util.Ports
       Test.Sandwich.Contexts.Util.SocketUtil
-      Test.Sandwich.Contexts.Util.UUID
       Paths_sandwich_contexts
   hs-source-dirs:
       lib
@@ -61,11 +61,9 @@ library
     , http-client
     , http-conduit
     , http-types
-    , minio-hs
     , monad-logger
     , mtl
     , network
-    , network-uri
     , process
     , random
     , relude

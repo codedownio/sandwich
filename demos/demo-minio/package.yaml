@@ -9,6 +9,7 @@ dependencies:
 - network
 - sandwich
 - sandwich-contexts
+- sandwich-contexts-minio
 - string-interpolate
 - text
 - unliftio

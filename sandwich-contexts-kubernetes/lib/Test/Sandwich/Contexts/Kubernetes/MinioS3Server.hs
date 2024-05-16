@@ -6,10 +6,6 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   , withK8SMinioS3Server
   ) where
 
-import Test.Sandwich.Contexts.Kubernetes.Cluster
-import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
@@ -24,6 +20,10 @@ import Network.Minio
 import Relude
 import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Cluster
+import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.MinIO
 import Test.Sandwich.Contexts.Waits
 import UnliftIO.Environment

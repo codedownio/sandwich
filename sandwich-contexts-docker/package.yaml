@@ -42,7 +42,6 @@ library:
   - containers
   - docker-engine
   - exceptions
-  - filepath
   - hostname
   - http-client
   - http-types
@@ -54,11 +53,9 @@ library:
   - relude
   - retry
   - safe
-  - sandwich-contexts
   - string-interpolate
   - text
   - unliftio-core
-  - vector
 
 tests:
   tests:

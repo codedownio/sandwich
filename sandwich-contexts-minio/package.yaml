@@ -1,13 +1,12 @@
-name: sandwich-contexts-kubernetes
+name: sandwich-contexts-minio
 version: 0.1.0.0
-synopsis: CodeDown test contexts
+synopsis: Sandwich test contexts for MinIO
 description: Please see README.md
 author: Tom McLaughlin
 maintainer: tom@codedown.io
 copyright: 2024 Tom McLaughlin
 dependencies:
 - base
-- containers
 - sandwich
 - unliftio
 
@@ -26,7 +25,7 @@ default-extensions:
 - NumericUnderscores
 
 ghc-options:
-- -Wunused-packages
+- -Wunused-packages # For GHC 8.10.1 and above
 - -Wall
 # - -Wpartial-fields
 # - -Wredundant-constraints # Reports HasCallStack, so keep it off normally
@@ -34,44 +33,37 @@ ghc-options:
 library:
   source-dirs: lib
   exposed-modules:
-  - Test.Sandwich.Contexts.Kubernetes.Cluster
-  - Test.Sandwich.Contexts.Kubernetes.KindCluster
-  - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
-  - Test.Sandwich.Contexts.Kubernetes.MinioOperator
-  - Test.Sandwich.Contexts.Kubernetes.MinioS3Server
-  - Test.Sandwich.Contexts.Kubernetes.Namespace
-  - Test.Sandwich.Contexts.Kubernetes.SeaweedFS
-  - Test.Sandwich.Contexts.Kubernetes.Types
+  - Test.Sandwich.Contexts.MinIO
   dependencies:
   - aeson
-  - base64-bytestring
-  - bytestring
-  - sandwich-contexts
-  - sandwich-contexts-minio
   - containers
   - exceptions
   - filepath
-  - hostname
-  - http-client
-  - kubernetes-client
-  - kubernetes-client-core
-  - lens
-  - lens-regex-pcre
-  - lifted-base
   - minio-hs
-  - monad-control
   - monad-logger
   - mtl
   - network
   - network-uri
-  - process
-  - random
   - relude
   - retry
   - safe
+  - sandwich-contexts
   - string-interpolate
   - temporary
   - text
   - unliftio-core
-  - vector
-  - yaml
+
+tests:
+  tests:
+    main: Main.hs
+    source-dirs: test
+    ghc-options:
+    - -Wall
+    - -rtsopts
+    - -threaded
+    dependencies:
+    - filepath
+    - postgresql-simple
+    - relude
+    - sandwich-contexts
+    - string-interpolate

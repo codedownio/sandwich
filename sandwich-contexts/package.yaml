@@ -35,12 +35,16 @@ library:
   exposed-modules:
   - Test.Sandwich.Contexts.FakeSmtpServer
   - Test.Sandwich.Contexts.Files
-  - Test.Sandwich.Contexts.MinIO
   - Test.Sandwich.Contexts.Nix
   - Test.Sandwich.Contexts.PostgreSQL
   - Test.Sandwich.Contexts.Waits
 
+  - Test.Sandwich.Contexts.Types
+  - Test.Sandwich.Contexts.Types.S3
+
   - Test.Sandwich.Contexts.Util.Aeson
+  - Test.Sandwich.Contexts.Util.Container
+  - Test.Sandwich.Contexts.Util.UUID
   dependencies:
   - aeson
   - conduit
@@ -53,11 +57,9 @@ library:
   - http-conduit
   - http-types
   - HTTP
-  - minio-hs
   - monad-logger
   - mtl
   - network
-  - network-uri
   - process
   - random
   - relude
