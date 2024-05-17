@@ -1,16 +1,16 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 
-module Test.Sandwich.Contexts.Util.Container (
+module Test.Sandwich.Contexts.Container (
   ContainerSystem (..)
+  , waitForHealth
 
-  , isInContainer
-
+  -- * Container/host conversions
   , containerPortToHostPort
-
   , containerNameToContainerId
 
-  , waitForHealth
+  -- * Misc
+  , isInContainer
   ) where
 
 import Control.Monad.Catch
@@ -32,6 +32,7 @@ import qualified Text.Show
 import UnliftIO.Process
 
 
+-- | Type to represent which container system we're using.
 data ContainerSystem = ContainerSystemDocker | ContainerSystemPodman
   deriving (Eq)
 
@@ -39,6 +40,7 @@ instance Show ContainerSystem where
   show ContainerSystemDocker = "docker"
   show ContainerSystemPodman = "podman"
 
+-- | Test if the test process is currently running in a container.
 isInContainer :: MonadIO m => m Bool
 isInContainer = do
   output <- toText <$> readCreateProcess (shell "cat /proc/1/sched | head -n 1") ""
@@ -47,6 +49,7 @@ isInContainer = do
     || ("systemd" `T.isInfixOf` output)
     || ("bwrap" `T.isInfixOf` output)
 
+-- | Wait for a container to be in a healthy state.
 waitForHealth :: forall m. (HasCallStack, MonadLoggerIO m, MonadMask m) => ContainerSystem -> Text -> m ()
 waitForHealth containerSystem containerID = do
   let policy = limitRetriesByCumulativeDelay (60 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000

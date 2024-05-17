@@ -2,7 +2,15 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Test.Sandwich.Contexts.Waits where
+module Test.Sandwich.Contexts.Waits (
+  -- * General waits
+  waitUntil
+
+  -- * HTTP waits
+  , waitUntilStatusCode
+  , waitUntilStatusCodeWithTimeout
+  , VerifyCerts(..)
+  ) where
 
 import Control.Concurrent
 import Control.Monad
@@ -26,73 +34,8 @@ import UnliftIO.Retry
 import UnliftIO.Timeout
 
 
-timePerRequest :: Int
-timePerRequest = 10000000
-
-type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadThrow m)
-
-data VerifyCerts = YesVerify | NoVerify
-  deriving (Eq)
-
-tlsNoVerifySettings :: ManagerSettings
-tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
-  where
-    tlsSettings = TLSSettingsSimple {
-      settingDisableCertificateValidation = True
-      , settingDisableSession = False
-      , settingUseServerName = False
-      }
-
--- | Send HTTP requests to url until we get a response with an given code
-waitUntilStatusCode :: (WaitConstraints m) => (Int, Int, Int) -> VerifyCerts -> String -> m ()
-waitUntilStatusCode code verifyCerts url = do
-  debug [i|Beginning waitUntilStatusCode request to #{url}|]
-  req <- parseRequest url
-  man <- liftIO $ newManager (if verifyCerts == YesVerify then tlsManagerSettings else tlsNoVerifySettings)
-  timeout timePerRequest (handleException $ (Right <$>) $ httpLbs req man) >>= \case
-    Just (Right resp)
-      | statusCode (responseStatus resp) == statusToInt code -> return ()
-      | otherwise -> do
-          debug [i|Unexpected response in waitUntilStatusCode request to #{url}: #{responseStatus resp}. Wanted #{code}. Body is #{responseBody resp}|]
-          retry
-    Just (Left err) -> do
-      debug [i|Failure in waitUntilStatusCode request to #{url}: #{err}|]
-      retry
-    Nothing -> do
-      debug [i|Timeout in waitUntilStatusCode request to #{url} (after #{timePerRequest}us)|]
-      retry
-  where
-    retry = liftIO (threadDelay 1_000_000) >> waitUntilStatusCode code verifyCerts url
-    handleException = handle (\(e :: SomeException) -> return $ Left $ ErrorMisc [i|Exception in waitUntilStatusCode: #{e}|])
-    statusToInt (x, y, z) = 100 * x + 10 * y + z
-
-waitUntil200 :: (WaitConstraints m) => String -> m ()
-waitUntil200 = waitUntilStatusCode (2, 0, 0) YesVerify
-
--- | Same as waitUntil200, but with a fixed timeout
-waitUntil200WithTimeout :: (WaitConstraints m) => String -> m ()
-waitUntil200WithTimeout = waitUntil200WithTimeout' 30_000_000
-
--- | Same as waitUntil200WithTimeout, but with a customizable timeout
-waitUntil200WithTimeout' :: (WaitConstraints m) => Int -> String -> m ()
-waitUntil200WithTimeout' timeInMicroseconds url = do
-  maybeSuccess <- timeout timeInMicroseconds $ waitUntil200 url
-  when (isNothing maybeSuccess) $
-    expectationFailure [i|Failed to connect to URL "#{url}" in waitUntil200WithTimeout'...|]
-
-waitUntilStatusCodeWithTimeout :: (WaitConstraints m) => (Int, Int, Int) -> String -> m ()
-waitUntilStatusCodeWithTimeout code = waitUntilStatusCodeWithTimeout' 30000000 code YesVerify
-
--- | Same as waitUntilStatusCodeWithTimeout, but with a customizable timeout
-waitUntilStatusCodeWithTimeout' :: (WaitConstraints m) => Int -> (Int, Int, Int) -> VerifyCerts -> String -> m ()
-waitUntilStatusCodeWithTimeout' timeInMicroseconds code verifyCerts url = do
-  maybeSuccess <- timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url
-  when (isNothing maybeSuccess) $
-    expectationFailure [i|Failed to connect to URL "#{url}" in waitUntilStatusCodeWithTimeout'...|]
-
-
--- | Keep trying an action up to a timeout while it
--- a) fails with a FailureReason in the MonadError monad
+-- | Keep trying an action up to a timeout while it fails with a 'FailureReason'.
+-- Use exponential backoff, with delays capped at 1 second.
 waitUntil :: forall m a. (HasCallStack, MonadUnliftIO m) => Double -> m a -> m a
 waitUntil timeInSeconds action = do
   startTime <- liftIO getCurrentTime
@@ -124,6 +67,55 @@ waitUntil timeInSeconds action = do
              throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
          | otherwise -> do
              throwIO e
+
+
+timePerRequest :: Int
+timePerRequest = 10_000_000
+
+type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadThrow m)
+
+data VerifyCerts = YesVerify | NoVerify
+  deriving (Eq)
+
+tlsNoVerifySettings :: ManagerSettings
+tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
+  where
+    tlsSettings = TLSSettingsSimple {
+      settingDisableCertificateValidation = True
+      , settingDisableSession = False
+      , settingUseServerName = False
+      }
+
+-- | Send HTTP requests to url until we get a response with an given code.
+waitUntilStatusCode :: (WaitConstraints m) => (Int, Int, Int) -> VerifyCerts -> String -> m ()
+waitUntilStatusCode code verifyCerts url = do
+  debug [i|Beginning waitUntilStatusCode request to #{url}|]
+  req <- parseRequest url
+  man <- liftIO $ newManager (if verifyCerts == YesVerify then tlsManagerSettings else tlsNoVerifySettings)
+  timeout timePerRequest (handleException $ (Right <$>) $ httpLbs req man) >>= \case
+    Just (Right resp)
+      | statusCode (responseStatus resp) == statusToInt code -> return ()
+      | otherwise -> do
+          debug [i|Unexpected response in waitUntilStatusCode request to #{url}: #{responseStatus resp}. Wanted #{code}. Body is #{responseBody resp}|]
+          retry
+    Just (Left err) -> do
+      debug [i|Failure in waitUntilStatusCode request to #{url}: #{err}|]
+      retry
+    Nothing -> do
+      debug [i|Timeout in waitUntilStatusCode request to #{url} (after #{timePerRequest}us)|]
+      retry
+  where
+    retry = liftIO (threadDelay 1_000_000) >> waitUntilStatusCode code verifyCerts url
+    handleException = handle (\(e :: SomeException) -> return $ Left $ ErrorMisc [i|Exception in waitUntilStatusCode: #{e}|])
+    statusToInt (x, y, z) = 100 * x + 10 * y + z
+
+-- | Same as waitUntilStatusCode, but with a customizable timeout in microseconds.
+waitUntilStatusCodeWithTimeout :: (WaitConstraints m) => (Int, Int, Int) -> Int -> VerifyCerts -> String -> m ()
+waitUntilStatusCodeWithTimeout code timeInMicroseconds verifyCerts url = do
+  maybeSuccess <- timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url
+  when (isNothing maybeSuccess) $
+    expectationFailure [i|Failed to connect to URL "#{url}" in waitUntilStatusCodeWithTimeout'...|]
+
 
 #if !MIN_VERSION_time(1,9,1)
 secondsToNominalDiffTime :: Pico -> NominalDiffTime

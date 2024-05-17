@@ -1,5 +1,5 @@
 
-module Test.Sandwich.Contexts.Types where
+module Test.Sandwich.Contexts.Types.Network where
 
 import Network.Socket
 import Relude

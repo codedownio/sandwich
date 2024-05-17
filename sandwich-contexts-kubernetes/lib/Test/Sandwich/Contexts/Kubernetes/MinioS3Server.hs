@@ -116,7 +116,7 @@ withK8SMinioS3Server (KubernetesClusterContext {..}) MinioOperatorContext namesp
         Left err -> expectationFailure [i|Failed to create bucket: #{err}|]
         Right () -> return ()
 
-      waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (4, 0, 3) NoVerify (toString (testS3ServerEndpoint testServ))
+      waitUntilStatusCodeWithTimeout (4, 0, 3) (1_000_000 * 60 * 5) NoVerify (toString (testS3ServerEndpoint testServ))
 
       void $ action testServ
 

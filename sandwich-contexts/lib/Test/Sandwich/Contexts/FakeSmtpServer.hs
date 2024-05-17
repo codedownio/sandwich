@@ -33,15 +33,15 @@ import GHC.TypeLits
 import Network.HTTP.Client
 import Network.Socket (PortNumber)
 import Relude
+import System.FilePath
+import System.IO
+import System.Process
+import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer.Derivation
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Util.Aeson
 import Test.Sandwich.Contexts.Waits
-import System.FilePath
-import System.IO
-import System.Process
-import Test.Sandwich
 import UnliftIO.Directory
 import UnliftIO.Exception
 
@@ -139,7 +139,7 @@ withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
                     Just (username, password) -> [i|#{username}:#{password}@|] :: Text
                     Nothing -> ""
 
-              waitUntil200WithTimeout' (1_000_000 * 60 * 2) [i|http://#{authPart}localhost:#{httpPort}/api/emails|]
+              waitUntilStatusCodeWithTimeout (2, 0, 0) (1_000_000 * 60 * 2) YesVerify [i|http://#{authPart}localhost:#{httpPort}/api/emails|]
 
               manager <- liftIO $ newManager defaultManagerSettings
               void $ action $ FakeSmtpServer smtpPort (getEmails manager authPart httpPort)

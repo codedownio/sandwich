@@ -1,8 +1,11 @@
 # Changelog for sandwich
 
-## Unreleased changes
+## 0.3.0.0
 
 * Make createProcessWithLogging, readCreateProcessWithLogging etc. log with the callstack from the line where they're called (and not an internal line).
+* Support GHC 9.8
+* BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`. We also remove `MonadThrow` constraints, relying only on `MonadIO` for throwing exceptions.
+* Adding support for `sandwich-contexts`, which is released with this version.
 
 ## 0.2.2.0
 

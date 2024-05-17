@@ -37,10 +37,10 @@ import System.FilePath
 import System.IO.Temp
 import System.Posix.Files
 import Test.Sandwich
+import Test.Sandwich.Contexts.Container
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.ReverseProxy.TCP
-import Test.Sandwich.Contexts.Types
-import Test.Sandwich.Contexts.Util.Container
+import Test.Sandwich.Contexts.Types.Network
 import Test.Sandwich.Contexts.Util.UUID
 import UnliftIO.Directory
 import UnliftIO.Environment

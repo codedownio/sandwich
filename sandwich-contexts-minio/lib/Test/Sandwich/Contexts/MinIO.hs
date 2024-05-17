@@ -51,13 +51,12 @@ import System.Exit
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import Test.Sandwich.Contexts.Container (ContainerSystem(..), containerPortToHostPort)
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.MinIO.Util
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Types
+import Test.Sandwich.Contexts.Types.Network
 import Test.Sandwich.Contexts.Types.S3
-import Test.Sandwich.Contexts.Util.Aeson
-import Test.Sandwich.Contexts.Util.Container
-import Test.Sandwich.Contexts.Util.UUID
 import Test.Sandwich.Contexts.Waits
 import UnliftIO.Async
 import UnliftIO.Directory
@@ -256,7 +255,7 @@ waitForMinIOReady server@(TestS3Server {..}) = do
 
   -- The minio image seems not to have a healthcheck?
   -- waitForHealth containerName
-  waitUntilStatusCodeWithTimeout' (1_000_000 * 60 * 5) (2, 0, 0) NoVerify (toString endpoint <> [i|/minio/health/live|])
+  waitUntilStatusCodeWithTimeout (2, 0, 0) (1_000_000 * 60 * 5) NoVerify (toString endpoint <> [i|/minio/health/live|])
 
   whenJust testS3ServerBucket $ \bucket -> do
     -- Make the test bucket, retrying on ServiceErr

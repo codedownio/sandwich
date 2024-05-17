@@ -185,11 +185,13 @@ data InvalidLogsException = InvalidLogsException [W.LogEntry]
 
 instance Exception InvalidLogsException
 
-data XvfbSession = XvfbSession { xvfbDisplayNum :: Int
-                               , xvfbXauthority :: FilePath
-                               , xvfbDimensions :: (Int, Int)
-                               , xvfbProcess :: ProcessHandle
-                               , xvfbFluxboxProcess :: Maybe ProcessHandle }
+data XvfbSession = XvfbSession {
+  xvfbDisplayNum :: Int
+  , xvfbXauthority :: FilePath
+  , xvfbDimensions :: (Int, Int)
+  , xvfbProcess :: ProcessHandle
+  , xvfbFluxboxProcess :: Maybe ProcessHandle
+  }
 
 type WebDriverSession = (Session, IORef W.WDSession)
 

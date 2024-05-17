@@ -17,6 +17,7 @@ library
   exposed-modules:
       Test.Sandwich.Contexts.MinIO
   other-modules:
+      Test.Sandwich.Contexts.MinIO.Util
       Paths_sandwich_contexts_minio
   hs-source-dirs:
       lib
@@ -45,6 +46,7 @@ library
     , mtl
     , network
     , network-uri
+    , random
     , relude
     , retry
     , safe

@@ -32,10 +32,10 @@ import qualified Data.Vector as V
 import Network.Socket (PortNumber)
 import Relude
 import Safe
-import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import qualified Text.Show
 import UnliftIO.Directory
 import UnliftIO.Process
@@ -85,6 +85,7 @@ data HostPortInfo = HostPortInfo {
   }
 deriveJSON (A.defaultOptions { A.fieldLabelModifier = L.drop (L.length ("hostPortInfo" :: String)) }) ''HostPortInfo
 
+-- | Map a port number inside a container to a port number on the host.
 containerPortToHostPort :: (HasCallStack, MonadIO m) => ContainerSystem -> Text -> PortNumber -> m PortNumber
 containerPortToHostPort containerSystem containerName containerPort = do
   let inspectPortCmd = [i|#{containerSystem} inspect --format='{{json .NetworkSettings.Ports}}' #{containerName}|]
@@ -105,6 +106,7 @@ containerPortToHostPort containerSystem containerName containerPort = do
     Just x -> pure x
     Nothing -> expectationFailure [i|Couldn't read container port number: '#{rawPort}'|]
 
+-- | Convert a container name to a container ID.
 containerNameToContainerId :: (HasCallStack, MonadIO m) => ContainerSystem -> Text -> m Text
 containerNameToContainerId containerSystem containerName = do
   let cmd = [i|#{containerSystem} inspect --format='{{.Id}}' #{containerName}|]

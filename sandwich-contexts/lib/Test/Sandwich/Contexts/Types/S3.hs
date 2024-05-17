@@ -6,7 +6,7 @@ module Test.Sandwich.Contexts.Types.S3 where
 import Data.String.Interpolate
 import Relude
 import Test.Sandwich
-import Test.Sandwich.Contexts.Types
+import Test.Sandwich.Contexts.Types.Network
 
 
 testS3Server :: Label "testS3Server" TestS3Server
