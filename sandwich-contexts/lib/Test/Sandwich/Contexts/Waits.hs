@@ -1,14 +1,19 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.Sandwich.Contexts.Waits (
   -- * General waits
   waitUntil
+  , waitUntil'
+  , defaultRetryPolicy
 
   -- * HTTP waits
   , waitUntilStatusCode
   , waitUntilStatusCodeWithTimeout
+
+  -- * Types
   , VerifyCerts(..)
   ) where
 
@@ -37,7 +42,15 @@ import UnliftIO.Timeout
 -- | Keep trying an action up to a timeout while it fails with a 'FailureReason'.
 -- Use exponential backoff, with delays capped at 1 second.
 waitUntil :: forall m a. (HasCallStack, MonadUnliftIO m) => Double -> m a -> m a
-waitUntil timeInSeconds action = do
+waitUntil = waitUntil' defaultRetryPolicy
+
+-- | The default retry policy.
+defaultRetryPolicy :: RetryPolicy
+defaultRetryPolicy = capDelay 1_000_000 $ exponentialBackoff 1_000
+
+-- | Same as 'waitUntil', but with a configurable retry policy.
+waitUntil' :: forall m a. (HasCallStack, MonadUnliftIO m) => RetryPolicy -> Double -> m a -> m a
+waitUntil' policy timeInSeconds action = do
   startTime <- liftIO getCurrentTime
 
   recoveringDynamic policy [handleFailureReasonException startTime] $ \_status ->
@@ -47,8 +60,6 @@ waitUntil timeInSeconds action = do
         Just x -> return x
 
   where
-    policy = capDelay 1_000_000 $ exponentialBackoff 1_000
-
     handleFailureReasonException startTime _status = Handler $ \(_ :: FailureReason) ->
       retryUnlessTimedOut startTime
 
@@ -109,7 +120,7 @@ waitUntilStatusCode code verifyCerts url = do
     handleException = handle (\(e :: SomeException) -> return $ Left $ ErrorMisc [i|Exception in waitUntilStatusCode: #{e}|])
     statusToInt (x, y, z) = 100 * x + 10 * y + z
 
--- | Same as waitUntilStatusCode, but with a customizable timeout in microseconds.
+-- | Same as 'waitUntilStatusCode', but with a customizable timeout in microseconds.
 waitUntilStatusCodeWithTimeout :: (WaitConstraints m) => (Int, Int, Int) -> Int -> VerifyCerts -> String -> m ()
 waitUntilStatusCodeWithTimeout code timeInMicroseconds verifyCerts url = do
   maybeSuccess <- timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url

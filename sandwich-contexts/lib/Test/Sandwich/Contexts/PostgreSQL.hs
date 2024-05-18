@@ -258,14 +258,22 @@ defaultPostgresContainerOptions = PostgresContainerOptions {
 introducePostgresViaContainer :: (
   HasBaseContext context
   , MonadUnliftIO m, MonadMask m
-  ) => PostgresContainerOptions -> SpecFree (LabelValue "postgres" PostgresContext :> context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => PostgresContainerOptions
+  -> SpecFree (LabelValue "postgres" PostgresContext :> context) m ()
+  -> SpecFree context m ()
 introducePostgresViaContainer opts = introduceWith "PostgreSQL via container" postgres $ \action -> do
   withPostgresContainer opts (void . action)
 
 -- | Bracket-style variant of 'introducePostgresViaContainer'.
 withPostgresContainer :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadMask m, MonadReader context m, HasBaseContext context
-  ) => PostgresContainerOptions -> (PostgresContext -> m a) -> m a
+  )
+  -- | Options
+  => PostgresContainerOptions
+  -> (PostgresContext -> m a)
+  -> m a
 withPostgresContainer options action = do
   bracket (createPostgresDatabase options)
           (\(containerName, _p) -> timeAction "cleanup Postgres database" $ do
