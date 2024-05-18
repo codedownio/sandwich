@@ -1,7 +1,21 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 
-module Test.Sandwich.Contexts.Types.S3 where
+module Test.Sandwich.Contexts.Types.S3 (
+  TestS3Server(..)
+  , HttpMode(..)
+
+  -- * Contexts
+  , testS3Server
+  , HasTestS3Server
+
+  -- * Endpoints
+  , testS3ServerEndpoint
+  , testS3ServerContainerEndpoint
+
+  -- * Misc
+  , s3Protocol
+  ) where
 
 import Data.String.Interpolate
 import Relude
@@ -12,6 +26,7 @@ import Test.Sandwich.Contexts.Types.Network
 testS3Server :: Label "testS3Server" TestS3Server
 testS3Server = Label
 
+-- | A generic test S3 server. This can be used by downstream packages like sandwich-contexts-minio.
 data TestS3Server = TestS3Server {
   testS3ServerAddress :: NetworkAddress
   -- | The address of the S3 server within its container, if present.
