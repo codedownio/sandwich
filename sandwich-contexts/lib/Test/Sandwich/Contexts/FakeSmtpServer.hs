@@ -1,23 +1,31 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+This module provides functions for introducing a mock SMTP server, represented by 'FakeSmtpServer'.
+If you send emails to this server, you can read them out to confirm they were received correctly.
+
+-}
+
 module Test.Sandwich.Contexts.FakeSmtpServer (
+  -- * Introduce a fake SMTP server
   introduceFakeSmtpServerNix
-  , introduceFakeSmtpServer'
+  , introduceFakeSmtpServer
 
-  , FakeSmtpServerOptions(..)
-  , defaultFakeSmtpServerOptions
-
+  -- * Bracket-style version
   , withFakeSMTPServer
 
+  -- * Types
   , fakeSmtpServer
+  , FakeSmtpServerOptions(..)
+  , defaultFakeSmtpServerOptions
   , FakeSmtpServer(..)
   , EmailInfo(..)
-
-  , getEmails
   ) where
 
 import Control.Monad
@@ -85,25 +93,41 @@ fakeSmtpServer = Label
 
 -- * Functions
 
+type BaseMonad context m = (HasBaseContext context, MonadMask m, MonadUnliftIO m)
+
+-- | Introduce a fake SMTP server using a Nix derivation hardcoded into this package, based on
+-- https://github.com/ReachFive/fake-smtp-server.
+-- Users can use this derivation as an example to write their own.
 introduceFakeSmtpServerNix :: (
-  HasBaseContext context, HasNixContext context
-  , MonadMask m, MonadUnliftIO m
-  ) => FakeSmtpServerOptions
-    -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> LabelValue (AppendSymbol "file-" "fake-smtp-server") (EnvironmentFile "fake-smtp-server") :> context) m ()
-    -> SpecFree context m ()
+  BaseMonad context m, HasNixContext context
+  )
+  -- | Options
+  => FakeSmtpServerOptions
+  -- | Child spec
+  -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> LabelValue (AppendSymbol "file-" "fake-smtp-server") (EnvironmentFile "fake-smtp-server") :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
 introduceFakeSmtpServerNix options =
-  introduceBinaryViaNixDerivation @"fake-smtp-server" fakeSmtpServerDerivation . introduceFakeSmtpServer' options
+  introduceBinaryViaNixDerivation @"fake-smtp-server" fakeSmtpServerDerivation . introduceFakeSmtpServer options
 
-introduceFakeSmtpServer' :: (
-  HasBaseContext context, HasFile context "fake-smtp-server"
-  , MonadMask m, MonadUnliftIO m
-  ) => FakeSmtpServerOptions -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m () -> SpecFree context m ()
-introduceFakeSmtpServer' options = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer options)
+-- | Introduce a fake SMTP server given a binary already available via 'HasFile'.
+introduceFakeSmtpServer :: (
+  BaseMonad context m, HasFile context "fake-smtp-server"
+  )
+  -- | Options
+  => FakeSmtpServerOptions
+  -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> context) m ()
+  -> SpecFree context m ()
+introduceFakeSmtpServer options = introduceWith "fake SMTP server" fakeSmtpServer (withFakeSMTPServer options)
 
+-- | Bracket-style version of 'introduceFakeSmtpServer'.
 withFakeSMTPServer :: (
-  HasBaseContext context, MonadReader context m, HasFile context "fake-smtp-server"
-  , MonadLoggerIO m, MonadThrow m, MonadUnliftIO m
-  ) => FakeSmtpServerOptions -> (FakeSmtpServer -> m [Result]) -> m ()
+  BaseMonad context m, MonadReader context m, MonadLoggerIO m, HasFile context "fake-smtp-server"
+  )
+  -- | Options
+  => FakeSmtpServerOptions
+  -> (FakeSmtpServer -> m [Result])
+  -> m ()
 withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withFakeSMTPServer must be run with a run root"

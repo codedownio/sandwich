@@ -5,22 +5,26 @@
 module Test.Sandwich.Contexts.Nix (
   -- * Nix contexts
   introduceNixContext
-  , nixContext
-  , NixContext(..)
-  , HasNixContext
 
   -- * Nix environments
   , introduceNixEnvironment
   , buildNixSymlinkJoin
-  , buildNixCallPackageDerivation
   , buildNixExpression
-  , nixEnvironment
-  , HasNixEnvironment
+  , buildNixCallPackageDerivation
 
   -- * Nixpkgs releases
   , nixpkgsRelease2311
   , nixpkgsReleaseDefault
   -- TODO: export smart constructors for this
+
+  -- * Types
+  , nixContext
+  , NixContext(..)
+  , HasNixContext
+
+  , nixEnvironment
+  , HasNixEnvironment
+
   , NixpkgsDerivation(..)
   ) where
 
@@ -34,10 +38,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import Relude
-import Test.Sandwich.Contexts.Util.Aeson
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import Test.Sandwich.Contexts.Util.Aeson
 import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.MVar (modifyMVar)
@@ -70,7 +74,7 @@ data NixpkgsDerivation =
     , nixpkgsDerivationSha256 :: Text
     } deriving (Show, Eq)
 
--- | Nixpkgs release 23.11, accessed 2/19/2023.
+-- | Nixpkgs release 23.11, accessed 2\/19\/2023.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev release-23.11
 nixpkgsRelease2311 :: NixpkgsDerivation
@@ -81,12 +85,21 @@ nixpkgsRelease2311 = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationSha256 = "sha256-1eAZINWjTTA8nWJiN979JVSwvCYzUWnMpzMHGUCLgZk="
   }
 
+-- | Currently set to 'nixpkgsRelease2311'.
 nixpkgsReleaseDefault :: NixpkgsDerivation
 nixpkgsReleaseDefault = nixpkgsRelease2311
 
+-- | Introduce a 'NixContext', which contains information about where to find Nix and what
+-- version of Nixpkgs to use. This can be leveraged to introduce Nix packages in tests.
 introduceNixContext :: (
   MonadUnliftIO m, MonadThrow m
-  ) => NixpkgsDerivation -> SpecFree (LabelValue "nixContext" NixContext :> context) m () -> SpecFree context m ()
+  )
+  -- | Nixpkgs derivation to use
+  => NixpkgsDerivation
+  -- | Child spec
+  -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
 introduceNixContext nixpkgsDerivation = introduce "Introduce Nix context" nixContext getNixContext (const $ return ())
   where
     getNixContext = findExecutable "nix" >>= \case
@@ -96,19 +109,26 @@ introduceNixContext nixpkgsDerivation = introduce "Introduce Nix context" nixCon
         buildCache <- newMVar mempty
         pure (NixContext p nixpkgsDerivation buildCache)
 
+-- | Introduce a Nix environment containing the given list of packages, using the current 'NixContext'.
+-- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
+-- be found in "\<environment path\>\/bin".
 introduceNixEnvironment :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m
-  ) => [Text] -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m () -> SpecFree context m ()
+  )
+  -- | List of package names to include in the Nix environment
+  => [Text]
+  -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m ()
+  -> SpecFree context m ()
 introduceNixEnvironment packageNames = introduce "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
 
--- | Build a Nix environment containing the given list of packages, using the current 'NixContext'.
--- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
--- be found in "<environment path>/bin".
+-- | Build a Nix environment, as in 'introduceNixEnvironment'.
 buildNixSymlinkJoin :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
-  ) => [Text] -> m FilePath
+  )
+  -- | Package names
+  => [Text] -> m FilePath
 buildNixSymlinkJoin packageNames = do
   NixContext {..} <- getContext nixContext
   buildNixExpression $ renderNixSymlinkJoin nixContextNixpkgsDerivation packageNames
@@ -119,7 +139,10 @@ buildNixSymlinkJoin packageNames = do
 buildNixCallPackageDerivation :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
-  ) => Text -> m FilePath
+  )
+  -- | Nix derivation
+  => Text
+  -> m FilePath
 buildNixCallPackageDerivation derivation = do
   NixContext {..} <- getContext nixContext
 
@@ -140,11 +163,13 @@ buildNixCallPackageDerivation derivation = do
 
 -- | Build a Nix environment containing the given list of packages, using the current 'NixContext'.
 -- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
--- be found in "<environment path>/bin".
+-- be found in "\<environment path\>\/bin".
 buildNixExpression :: (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
-  ) => Text -> m FilePath
+  )
+  -- | Nix expression
+  => Text -> m FilePath
 buildNixExpression expr = do
   NixContext {..} <- getContext nixContext
 

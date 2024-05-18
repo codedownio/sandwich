@@ -8,20 +8,47 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.Contexts.Files (
-  introduceFile
-  , introduceBinaryViaEnvironment
+{-|
 
+This module contains tools for introducing files and making them available to tests. It uses type-level strings, and is mostly intended to be used with -XTypeApplications.
+
+For example:
+
+@
+introduceFile \@"grep" "\/path\/to\/grep" $ do
+  it "uses grep for something" $ do
+    grep <- askFile \@"grep"
+    results <- readCreateProcess (proc grep ["foo"]) ""
+    todo -- Do something with results
+@
+
+For reproducibility, you can leverage a 'NixContext' that's already been introduced to introduce binaries, either by specifying a Nixpkgs package name or by writing out a full derivation.
+
+-}
+
+module Test.Sandwich.Contexts.Files (
+  -- * Introduce a file directly
+  introduceFile
+  , introduceFile'
+
+  -- * Introduce a binary from the environment
+  , introduceBinaryViaEnvironment
+  , introduceBinaryViaEnvironment'
+
+  -- * Introduce a binary from a Nix package
   , introduceBinaryViaNixPackage
   , introduceBinaryViaNixPackage'
   , withBinaryViaNixPackage
 
+  -- * Introduce a binary from a Nix derivation
   , introduceBinaryViaNixDerivation
   , introduceBinaryViaNixDerivation'
 
+  -- * Get a file
   , askFile
-  , askFileProxy
+  , askFile'
 
+  -- * Types
   , EnvironmentFile(..)
   , HasFile
   ) where
@@ -49,36 +76,54 @@ type HasFile context a = HasLabel context (AppendSymbol "file-" a) (EnvironmentF
 mkLabel :: Label (AppendSymbol "file-" a) (EnvironmentFile a)
 mkLabel = Label
 
+-- | Retrieve a file context.
 askFile :: forall a context m. (MonadReader context m, HasFile context a) => m FilePath
-askFile = askFileProxy (Proxy @a)
+askFile = askFile' (Proxy @a)
 
-askFileProxy :: forall a context m. (MonadReader context m, HasFile context a) => Proxy a -> m FilePath
-askFileProxy _ = unEnvironmentFile <$> getContext (mkLabel @a)
+-- | Variant of 'askFile' that you can use with a 'Proxy' rather than a type application.
+askFile' :: forall a context m. (MonadReader context m, HasFile context a) => Proxy a -> m FilePath
+askFile' _ = unEnvironmentFile <$> getContext (mkLabel @a)
 
+-- | Introduce a file by providing its path.
 introduceFile :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
-  ) => FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+  )
+  -- | Path to the file
+  => FilePath
+  -- | Child spec
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
 introduceFile path = introduceFile' (Proxy @a) path
 
 introduceFile' :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a -> FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+  )
+  -- | Proxy for the file type to use. I.e. 'Proxy "my-file"'
+  => Proxy a -> FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
 introduceFile' proxy path = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkLabel @a) (return $ EnvironmentFile path) (const $ return ())
 
--- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
+-- | Introduce a file from the PATH, which must be present when tests are run.
 -- Useful when you want to set up your own environment with binaries etc. to use in tests.
 -- Throws an exception if the desired file is not available.
 introduceBinaryViaEnvironment :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
-  ) => SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+  )
+  -- | Parent spec
+  => SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -- | Child spec
+  -> SpecFree context m ()
 introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (Proxy @a)
 
--- | Introduce a given 'EnvironmentFile' from the PATH present when tests are run.
--- Useful when you want to set up your own environment with binaries etc. to use in tests.
--- Throws an exception if the desired file is not available.
+-- | Variant of 'introduceBinaryViaEnvironment' that you can use with a 'Proxy' rather
+-- than a type application.
 introduceBinaryViaEnvironment' :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
+  )
+  -- | Proxy for the file type to use. I.e. 'Proxy "my-file"'
+  => Proxy a
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceBinaryViaEnvironment' proxy = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkLabel @a) alloc cleanup
   where
     alloc = do
@@ -117,7 +162,7 @@ introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy
   where
     alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal proxy)
 
--- | Same as 'introduceBinaryViaNixPackage', but allows passing a 'Proxy'.
+-- | Bracket-style version of 'introduceBinaryViaNixPackage'.
 withBinaryViaNixPackage :: forall a b context m. (
   MonadReader context m, HasBaseContext context, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
