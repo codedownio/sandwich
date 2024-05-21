@@ -1,7 +1,11 @@
-module.exports = {
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type * as Preset from '@docusaurus/preset-classic';
+
+const config: Config = {
   title: 'Sandwich',
   tagline: 'Yet another test framework for Haskell',
-  url: 'https://github.com/codedownio/sandwich',
+  url: 'https://codedownio.github.io',
   baseUrl: '/sandwich/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -78,7 +82,7 @@ module.exports = {
       ],
       copyright: `Copyright © ${new Date().getFullYear()} Tom McLaughlin. Built with Docusaurus.`,
     },
-  },
+  } satisfies Preset.ThemeConfig,
   presets: [
     [
       '@docusaurus/preset-classic',
@@ -96,7 +100,9 @@ module.exports = {
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
-      },
+      } satisfies Preset.Options,
     ],
   ],
 };
+
+export default config;
