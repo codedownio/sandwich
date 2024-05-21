@@ -57,8 +57,7 @@ function Feature({imageUrl, title, description}) {
 }
 
 function Home() {
-  const context = useDocusaurusContext();
-  const {siteConfig = {}} = context;
+  const {siteConfig} = useDocusaurusContext();
   return (
     <Layout title={`Hello from ${siteConfig.title}`}
             description="Yet another test framework for Haskell.">

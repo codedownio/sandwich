@@ -5,7 +5,7 @@ title: Silent Formatter
 
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-The silent formatter prints only the run root of the test tree. It's useful when you don't want to see live output, since you'll just examine the results on disk later. It can also be used while testing in CI with the [Slack formatter](docs/formatters/slack) enabled.
+The silent formatter prints only the run root of the test tree. It's useful when you don't want to see live output, since you'll just examine the results on disk later. It can also be used while testing in CI with the [Slack formatter](./slack) enabled.
 
 <img alt="Silent Formatter output" src={useBaseUrl('img/silent.png')} />
 
