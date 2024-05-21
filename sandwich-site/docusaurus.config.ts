@@ -1,4 +1,4 @@
-import {themes as prismThemes} from 'prism-react-renderer';
+// import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
@@ -14,8 +14,8 @@ const config: Config = {
   projectName: 'sandwich', // Usually your repo name.
   themeConfig: {
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      // theme: prismThemes.github,
+      // darkTheme: prismThemes.dracula,
       additionalLanguages: ['haskell'],
     },
     navbar: {
