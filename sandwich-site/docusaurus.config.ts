@@ -14,6 +14,8 @@ const config: Config = {
   projectName: 'sandwich', // Usually your repo name.
   themeConfig: {
     prism: {
+      theme: prismThemes.github,
+      darkTheme: prismThemes.dracula,
       additionalLanguages: ['haskell'],
     },
     navbar: {
