@@ -8,6 +8,7 @@ module.exports = {
       "command_line",
       "discovery"
     ] },
+
     { label: "Formatters", type: "category", items: [
       "formatters/tui",
       "formatters/print",
@@ -17,9 +18,16 @@ module.exports = {
       "formatters/slack",
       "formatters/markdown_summary",
     ] },
-    { type: "doc", id: "extensions/sandwich-golden" },
-    { type: "doc", id: "extensions/sandwich-hedgehog" },
-    { type: "doc", id: "extensions/sandwich-quickcheck" },
-    { type: "doc", id: "extensions/sandwich-webdriver" },
+
+    { label: "Extensions", type: "category", items: [
+      "extensions/sandwich-golden",
+      "extensions/sandwich-hedgehog",
+      "extensions/sandwich-quickcheck",
+      "extensions/sandwich-webdriver",
+    ] },
+
+    { label: "Context libraries", type: "category", items: [
+      "context-libraries/sandwich-contexts",
+    ] },
   ],
 };
