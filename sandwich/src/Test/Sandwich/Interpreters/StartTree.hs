@@ -11,7 +11,6 @@ module Test.Sandwich.Interpreters.StartTree (
 import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -41,6 +40,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util
+import UnliftIO.Exception
 
 
 baseContextFromCommon :: RunNodeCommonWithStatus s l t -> BaseContext -> BaseContext

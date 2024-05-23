@@ -24,7 +24,7 @@ import UnliftIO.Process
 
 withForwardKubernetesService' :: (
   MonadUnliftIO m, MonadCatch m, MonadBaseControl IO m, MonadLoggerIO m
-  , MonadReader context m, HasBaseContext context
+  , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) namespace service action = do
   baseEnv <- maybe getEnvironment return kindClusterEnvironment

@@ -115,7 +115,7 @@ introducePostgresViaNix opts = introduceWith "PostgreSQL via Nix" postgres $ \ac
 
 -- | Bracket-style variant of 'introducePostgresViaNix'.
 withPostgresViaNix :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadMask m, MonadFail m, MonadLogger m
   )
   -- | Options
@@ -156,7 +156,7 @@ introducePostgresUnixSocketViaNix opts@(PostgresNixOptions {..}) = introduceWith
 
 -- | Bracket-style variant of 'introducePostgresUnixSocketViaNix'.
 withPostgresUnixSocketViaNix :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadFail m, MonadMask m, MonadLogger m
   )
   -- | Options
@@ -268,7 +268,7 @@ introducePostgresViaContainer opts = introduceWith "PostgreSQL via container" po
 
 -- | Bracket-style variant of 'introducePostgresViaContainer'.
 withPostgresContainer :: (
-  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadMask m, MonadReader context m, HasBaseContext context
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadMask m, HasBaseContextMonad context m
   )
   -- | Options
   => PostgresContainerOptions
@@ -285,7 +285,7 @@ withPostgresContainer options action = do
           (waitForPostgresDatabase options >=> action)
 
 createPostgresDatabase :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => PostgresContainerOptions -> m (Text, ProcessHandle)
 createPostgresDatabase (PostgresContainerOptions {..}) = timeAction "create Postgres database" $ do
   containerName <- maybe (("postgres-" <>) <$> makeUUID) return postgresContainerContainerName

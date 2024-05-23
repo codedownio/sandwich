@@ -97,7 +97,7 @@ introduceMinIOViaNix options = introduceBinaryViaNixPackage @"minio" "minio" .
   introduceWith "MinIO S3 server (via Nix binary)" testS3Server (withMinIOViaBinary options)
 
 withMinIOViaBinary :: (
-  MonadReader context m, HasBaseContext context, HasFile context "minio"
+  HasBaseContextMonad context m, HasFile context "minio"
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   ) => MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIOViaBinary options action = do
@@ -105,7 +105,7 @@ withMinIOViaBinary options action = do
   withMinIO minioPath options action
 
 withMinIO :: (
-  MonadReader context m, HasBaseContext context
+  HasBaseContextMonad context m
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   ) => FilePath -> MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIO minioPath (MinIOContextOptions {..}) action = do
@@ -182,7 +182,7 @@ introduceMinIOViaContainer options = introduceWith "MinIO S3 server (via contain
   withMinIOContainer options action
 
 withMinIOContainer :: (
-  MonadReader context m, HasBaseContext context
+  HasBaseContextMonad context m
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   ) => MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
 withMinIOContainer (MinIOContextOptions {..}) action = do

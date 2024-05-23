@@ -30,7 +30,7 @@ introduceImages images = introduceWith "introduce minikube cluster images" kuber
 
 withLoadImages :: (
   MonadUnliftIO m, MonadLogger m
-  , MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context
   ) => [Text] -> ([Text] -> m a) -> m a
 withLoadImages images action = do
   kcc <- getContext kubernetesCluster
@@ -38,7 +38,7 @@ withLoadImages images action = do
 
 withLoadImages' :: (
   MonadUnliftIO m, MonadLogger m
-  , MonadReader context m, HasBaseContext context
+  , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> [Text] -> ([Text] -> m a) -> m a
 withLoadImages' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) images action = do
   let tweak image = "docker.io/" <> image

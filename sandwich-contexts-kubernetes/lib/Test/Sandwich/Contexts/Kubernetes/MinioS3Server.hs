@@ -41,7 +41,7 @@ introduceK8SMinioS3Server kubernetesClusterContext namespace =
 
 withK8SMinioS3Server :: (
   MonadLoggerIO m, MonadMask m, MonadBaseControl IO m, MonadUnliftIO m, MonadFail m
-  , HasBaseContext context, MonadReader context m
+  , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> MinioOperatorContext -> Text -> (TestS3Server -> m [Result]) -> m ()
 withK8SMinioS3Server (KubernetesClusterContext {..}) MinioOperatorContext namespace action = do
   baseEnv <- getEnvironment

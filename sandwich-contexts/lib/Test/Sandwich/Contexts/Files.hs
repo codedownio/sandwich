@@ -164,7 +164,7 @@ introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy
 
 -- | Bracket-style version of 'introduceBinaryViaNixPackage'.
 withBinaryViaNixPackage :: forall a b context m. (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
   ) =>
     -- | Nix package name which contains the desired binary.

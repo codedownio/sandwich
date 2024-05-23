@@ -15,6 +15,7 @@ import Control.Monad.Catch
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS8
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
@@ -158,6 +159,8 @@ instance HasBaseContext context => HasTestTimer context where
 type CoreSpec = Spec BaseContext IO
 
 type TopSpec = forall context. (HasBaseContext context, Typeable context) => SpecFree context IO ()
+
+type HasBaseContextMonad context m = (HasBaseContext context, MonadReader context m)
 
 -- * Specs with command line options provided
 

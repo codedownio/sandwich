@@ -116,7 +116,7 @@ withNewDockerRegistry action = do
 -- * Util
 
 pushContainerToRegistryTimed :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => Text -> DockerRegistryContext -> m Text
 pushContainerToRegistryTimed imageName drc = timeAction [i|Pushing docker image '#{imageName}'|] $
   pushContainerToRegistry imageName drc

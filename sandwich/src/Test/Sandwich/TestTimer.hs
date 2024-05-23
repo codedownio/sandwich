@@ -35,7 +35,7 @@ type ProfileName = T.Text
 -- * User functions
 
 -- | Time a given action with a given event name. This name will be the "stack frame" of the given action in the profiling results. This function will use the current timing profile name.
-timeAction :: (MonadUnliftIO m, MonadReader context m, HasBaseContext context, HasTestTimer context) => EventName -> m a -> m a
+timeAction :: (MonadUnliftIO m, HasBaseContextMonad context m, HasTestTimer context) => EventName -> m a -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
   BaseContext {baseContextTestTimerProfile} <- asks getBaseContext

@@ -62,7 +62,7 @@ import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 withForwardKubernetesService :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
-  , MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context
   ) => Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService namespace serviceName action = do
   kcc <- getContext kubernetesCluster
@@ -70,7 +70,7 @@ withForwardKubernetesService namespace serviceName action = do
 
 withForwardKubernetesService' :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
-  , MonadReader context m, HasBaseContext context
+  , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) =
   Minikube.withForwardKubernetesService' kcc minikubeProfileName

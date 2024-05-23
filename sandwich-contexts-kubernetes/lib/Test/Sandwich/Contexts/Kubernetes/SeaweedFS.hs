@@ -47,14 +47,14 @@ introduceSeaweedFSCluster :: (
 introduceSeaweedFSCluster namespace options = introduceWith "introduce SeaweedFS" seaweedFs (void . withSeaweedFS namespace options)
 
 withSeaweedFS :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadReader context m, MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m, HasKubernetesClusterContext context
   ) => Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
 withSeaweedFS namespace options action = do
   kcc <- getContext kubernetesCluster
   withSeaweedFS' kcc namespace options action
 
 withSeaweedFS' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadReader context m, MonadUnliftIO m, HasBaseContext context
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
 withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) namespace options action = do
   baseEnv <- getEnvironment

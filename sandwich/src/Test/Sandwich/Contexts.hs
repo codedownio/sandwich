@@ -23,13 +23,13 @@ getContextMaybe = asks . getLabelValueMaybe
 
 -- | Get the root folder of the on-disk test tree for the current run.
 -- Will be 'Nothing' if the run isn't configured to use the disk.
-getRunRoot :: (HasBaseContext context, MonadReader context m) => m (Maybe FilePath)
+getRunRoot :: (HasBaseContextMonad context m) => m (Maybe FilePath)
 getRunRoot = asks (baseContextRunRoot . getBaseContext)
 
 -- | Get the on-disk folder corresponding to the current node.
 -- Will be 'Nothing' if the run isn't configured to use the disk, or if the current node is configured
 -- not to create a folder.
-getCurrentFolder :: (HasBaseContext context, MonadReader context m) => m (Maybe FilePath)
+getCurrentFolder :: (HasBaseContextMonad context m) => m (Maybe FilePath)
 getCurrentFolder = asks (baseContextPath . getBaseContext)
 
 -- | Get the command line options, if configured.

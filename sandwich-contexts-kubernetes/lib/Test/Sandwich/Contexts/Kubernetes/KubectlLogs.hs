@@ -27,7 +27,7 @@ data KubectlLogsContext = KubectlLogsContext
 -- | Note that this will stop working if the pod you're talking to goes away (even if you do it against a service)
 -- If this happens, a rerun of the command is needed to resume forwarding
 withKubectlLogs :: (
-  HasBaseContext ctx, MonadReader ctx m, MonadLogger m, MonadFail m, MonadUnliftIO m
+  HasBaseContextMonad ctx m, MonadLogger m, MonadFail m, MonadUnliftIO m
   ) => FilePath -> Text -> Text -> Maybe Text -> Bool -> (KubectlLogsContext -> m a) -> m a
 withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone action = do
   let args = ["logs", toString target

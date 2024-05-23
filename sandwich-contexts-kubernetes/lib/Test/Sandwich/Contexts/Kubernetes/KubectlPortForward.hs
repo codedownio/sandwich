@@ -37,14 +37,14 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 -- * Implementation
 
 withKubectlPortForward :: (
-  HasCallStack, HasBaseContext ctx, MonadReader ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
+  HasCallStack, HasBaseContextMonad ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
   ) => FilePath -> Text -> Text -> PortNumber -> (KubectlPortForwardContext -> m a) -> m a
 withKubectlPortForward kubeConfigFile namespace = withKubectlPortForward' kubeConfigFile namespace (const True) Nothing
 
 -- | Note that this will stop working if the pod you're talking to goes away (even if you do it against a service)
 -- If this happens, a rerun of the command is needed to resume forwarding
 withKubectlPortForward' :: (
-  HasCallStack, HasBaseContext ctx, MonadReader ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
+  HasCallStack, HasBaseContextMonad ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
   ) => FilePath -> Text -> (PortNumber -> Bool) -> Maybe PortNumber -> Text -> PortNumber -> (KubectlPortForwardContext -> m a) -> m a
 withKubectlPortForward' kubeConfigFile namespace isAcceptablePort maybeHostPort targetName targetPort action = do
   port <- maybe (findFreePortOrException' isAcceptablePort) return maybeHostPort

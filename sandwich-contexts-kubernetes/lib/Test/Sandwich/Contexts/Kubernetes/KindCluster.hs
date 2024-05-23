@@ -57,13 +57,19 @@ import UnliftIO.Process
 
 data KindClusterOptions = KindClusterOptions {
   kindClusterNumNodes :: Int
+  -- | Extra flags to pass to kind
   , kindClusterExtraFlags :: [Text]
+  -- | Labels to apply to the created containers
   , kindClusterContainerLabels :: Map Text Text
+  -- | An extra host path that will be mounted at "/binary_cache".
+  -- TODO: make this more general, be able to pass arbitrary mounts.
   , kindClusterBinaryCache :: Maybe FilePath
+  -- | Prefix for the generated cluster name
   , kindClusterNamePrefix :: Maybe Text
+  -- | Container driver, eithe "docker" or "podman". Defaults to "docker"
   , kindClusterDriver :: Maybe Text
-  , kindClusterCpus :: Maybe Text
-  , kindClusterMemory :: Maybe Text
+  -- , kindClusterCpus :: Maybe Text
+  -- , kindClusterMemory :: Maybe Text
   }
 defaultKindClusterOptions :: KindClusterOptions
 defaultKindClusterOptions = KindClusterOptions {
@@ -73,8 +79,8 @@ defaultKindClusterOptions = KindClusterOptions {
   , kindClusterBinaryCache = Nothing
   , kindClusterNamePrefix = Nothing
   , kindClusterDriver = Nothing
-  , kindClusterCpus = Nothing
-  , kindClusterMemory = Nothing
+  -- , kindClusterCpus = Nothing
+  -- , kindClusterMemory = Nothing
   }
 
 -- * Introduce

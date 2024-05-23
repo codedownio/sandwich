@@ -21,7 +21,7 @@ import UnliftIO.Temporary
 
 -- | Bracket-style function to load a collection of images into a Kubernetes cluster.
 withLoadImages :: (
-  MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
   -- | Image names
   => [Text]
@@ -36,7 +36,7 @@ withLoadImages images env action = do
 
 -- | Same as 'withLoadImages', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 withLoadImages' :: (
-  MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   -- | Cluster context
   => KubernetesClusterContext

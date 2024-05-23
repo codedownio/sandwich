@@ -102,7 +102,7 @@ introduceMinikubeCluster' minikubeBinary minikubeClusterOptions spec =
 -- * Implementation
 
 withMinikubeCluster :: (
-  MonadReader context m, HasBaseContext context, HasFile context "minikube"
+  HasBaseContextMonad context m, HasFile context "minikube"
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   ) => MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
 withMinikubeCluster options action = do
@@ -110,7 +110,7 @@ withMinikubeCluster options action = do
   withMinikubeCluster' minikubeBinary options action
 
 withMinikubeCluster' :: (
-  MonadReader context m, HasBaseContext context
+  HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   ) => FilePath -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
 withMinikubeCluster' minikubeBinary options@(MinikubeClusterOptions {..}) action = do
@@ -120,7 +120,7 @@ withMinikubeCluster' minikubeBinary options@(MinikubeClusterOptions {..}) action
   withNewMinikubeCluster minikubeBinary clusterName options action
 
 withNewMinikubeCluster :: (
-  MonadReader context m, HasBaseContext context
+  HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   ) => FilePath -> String -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
 withNewMinikubeCluster minikubeBinary clusterName options@(MinikubeClusterOptions {..}) action = do

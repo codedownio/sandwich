@@ -113,7 +113,7 @@ introduceNixContext nixpkgsDerivation = introduce "Introduce Nix context" nixCon
 -- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
 -- be found in "\<environment path\>\/bin".
 introduceNixEnvironment :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m
   )
   -- | List of package names to include in the Nix environment
@@ -124,7 +124,7 @@ introduceNixEnvironment packageNames = introduce "Introduce Nix environment" nix
 
 -- | Build a Nix environment, as in 'introduceNixEnvironment'.
 buildNixSymlinkJoin :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
   )
   -- | Package names
@@ -137,7 +137,7 @@ buildNixSymlinkJoin packageNames = do
 -- Nix "callPackage" design pattern. I.e.
 -- "{ git, gcc, stdenv, ... }: stdenv.mkDerivation {...}"
 buildNixCallPackageDerivation :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
   )
   -- | Nix derivation
@@ -165,7 +165,7 @@ buildNixCallPackageDerivation derivation = do
 -- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
 -- be found in "\<environment path\>\/bin".
 buildNixExpression :: (
-  MonadReader context m, HasBaseContext context, HasNixContext context
+  HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
   )
   -- | Nix expression
