@@ -76,7 +76,10 @@ defaultMinikubeClusterOptions = MinikubeClusterOptions {
 
 introduceMinikubeClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, HasNixContext context
-  ) => MinikubeClusterOptions -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m () -> SpecFree context m ()
+  )
+  => MinikubeClusterOptions
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree context m ()
 introduceMinikubeClusterViaNix minikubeClusterOptions spec =
   introduceBinaryViaNixPackage @"minikube" "minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec

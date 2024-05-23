@@ -5,18 +5,20 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster (
-  KubernetesClusterContext (..)
-  , introduceKindCluster
+  introduceKindCluster
 
-  , KindClusterOptions (..)
-  , defaultKindClusterOptions
-
+  -- * Bracket-style versions
   , withKindCluster
-  , withNewKindCluster
+  , withKindCluster'
 
+  -- * Loading images
   , withLoadImages
   , withLoadImages'
 
+  -- * Types
+  , KindClusterOptions (..)
+  , KubernetesClusterContext (..)
+  , defaultKindClusterOptions
   , kubernetesCluster
   , HasKubernetesClusterContext
   ) where
@@ -77,27 +79,40 @@ defaultKindClusterOptions = KindClusterOptions {
 
 -- * Introduce
 
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/).
 introduceKindCluster :: (
   MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
-  ) => KindClusterOptions -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => KindClusterOptions
+  -- | Child spec
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
 introduceKindCluster opts@(KindClusterOptions {}) = introduceWith "introduce kind cluster" kubernetesCluster $ \action ->
   void $ withKindCluster opts action
 
 -- * Implementation
 
+-- | Bracket-style variant of 'introduceKindCluster'.
 withKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
-  ) => KindClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+  )
+  -- | Options
+  => KindClusterOptions
+  -> (KubernetesClusterContext -> m a)
+  -> m a
 withKindCluster opts@(KindClusterOptions {..}) action = do
   let prefix = fromMaybe "test-kind-cluster" kindClusterNamePrefix
   clusterID <- makeUUID' 5
   let clusterName = [i|#{prefix}-#{clusterID}|]
-  withNewKindCluster opts clusterName action
+  withKindCluster' opts clusterName action
 
-withNewKindCluster :: (
+-- | Same as 'withKindCluster', but allows you to control the cluster name.
+withKindCluster' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
   ) => KindClusterOptions -> Text -> (KubernetesClusterContext -> m a) -> m a
-withNewKindCluster opts@(KindClusterOptions {..}) clusterName action = do
+withKindCluster' opts@(KindClusterOptions {..}) clusterName action = do
   kc <- isInContainer >>= \case
     False -> return $ kindConfig kindClusterContainerLabels Nothing kindClusterNumNodes kindClusterBinaryCache
     True -> return $ kindConfig kindClusterContainerLabels Nothing kindClusterNumNodes kindClusterBinaryCache

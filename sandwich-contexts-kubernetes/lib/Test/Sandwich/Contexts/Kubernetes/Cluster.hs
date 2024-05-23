@@ -3,29 +3,36 @@
 {-# LANGUAGE GADTs #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Cluster (
-  KubernetesClusterContext (..)
+  -- * Kind clusters
+  Kind.introduceKindCluster
 
-  , Kind.introduceKindCluster
-
+  -- * Minikube clusters
   , Minikube.introduceMinikubeClusterViaNix
   , Minikube.introduceMinikubeClusterViaEnvironment
   , Minikube.introduceMinikubeCluster'
-  , Minikube.MinikubeClusterOptions(..)
-  , Minikube.defaultMinikubeClusterOptions
 
-  , waitForServiceEndpointsToExist
-
+  -- * Wait for pods/services
   , waitForPodsToExist
   , waitForPodsToBeReady
+  , waitForServiceEndpointsToExist
 
+  -- * Forward services
   , withForwardKubernetesService
   , withForwardKubernetesService'
 
+  -- * Logs
+  , module Test.Sandwich.Contexts.Kubernetes.KubectlLogs
+
+  -- * Port forwarding
+  , module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+
+  -- * Types
+  , KubernetesClusterContext (..)
   , kubernetesCluster
   , HasKubernetesClusterContext
 
-  , module Test.Sandwich.Contexts.Kubernetes.KubectlLogs
-  , module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+  , Minikube.MinikubeClusterOptions(..)
+  , Minikube.defaultMinikubeClusterOptions
 
   -- * Util
   , Util.parseHostnameAndPort

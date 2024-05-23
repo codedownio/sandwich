@@ -5,32 +5,49 @@
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.Images where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.Container
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Container
 import UnliftIO.Process
 import UnliftIO.Temporary
 
 
+-- | Bracket-style function to load a collection of images into a Kubernetes cluster.
 withLoadImages :: (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadLogger m, MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context
-  ) => [Text] -> Maybe [(String, String)] -> ([Text] -> m a) -> m a
+  MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context
+  )
+  -- | Image names
+  => [Text]
+  -- | Optional environment variables to provide when calling "kind load"
+  -> Maybe [(String, String)]
+  -- | Callback containing the transformed image names (i.e. what they're known as within the cluster)
+  -> ([Text] -> m a)
+  -> m a
 withLoadImages images env action = do
   kcc <- getContext kubernetesCluster
-  withLoadImages' kcc env images action
+  withLoadImages' kcc images env action
 
+-- | Same as 'withLoadImages', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 withLoadImages' :: (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadLogger m, MonadReader context m, HasBaseContext context
-  ) => KubernetesClusterContext -> Maybe [(String, String)] -> [Text] -> ([Text] -> m a) -> m a
-withLoadImages' kcc env images action = do
+  MonadUnliftIO m, MonadLogger m, MonadReader context m, HasBaseContext context
+  )
+  -- | Cluster context
+  => KubernetesClusterContext
+  -- | Image names
+  -> [Text]
+  -- | Environment variables
+  -> Maybe [(String, String)]
+  -- | Callback with transformed image names (see above)
+  -> ([Text] -> m a)
+  -> m a
+withLoadImages' kcc images env action = do
   let tweak image = "docker.io/" <> image
 
   images' <- forM images $ \image -> do
