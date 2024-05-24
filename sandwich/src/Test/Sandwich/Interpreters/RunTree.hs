@@ -135,7 +135,7 @@ getCommon l srcLoc node (NodeOptions {..}) = do
   -- Insert this node into the ConvertState
   modify $ over convertStateCreatedNodes $ M.insert ident $ CreatedNode $ case folder of
     Nothing -> Nothing
-    Just f -> Just (f, countImmediateFolderChildren node, 0)
+    Just f -> Just (f, countSubspecFolderChildren node, 0)
 
   return $ RunNodeCommonWithStatus {
     runTreeLabel = l
