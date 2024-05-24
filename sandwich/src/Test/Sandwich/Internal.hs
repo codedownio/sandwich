@@ -11,7 +11,7 @@ module Test.Sandwich.Internal (
   , ExampleM
   , ExampleT(..)
 
-  -- For tests
+  -- * For tests
   , RunNodeWithStatus(..)
   , RunNodeFixed
   , RunNode
@@ -26,10 +26,12 @@ module Test.Sandwich.Internal (
   , SomeAsyncExceptionWithEq(..)
   , logEntryStr
 
-  -- For debugging
+  -- * For debugging
   , getRunTree
   , getRunTree'
   , printRunTree
+
+  , commandLineOptions
 
   , module Test.Sandwich.Internal.Formatters
   , module Test.Sandwich.Internal.Running
