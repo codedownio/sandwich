@@ -27,7 +27,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            buildInputs = [ pkgs.rust-bin.stable.latest.default ];
+            buildInputs = [ pkgs.htop ];
           };
         });
 }
