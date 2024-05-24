@@ -325,7 +325,7 @@ runExampleM' ex ctx logs exceptionMessage = do
   where
     withLogFn :: Maybe FilePath -> Options -> (LogFn -> IO a) -> IO a
     withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
-    withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
+    withLogFn (Just logPath) (Options {..}) action = bracket (openFile (logPath </> "test_logs.txt") AppendMode) hClose $ \h -> do
       hSetBuffering h LineBuffering
       action (logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
 
