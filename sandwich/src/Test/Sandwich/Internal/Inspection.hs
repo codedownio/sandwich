@@ -2,6 +2,7 @@
 module Test.Sandwich.Internal.Inspection where
 
 import Control.Monad
+import Control.Monad.Logger
 import Data.Function
 import qualified Data.List as L
 import Data.String.Interpolate
@@ -16,14 +17,14 @@ getRunTree :: Options -> CoreSpec -> IO [RunNodeFixed BaseContext]
 getRunTree options spec = do
   baseContext' <- baseContextFromOptions options
   let baseContext = baseContext' { baseContextPath = Just "/path", baseContextRunRoot = Just "/root" }
-  return $ getRunTree' baseContext options spec
+  runStderrLoggingT $ getRunTree' baseContext options spec
 
-getRunTree' :: BaseContext -> Options -> CoreSpec -> [RunNodeFixed BaseContext]
+getRunTree' :: MonadLogger m => BaseContext -> Options -> CoreSpec -> m [RunNodeFixed BaseContext]
 getRunTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpts), optionsFilterTree=(unwrapTreeFilter -> filterOpts)}) spec =
   spec
     & (\tree -> L.foldl' pruneTree tree pruneOpts)
     & (\tree -> L.foldl' filterTree tree filterOpts)
-    & specToRunTree baseContext
+    & specToRunTreeM baseContext
 
 printRunTree :: [RunNodeFixed ctx] -> IO ()
 printRunTree = go 0

@@ -119,10 +119,8 @@ data LogEntry = LogEntry {
 
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {
-  runTreeCurrentFolder :: Maybe FilePath
-  , runTreeCurrentAncestors :: Seq Int
-  , runTreeIndexInParent :: Int
-  , runTreeNumSiblings :: Int
+  runTreeCurrentAncestors :: Seq Int
+  , runTreeRootFolderAndNumChildren :: Maybe (FilePath, Int)
   }
 
 -- * Base context

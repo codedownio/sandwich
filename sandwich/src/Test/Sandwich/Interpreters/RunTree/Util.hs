@@ -30,20 +30,7 @@ appendLogMessage logs msg = do
   ts <- getCurrentTime
   atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
-getImmediateChildren :: Free (SpecCommand context m) () -> [Free (SpecCommand context m) ()]
-getImmediateChildren (Free (It'' loc no l ex next)) = (Free (It'' loc no l ex (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Before'' loc no l f subspec next)) = (Free (Before'' loc no l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (After'' loc no l f subspec next)) = (Free (After'' loc no l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Introduce'' loc no l cl alloc cleanup subspec next)) = (Free (Introduce'' loc no l cl alloc cleanup subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (IntroduceWith'' loc no l cl action subspec next)) = (Free (IntroduceWith'' loc no l cl action subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Around'' loc no l f subspec next)) = (Free (Around'' loc no l f subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Describe'' loc no l subspec next)) = (Free (Describe'' loc no l subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Free (Parallel'' loc no subspec next)) = (Free (Parallel'' loc no subspec (Pure ()))) : getImmediateChildren next
-getImmediateChildren (Pure ()) = [Pure ()]
-
-countChildren :: Free (SpecCommand context m) () -> Int
-countChildren = L.length . getImmediateChildren
-
+-- | Count how many folder children are present as children or siblings of the given node.
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
 countImmediateFolderChildren (Free (It'' _loc no _l _ex next))
   | nodeOptionsCreateFolder no = 1 + countImmediateFolderChildren next
@@ -58,6 +45,14 @@ countImmediateFolderChildren (Free node)
   | nodeOptionsCreateFolder (nodeOptions node) = 1 + countImmediateFolderChildren (next node)
   | otherwise = countImmediateFolderChildren (subspec node) + countImmediateFolderChildren (next node)
 countImmediateFolderChildren (Pure _) = 0
+
+-- | Count how many folder children are present as children of the given node.
+countSubspecFolderChildren :: Free (SpecCommand context m) a -> Int
+countSubspecFolderChildren (Free (It'' {})) = 0
+countSubspecFolderChildren (Free (Introduce'' {subspecAugmented})) = countImmediateFolderChildren subspecAugmented
+countSubspecFolderChildren (Free (IntroduceWith'' {subspecAugmented})) = countImmediateFolderChildren subspecAugmented
+countSubspecFolderChildren (Free node) = countImmediateFolderChildren (subspec node)
+countSubspecFolderChildren (Pure _) = 0
 
 maxFileNameLength :: Int
 maxFileNameLength = 150
