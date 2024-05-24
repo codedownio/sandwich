@@ -45,6 +45,9 @@ module Test.Sandwich (
   , around
   , aroundEach
 
+  -- * Parallel nodes
+  , module Test.Sandwich.ParallelN
+
   -- * Timing
   --
   -- | For timing actions within your tests. Test tree nodes are timed by default.
@@ -60,7 +63,6 @@ module Test.Sandwich (
   , module Test.Sandwich.Misc
   , module Test.Sandwich.Nodes
   , module Test.Sandwich.Options
-  , module Test.Sandwich.ParallelN
   , module Test.Sandwich.TH
   ) where
 
