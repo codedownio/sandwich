@@ -70,6 +70,7 @@ library
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Golden.Update
       Test.Sandwich.Internal.Formatters
+      Test.Sandwich.Internal.Inspection
       Test.Sandwich.Internal.Running
       Test.Sandwich.Interpreters.FilterTree
       Test.Sandwich.Interpreters.FilterTreeModule

@@ -1,4 +1,4 @@
--- | Internal functionality exposed for sibling libraries such as sandwich-webdriver to use. Should not be used otherwise.
+-- | Internal functionality exposed for debugging or for sibling libraries such as sandwich-webdriver to use. Should not be used otherwise.
 
 module Test.Sandwich.Internal (
   Spec
@@ -26,6 +26,11 @@ module Test.Sandwich.Internal (
   , SomeAsyncExceptionWithEq(..)
   , logEntryStr
 
+  -- For debugging
+  , getRunTree
+  , getRunTree'
+  , printRunTree
+
   , module Test.Sandwich.Internal.Formatters
   , module Test.Sandwich.Internal.Running
   ) where
@@ -37,4 +42,5 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
 import Test.Sandwich.Internal.Formatters
+import Test.Sandwich.Internal.Inspection
 import Test.Sandwich.Internal.Running
