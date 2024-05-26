@@ -38,6 +38,8 @@ module Test.Sandwich.Contexts.Files (
   -- * Introduce a binary from a Nix package
   , introduceBinaryViaNixPackage
   , introduceBinaryViaNixPackage'
+  , introduceFileViaNixPackage
+  , introduceFileViaNixPackage'
   , withBinaryViaNixPackage
 
   -- * Introduce a binary from a Nix derivation
@@ -138,6 +140,40 @@ type NixPackageName = Text
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
+introduceFileViaNixPackage :: forall a context m. (
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  ) =>
+    -- | Nix package name which contains the desired file.
+    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+    NixPackageName
+    -- | Callback to find the desired file within the Nix derivation path.
+    -- It will be passed the derivation path, and should return the file. For example,
+    -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
+    -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
+    -> (FilePath -> IO FilePath)
+    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+    -> SpecFree context m ()
+introduceFileViaNixPackage = introduceFileViaNixPackage' (Proxy @a)
+
+-- | Same as 'introduceFileViaNixPackage', but allows passing a 'Proxy'.
+introduceFileViaNixPackage' :: forall a context m. (
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  ) => Proxy a
+    -- | Nix package name which contains the desired file.
+    -> NixPackageName
+    -- | Callback to find the desired file within the Nix derivation path.
+    -- It will be passed the derivation path, and should return the file. For example,
+    -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
+    -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
+    -> (FilePath -> IO FilePath)
+    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+    -> SpecFree context m ()
+introduceFileViaNixPackage' proxy packageName tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix package #{packageName})|] (mkLabel @a) alloc (const $ return ())
+  where
+    alloc = buildNixSymlinkJoin [packageName] >>= \p -> EnvironmentFile <$> liftIO (tryFindFile p)
+
+-- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
+-- It's recommended to use this with -XTypeApplications.
 introduceBinaryViaNixPackage :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) =>
@@ -212,10 +248,8 @@ introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{symbolVal pro
   where
     alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal proxy)
 
-tryFindBinary :: (MonadLoggerIO m) => String -> FilePath -> m (EnvironmentFile a)
+tryFindBinary :: (MonadIO m) => String -> FilePath -> m (EnvironmentFile a)
 tryFindBinary binaryName env = do
   findExecutablesInDirectories [env </> "bin"] binaryName >>= \case
-    (x:_) -> do
-      info [i|Found binary: #{x}|]
-      return $ EnvironmentFile x
+    (x:_) -> return $ EnvironmentFile x
     _ -> expectationFailure [i|Couldn't find binary '#{binaryName}' in #{env </> "bin"}|]
