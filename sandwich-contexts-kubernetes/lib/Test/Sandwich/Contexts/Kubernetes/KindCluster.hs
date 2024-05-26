@@ -120,6 +120,7 @@ introduceKindClusterViaNix kindClusterOptions spec =
   introduceBinaryViaNixPackage @"kind" "kind" $
     introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the PATH.
 introduceKindClusterViaEnvironment :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )
@@ -131,6 +132,7 @@ introduceKindClusterViaEnvironment kindClusterOptions spec =
   introduceBinaryViaEnvironment @"kind" $
     introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the kind binary.
 introduceKindCluster' :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )
