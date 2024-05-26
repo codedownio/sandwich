@@ -33,7 +33,6 @@ import Control.Monad.Catch (MonadMask)
 import qualified Control.Monad.Catch as MC
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Reader
 import Control.Retry
 import qualified Data.Aeson as A
 import qualified Data.List as L
