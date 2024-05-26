@@ -5,30 +5,28 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
-  KubernetesClusterContext (..)
-  , introduceMinikubeClusterViaNix
+  -- * Introducing a cluster via Minikube
+  introduceMinikubeClusterViaNix
   , introduceMinikubeClusterViaEnvironment
   , introduceMinikubeCluster'
 
-  , MinikubeClusterOptions (..)
-  , defaultMinikubeClusterOptions
-
-  -- , introduceMinikubeClusterWithDockerRegistry
+  -- * Bracket-style functions
   , withMinikubeCluster
   , withMinikubeCluster'
-  -- , withNewMinikubeCluster
-
-  -- * For creating permanent external clusters
-  -- , startMinikubeCluster
-  -- , minikubeConfig
 
   -- * For loading images onto the cluster
   , introduceImages
   , withLoadImages
   , withLoadImages'
 
+  -- * Re-exported cluster types
   , kubernetesCluster
+  , KubernetesClusterContext (..)
   , HasKubernetesClusterContext
+
+  -- * Types
+  , MinikubeClusterOptions (..)
+  , defaultMinikubeClusterOptions
   ) where
 
 import Control.Monad
@@ -77,8 +75,11 @@ defaultMinikubeClusterOptions = MinikubeClusterOptions {
 introduceMinikubeClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, HasNixContext context
   )
+  -- | Options
   => MinikubeClusterOptions
+  -- | Child spec
   -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -- | Parent spec
   -> SpecFree context m ()
 introduceMinikubeClusterViaNix minikubeClusterOptions spec =
   introduceBinaryViaNixPackage @"minikube" "minikube" $
@@ -86,14 +87,23 @@ introduceMinikubeClusterViaNix minikubeClusterOptions spec =
 
 introduceMinikubeClusterViaEnvironment :: (
   HasBaseContext context, MonadUnliftIO m
-  ) => MinikubeClusterOptions -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => MinikubeClusterOptions
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree context m ()
 introduceMinikubeClusterViaEnvironment minikubeClusterOptions spec =
   introduceBinaryViaEnvironment @"minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec
 
 introduceMinikubeCluster' :: (
   HasBaseContext context, MonadUnliftIO m
-  ) => FilePath -> MinikubeClusterOptions -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m () -> SpecFree context m ()
+  )
+  -- | Path to minikube binary
+  => FilePath
+  -> MinikubeClusterOptions
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree context m ()
 introduceMinikubeCluster' minikubeBinary minikubeClusterOptions spec =
   introduceFile @"minikube" minikubeBinary $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) $
@@ -101,14 +111,20 @@ introduceMinikubeCluster' minikubeBinary minikubeClusterOptions spec =
 
 -- * Implementation
 
+-- | Bracket-style variant for introducing a Minikube cluster, using a 'HasFile context "minikube"' constraint.
 withMinikubeCluster :: (
   HasBaseContextMonad context m, HasFile context "minikube"
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  ) => MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+  )
+  -- | Options
+  => MinikubeClusterOptions
+  -> (KubernetesClusterContext -> m a)
+  -> m a
 withMinikubeCluster options action = do
   minikubeBinary <- askFile @"minikube"
   withMinikubeCluster' minikubeBinary options action
 
+-- | Same as 'withMinikubeCluster', but allows you to pass the path to the Minikube binary.
 withMinikubeCluster' :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m

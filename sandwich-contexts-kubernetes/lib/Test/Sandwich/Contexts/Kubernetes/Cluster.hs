@@ -41,7 +41,6 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.URI
 import Relude

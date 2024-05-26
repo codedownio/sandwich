@@ -19,13 +19,9 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   , HasSeaweedFSContext
   ) where
 
-import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Reader
 import Data.Aeson as A
 import qualified Data.List as L
 import Data.String.Interpolate
@@ -35,6 +31,9 @@ import Relude hiding (withFile)
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import UnliftIO.Environment
 import UnliftIO.IO (withFile)
 import UnliftIO.Process
