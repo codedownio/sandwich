@@ -24,10 +24,11 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
 
   -- * Types
   , KindClusterOptions (..)
+  , defaultKindClusterOptions
   , KindClusterName(..)
   , ExtraPortMapping(..)
   , ExtraMount(..)
-  , defaultKindClusterOptions
+  , KindContext
   ) where
 
 import Control.Monad
@@ -103,6 +104,8 @@ defaultKindClusterOptions = KindClusterOptions {
 -- * Introduce
 
 
+type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context
+
 -- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the Nix context.
 introduceKindClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, MonadMask m, HasNixContext context
@@ -110,7 +113,7 @@ introduceKindClusterViaNix :: (
   -- | Options
   => KindClusterOptions
   -- | Child spec
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
+  -> SpecFree (KindContext context) m ()
   -- | Parent spec
   -> SpecFree context m ()
 introduceKindClusterViaNix kindClusterOptions spec =
@@ -122,7 +125,7 @@ introduceKindClusterViaEnvironment :: (
   )
   -- | Options
   => KindClusterOptions
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
+  -> SpecFree (KindContext context) m ()
   -> SpecFree context m ()
 introduceKindClusterViaEnvironment kindClusterOptions spec =
   introduceBinaryViaEnvironment @"kind" $
@@ -134,7 +137,7 @@ introduceKindCluster' :: (
   -- | Path to kind binary
   => FilePath
   -> KindClusterOptions
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
+  -> SpecFree (KindContext context) m ()
   -> SpecFree context m ()
 introduceKindCluster' kindBinary kindClusterOptions spec =
   introduceFile @"kind" kindBinary $
@@ -160,7 +163,12 @@ withKindCluster opts action = do
 withKindCluster' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
   , HasBaseContextMonad context m
-  ) => FilePath -> KindClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+  )
+  -- | Path to the kind binary
+  => FilePath
+  -> KindClusterOptions
+  -> (KubernetesClusterContext -> m a)
+  -> m a
 withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
   clusterName <- case kindClusterName of
     KindClusterNameExactly t -> pure t
