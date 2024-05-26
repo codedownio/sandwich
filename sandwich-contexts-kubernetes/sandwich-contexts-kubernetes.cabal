@@ -76,11 +76,9 @@ library
     , kubernetes-client-core
     , lens
     , lens-regex-pcre
-    , lifted-base
     , minio-hs
     , monad-control
     , monad-logger
-    , mtl
     , network
     , network-uri
     , process

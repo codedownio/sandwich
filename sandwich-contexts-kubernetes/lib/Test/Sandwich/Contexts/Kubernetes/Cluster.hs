@@ -4,7 +4,9 @@
 
 module Test.Sandwich.Contexts.Kubernetes.Cluster (
   -- * Kind clusters
-  Kind.introduceKindCluster
+  Kind.introduceKindClusterViaNix
+  , Kind.introduceKindClusterViaEnvironment
+  , Kind.introduceKindCluster'
 
   -- * Minikube clusters
   , Minikube.introduceMinikubeClusterViaNix

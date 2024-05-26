@@ -72,6 +72,7 @@ defaultMinikubeClusterOptions = MinikubeClusterOptions {
 
 -- * Introduce
 
+-- | Introduce a Minikube cluster, deriving the minikube binary from the Nix context.
 introduceMinikubeClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, HasNixContext context
   )
@@ -85,6 +86,7 @@ introduceMinikubeClusterViaNix minikubeClusterOptions spec =
   introduceBinaryViaNixPackage @"minikube" "minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec
 
+-- | Introduce a Minikube cluster, deriving the minikube binary from the PATH.
 introduceMinikubeClusterViaEnvironment :: (
   HasBaseContext context, MonadUnliftIO m
   )
@@ -96,6 +98,7 @@ introduceMinikubeClusterViaEnvironment minikubeClusterOptions spec =
   introduceBinaryViaEnvironment @"minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec
 
+-- | Introduce a Minikube cluster, passing in the minikube binary path.
 introduceMinikubeCluster' :: (
   HasBaseContext context, MonadUnliftIO m
   )

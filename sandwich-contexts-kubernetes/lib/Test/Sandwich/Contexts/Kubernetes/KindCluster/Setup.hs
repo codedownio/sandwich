@@ -6,25 +6,24 @@
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Waits
 import Control.Monad
 import Control.Monad.Catch ( MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.String.Interpolate
 import Relude
 import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Waits
 import UnliftIO.Environment
 import UnliftIO.Process
 
 
 setUpKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  MonadLoggerIO m, MonadUnliftIO m, MonadMask m
   ) => KubernetesClusterContext -> Maybe [(String, String)] -> Text -> m ()
 setUpKindCluster kcc@(KubernetesClusterContext {..}) environmentToUse driver = do
   baseEnv <- maybe getEnvironment return environmentToUse

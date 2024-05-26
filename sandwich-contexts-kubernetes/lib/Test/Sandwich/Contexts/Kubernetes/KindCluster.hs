@@ -5,7 +5,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster (
-  introduceKindCluster
+  introduceKindClusterViaNix
+  , introduceKindClusterViaEnvironment
+  , introduceKindCluster'
 
   -- * Bracket-style versions
   , withKindCluster
@@ -23,25 +25,26 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , HasKubernetesClusterContext
   ) where
 
-import Control.Exception.Lifted (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.String.Interpolate
+import qualified Data.Yaml as Yaml
 import Kubernetes.Client.Config
 import Relude
-import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
+import Test.Sandwich.Contexts.Nix
 import UnliftIO.Environment
+import UnliftIO.Exception
 import UnliftIO.Process
 
 
@@ -61,12 +64,13 @@ data KindClusterOptions = KindClusterOptions {
   , kindClusterExtraFlags :: [Text]
   -- | Labels to apply to the created containers
   , kindClusterContainerLabels :: Map Text Text
-  -- | An extra host path that will be mounted at "/binary_cache".
-  -- TODO: make this more general, be able to pass arbitrary mounts.
-  , kindClusterBinaryCache :: Maybe FilePath
+  -- | Extra ports to map; see the [docs](https://kind.sigs.k8s.io/docs/user/configuration#extra-port-mappings)
+  , kindClusterExtraPortMappings :: [ExtraPortMapping]
+  -- | Extra mounts; see the [docs](https://kind.sigs.k8s.io/docs/user/configuration#extra-mounts)
+  , kindClusterExtraMounts :: [ExtraMount]
   -- | Prefix for the generated cluster name
   , kindClusterNamePrefix :: Maybe Text
-  -- | Container driver, eithe "docker" or "podman". Defaults to "docker"
+  -- | Container driver, either "docker" or "podman". Defaults to "docker"
   , kindClusterDriver :: Maybe Text
   -- , kindClusterCpus :: Maybe Text
   -- , kindClusterMemory :: Maybe Text
@@ -76,7 +80,8 @@ defaultKindClusterOptions = KindClusterOptions {
   kindClusterNumNodes = 3
   , kindClusterExtraFlags = []
   , kindClusterContainerLabels = mempty
-  , kindClusterBinaryCache = Nothing
+  , kindClusterExtraPortMappings = []
+  , kindClusterExtraMounts = []
   , kindClusterNamePrefix = Nothing
   , kindClusterDriver = Nothing
   -- , kindClusterCpus = Nothing
@@ -85,24 +90,51 @@ defaultKindClusterOptions = KindClusterOptions {
 
 -- * Introduce
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/).
-introduceKindCluster :: (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the Nix context.
+introduceKindClusterViaNix :: (
+  HasBaseContext context, MonadUnliftIO m, MonadMask m, HasNixContext context
   )
   -- | Options
   => KindClusterOptions
   -- | Child spec
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> context) m ()
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceKindCluster opts@(KindClusterOptions {}) = introduceWith "introduce kind cluster" kubernetesCluster $ \action ->
-  void $ withKindCluster opts action
+introduceKindClusterViaNix kindClusterOptions spec =
+  introduceBinaryViaNixPackage @"kind" "kind" $
+    introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
+
+introduceKindClusterViaEnvironment :: (
+  HasBaseContext context, MonadMask m, MonadUnliftIO m
+  )
+  -- | Options
+  => KindClusterOptions
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
+  -> SpecFree context m ()
+introduceKindClusterViaEnvironment kindClusterOptions spec =
+  introduceBinaryViaEnvironment @"kind" $
+    introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
+
+introduceKindCluster' :: (
+  HasBaseContext context, MonadMask m, MonadUnliftIO m
+  )
+  -- | Path to kind binary
+  => FilePath
+  -> KindClusterOptions
+  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context) m ()
+  -> SpecFree context m ()
+introduceKindCluster' kindBinary kindClusterOptions spec =
+  introduceFile @"kind" kindBinary $
+    introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) $
+      spec
 
 -- * Implementation
 
 -- | Bracket-style variant of 'introduceKindCluster'.
 withKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  , HasBaseContextMonad context m, HasFile context "kind"
   )
   -- | Options
   => KindClusterOptions
@@ -116,42 +148,43 @@ withKindCluster opts@(KindClusterOptions {..}) action = do
 
 -- | Same as 'withKindCluster', but allows you to control the cluster name.
 withKindCluster' :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  , HasBaseContextMonad context m, HasFile context "kind"
   ) => KindClusterOptions -> Text -> (KubernetesClusterContext -> m a) -> m a
 withKindCluster' opts@(KindClusterOptions {..}) clusterName action = do
   kc <- isInContainer >>= \case
-    False -> return $ kindConfig kindClusterContainerLabels Nothing kindClusterNumNodes kindClusterBinaryCache
-    True -> return $ kindConfig kindClusterContainerLabels Nothing kindClusterNumNodes kindClusterBinaryCache
+    False -> return $ kindConfig kindClusterNumNodes kindClusterContainerLabels kindClusterExtraPortMappings kindClusterExtraMounts
+    True -> return $ kindConfig kindClusterNumNodes kindClusterContainerLabels kindClusterExtraPortMappings kindClusterExtraMounts
 
-  withSystemTempDirectory "test-kind-cluster-config" $ \tempDir -> do
-    let kindConfigFile = tempDir </> "kind-config"
-    writeFile kindConfigFile (toString kc)
-    info [i|kindConfigFile: #{kindConfigFile}|]
+  Just dir <- getCurrentFolder
+  kindConfigFile <- liftIO $ writeTempFile dir "kind-config" (decodeUtf8 $ Yaml.encode kc)
+  info [i|kindConfigFile: #{kindConfigFile}|]
 
-    let kindKubeConfigFile = tempDir </> "kind-kube-config"
-    writeFile kindKubeConfigFile ""
+  kindKubeConfigFile <- liftIO $ writeTempFile dir "kind-kube-config" ""
 
-    environmentToUse <- case kindClusterDriver of
-      Just "docker" -> return Nothing
-      Just "podman" -> do
-        baseEnvironment <- getEnvironment
-        return $ Just (("KIND_EXPERIMENTAL_PROVIDER", "podman") : baseEnvironment)
-      Just x -> expectationFailure [i|Unexpected driver: #{x}|]
-      Nothing -> return Nothing
+  environmentToUse <- case kindClusterDriver of
+    Just "docker" -> return Nothing
+    Just "podman" -> do
+      baseEnvironment <- getEnvironment
+      return $ Just (("KIND_EXPERIMENTAL_PROVIDER", "podman") : baseEnvironment)
+    Just x -> expectationFailure [i|Unexpected driver: #{x}|]
+    Nothing -> return Nothing
 
-    let driver = fromMaybe "docker" kindClusterDriver
+  let driver = fromMaybe "docker" kindClusterDriver
 
-    (bracket (startKindCluster opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
-             (\_ -> do
-                 ps <- createProcessWithLogging ((proc "kind" ["delete", "cluster", "--name", toString clusterName]) {
-                                                    env = environmentToUse
-                                                    })
-                 void $ waitForProcess ps
-             ))
-             (\kcc -> bracket_ (setUpKindCluster kcc environmentToUse driver)
-                               (return ())
-                               (action kcc)
-             )
+  kindBinary <- askFile @"kind"
+
+  (bracket (startKindCluster opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
+           (\_ -> do
+               ps <- createProcessWithLogging ((proc kindBinary ["delete", "cluster", "--name", toString clusterName]) {
+                                                  env = environmentToUse
+                                                  })
+               void $ waitForProcess ps
+           ))
+           (\kcc -> bracket_ (setUpKindCluster kcc environmentToUse driver)
+                             (return ())
+                             (action kcc)
+           )
 
 startKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m
