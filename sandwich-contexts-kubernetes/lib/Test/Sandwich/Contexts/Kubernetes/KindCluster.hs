@@ -24,6 +24,7 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
 
   -- * Types
   , KindClusterOptions (..)
+  , KindClusterName(..)
   , ExtraPortMapping(..)
   , ExtraMount(..)
   , defaultKindClusterOptions
@@ -62,6 +63,13 @@ import UnliftIO.Process
 -- pids_limit = 0
 
 
+data KindClusterName =
+  -- | Give the kind cluster an exact name
+  KindClusterNameExactly Text
+  -- | Autogenerate the cluster name, with an optional fixed prefix
+  | KindClusterNameAutogenerate (Maybe Text)
+  deriving (Show, Eq)
+
 data KindClusterOptions = KindClusterOptions {
   kindClusterNumNodes :: Int
   -- | Extra flags to pass to kind
@@ -73,7 +81,7 @@ data KindClusterOptions = KindClusterOptions {
   -- | Extra mounts; see the [docs](https://kind.sigs.k8s.io/docs/user/configuration#extra-mounts)
   , kindClusterExtraMounts :: [ExtraMount]
   -- | Prefix for the generated cluster name
-  , kindClusterNamePrefix :: Maybe Text
+  , kindClusterName :: KindClusterName
   -- | Container driver, either "docker" or "podman". Defaults to "docker"
   , kindClusterDriver :: Maybe Text
   -- , kindClusterCpus :: Maybe Text
@@ -86,7 +94,7 @@ defaultKindClusterOptions = KindClusterOptions {
   , kindClusterContainerLabels = mempty
   , kindClusterExtraPortMappings = []
   , kindClusterExtraMounts = []
-  , kindClusterNamePrefix = Nothing
+  , kindClusterName = KindClusterNameAutogenerate Nothing
   , kindClusterDriver = Nothing
   -- , kindClusterCpus = Nothing
   -- , kindClusterMemory = Nothing
@@ -144,18 +152,23 @@ withKindCluster :: (
   => KindClusterOptions
   -> (KubernetesClusterContext -> m a)
   -> m a
-withKindCluster opts@(KindClusterOptions {..}) action = do
-  let prefix = fromMaybe "test-kind-cluster" kindClusterNamePrefix
-  clusterID <- makeUUID' 5
-  let clusterName = [i|#{prefix}-#{clusterID}|]
-  withKindCluster' opts clusterName action
+withKindCluster opts action = do
+  kindBinary <- askFile @"kind"
+  withKindCluster' kindBinary opts action
 
--- | Same as 'withKindCluster', but allows you to control the cluster name.
+-- | Same as 'withKindCluster', but allows you to pass in the path to the kind binary.
 withKindCluster' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
-  , HasBaseContextMonad context m, HasFile context "kind"
-  ) => KindClusterOptions -> Text -> (KubernetesClusterContext -> m a) -> m a
-withKindCluster' opts@(KindClusterOptions {..}) clusterName action = do
+  , HasBaseContextMonad context m
+  ) => FilePath -> KindClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
+  clusterName <- case kindClusterName of
+    KindClusterNameExactly t -> pure t
+    KindClusterNameAutogenerate maybePrefix -> do
+      let prefix = fromMaybe "test-kind-cluster" maybePrefix
+      clusterID <- makeUUID' 5
+      return [i|#{prefix}-#{clusterID}|]
+
   kc <- isInContainer >>= \case
     False -> return $ kindConfig kindClusterNumNodes kindClusterContainerLabels kindClusterExtraPortMappings kindClusterExtraMounts
     True -> return $ kindConfig kindClusterNumNodes kindClusterContainerLabels kindClusterExtraPortMappings kindClusterExtraMounts
@@ -175,8 +188,6 @@ withKindCluster' opts@(KindClusterOptions {..}) clusterName action = do
     Nothing -> return Nothing
 
   let driver = fromMaybe "docker" kindClusterDriver
-
-  kindBinary <- askFile @"kind"
 
   (bracket (startKindCluster opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
            (\_ -> do
