@@ -43,7 +43,6 @@ library
     , filepath
     , minio-hs
     , monad-logger
-    , mtl
     , network
     , network-uri
     , random
