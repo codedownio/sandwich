@@ -32,10 +32,10 @@ deriveToJSON A.defaultOptions ''ExtraPortMapping
 data ExtraMount = ExtraMount {
   hostPath :: String
   , containerPath :: String
-  -- If set, the mount is read-only.
+  -- | If set, the mount is read-only.
   -- default false
   , readOnly :: Maybe Bool
-  -- If set, the mount needs SELinux relabeling.
+  -- | If set, the mount needs SELinux relabeling.
   -- default false
   , selinuxRelabel :: Maybe Bool
 

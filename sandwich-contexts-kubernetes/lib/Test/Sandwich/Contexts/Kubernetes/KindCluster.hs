@@ -17,12 +17,16 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withLoadImages
   , withLoadImages'
 
-  -- * Types
-  , KindClusterOptions (..)
+  -- * Re-exported types
   , KubernetesClusterContext (..)
-  , defaultKindClusterOptions
   , kubernetesCluster
   , HasKubernetesClusterContext
+
+  -- * Types
+  , KindClusterOptions (..)
+  , ExtraPortMapping(..)
+  , ExtraMount(..)
+  , defaultKindClusterOptions
   ) where
 
 import Control.Monad
