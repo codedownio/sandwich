@@ -78,7 +78,7 @@ webDriverOptionsWithInfo :: ParserInfo CommandLineWebdriverOptions
 webDriverOptionsWithInfo = OA.info (commandLineWebdriverOptions mempty <**> helper)
   (
     fullDesc
-    <> progDesc "Special options passed to the WebDriver formatter, if present.\n\nIf a flag is passed, it will override the value in the WdOptions configured in the code."
+    <> progDesc "Special options passed to the WebDriver integration, if present.\n\nIf a flag is passed, it will override the value in the WdOptions configured in the code."
     <> header "WebDriver flags"
   )
 
