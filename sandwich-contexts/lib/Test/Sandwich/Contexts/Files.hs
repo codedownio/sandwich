@@ -43,6 +43,7 @@ module Test.Sandwich.Contexts.Files (
   -- * Introduce a binary from a Nix derivation
   , introduceBinaryViaNixDerivation
   , introduceBinaryViaNixDerivation'
+  , withBinaryViaNixDerivation
 
   -- * Get a file
   , askFile
@@ -173,6 +174,19 @@ withBinaryViaNixPackage :: forall a b context m. (
     -> m b
 withBinaryViaNixPackage packageName action = do
   EnvironmentFile binary <- buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal (Proxy @a))
+  action binary
+
+-- | Bracket-style version of 'introduceBinaryViaNixDerivation'.
+withBinaryViaNixDerivation :: forall a b context m. (
+  HasBaseContextMonad context m, HasNixContext context
+  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  ) =>
+    -- | Nix derivation as a string.
+    Text
+    -> (FilePath -> m b)
+    -> m b
+withBinaryViaNixDerivation derivation action = do
+  EnvironmentFile binary <- buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal (Proxy @a))
   action binary
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
