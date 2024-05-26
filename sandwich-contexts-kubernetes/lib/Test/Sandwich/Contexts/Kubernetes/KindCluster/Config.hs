@@ -51,7 +51,7 @@ data ExtraMount = ExtraMount {
   -- On MacOS with Docker Desktop, if the mount is from macOS and not the
   -- docker desktop VM, you cannot use this field. You can use it for
   -- mounts to the linux VM.
-  , propagation :: String
+  , propagation :: Maybe String
   }
 deriveToJSON A.defaultOptions ''ExtraMount
 
