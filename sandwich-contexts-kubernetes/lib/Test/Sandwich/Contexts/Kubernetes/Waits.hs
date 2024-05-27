@@ -1,12 +1,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Waits where
 
-import Test.Sandwich.Contexts.Kubernetes.Run
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -21,6 +20,9 @@ import Kubernetes.OpenAPI.Model as Kubernetes
 import Relude
 import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.Run
+import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Waits
 import UnliftIO.Process
 
@@ -82,13 +84,14 @@ listPods namespace labels =
 
 waitForPodsToBeReady :: (
   MonadUnliftIO m, MonadLogger m
-  , MonadReader context m, HasKubernetesClusterContext context
+  , MonadReader context m, HasKubernetesClusterContext context, HasFile context "kubectl"
   ) => Text -> Map Text Text -> Double -> m ()
 waitForPodsToBeReady namespace labels timeInSeconds = do
+  kubectlBinary <- askFile @"kubectl"
   kubeConfigFile <- kubernetesClusterKubeConfigPath <$> getContext kubernetesCluster
 
   let labelArgs = [[i|-l #{k}=#{v}|] | (k, v) <- M.toList labels]
-  p <- createProcessWithLogging (proc "kubectl" (
+  p <- createProcessWithLogging (proc kubectlBinary (
                                   ["wait", "pods"
                                   , "--kubeconfig", kubeConfigFile
                                   , "-n", toString namespace

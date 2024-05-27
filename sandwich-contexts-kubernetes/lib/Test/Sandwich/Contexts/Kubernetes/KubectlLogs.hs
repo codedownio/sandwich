@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KubectlLogs (
   KubectlLogsContext (..)
@@ -12,6 +14,7 @@ import qualified Data.Text as T
 import Relude hiding (withFile)
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Util.Process (gracefullyStopProcess)
 import UnliftIO.Exception
 import UnliftIO.IO (withFile)
@@ -27,9 +30,12 @@ data KubectlLogsContext = KubectlLogsContext
 -- | Note that this will stop working if the pod you're talking to goes away (even if you do it against a service)
 -- If this happens, a rerun of the command is needed to resume forwarding
 withKubectlLogs :: (
-  HasBaseContextMonad ctx m, MonadLogger m, MonadFail m, MonadUnliftIO m
+  MonadLogger m, MonadFail m, MonadUnliftIO m
+  , HasBaseContextMonad ctx m, HasFile ctx "kubectl"
   ) => FilePath -> Text -> Text -> Maybe Text -> Bool -> (KubectlLogsContext -> m a) -> m a
 withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone action = do
+  kubectlBinary <- askFile @"kubectl"
+
   let args = ["logs", toString target
              , "--namespace", toString namespace
              , "--kubeconfig", kubeConfigFile]
@@ -43,10 +49,11 @@ withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone
   withFile logPath WriteMode $ \h -> do
     hSetBuffering h LineBuffering
 
-    bracket (createProcess ((proc "kubectl" args) { std_out = UseHandle h
-                                                  , std_err = UseHandle h
-                                                  , create_group = True
-                                                  }))
+    bracket (createProcess ((proc kubectlBinary args) {
+                               std_out = UseHandle h
+                               , std_err = UseHandle h
+                               , create_group = True
+                               }))
             (\(_, _, _, ps) -> if
                 | interruptWhenDone -> void $ gracefullyStopProcess ps 30_000_000
                 | otherwise -> void $ waitForProcess ps
