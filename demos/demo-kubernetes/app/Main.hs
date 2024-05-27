@@ -18,6 +18,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster
 import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
+import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
 
@@ -31,8 +32,6 @@ spec = describe "Introducing a Kubernetes cluster" $ do
           kcc <- getContext kubernetesCluster
           info [i|Got Kubernetes cluster context: #{kcc}|]
 
-          liftIO $ threadDelay 60_000_000
-
         introduceBinaryViaNixPackage @"kubectl" "kubectl" $
           introduceBinaryViaNixDerivation @"kubectl-minio" kubectlMinioDerivation $
           introduceMinioOperator $ do
@@ -40,12 +39,10 @@ spec = describe "Introducing a Kubernetes cluster" $ do
               moc <- getContext minioOperator
               info [i|Got MinIO operator: #{moc}|]
 
-            -- introduceK8SMinioS3Server "foo" $ do
-            --   Relude.undefined
-            --   -- it "has a MinIO S3 server" $ do
-            --   --   Relude.undefined
-            --   --   -- serv <- getContext testS3Server
-            --   --   -- info [i|Got test S3 server: #{serv}|]
+            withKubernetesNamespace "foo" $ introduceK8SMinioS3Server "foo" $ do
+              it "has a MinIO S3 server" $ do
+                serv <- getContext testS3Server
+                info [i|Got test S3 server: #{serv}|]
 
 kubectlMinioDerivation :: Text
 kubectlMinioDerivation = [i|

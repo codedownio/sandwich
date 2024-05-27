@@ -42,9 +42,13 @@ import UnliftIO.Process
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
   MonadMask m, MonadUnliftIO m
-  , HasBaseContextMonad context m, HasMinioOperatorContext context, HasKubernetesClusterContext context
+  , HasBaseContext context, HasMinioOperatorContext context, HasKubernetesClusterContext context
   , HasFile context "kubectl", HasFile context "kubectl-minio"
-  ) => Text -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m () -> SpecFree context m ()
+  )
+  -- | Namespace
+  => Text
+  -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
+  -> SpecFree context m ()
 introduceK8SMinioS3Server namespace = do
   introduceWith "minio S3 server" testS3Server $ \action -> do
     kcc <- getContext kubernetesCluster
@@ -54,8 +58,13 @@ introduceK8SMinioS3Server namespace = do
 -- | Same as 'introduceK8SMinioS3Server', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SMinioS3Server' :: (
   MonadMask m, MonadUnliftIO m
-  , HasBaseContextMonad context m, HasMinioOperatorContext context, HasFile context "kubectl", HasFile context "kubectl-minio"
-  ) => KubernetesClusterContext -> Text -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m () -> SpecFree context m ()
+  , HasBaseContext context, HasMinioOperatorContext context, HasFile context "kubectl", HasFile context "kubectl-minio"
+  )
+  => KubernetesClusterContext
+  -- | Namespace
+  -> Text
+  -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
+  -> SpecFree context m ()
 introduceK8SMinioS3Server' kubernetesClusterContext namespace =
   introduceWith "minio S3 server" testS3Server $ \action -> do
     moc <- getContext minioOperator
@@ -65,16 +74,33 @@ introduceK8SMinioS3Server' kubernetesClusterContext namespace =
 withK8SMinioS3Server :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m, HasFile context "kubectl", HasFile context "kubectl-minio"
-  ) => KubernetesClusterContext -> MinioOperatorContext -> Text -> (TestS3Server -> m [Result]) -> m ()
+  )
+  => KubernetesClusterContext
+  -> MinioOperatorContext
+  -- | Namespace
+  -> Text
+  -> (TestS3Server -> m [Result])
+  -> m ()
 withK8SMinioS3Server kcc moc namespace action = do
   kubectlBinary <- askFile @"kubectl"
   kubectlMinioBinary <- askFile @"kubectl-minio"
   withK8SMinioS3Server' kubectlBinary kubectlMinioBinary kcc moc namespace action
 
+-- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
 withK8SMinioS3Server' :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m
-  ) => FilePath -> FilePath -> KubernetesClusterContext -> MinioOperatorContext -> Text -> (TestS3Server -> m [Result]) -> m ()
+  )
+  -- | Path to kubectl binary
+  => FilePath
+  -- | Path to kubectl-minio binary
+  -> FilePath
+  -> KubernetesClusterContext
+  -> MinioOperatorContext
+  -- | Namespace
+  -> Text
+  -> (TestS3Server -> m [Result])
+  -> m ()
 withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext {..}) MinioOperatorContext namespace action = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
@@ -105,12 +131,22 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
                                              ]
 
   bracket_ create destroy $ do
-    Right envConfig <- ((B64.decode . encodeUtf8 . T.strip . toText) <$>) $
-      readCreateProcess ((proc kubectlBinary ["get", "secret", [i|#{deploymentName}-env-configuration|]
-                                              , "--namespace", toString namespace
-                                              , "-o", [i|jsonpath="{.data.config\.env}"|]
-                                              ]) { env = Just env }) ""
-    info [i|Got envConfig: #{envConfig}|]
+    envConfig <- ((B64.decodeLenient . encodeUtf8 . T.strip . toText) <$>) $ do
+      let getSecretArgs = ["get", "secret", [i|#{deploymentName}-env-configuration|]
+                          , "--namespace", toString namespace
+                          , "-o", [i|jsonpath="{.data.config\\.env}"|]
+                          ]
+      debug [i|export KUBECONFIG=#{kubernetesClusterKubeConfigPath}|]
+      debug [i|#{kubectlBinary} #{T.unwords $ fmap T.pack getSecretArgs}|]
+      ret <- readCreateProcessWithLogging ((proc kubectlBinary getSecretArgs) { env = Just env }) ""
+      debug [i|Got ret: #{ret}|]
+      return ret
+
+    -- envConfig <- case eitherEnvConfig of
+    --   Right x -> pure x
+    --   Left err -> expectationFailure [i|Failed to decode MinIO environment config: #{err}|]
+
+    -- info [i|Got envConfig: #{envConfig}|]
 
     Just (username, password) <- return (parseMinioUserAndPassword (decodeUtf8 envConfig))
     info [i|Got username and password: #{(username, password)}|]
