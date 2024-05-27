@@ -108,7 +108,7 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
     Right envConfig <- ((B64.decode . encodeUtf8 . T.strip . toText) <$>) $
       readCreateProcess ((proc kubectlBinary ["get", "secret", [i|#{deploymentName}-env-configuration|]
                                               , "--namespace", toString namespace
-                                              , "-o", [i|jsonpath="{.data.config\\.env}"|]
+                                              , "-o", [i|jsonpath="{.data.config\.env}"|]
                                               ]) { env = Just env }) ""
     info [i|Got envConfig: #{envConfig}|]
 
