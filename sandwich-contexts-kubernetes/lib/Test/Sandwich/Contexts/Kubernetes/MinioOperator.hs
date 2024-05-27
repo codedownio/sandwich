@@ -70,5 +70,5 @@ withMinioOperator' kubectlMinioBinary (KubernetesClusterContext {..}) action = d
 
   bracket_ (runWithKubeConfig kubectlMinioBinary ["init"])
            -- Can't delete -f yet; see https://github.com/minio/operator/issues/1683
-           (return ()) -- (runWithKubeConfig [i|kubectl-minio delete|])
+           (return ()) -- (runWithKubeConfig kubectlMinioBinary ["delete"])
            (action MinioOperatorContext)
