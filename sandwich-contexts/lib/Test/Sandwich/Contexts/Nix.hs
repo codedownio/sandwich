@@ -44,6 +44,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Util.Aeson
 import UnliftIO.Async
 import UnliftIO.Directory
+import UnliftIO.Environment
 import UnliftIO.MVar (modifyMVar)
 import UnliftIO.Process
 
@@ -72,6 +73,10 @@ data NixpkgsDerivation =
     , nixpkgsDerivationRepo :: Text
     , nixpkgsDerivationRev :: Text
     , nixpkgsDerivationSha256 :: Text
+
+    -- | Set the environment variable NIXPKGS_ALLOW_UNFREE=1 when building with this derivation.
+    -- Useful when you want to use packages with unfree licenses, like "google-chrome".
+    , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
 -- | Nixpkgs release 23.11, accessed 2\/19\/2023.
@@ -83,6 +88,7 @@ nixpkgsRelease2311 = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationRepo = "nixpkgs"
   , nixpkgsDerivationRev = "cc86e0769882886f7831de9c9373b62ea2c06e3f"
   , nixpkgsDerivationSha256 = "sha256-1eAZINWjTTA8nWJiN979JVSwvCYzUWnMpzMHGUCLgZk="
+  , nixpkgsDerivationAllowUnfree = False
   }
 
 -- | Currently set to 'nixpkgsRelease2311'.
@@ -186,15 +192,22 @@ buildNixExpression expr = do
     )
 
 
-runNixBuild :: (MonadUnliftIO m, MonadLogger m) => Text -> String -> m String
+runNixBuild :: (MonadUnliftIO m, MonadLogger m, MonadReader context m, HasNixContext context) => Text -> String -> m String
 runNixBuild expr outputPath = do
+  NixContext {nixContextNixpkgsDerivation} <- getContext nixContext
+  maybeEnv <- case nixpkgsDerivationAllowUnfree nixContextNixpkgsDerivation of
+    False -> pure Nothing
+    True -> do
+      env <- getEnvironment
+      return $ Just (("NIXPKGS_ALLOW_UNFREE", "1") : env)
+
   output <- readCreateProcessWithLogging (
-    proc "nix" ["build"
+    (proc "nix" ["build"
                , "--impure"
                , "--expr", toString expr
                , "-o", outputPath
                , "--json"
-               ]
+               ]) { env = maybeEnv }
     ) ""
 
   case A.eitherDecodeStrict (encodeUtf8 output) of
