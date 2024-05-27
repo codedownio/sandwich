@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Cluster (
   -- * Kind clusters
@@ -47,6 +48,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.URI
 import Relude
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KubectlLogs
 import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
 import Test.Sandwich.Contexts.Kubernetes.Types
@@ -63,17 +65,18 @@ import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 withForwardKubernetesService :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
-  , HasBaseContextMonad context m, HasKubernetesClusterContext context
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
   ) => Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService namespace serviceName action = do
   kcc <- getContext kubernetesCluster
-  withForwardKubernetesService' kcc namespace serviceName action
+  kubectlBinary <- askFile @"kubectl"
+  withForwardKubernetesService' kcc kubectlBinary namespace serviceName action
 
 withForwardKubernetesService' :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> Text -> Text -> (URI -> m a) -> m a
-withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) =
+  ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
+withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) _kubectlBinary =
   Minikube.withForwardKubernetesService' kcc minikubeProfileName
-withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) =
-  Kind.withForwardKubernetesService' kcc
+withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) kubectlBinary =
+  Kind.withForwardKubernetesService' kcc kubectlBinary

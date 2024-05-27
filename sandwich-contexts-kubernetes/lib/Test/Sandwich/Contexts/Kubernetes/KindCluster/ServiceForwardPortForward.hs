@@ -1,12 +1,11 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -18,6 +17,8 @@ import Network.URI
 import Relude hiding (withFile)
 import Safe
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Environment
 import UnliftIO.Process
 
@@ -25,13 +26,13 @@ import UnliftIO.Process
 withForwardKubernetesService' :: (
   MonadUnliftIO m, MonadCatch m, MonadBaseControl IO m, MonadLoggerIO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> Text -> Text -> (URI -> m a) -> m a
-withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) namespace service action = do
+  ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
+withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do
   baseEnv <- maybe getEnvironment return kindClusterEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
   portRaw <- (toString . T.strip . toText) <$> readCreateProcessWithLogging (
-    (proc "kubectl" [
+    (proc kubectlBinary [
       "get"
       , "service", toString service
       , "--namespace", toString namespace
@@ -42,7 +43,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     Just p -> pure p
     Nothing -> expectationFailure [i|Failed to parse service port: #{portRaw}|]
 
-  withKubectlPortForward kubernetesClusterKubeConfigPath namespace ("svc/" <> service) port $ \(KubectlPortForwardContext {..}) -> do
+  withKubectlPortForward' kubectlBinary kubernetesClusterKubeConfigPath namespace (const True) Nothing ("svc/" <> service) port $ \(KubectlPortForwardContext {..}) -> do
     action $ nullURI {
       uriScheme = "http:"
       , uriAuthority = Just (nullURIAuth {
@@ -51,4 +52,4 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
                                 })
       }
 
-withForwardKubernetesService' _ _ _ _ = error "withForwardKubernetesService' must be called with a kind KubernetesClusterContext"
+withForwardKubernetesService' _ _ _ _ _ = error "withForwardKubernetesService' must be called with a kind KubernetesClusterContext"

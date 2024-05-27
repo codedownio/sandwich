@@ -16,6 +16,8 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster
+import Test.Sandwich.Contexts.Kubernetes.MinioOperator
+import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
 
@@ -30,6 +32,40 @@ spec = describe "Introducing a Kubernetes cluster" $ do
           info [i|Got Kubernetes cluster context: #{kcc}|]
 
           liftIO $ threadDelay 60_000_000
+
+        introduceBinaryViaNixPackage @"kubectl" "kubectl" $
+          introduceBinaryViaNixDerivation @"kubectl-minio" kubectlMinioDerivation $
+          introduceMinioOperator $ do
+            it "Has a MinIO operator" $ do
+              moc <- getContext minioOperator
+              info [i|Got MinIO operator: #{moc}|]
+
+            -- introduceK8SMinioS3Server "foo" $ do
+            --   Relude.undefined
+            --   -- it "has a MinIO S3 server" $ do
+            --   --   Relude.undefined
+            --   --   -- serv <- getContext testS3Server
+            --   --   -- info [i|Got test S3 server: #{serv}|]
+
+kubectlMinioDerivation :: Text
+kubectlMinioDerivation = [i|
+{ fetchurl
+}:
+
+fetchurl {
+  url = "https://github.com/minio/operator/releases/download/v5.0.6/kubectl-minio_5.0.6_linux_amd64";
+  hash = "sha256-j3mpgV1HLmFwYRdxfPXT1XzDWeiyQC2Ye8aeZt511bc=";
+
+  downloadToTemp = true;
+  executable = true;
+
+  postFetch = ''
+    mkdir -p $out/bin
+    mv "$downloadedFile" $out/bin/kubectl-minio
+  '';
+}
+|]
+
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec

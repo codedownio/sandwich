@@ -103,7 +103,7 @@ defaultKindClusterOptions = KindClusterOptions {
 
 -- * Introduce
 
-
+-- | Alias to make type signatures shorter
 type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context
 
 -- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the Nix context.

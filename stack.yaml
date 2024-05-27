@@ -83,3 +83,16 @@ extra-deps:
 - git: https://github.com/codedownio/haskell-oidc-client
   # codedown-jan-2024-ghc96
   commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+
+# https://github.com/kubernetes-client/haskell/issues/64
+# https://github.com/channable/vaultenv/issues/99
+- git: https://github.com/codedownio/hs-certificate
+  # codedown-feb-2024
+  # This branch
+  # 1. Takes akshaymankar's fixes from https://github.com/haskell-tls/hs-certificate/pull/113
+  # and rebases them on the most recent https://github.com/haskell-tls/hs-certificate master branch
+  # 2. Cherry-picks kazuyamamoto's commit switching the package tocrypton, from here:
+  # https://github.com/kazu-yamamoto/crypton-certificate/commit/c11bbbeec2360ce797c5eb3bd4953cbc5bf1a0d6
+  commit: dcd0d5b200e96e90c6daa728585c23be5309a955
+  subdirs:
+  - x509-validation

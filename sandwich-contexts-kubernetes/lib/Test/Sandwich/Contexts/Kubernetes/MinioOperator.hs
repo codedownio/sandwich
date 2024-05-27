@@ -13,6 +13,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
   , withMinioOperator'
 
   -- * Types
+  , minioOperator
   , MinioOperatorContext(..)
   , HasMinioOperatorContext
   ) where

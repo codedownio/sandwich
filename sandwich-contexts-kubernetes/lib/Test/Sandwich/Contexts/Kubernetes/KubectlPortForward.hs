@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward (
   KubectlPortForwardContext (..)
@@ -6,8 +8,6 @@ module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward (
   , withKubectlPortForward'
   ) where
 
-import Test.Sandwich.Contexts.Kubernetes.Util.Ports
-import Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
 import Control.Monad
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
@@ -20,6 +20,9 @@ import Relude hiding (withFile)
 import System.FilePath
 import System.Process (getPid)
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.Util.Ports
+import Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
 import Test.Sandwich.Util.Process (gracefullyStopProcess)
 import UnliftIO.Async
 import UnliftIO.Directory
@@ -37,16 +40,20 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 -- * Implementation
 
 withKubectlPortForward :: (
-  HasCallStack, HasBaseContextMonad ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
+  HasCallStack, MonadCatch m, MonadLogger m, MonadUnliftIO m
+  , HasBaseContextMonad ctx m, HasFile ctx "kubectl"
   ) => FilePath -> Text -> Text -> PortNumber -> (KubectlPortForwardContext -> m a) -> m a
-withKubectlPortForward kubeConfigFile namespace = withKubectlPortForward' kubeConfigFile namespace (const True) Nothing
+withKubectlPortForward kubeConfigFile namespace targetName targetPort action = do
+  kubectlBinary <- askFile @"kubectl"
+  withKubectlPortForward' kubectlBinary kubeConfigFile namespace (const True) Nothing targetName targetPort action
 
 -- | Note that this will stop working if the pod you're talking to goes away (even if you do it against a service)
 -- If this happens, a rerun of the command is needed to resume forwarding
 withKubectlPortForward' :: (
-  HasCallStack, HasBaseContextMonad ctx m, MonadCatch m, MonadLogger m, MonadUnliftIO m
-  ) => FilePath -> Text -> (PortNumber -> Bool) -> Maybe PortNumber -> Text -> PortNumber -> (KubectlPortForwardContext -> m a) -> m a
-withKubectlPortForward' kubeConfigFile namespace isAcceptablePort maybeHostPort targetName targetPort action = do
+  HasCallStack, MonadCatch m, MonadLogger m, MonadUnliftIO m
+  , HasBaseContextMonad ctx m
+  ) => FilePath -> FilePath -> Text -> (PortNumber -> Bool) -> Maybe PortNumber -> Text -> PortNumber -> (KubectlPortForwardContext -> m a) -> m a
+withKubectlPortForward' kubectlBinary kubeConfigFile namespace isAcceptablePort maybeHostPort targetName targetPort action = do
   port <- maybe (findFreePortOrException' isAcceptablePort) return maybeHostPort
 
   let args = ["port-forward", toString targetName, [i|#{port}:#{targetPort}|]
@@ -65,10 +72,11 @@ withKubectlPortForward' kubeConfigFile namespace isAcceptablePort maybeHostPort 
   withFile logPath WriteMode $ \h -> do
 
     let restarterThread = forever $ do
-          bracket (createProcess ((proc "kubectl" args) { std_out = UseHandle h
-                                                        , std_err = UseHandle h
-                                                        , create_group = True
-                                                        }))
+          bracket (createProcess ((proc kubectlBinary args) {
+                                     std_out = UseHandle h
+                                     , std_err = UseHandle h
+                                     , create_group = True
+                                     }))
                   (\(_, _, _, ps) -> gracefullyStopProcess ps 30000000)
                   (\(_, _, _, ps) -> do
                       pid <- liftIO $ getPid ps

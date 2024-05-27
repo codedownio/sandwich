@@ -5,7 +5,6 @@
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Control.Lens
 import Control.Lens.Regex.Text
 import Control.Monad
@@ -24,6 +23,7 @@ import System.Exit
 import System.FilePath
 import qualified System.Random as R
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Util.Process
 import UnliftIO.Environment
 import UnliftIO.Exception
@@ -36,8 +36,8 @@ import UnliftIO.Timeout
 withForwardKubernetesService' :: (
   MonadUnliftIO m, MonadBaseControl IO m, MonadLoggerIO m
   , MonadReader context m
-  ) => KubernetesClusterContext -> Text -> Text -> (URI -> m a) -> m a
-withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) namespace service action = do
+  ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
+withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do
   baseEnv <- maybe getEnvironment return kindClusterEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
@@ -47,9 +47,9 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     let configFile = dir </> "ingress.yaml"
     liftIO $ T.writeFile configFile (ingressConfig service randomHost)
 
-    createProcessWithLogging ((proc "kubectl" ["create"
-                                              , "--namespace", toString namespace
-                                              , "-f", configFile]) {
+    createProcessWithLogging ((proc kubectlBinary ["create"
+                                                  , "--namespace", toString namespace
+                                                  , "-f", configFile]) {
                                  env = Just env
                                  }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
@@ -95,7 +95,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
         Nothing -> expectationFailure [i|Couldn't parse URI in withForwardKubernetesService': #{uriToUse}|]
         Just x -> pure x
 
-withForwardKubernetesService' _ _ _ _ = error "withForwardKubernetesService' must be called with a kind KubernetesClusterContext"
+withForwardKubernetesService' _ _ _ _ _ = error "withForwardKubernetesService' must be called with a kind KubernetesClusterContext"
 
 
 ingressConfig :: Text -> Text -> Text
