@@ -36,6 +36,7 @@ import Test.Sandwich.Contexts.Waits
 import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.Process
+import UnliftIO.Timeout
 
 
 -- | Introduce a MinIO server on a Kubernetes cluster.
@@ -134,10 +135,12 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
                                              ]
 
   let createNetworkPolicy = do
-        let (policyName, yaml) = networkPolicy deploymentName
+        let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
         runWithKubeConfig' kubectlBinary ["create", "--namespace", toString namespace, "-f", "-"] yaml
-        pure policyName
-  let destroyNetworkPolicy policyName = runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString namespace]
+        pure (policyName, discoverPodPolicyName)
+  let destroyNetworkPolicy (policyName, discoverPodPolicyName) = do
+        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString namespace]
+        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString namespace]
 
   -- TODO: create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
   bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket_ create destroy $ do
@@ -171,10 +174,13 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
                                          , "--restart=Never"
                                          , "--command"
                                          , "--namespace", toString namespace
+                                         , "--labels=app=discover-pod"
                                          , "--"
                                          , "sh", "-c", [i|until nc -vz minio 80; do echo "Waiting for minio..."; sleep 3; done;|]
                                          ]) { env = Just env })
-      waitForProcess p >>= (`shouldBe` ExitSuccess)
+      timeout 300_000_000 (waitForProcess p >>= (`shouldBe` ExitSuccess)) >>= \case
+        Just () -> return ()
+        Nothing -> expectationFailure [i|Failed to wait for minio to come online.|]
 
     info [__i|Ready to try port-forward:
               export KUBECONFIG=#{kubernetesClusterKubeConfigPath}
@@ -204,10 +210,11 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
       void $ action testServ
 
 
-networkPolicy :: Text -> (String, String)
-networkPolicy deploymentName = (policyName, yaml)
+networkPolicy :: Text -> (String, String, String)
+networkPolicy deploymentName = (policyName, discoverPodPolicyName, yaml)
   where
     policyName = "minio-allow"
+    discoverPodPolicyName = "discover-pod-allow"
 
     yaml = [__i|apiVersion: networking.k8s.io/v1
                 kind: NetworkPolicy
@@ -217,6 +224,25 @@ networkPolicy deploymentName = (policyName, yaml)
                   podSelector:
                     matchLabels:
                       v1.min.io/tenant: "#{deploymentName}"
+
+                  policyTypes:
+                  - Ingress
+                  - Egress
+
+                  ingress:
+                  - {}
+
+                  egress:
+                  - {}
+                ---
+                apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: #{discoverPodPolicyName}
+                spec:
+                  podSelector:
+                    matchLabels:
+                      app: discover-pod
 
                   policyTypes:
                   - Ingress
