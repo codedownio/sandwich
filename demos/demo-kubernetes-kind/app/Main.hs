@@ -28,7 +28,7 @@ spec = describe "Introducing a Kubernetes cluster" $ do
   describe "Via kind" $ do
     introduceNixContext nixpkgsReleaseDefault $ do
       introduceKindClusterViaNix defaultKindClusterOptions $ do
-        it "prints the Kind cluster info" $ do
+        it "prints the cluster info" $ do
           kcc <- getContext kubernetesCluster
           info [i|Got Kubernetes cluster context: #{kcc}|]
 

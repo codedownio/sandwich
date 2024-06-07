@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           demo-kubernetes
+name:           demo-kubernetes-kind
 version:        0.1.0.0
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-executable demo-kubernetes
+executable demo-kubernetes-kind
   main-is: Main.hs
   other-modules:
-      Paths_demo_kubernetes
+      Paths_demo_kubernetes_kind
   hs-source-dirs:
       app
   default-extensions:

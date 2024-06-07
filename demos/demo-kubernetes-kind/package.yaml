@@ -1,4 +1,4 @@
-name:                demo-kubernetes
+name:                demo-kubernetes-kind
 version:             0.1.0.0
 license:             BSD3
 
@@ -32,6 +32,6 @@ ghc-options:
 - -with-rtsopts=-N
 
 executables:
-  demo-kubernetes:
+  demo-kubernetes-kind:
     main: Main.hs
     source-dirs: app

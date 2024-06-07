@@ -107,6 +107,9 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
   let runWithKubeConfig prog args = do
         p <- createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })
         waitForProcess p >>= (`shouldBe` ExitSuccess)
+  let runWithKubeConfig' prog args input = do
+        p <- createProcessWithLoggingAndStdin ((proc prog args) { env = Just env, delegate_ctlc = True }) input
+        waitForProcess p >>= (`shouldBe` ExitSuccess)
 
   deploymentName <- ("minio-" <>) <$> makeUUID' 5
 
@@ -130,13 +133,20 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
                                              , "-f"
                                              ]
 
-  bracket_ create destroy $ do
+  let createNetworkPolicy = do
+        let (policyName, yaml) = networkPolicy deploymentName
+        runWithKubeConfig' kubectlBinary ["create", "--namespace", toString namespace, "-f", "-"] yaml
+        pure policyName
+  let destroyNetworkPolicy policyName = runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString namespace]
+
+  -- TODO: create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
+  bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket_ create destroy $ do
     envConfig <- ((B64.decodeLenient . encodeUtf8 . T.strip . toText) <$>) $ do
       let getSecretArgs = ["get", "secret", [i|#{deploymentName}-env-configuration|]
                           , "--namespace", toString namespace
                           , "-o", [i|jsonpath="{.data.config\\.env}"|]
                           ]
-      debug [i|export KUBECONFIG=#{kubernetesClusterKubeConfigPath}|]
+      debug [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath}'|]
       debug [i|#{kubectlBinary} #{T.unwords $ fmap T.pack getSecretArgs}|]
       ret <- readCreateProcessWithLogging ((proc kubectlBinary getSecretArgs) { env = Just env }) ""
       debug [i|Got ret: #{ret}|]
@@ -192,3 +202,29 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
       waitUntilStatusCodeWithTimeout (4, 0, 3) (1_000_000 * 60 * 5) NoVerify (toString (testS3ServerEndpoint testServ))
 
       void $ action testServ
+
+
+networkPolicy :: Text -> (String, String)
+networkPolicy deploymentName = (policyName, yaml)
+  where
+    policyName = "minio-allow"
+
+    yaml = [__i|apiVersion: networking.k8s.io/v1
+                kind: NetworkPolicy
+                metadata:
+                  name: #{policyName}
+                spec:
+                  podSelector:
+                    matchLabels:
+                      v1.min.io/tenant: "#{deploymentName}"
+
+                  policyTypes:
+                  - Ingress
+                  - Egress
+
+                  ingress:
+                  - {}
+
+                  egress:
+                  - {}
+                |]

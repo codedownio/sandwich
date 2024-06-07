@@ -38,7 +38,8 @@ packages:
 - ./demos/demo-fake-smtp-server
 - ./demos/demo-golden
 - ./demos/demo-hedgehog
-- ./demos/demo-kubernetes
+- ./demos/demo-kubernetes-kind
+- ./demos/demo-kubernetes-minikube
 - ./demos/demo-landing
 - ./demos/demo-minio
 - ./demos/demo-nix-binary
