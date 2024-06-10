@@ -9,6 +9,7 @@ module Test.Sandwich.WebDriver (
   introduceWebDriver
   , introduceWebDriverViaNix
   , introduceWebDriverOptions
+  , introduceWebDriver'
   , addCommandLineOptionsToWdOptions
 
   -- * Running an example in a given session
@@ -58,6 +59,7 @@ import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
+import UnliftIO.Directory
 import UnliftIO.MVar
 import UnliftIO.Process
 
@@ -65,8 +67,8 @@ import UnliftIO.Process
 -- | This is the main 'introduce' method for creating a WebDriver.
 introduceWebDriver :: (
   BaseMonadContext m context
-  ) => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
-introduceWebDriver wdOptions = undefined -- introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
+  ) => WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
+introduceWebDriver = introduceWebDriver' defaultWebDriverDependencies
 
 type ContextWithWebdriverDeps context =
   LabelValue "webdriver" WebDriver
@@ -87,8 +89,29 @@ introduceWebDriverViaNix wdOptions =
     tryFindSeleniumJar :: FilePath -> IO FilePath
     tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
 
+introduceWebDriver' :: forall m context. (
+  BaseMonadContext m context
+  ) => WebDriverDependencies -> WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
+introduceWebDriver' (WebDriverDependencies {..}) wdOptions =
+  introduce "Introduce selenium.jar" (mkFileLabel @"selenium.jar") getSeleniumJar (const $ return ())
+  . (case webDriverDependencyJava of Nothing -> introduceBinaryViaEnvironment @"java"; Just p -> introduceFile @"java" p)
+  . introduce "Introduce browser dependencies" browserDependencies getBrowserDependencies (const $ return ())
+  . introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
+  where
+    getSeleniumJar :: ExampleT context m (EnvironmentFile "selenium.jar")
+    getSeleniumJar = case webDriverDependencySelenium of
+      UseSeleniumAt p -> liftIO (doesFileExist p) >>= \case
+        False -> expectationFailure [i|Path '#{p}' didn't exist|]
+        True -> pure $ EnvironmentFile p
+      DownloadSeleniumDefault -> undefined
+      DownloadSeleniumFrom url -> undefined
+      UseSeleniumFromNixpkgs nixContext -> undefined
+
+    getBrowserDependencies = case webDriverDependencyBrowser of
+      BrowserDependenciesSpecChrome {..} -> undefined
+
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
-introduceWebDriverOptions :: forall a context m. (
+introduceWebDriverOptions :: forall context m. (
   BaseMonadContext m context, HasSomeCommandLineOptions context
   )
   => WdOptions -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()

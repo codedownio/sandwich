@@ -35,9 +35,8 @@ module Test.Sandwich.WebDriver.Config (
   , WhenToSave(..)
 
   -- * Manually obtaining binaries
-  , obtainSelenium
   , obtainChromeDriver
-  , obtainGeckoDriver
+  -- , obtainGeckoDriver
 
   -- * Browser capabilities
   , chromeCapabilities
@@ -48,5 +47,6 @@ module Test.Sandwich.WebDriver.Config (
   ) where
 
 import Test.Sandwich.WebDriver.Internal.Binaries
+import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.Types

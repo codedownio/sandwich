@@ -40,6 +40,7 @@ library
       Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
       Test.Sandwich.WebDriver.Internal.Types
+      Test.Sandwich.WebDriver.Internal.Types.Video
       Test.Sandwich.WebDriver.Internal.Util
       Test.Sandwich.WebDriver.Internal.Video
       Test.Sandwich.WebDriver.Types

@@ -8,6 +8,7 @@ import Data.String.Interpolate
 import System.Environment
 import System.Process
 import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Types.Video
 
 #ifdef darwin_HOST_OS
 import Safe
