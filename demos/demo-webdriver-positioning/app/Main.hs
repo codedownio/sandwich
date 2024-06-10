@@ -13,7 +13,7 @@ import Test.WebDriver.Commands
 
 
 positioning :: TopSpec
-positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+positioning = introduceWebDriver defaultWdOptions $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withSession1 $ do
       openPage "http://www.google.com"

@@ -155,16 +155,21 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          updateGolden (optGoldenDir (optGoldenOptions clo))
      | otherwise -> do
          -- Awkward, but we need a specific context type to call countItNodes
-         let totalTests = countItNodes (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
+         let totalTests = countItNodes (spec :: SpecFree (LabelValue "someCommandLineOptions" SomeCommandLineOptions :> LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
+
+         let cliNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
+                                                 , nodeOptionsCreateFolder = False }
 
          runWithRepeat repeatCount totalTests $
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
-                                              , nodeOptionsCreateFolder = False }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
+                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ())
+                 $ spec
              Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
-               introduce' (defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
-                                              , nodeOptionsCreateFolder = False }) "command line options" commandLineOptions (pure clo) (const $ return ()) spec
+               introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
+                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ())
+                 $ spec
              Just (IndividualTestMainFn x) -> do
                let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]

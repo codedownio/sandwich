@@ -202,7 +202,7 @@ parseCommandLineArgs' :: forall a. Typeable a => Parser a -> TopSpecWithOptions'
   , [(NodeModuleInfo, T.Text)]
   )
 parseCommandLineArgs' userOptionsParser spec = do
-  let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
+  let modulesAndShorthands = gatherMainFunctions (spec :: SpecFree (LabelValue "someCommandLineOptions" SomeCommandLineOptions :> LabelValue "commandLineOptions" (CommandLineOptions a) :> BaseContext) IO ())
                            & L.sortOn nodeModuleInfoModuleName
                            & gatherShorthands
   let individualTestFlags maybeInternal =

@@ -55,27 +55,11 @@ data RunMode = Normal
              -- xvfb-run script must be installed and on the PATH.
 
 data WdOptions = WdOptions {
-  toolsRoot :: ToolsRoot
-  -- ^ Folder where any necessary binaries (chromedriver, Selenium, etc.) will be downloaded if needed. Required.
-
-  , capabilities :: W.Capabilities
+  capabilities :: W.Capabilities
   -- ^ The WebDriver capabilities to use.
 
   , saveSeleniumMessageHistory :: WhenToSave
   -- ^ When to save a record of Selenium requests and responses.
-
-  , seleniumToUse :: SeleniumToUse
-  -- ^ Which Selenium server JAR file to use.
-
-  , chromeBinaryPath :: Maybe FilePath
-  -- ^ Which chrome binary to use.
-  , chromeDriverToUse :: ChromeDriverToUse
-  -- ^ Which chromedriver executable to use.
-
-  , firefoxBinaryPath :: Maybe FilePath
-  -- ^ Which firefox binary to use.
-  , geckoDriverToUse :: GeckoDriverToUse
-  -- ^ Which geckodriver executable to use.
 
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.).
@@ -103,7 +87,7 @@ data ChromeDriverToUse =
   -- ^ Download chromedriver from the given URL to the 'toolsRoot'
   | DownloadChromeDriverVersion ChromeDriverVersion
   -- ^ Download the given chromedriver version to the 'toolsRoot'
-  | DownloadChromeDriverAutodetect (Maybe FilePath)
+  | DownloadChromeDriverAutodetect FilePath
   -- ^ Autodetect chromedriver to use based on the Chrome version and download it to the 'toolsRoot'
   -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath
@@ -155,16 +139,10 @@ defaultXvfbConfig = XvfbConfig Nothing False
 
 -- | The default 'WdOptions' object.
 -- You should start with this and modify it using the accessors.
-defaultWdOptions :: FilePath -> WdOptions
-defaultWdOptions toolsRoot = WdOptions {
-  toolsRoot = toolsRoot
-  , capabilities = def
+defaultWdOptions :: WdOptions
+defaultWdOptions = WdOptions {
+  capabilities = def
   , saveSeleniumMessageHistory = OnException
-  , seleniumToUse = DownloadSeleniumDefault
-  , chromeBinaryPath = Nothing
-  , chromeDriverToUse = DownloadChromeDriverAutodetect Nothing
-  , firefoxBinaryPath = Nothing
-  , geckoDriverToUse = DownloadGeckoDriverAutodetect Nothing
   , runMode = Normal
   , httpManager = Nothing
   , httpRetryCount = 0
@@ -270,3 +248,18 @@ defaultVideoSettings = VideoSettings {
   , hideMouseWhenRecording = False
   , logToDisk = True
   }
+
+data BrowserDependencies = BrowserDependenciesChrome {
+  browserDependenciesChromeChrome :: FilePath
+  , browserDependenciesChromeChromedriver :: FilePath
+  }
+  | BrowserDependenciesFirefox {
+      browserDependenciesFirefoxFirefox :: FilePath
+      , browserDependenciesFirefoxGeckodriver :: FilePath
+      }
+  deriving (Show)
+
+browserDependencies :: Label "browserDependencies" BrowserDependencies
+browserDependencies = Label
+
+type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies

@@ -13,7 +13,7 @@ import Test.Sandwich.WebDriver
 import Test.WebDriver
 
 spec :: TopSpec
-spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+spec = introduceWebDriver defaultWdOptions $ do
   it "opens Google and searches" $ withSession1 $ do
     openPage "http://www.google.com"
     search <- findElem (ByCSS "*[title='Search']")
@@ -36,7 +36,7 @@ For example, the code below opens two windows with a different site in each.
 
 ```haskell
 spec :: TopSpec
-spec = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+spec = introduceWebDriver defaultWdOptions $ do
   describe "two browser sessions" $ do
     it "opens Google" $ withSession1 $ openPage "http://www.google.com"
     it "opens Yahoo" $ withSession2 $ openPage "http://www.yahoo.com"
@@ -49,7 +49,7 @@ The code below extends the previous example with window positioning. You can fin
 
 ```haskell
 positioning :: TopSpec
-positioning = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+positioning = introduceWebDriver defaultWdOptions $ do
   describe "two windows side by side" $ do
     it "opens Google" $ withSession1 $ do
       openPage "http://www.google.com"
@@ -69,7 +69,7 @@ This package makes it easy to run Selenium tests in the background, using either
 Many browsers now have the ability to natively run in headless mode. For example, passing these modified `WdOptions` to `introduceWebDriver` will run using headless Firefox.
 
 ```haskell
-wdOptions = (defaultWdOptions "/tmp/tools") {
+wdOptions = defaultWdOptions {
   capabilities = firefoxCapabilities Nothing
   , runMode = RunHeadless defaultHeadlessConfig
   }
@@ -84,7 +84,7 @@ Xvfb can be used to run your browser on a separate, "virtual" X11 display, diffe
 Xvfb mode can be configured manually just like headless mode.
 
 ```haskell
-wdOptions = (defaultWdOptions "/tmp/tools") {
+wdOptions = defaultWdOptions {
   capabilities = chromeCapabilities
   , runMode = RunInXvfb XvfbConfig
   }
@@ -106,7 +106,7 @@ Using the methods in [Test.Sandwich.WebDriver.Video](http://hackage.haskell.org/
 
 ```haskell
 manualVideo :: TopSpec
-manualVideo = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+manualVideo = introduceWebDriver defaultWdOptions $ do
   describe "video recording" $ do
     it "opens Google" $ withSession1 $ do
       openPage "http://www.google.com"
@@ -204,7 +204,7 @@ Having written these functions, we can finally write our tests. The following wi
 ```haskell
 tests :: TopSpecWithOptions
 tests =
-  introduceWebDriverPool 4 (defaultWdOptions "/tmp/tools") $
+  introduceWebDriverPool 4 defaultWdOptions $
     parallel $
       replicateM_ 20 $
         claimWebdriver $

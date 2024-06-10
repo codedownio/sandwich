@@ -11,7 +11,7 @@ import Test.Sandwich.WebDriver
 
 
 tests :: TopSpec
-tests = describe "Selenium tests" $ introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+tests = describe "Selenium tests" $ introduceWebDriver defaultWdOptions $ do
   $(getSpecFromFolder defaultGetSpecFromFolderOptions)
 
 main :: IO ()

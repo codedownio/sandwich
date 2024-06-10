@@ -1,8 +1,11 @@
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
+
 module Main where
 
 import Control.Concurrent
@@ -11,12 +14,13 @@ import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver
 import Test.WebDriver.Commands
 
 
 simple :: TopSpecWithOptions
-simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
+simple = introduceNixContext nixpkgsReleaseDefault $ introduceWebDriverViaNix defaultWdOptions $ do
   it "opens Google and searches" $ withSession1 $ do
     openPage [i|https://www.google.com|]
     search <- findElem (ByCSS [i|*[title="Search"]|])
@@ -27,7 +31,7 @@ simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
     Just dir <- getCurrentFolder
     screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
 
-    liftIO $ threadDelay 3000000
+    liftIO $ threadDelay 3_000_000
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

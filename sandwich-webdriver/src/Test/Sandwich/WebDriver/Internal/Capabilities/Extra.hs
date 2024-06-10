@@ -45,9 +45,13 @@ fromText = id
 type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
 
 -- | Add headless configuration to the Chrome browser
-configureHeadlessCapabilities :: Constraints m => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
+configureHeadlessCapabilities :: (Constraints m) => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
 configureHeadlessCapabilities wdOptions (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
-  headlessArg <- liftIO (detectChromeVersion (chromeBinaryPath wdOptions)) >>= \case
+  chromeBinaryPath <- case chromeBinary of
+    Nothing -> expectationFailure [i|Chrome capabilities didn't define chromeBinary in configureHeadlessCapabilities|]
+    Just x -> pure x
+
+  headlessArg <- liftIO (detectChromeVersion chromeBinaryPath) >>= \case
     Left err -> do
       warn [i|Couldn't determine chrome version when configuring headless capabilities (err: #{err}); passing --headless|]
       return "--headless"
