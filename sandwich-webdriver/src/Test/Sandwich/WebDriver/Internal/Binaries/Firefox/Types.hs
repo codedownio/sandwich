@@ -8,17 +8,19 @@ import Test.Sandwich.Contexts.Nix
 data FirefoxToUse =
   -- | Search the PATH for the "firefox" binary.
   UseFirefoxFromPath
+  -- | Use the Firefox at the given path.
+  | UseFirefoxAt FilePath
   -- | Get Firefox from Nixpkgs
   | UseFirefoxFromNixpkgs NixContext
   deriving Show
 
 -- | How to obtain the geckodriver binary.
 data GeckoDriverToUse =
-  DownloadGeckoDriverFrom String
+  DownloadGeckoDriverFrom FilePath String
   -- ^ Download geckodriver from the given URL to the 'toolsRoot'
-  | DownloadGeckoDriverVersion GeckoDriverVersion
+  | DownloadGeckoDriverVersion FilePath GeckoDriverVersion
   -- ^ Download the given geckodriver version to the 'toolsRoot'
-  | DownloadGeckoDriverAutodetect
+  | DownloadGeckoDriverAutodetect FilePath
   -- ^ Autodetect geckodriver to use based on the Firefox version and download it to the 'toolsRoot'.
   | UseGeckoDriverAt FilePath
   -- ^ Use the geckodriver at the given path

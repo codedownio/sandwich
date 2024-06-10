@@ -30,12 +30,12 @@ webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
 type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
 
 introduceWebDriverPool :: forall m context. (
-  MonadIO m, HasBaseContext context, HasCommandLineOptions context ()
+  MonadIO m, HasBaseContext context, HasSomeCommandLineOptions context
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduce "Introduce webdriver pool" webDriverPool alloc cleanup
   where
     alloc = do
-      wdOptions <- addCommandLineOptionsToWdOptions <$> (getCommandLineOptions @()) <*> pure wdOptions'
+      wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
       runRoot <- fromMaybe "/tmp" <$> getRunRoot
       runRoot <- fromMaybe "/tmp" <$> getRunRoot
       liftIO $ createPool (allocateWebDriver' runRoot wdOptions) cleanupWebDriver' 1 30 poolSize

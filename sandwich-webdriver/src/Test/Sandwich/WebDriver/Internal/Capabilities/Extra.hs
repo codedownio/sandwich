@@ -47,7 +47,7 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseCon
 
 -- | Add headless configuration to the Chrome browser
 configureHeadlessCapabilities :: (Constraints m) => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
-configureHeadlessCapabilities wdOptions (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
+configureHeadlessCapabilities _wdOptions (RunHeadless (HeadlessConfig {..})) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
   chromeBinaryPath <- case chromeBinary of
     Nothing -> expectationFailure [i|Chrome capabilities didn't define chromeBinary in configureHeadlessCapabilities|]
     Just x -> pure x

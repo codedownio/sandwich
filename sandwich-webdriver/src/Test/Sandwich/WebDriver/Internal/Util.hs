@@ -4,11 +4,9 @@ module Test.Sandwich.WebDriver.Internal.Util where
 
 import Control.Monad
 import Control.Monad.IO.Unlift
-import Data.String.Interpolate
 import qualified Data.Text as T
-import System.Directory
-import System.Process
 import qualified System.Random as R
+import Test.Sandwich (expectationFailure)
 import UnliftIO.Exception
 
 #ifdef mingw32_HOST_OS
@@ -16,31 +14,15 @@ import System.IO
 #endif
 
 
--- * Truncating log files
-
-moveAndTruncate :: FilePath -> String -> IO ()
-moveAndTruncate from to = do
-  exists <- doesFileExist from
-  when exists $ do
-    copyFile from to
-    tryTruncateFile from
-
-  where
-    tryTruncateFile :: FilePath -> IO ()
-    tryTruncateFile path = catch (truncateFile path)
-                                 (\(e :: SomeException) -> putStrLn [i|Failed to truncate file #{path}: #{e}|])
-
-    truncateFile :: FilePath -> IO ()
-#ifdef mingw32_HOST_OS
-    truncateFile path = withFile path WriteMode $ flip hPutStr "\n" -- Not exactly truncation, but close enough?
-#else
-    truncateFile path = void $ readCreateProcess (shell [i|> #{path}|]) ""
-#endif
-
 -- * Exceptions
 
 leftOnException :: (MonadUnliftIO m) => m (Either T.Text a) -> m (Either T.Text a)
 leftOnException = handle (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
+
+exceptionOnLeft :: (MonadUnliftIO m) => m (Either T.Text a) -> m a
+exceptionOnLeft action = action >>= \case
+  Left err -> expectationFailure (T.unpack err)
+  Right x -> pure x
 
 leftOnException' :: (MonadUnliftIO m) => m a -> m (Either T.Text a)
 leftOnException' action = catch (Right <$> action) (\(e :: SomeException) -> return $ Left $ T.pack $ show e)
