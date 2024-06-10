@@ -15,7 +15,6 @@ import Data.String.Interpolate
 import Network.HTTP.Client (Manager)
 import System.Process
 import Test.Sandwich
-import Test.Sandwich.Contexts.Nix
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
@@ -70,18 +69,6 @@ data WdOptions = WdOptions {
   , httpRetryCount :: Int
   -- ^ Number of times to retry an HTTP request if it times out.
   }
-
--- | How to obtain the Selenium server JAR file.
-data SeleniumToUse =
-  DownloadSeleniumFrom String
-  -- ^ Download selenium from the given URL to the 'toolsRoot'
-  | DownloadSeleniumDefault
-  -- ^ Download selenium from a default location to the 'toolsRoot'
-  | UseSeleniumAt FilePath
-  -- ^ Use the JAR file at the given path
-  | UseSeleniumFromNixpkgs NixContext
-  -- ^ Use the Selenium in the given Nixpkgs derivation
-  deriving Show
 
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)
