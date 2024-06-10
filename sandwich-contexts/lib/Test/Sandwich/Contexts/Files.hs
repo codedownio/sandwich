@@ -39,6 +39,7 @@ module Test.Sandwich.Contexts.Files (
   , introduceBinaryViaNixPackage
   , introduceBinaryViaNixPackage'
   , getBinaryViaNixPackage
+  , getBinaryViaNixPackage'
 
   -- * Introduce file from a Nix package
   , introduceFileViaNixPackage
@@ -232,6 +233,19 @@ getBinaryViaNixPackage :: forall a context m. (
     -> m FilePath
 getBinaryViaNixPackage packageName = do
   unEnvironmentFile <$> (buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal (Proxy @a)))
+
+-- | Lower-level version of 'introduceBinaryViaNixPackage'.
+getBinaryViaNixPackage' :: forall a context m. (
+  HasBaseContext context, MonadReader context m
+  , MonadLogger m, MonadUnliftIO m, MonadFail m, KnownSymbol a
+  ) =>
+    -- | 'NixContext' to use.
+    NixContext
+    -- | Nix package name which contains the desired binary.
+    -> NixPackageName
+    -> m FilePath
+getBinaryViaNixPackage' nc packageName = do
+  unEnvironmentFile <$> (buildNixSymlinkJoin' nc [packageName] >>= tryFindBinary (symbolVal (Proxy @a)))
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.

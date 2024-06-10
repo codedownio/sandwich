@@ -9,13 +9,15 @@ module Test.Sandwich.Contexts.Nix (
   -- * Nix environments
   , introduceNixEnvironment
   , buildNixSymlinkJoin
+  , buildNixSymlinkJoin'
   , buildNixExpression
+  , buildNixExpression'
   , buildNixCallPackageDerivation
 
   -- * Nixpkgs releases
-  , nixpkgsRelease2311
   , nixpkgsReleaseDefault
-  -- TODO: export smart constructors for this
+  , nixpkgsRelease2405
+  , nixpkgsRelease2311
 
   -- * Types
   , nixContext
@@ -154,6 +156,19 @@ buildNixSymlinkJoin packageNames = do
   NixContext {..} <- getContext nixContext
   buildNixExpression $ renderNixSymlinkJoin nixContextNixpkgsDerivation packageNames
 
+-- | Lower-level version of 'buildNixSymlinkJoin'.
+buildNixSymlinkJoin' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  )
+  -- | Nix context
+  => NixContext
+  -- | Package names
+  -> [Text]
+  -> m FilePath
+buildNixSymlinkJoin' nc@(NixContext {..}) packageNames = do
+  buildNixExpression' nc $ renderNixSymlinkJoin nixContextNixpkgsDerivation packageNames
+
 -- | Build a Nix environment expressed as a derivation expecting a list of dependencies, as in the
 -- Nix "callPackage" design pattern. I.e.
 -- "{ git, gcc, stdenv, ... }: stdenv.mkDerivation {...}"
@@ -191,9 +206,16 @@ buildNixExpression :: (
   )
   -- | Nix expression
   => Text -> m FilePath
-buildNixExpression expr = do
-  NixContext {..} <- getContext nixContext
+buildNixExpression expr = getContext nixContext >>= (`buildNixExpression'` expr)
 
+-- | Lower-level version of 'buildNixExpression'.
+buildNixExpression' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  )
+  -- | Nix expression
+  => NixContext -> Text -> m FilePath
+buildNixExpression' nc@(NixContext {..}) expr = do
   wait =<< modifyMVar nixContextBuildCache (\m ->
     case M.lookup expr m of
       Just x -> return (m, x)
@@ -201,7 +223,7 @@ buildNixExpression expr = do
         asy <- async $ do
           Just dir <- getCurrentFolder
           gcrootDir <- liftIO $ createTempDirectory dir "nix-expression"
-          runNixBuild expr (gcrootDir </> "gcroot")
+          runNixBuild' nc expr (gcrootDir </> "gcroot")
 
         return (M.insert expr asy m, asy)
     )
@@ -209,7 +231,12 @@ buildNixExpression expr = do
 
 runNixBuild :: (MonadUnliftIO m, MonadLogger m, MonadReader context m, HasNixContext context) => Text -> String -> m String
 runNixBuild expr outputPath = do
-  NixContext {nixContextNixpkgsDerivation} <- getContext nixContext
+  nc <- getContext nixContext
+  runNixBuild' nc expr outputPath
+
+-- | Lower-level version of 'runNixBuild'.
+runNixBuild' :: (MonadUnliftIO m, MonadLogger m) => NixContext -> Text -> String -> m String
+runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr outputPath = do
   maybeEnv <- case nixpkgsDerivationAllowUnfree nixContextNixpkgsDerivation of
     False -> pure Nothing
     True -> do
