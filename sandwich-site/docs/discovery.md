@@ -42,7 +42,7 @@ tests = do
     UnitTests1.tests
     UnitTests2.tests
 
-  introduceWebDriver (defaultWdOptions "/tmp/tools") $
+  introduceWebDriver defaultWdOptions $
     describe "Selenium tests" $ do
       SeleniumTests1.tests
       SeleniumTests2.tests
@@ -71,7 +71,7 @@ import Test.Sandwich.WebDriver
 #insert_test_imports
 
 tests :: TopSpec
-tests = describe "Selenium tests" $ introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+tests = describe "Selenium tests" $ introduceWebDriver defaultWdOptions $ do
   $(getSpecFromFolder defaultGetSpecFromFolderOptions)
 
 main :: IO ()

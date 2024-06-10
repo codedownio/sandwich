@@ -29,12 +29,13 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports (findFreePortOrException)
 import Test.Sandwich.Util.Process
-import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Capabilities.Extra
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
+import UnliftIO.Async
 import UnliftIO.Process
+import UnliftIO.Timeout
 
 #ifndef mingw32_HOST_OS
 import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
@@ -45,9 +46,10 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseCon
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
 startWebDriver :: (
-  Constraints m, MonadReader context m, HasFile context "java"
+  Constraints m, MonadReader context m
+  , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
   ) => WdOptions -> FilePath -> m WebDriver
-startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = do
+startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
 
@@ -59,26 +61,30 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   let downloadDir = webdriverRoot </> "Downloads"
   liftIO $ createDirectoryIfMissing True downloadDir
 
-  -- Get selenium and chromedriver
-  debug [i|Preparing to create the Selenium process|]
-  seleniumPath <- obtainSelenium toolsRoot seleniumToUse >>= \case
-    Left err -> error [i|Failed to obtain selenium: '#{err}'|]
-    Right p -> return p
-  driverArgs <- case W.browser capabilities' of
-    W.Firefox {} -> do
-      obtainGeckoDriver toolsRoot geckoDriverToUse >>= \case
-        Left err -> error [i|Failed to obtain geckodriver: '#{err}'|]
-        Right p -> return [[i|-Dwebdriver.gecko.driver=#{p}|]
-                          -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
-                          -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
-                          ]
-    W.Chrome {} -> do
-      obtainChromeDriver toolsRoot chromeDriverToUse >>= \case
-        Left err -> error [i|Failed to obtain chromedriver: '#{err}'|]
-        Right p -> return [[i|-Dwebdriver.chrome.driver=#{p}|]
-                          , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
-                          , [i|-Dwebdriver.chrome.verboseLogging=true|]]
-    x -> error [i|Browser #{x} is not supported yet|]
+  -- Get selenium, driver args, and capabilities with browser paths applied
+  java <- askFile @"java"
+  seleniumPath <- askFile @"selenium.jar"
+  (driverArgs, capabilities') <- getContext browserDependencies >>= \case
+    BrowserDependenciesFirefox {..} -> do
+      let args = [
+            [i|-Dwebdriver.gecko.driver=#{browserDependenciesFirefoxGeckodriver}|]
+            -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
+            -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
+            ]
+      let capabilities' = capabilities'' {
+            W.browser = W.firefox { W.ffBinary = Just browserDependenciesFirefoxFirefox }
+            }
+      return (args, capabilities')
+    BrowserDependenciesChrome {..} -> do
+      let args = [
+            [i|-Dwebdriver.chrome.driver=#{browserDependenciesChromeChromedriver}|]
+            , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
+            , [i|-Dwebdriver.chrome.verboseLogging=true|]
+            ]
+      let capabilities' = capabilities'' {
+            W.browser = W.chrome { W.chromeBinary = Just browserDependenciesChromeChrome }
+            }
+      return (args, capabilities')
 
   (maybeXvfbSession, javaEnv) <- case runMode of
 #ifndef mingw32_HOST_OS
@@ -92,9 +98,6 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
   webdriverProcessName <- ("webdriver_process_" <>) <$> (liftIO makeUUID)
   let webdriverProcessRoot = webdriverRoot </> T.unpack webdriverProcessName
   liftIO $ createDirectoryIfMissing True webdriverProcessRoot
-
-  java <- askFile @"java"
-  -- seleniumJar <- askFile @"selenium.jar"
 
   -- Retry up to 10 times
   -- This is necessary because sometimes we get a race for the port we get from findFreePortOrException.
@@ -124,17 +127,19 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities', ..}) runRoot = 
 
     -- Read from the (combined) output stream until we see the up and running message,
     -- or the process ends and we get an exception from hGetLine
-    fix $ \loop -> do
+    startupResult <- timeout 10_000_000 $ fix $ \loop -> do
       line <- fmap T.pack $ liftIO $ hGetLine hRead
       debug line
 
       if | "Selenium Server is up and running" `T.isInfixOf` line -> return ()
          | otherwise -> loop
 
-    return (port, hRead, p)
+    case startupResult of
+      Nothing -> expectationFailure [i|Didn't see "up and running" line in Selenium output.|]
+      Just () -> return (port, hRead, p)
 
   -- TODO: save this in the WebDriver to tear it down later?
-  logAsync <- forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)
+  _logAsync <- async $ forever (liftIO (hGetLine hRead) >>= (debug . T.pack))
 
   -- Final extra capabilities configuration
   capabilities <-

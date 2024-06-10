@@ -17,7 +17,7 @@ import UnliftIO.Exception
 
 
 manualVideo :: TopSpec
-manualVideo = introduceWebDriver (defaultWdOptions "/tmp/tools") $ do
+manualVideo = introduceWebDriver defaultWdOptions $ do
   describe "video recording" $ do
     it "opens Google" $ withSession1 $ do
       openPage "http://www.google.com"

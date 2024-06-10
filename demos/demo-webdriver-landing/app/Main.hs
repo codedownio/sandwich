@@ -16,7 +16,7 @@ import Test.WebDriver.Commands
 
 
 simple :: TopSpecWithOptions
-simple = introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
+simple = introduceWebDriverOptions @() defaultWdOptions $ do
   before "Position window" (withSession1 setWindowRightSide) $ do
     it "opens Google" $ withSession1 $ do
       openPage [i|https://www.google.com|]

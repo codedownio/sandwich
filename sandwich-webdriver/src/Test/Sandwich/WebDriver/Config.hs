@@ -4,15 +4,13 @@ module Test.Sandwich.WebDriver.Config (
   WdOptions
   , defaultWdOptions
   , runMode
-  , seleniumToUse
-  , chromeBinaryPath
-  , chromeDriverToUse
-  , firefoxBinaryPath
-  , geckoDriverToUse
   , capabilities
   , httpManager
   , httpRetryCount
   , saveSeleniumMessageHistory
+
+  -- * Browser options
+  , BrowserDependencies(..)
 
   -- * Run mode constructors
   , RunMode(..)

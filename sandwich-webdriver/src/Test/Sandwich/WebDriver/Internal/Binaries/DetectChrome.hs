@@ -6,6 +6,8 @@ module Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome (
   detectChromeVersion
   , getChromeDriverVersion
   , getChromeDriverDownloadUrl
+
+  , findChromeInEnvironment
   ) where
 
 import Control.Exception
@@ -62,10 +64,8 @@ findChromeInEnvironment =
       , "google-chrome-stable" -- May be found on NixOS
       ]
 
-detectChromeVersion :: Maybe FilePath -> IO (Either T.Text ChromeVersion)
-detectChromeVersion maybeChromePath = leftOnException $ runExceptT $ do
-  chromeToUse <- liftIO $ maybe findChromeInEnvironment pure maybeChromePath
-
+detectChromeVersion :: FilePath -> IO (Either T.Text ChromeVersion)
+detectChromeVersion chromeToUse = leftOnException $ runExceptT $ do
   (exitCode, stdout, stderr) <- liftIO $ readCreateProcessWithExitCode (shell (chromeToUse <> " --version | grep -Eo \"[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+\"")) ""
 
   rawString <- case exitCode of
@@ -76,9 +76,9 @@ detectChromeVersion maybeChromePath = leftOnException $ runExceptT $ do
     [tReadMay -> Just w, tReadMay -> Just x, tReadMay -> Just y, tReadMay -> Just z] -> return $ ChromeVersion (w, x, y, z)
     _ -> throwE [i|Failed to parse google-chrome version from string: '#{rawString}'|]
 
-getChromeDriverVersion :: Maybe FilePath -> IO (Either T.Text ChromeDriverVersion)
-getChromeDriverVersion maybeChromePath = runExceptT $ do
-  chromeVersion <- ExceptT $ liftIO $ detectChromeVersion maybeChromePath
+getChromeDriverVersion :: FilePath -> IO (Either T.Text ChromeDriverVersion)
+getChromeDriverVersion chromePath = runExceptT $ do
+  chromeVersion <- ExceptT $ liftIO $ detectChromeVersion chromePath
   ExceptT $ getChromeDriverVersion' chromeVersion
 
 getChromeDriverVersion' :: ChromeVersion -> IO (Either T.Text ChromeDriverVersion)

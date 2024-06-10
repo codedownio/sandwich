@@ -81,8 +81,8 @@ obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = 
       let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
       ExceptT $ downloadAndUnzipToPath downloadPath path
       return path
-obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect maybeChromePath) = runExceptT $ do
-  version <- ExceptT $ liftIO $ getChromeDriverVersion maybeChromePath
+obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect chromePath) = runExceptT $ do
+  version <- ExceptT $ liftIO $ getChromeDriverVersion chromePath
   ExceptT $ obtainChromeDriver toolsDir (DownloadChromeDriverVersion version)
 obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
@@ -135,9 +135,9 @@ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
 
   return chromeDriverPath
 
-downloadChromeDriverIfNecessary :: Constraints m => Maybe FilePath -> FilePath -> m (Either T.Text FilePath)
-downloadChromeDriverIfNecessary maybeChromePath toolsDir = runExceptT $ do
-  chromeDriverVersion <- ExceptT $ liftIO $ getChromeDriverVersion maybeChromePath
+downloadChromeDriverIfNecessary :: Constraints m => FilePath -> FilePath -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary chromePath toolsDir = runExceptT $ do
+  chromeDriverVersion <- ExceptT $ liftIO $ getChromeDriverVersion chromePath
   ExceptT $ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion
 
 getChromeDriverPath :: FilePath -> ChromeDriverVersion -> FilePath

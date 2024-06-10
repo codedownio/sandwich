@@ -31,6 +31,7 @@ executable demo-webdriver
     , bytestring
     , filepath
     , sandwich
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
     , webdriver

@@ -38,6 +38,12 @@ getCurrentFolder = asks (baseContextPath . getBaseContext)
 getCommandLineOptions :: forall a context m. (HasCommandLineOptions context a, MonadReader context m) => m (CommandLineOptions a)
 getCommandLineOptions = getContext commandLineOptions
 
+-- | Get existentially wrapped command line options, if configured.
+-- Using the 'runSandwichWithCommandLineArgs' family of main functions will introduce these, or you can
+-- introduce them manually
+getSomeCommandLineOptions :: forall context m. (HasSomeCommandLineOptions context, MonadReader context m) => m SomeCommandLineOptions
+getSomeCommandLineOptions = getContext someCommandLineOptions
+
 -- | Get the user command line options, if configured.
 -- This just calls 'getCommandLineOptions' and pulls out the user options.
 getUserCommandLineOptions :: (HasCommandLineOptions context a, MonadReader context m) => m a

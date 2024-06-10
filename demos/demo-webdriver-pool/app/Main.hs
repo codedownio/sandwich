@@ -63,7 +63,7 @@ claimWebdriver spec = introduceWith' (
 
 tests :: TopSpecWithOptions
 tests =
-  introduceWebDriverPool 4 (defaultWdOptions "/tmp/tools") $
+  introduceWebDriverPool 4 defaultWdOptions $
     parallel $
       replicateM_ 20 $
         claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"

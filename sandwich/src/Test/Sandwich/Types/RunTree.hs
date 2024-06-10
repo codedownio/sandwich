@@ -168,16 +168,25 @@ commandLineOptions = Label :: Label "commandLineOptions" (CommandLineOptions a)
 -- | Has-* class for asserting a 'CommandLineOptions a' is available.
 type HasCommandLineOptions context a = HasLabel context "commandLineOptions" (CommandLineOptions a)
 
+-- | Existential wrapper for 'CommandLineOptions a'.
+someCommandLineOptions :: Label "someCommandLineOptions" SomeCommandLineOptions
+someCommandLineOptions = Label :: Label "someCommandLineOptions" SomeCommandLineOptions
+data SomeCommandLineOptions where
+  SomeCommandLineOptions :: CommandLineOptions a -> SomeCommandLineOptions
+type HasSomeCommandLineOptions context = HasLabel context "someCommandLineOptions" SomeCommandLineOptions
+
 type TopSpecWithOptions = forall context. (
   Typeable context
   , HasBaseContext context
   , HasCommandLineOptions context ()
+  , HasSomeCommandLineOptions context
   ) => SpecFree context IO ()
 
 type TopSpecWithOptions' a = forall context. (
   Typeable context
   , HasBaseContext context
   , HasCommandLineOptions context a
+  , HasSomeCommandLineOptions context
   ) => SpecFree context IO ()
 
 -- * Formatter

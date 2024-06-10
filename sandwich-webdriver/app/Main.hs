@@ -80,7 +80,7 @@ simple = introduceWebDriver wdOptions $ do
 
 -- webdriverPool = Label :: Label "webdriverPool" (Pool WdSession)
 
-wdOptions = (defaultWdOptions "/tmp/tools") {
+wdOptions = defaultWdOptions {
   -- capabilities = chromeCapabilities
   capabilities = firefoxCapabilities Nothing
   -- capabilities = headlessFirefoxCapabilities
