@@ -12,6 +12,7 @@ import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Types
 
 

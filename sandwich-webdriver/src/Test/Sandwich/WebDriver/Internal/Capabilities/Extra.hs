@@ -23,7 +23,8 @@ import GHC.Stack
 import Lens.Micro
 import Lens.Micro.Aeson
 import Test.Sandwich
-import Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome (detectChromeVersion)
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Detect (detectChromeVersion)
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types (ChromeVersion(..))
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Firefox.Profile as FF

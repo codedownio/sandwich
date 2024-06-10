@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries.DetectChrome (
+module Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Detect (
   detectChromeVersion
   , getChromeDriverVersion
   , getChromeDriverDownloadUrl
@@ -30,8 +30,8 @@ import System.Directory (findExecutable)
 import System.Exit
 import qualified System.Info as SI
 import System.Process
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
-import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
 
