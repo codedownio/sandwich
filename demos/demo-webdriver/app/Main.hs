@@ -20,18 +20,20 @@ import Test.WebDriver.Commands
 
 
 simple :: TopSpecWithOptions
-simple = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $ introduceWebDriverViaNix defaultWdOptions $ do
-  it "opens Google and searches" $ withSession1 $ do
-    openPage [i|https://www.google.com|]
-    search <- findElem (ByCSS [i|*[title="Search"]|])
-    click search
-    sendKeys "Haskell Sandwich" search
-    findElem (ByCSS [i|input[type="submit"]|]) >>= click
+simple = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
+  introduceWebDriver defaultWdOptions $ do
+  -- introduceWebDriverViaNix defaultWdOptions $ do
+    it "opens Google and searches" $ withSession1 $ do
+      openPage [i|https://www.google.com|]
+      search <- findElem (ByCSS [i|*[title="Search"]|])
+      click search
+      sendKeys "Haskell Sandwich" search
+      findElem (ByCSS [i|input[type="submit"]|]) >>= click
 
-    Just dir <- getCurrentFolder
-    screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
+      Just dir <- getCurrentFolder
+      screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
 
-    liftIO $ threadDelay 3_000_000
+      liftIO $ threadDelay 3_000_000
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
