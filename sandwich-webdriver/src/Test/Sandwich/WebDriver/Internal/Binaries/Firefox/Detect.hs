@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries.DetectFirefox (
+module Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Detect (
   detectFirefoxVersion
   , getGeckoDriverVersion
   , getGeckoDriverDownloadUrl
