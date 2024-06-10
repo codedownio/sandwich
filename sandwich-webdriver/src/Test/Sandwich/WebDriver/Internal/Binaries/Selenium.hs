@@ -35,23 +35,23 @@ defaultSeleniumJarUrl = "https://selenium-release.storage.googleapis.com/3.141/s
 obtainSelenium :: (
   MonadReader context m, HasBaseContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
-  ) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
-obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
+  ) => SeleniumToUse -> m FilePath
+obtainSelenium (DownloadSeleniumFrom toolsDir url) = do
   let path = [i|#{toolsDir}/selenium-server-standalone.jar|]
   unlessM (liftIO $ doesFileExist path) $
     curlDownloadToPath url path
-  return $ Right path
-obtainSelenium toolsDir DownloadSeleniumDefault = do
+  return path
+obtainSelenium (DownloadSeleniumDefault toolsDir) = do
   let path = [i|#{toolsDir}/selenium-server-standalone-3.141.59.jar|]
   unlessM (liftIO $ doesFileExist path) $
     curlDownloadToPath defaultSeleniumJarUrl path
-  return $ Right path
-obtainSelenium _ (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
-  False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
-obtainSelenium _ (UseSeleniumFromNixpkgs nixContext) = do
+  return path
+obtainSelenium (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
+  False -> expectationFailure [i|Path '#{path}' didn't exist|]
+  True -> return path
+obtainSelenium (UseSeleniumFromNixpkgs nixContext) = do
   env <- buildNixSymlinkJoin' nixContext ["selenium-server-standalone"]
-  Right <$> liftIO (tryFindSeleniumJar env)
+  liftIO (tryFindSeleniumJar env)
   where
     tryFindSeleniumJar :: FilePath -> IO FilePath
     tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""

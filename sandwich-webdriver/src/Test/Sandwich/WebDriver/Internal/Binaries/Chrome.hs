@@ -3,13 +3,17 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries.Chrome (
-  ChromeToUse(..)
+  obtainChrome
+  , obtainChromeDriver
+
+  -- * Lower-level
+  , downloadChromeDriverIfNecessary
+
+  -- * Types
+  , ChromeToUse(..)
   , ChromeDriverToUse(..)
   , ChromeVersion(..)
   , ChromeDriverVersion(..)
-
-  , obtainChromeDriver
-  , downloadChromeDriverIfNecessary
   ) where
 
 import Control.Monad.IO.Unlift
@@ -34,18 +38,34 @@ type Constraints m = (
   , MonadUnliftIO m
   )
 
--- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
--- storing it under the provided 'FilePath' if necessary and returning the exact path.
+-- | Manually obtain a chrome binary, according to the 'ChromeToUse' policy,
+obtainChrome :: (
+  MonadReader context m, HasBaseContext context
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  ) => ChromeToUse -> m (Either T.Text FilePath)
+obtainChrome UseChromeFromPath = do
+  findExecutable "google-chrome" >>= \case
+    Just p -> return $ Right p
+    Nothing -> findExecutable "google-chrome-stable" >>= \case
+      Just p -> return $ Right p
+      Nothing -> expectationFailure [i|Couldn't find either "google-chrome" or "google-chrome-stable" on the PATH|]
+obtainChrome (UseChromeAt p) = doesFileExist p >>= \case
+  False -> return $ Left [i|Path '#{p}' didn't exist|]
+  True -> return $ Right p
+obtainChrome (UseChromeFromNixpkgs nixContext) =
+  Right <$> getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
+
+-- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy.
 obtainChromeDriver :: (
   MonadReader context m, HasBaseContext context
   , MonadUnliftIO m, MonadLogger m, MonadFail m
-  ) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
-obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
+  ) => ChromeDriverToUse -> m (Either T.Text FilePath)
+obtainChromeDriver (DownloadChromeDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
   unlessM (liftIO $ doesFileExist path) $
     curlDownloadToPath url path
   return $ Right path
-obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = runExceptT $ do
+obtainChromeDriver (DownloadChromeDriverVersion toolsDir chromeDriverVersion) = runExceptT $ do
   let path = getChromeDriverPath toolsDir chromeDriverVersion
   liftIO (doesFileExist path) >>= \case
     True -> return path
@@ -53,13 +73,14 @@ obtainChromeDriver toolsDir (DownloadChromeDriverVersion chromeDriverVersion) = 
       let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
       ExceptT $ downloadAndUnzipToPath downloadPath path
       return path
-obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect chromePath) = runExceptT $ do
+obtainChromeDriver (DownloadChromeDriverAutodetect toolsDir chromePath) = runExceptT $ do
   version <- ExceptT $ liftIO $ getChromeDriverVersion chromePath
-  ExceptT $ obtainChromeDriver toolsDir (DownloadChromeDriverVersion version)
-obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= \case
+  ExceptT $ obtainChromeDriver (DownloadChromeDriverVersion toolsDir version)
+obtainChromeDriver (UseChromeDriverAt path) = doesFileExist path >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
   True -> return $ Right path
-obtainChromeDriver _ (UseChromeDriverFromNixpkgs nixContext) = Right <$> getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
+obtainChromeDriver (UseChromeDriverFromNixpkgs nixContext) =
+  Right <$> getBinaryViaNixPackage' @"chromedriver" nixContext "chromedriver"
 
 
 downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)

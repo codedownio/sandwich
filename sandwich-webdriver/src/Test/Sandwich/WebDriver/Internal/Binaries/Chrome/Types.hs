@@ -13,17 +13,19 @@ import Test.Sandwich.Contexts.Nix
 data ChromeToUse =
   -- | Search the PATH for the "google-chrome" or "google-chrome-stable" binary.
   UseChromeFromPath
+  -- | Use the Chrome at the given path.
+  | UseChromeAt FilePath
   -- | Get Chrome from Nixpkgs
   | UseChromeFromNixpkgs NixContext
   deriving Show
 
 -- | How to obtain the chromedriver binary.
 data ChromeDriverToUse =
-  DownloadChromeDriverFrom String
+  DownloadChromeDriverFrom FilePath String
   -- ^ Download chromedriver from the given URL to the 'toolsRoot'
-  | DownloadChromeDriverVersion ChromeDriverVersion
+  | DownloadChromeDriverVersion FilePath ChromeDriverVersion
   -- ^ Download the given chromedriver version to the 'toolsRoot'
-  | DownloadChromeDriverAutodetect FilePath
+  | DownloadChromeDriverAutodetect FilePath FilePath
   -- ^ Autodetect chromedriver to use based on the Chrome version and download it to the 'toolsRoot'
   -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath

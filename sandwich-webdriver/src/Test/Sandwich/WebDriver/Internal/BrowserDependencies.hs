@@ -8,13 +8,17 @@
 module Test.Sandwich.WebDriver.Internal.BrowserDependencies where
 
 import Control.Monad.IO.Unlift
+import Control.Monad.Logger
+import Control.Monad.Reader
 import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
+import Test.Sandwich.WebDriver.Internal.Util
 
 
 -- * All dependencies
@@ -39,8 +43,8 @@ data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
 
 defaultWebDriverDependencies = WebDriverDependencies {
   webDriverDependencyJava = Nothing
-  , webDriverDependencySelenium = DownloadSeleniumDefault
-  , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox UseFirefoxFromPath DownloadGeckoDriverAutodetect
+  , webDriverDependencySelenium = DownloadSeleniumDefault "/tmp/tools"
+  , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox UseFirefoxFromPath (DownloadGeckoDriverAutodetect "/tmp/tools")
   }
 
 -- * Browser dependencies
@@ -60,10 +64,23 @@ browserDependencies = Label
 
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
 
-introduceBrowserDependencies :: forall m context. (
+getBrowserDependencies :: (
+  MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadReader context m, HasBaseContext context
+  ) => BrowserDependenciesSpec -> m BrowserDependencies
+getBrowserDependencies BrowserDependenciesSpecChrome {..} = do
+  chrome <- exceptionOnLeft $ obtainChrome browserDependenciesSpecChromeChrome
+  chromeDriver <- exceptionOnLeft $ obtainChromeDriver browserDependenciesSpecChromeChromeDriver
+  return $ BrowserDependenciesChrome chrome chromeDriver
+getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
+  firefox <- exceptionOnLeft $ obtainFirefox browserDependenciesSpecFirefoxFirefox
+  geckoDriver <- exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver
+  return $ BrowserDependenciesFirefox firefox geckoDriver
+
+introduceBrowserDependenciesViaNix :: forall m context. (
   MonadUnliftIO m, HasBaseContext context, HasNixContext context, HasSomeCommandLineOptions context
   ) => SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m () -> SpecFree context m ()
-introduceBrowserDependencies = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
+introduceBrowserDependenciesViaNix = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
   where
     alloc = do
       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
