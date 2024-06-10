@@ -19,7 +19,7 @@ import Safe
 import System.Exit
 import System.Process
 import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
-import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
 #if MIN_VERSION_aeson(2,0,0)

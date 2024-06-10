@@ -9,7 +9,8 @@ module Test.Sandwich.WebDriver.Internal.Binaries (
   , ChromeDriverToUse(..)
   , downloadChromeDriverIfNecessary
 
-  -- , obtainGeckoDriver
+  , obtainGeckoDriver
+  , GeckoDriverToUse(..)
   ) where
 
 import Control.Monad
@@ -23,8 +24,8 @@ import System.Directory
 import Test.Sandwich.Logging
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
-import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
-import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Util
 
 
@@ -59,29 +60,6 @@ defaultSeleniumJarUrl = "https://selenium-release.storage.googleapis.com/3.141/s
 --   True -> return $ Right path
 
 
--- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
--- storing it under the provided 'FilePath' if necessary and returning the exact path.
--- obtainGeckoDriver :: (MonadUnliftIO m, MonadLogger m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
--- obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
---   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
---   unlessM (liftIO $ doesFileExist path) $
---     curlDownloadToPath url path
---   return $ Right path
--- obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = runExceptT $ do
---   let path = getGeckoDriverPath toolsDir geckoDriverVersion
---   liftIO (doesFileExist path) >>= \case
---     True -> return path
---     False -> do
---       let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
---       ExceptT $ downloadAndUntarballToPath downloadPath path
---       return path
--- obtainGeckoDriver toolsDir (DownloadGeckoDriverAutodetect maybeFirefoxPath) = runExceptT $ do
---   version <- ExceptT $ liftIO $ getGeckoDriverVersion maybeFirefoxPath
---   ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
--- obtainGeckoDriver _ (UseGeckoDriverAt path) = liftIO (doesFileExist path) >>= \case
---   False -> return $ Left [i|Path '#{path}' didn't exist|]
---   True -> return $ Right path
-
 -- * Lower level helpers
 
 
@@ -95,11 +73,3 @@ downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
     downloadSelenium seleniumPath = void $ do
       info [i|Downloading selenium-server.jar to #{seleniumPath}|]
       curlDownloadToPath defaultSeleniumJarUrl seleniumPath
-
-getGeckoDriverPath :: FilePath -> GeckoDriverVersion -> FilePath
-getGeckoDriverPath toolsDir (GeckoDriverVersion (x, y, z)) = [i|#{toolsDir}/geckodrivers/#{x}.#{y}.#{z}/#{geckoDriverExecutable}|]
-
-geckoDriverExecutable :: T.Text
-geckoDriverExecutable = case detectPlatform of
-  Windows -> "geckodriver.exe"
-  _ -> "geckodriver"

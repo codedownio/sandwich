@@ -109,6 +109,7 @@ introduceWebDriver' (WebDriverDependencies {..}) wdOptions =
 
     getBrowserDependencies = case webDriverDependencyBrowser of
       BrowserDependenciesSpecChrome {..} -> undefined
+      BrowserDependenciesSpecFirefox {..} -> undefined
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
 introduceWebDriverOptions :: forall context m. (
