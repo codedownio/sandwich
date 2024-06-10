@@ -36,7 +36,9 @@ library
       Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types
       Test.Sandwich.WebDriver.Internal.Binaries.Common
       Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
+      Test.Sandwich.WebDriver.Internal.Binaries.Firefox
       Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Detect
+      Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
       Test.Sandwich.WebDriver.Internal.BrowserDependencies
       Test.Sandwich.WebDriver.Internal.Capabilities
       Test.Sandwich.WebDriver.Internal.Capabilities.Extra

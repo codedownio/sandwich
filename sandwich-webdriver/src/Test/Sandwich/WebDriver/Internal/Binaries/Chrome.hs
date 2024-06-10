@@ -1,4 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries.Chrome (
   ChromeToUse(..)
@@ -12,10 +14,13 @@ module Test.Sandwich.WebDriver.Internal.Binaries.Chrome (
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Control.Monad.Trans.Except
 import Data.String.Interpolate
 import Data.Text as T
 import GHC.Stack
+import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Detect
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
@@ -32,7 +37,8 @@ type Constraints m = (
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainChromeDriver :: (
-  MonadUnliftIO m, MonadLogger m
+  MonadReader context m, HasBaseContext context
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
   ) => FilePath -> ChromeDriverToUse -> m (Either T.Text FilePath)
 obtainChromeDriver toolsDir (DownloadChromeDriverFrom url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
@@ -53,7 +59,7 @@ obtainChromeDriver toolsDir (DownloadChromeDriverAutodetect chromePath) = runExc
 obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
   True -> return $ Right path
-obtainChromeDriver _ (UseChromeDriverFromNixpkgs nixContext) = undefined
+obtainChromeDriver _ (UseChromeDriverFromNixpkgs nixContext) = Right <$> getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
 
 
 downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
