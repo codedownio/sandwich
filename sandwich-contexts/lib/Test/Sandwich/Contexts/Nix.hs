@@ -42,6 +42,7 @@ import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Util.Aeson
+import qualified Text.Show
 import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Environment
@@ -58,6 +59,8 @@ data NixContext = NixContext {
   , nixContextNixpkgsDerivation :: NixpkgsDerivation
   , nixContextBuildCache :: MVar (Map Text (Async FilePath))
   }
+instance Show NixContext where
+  show (NixContext {}) = "<NixContext>"
 
 type HasNixContext context = HasLabel context "nixContext" NixContext
 

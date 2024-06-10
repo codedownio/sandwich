@@ -3,9 +3,8 @@
 {-# LANGUAGE Rank2Types #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries (
-  obtainSelenium
-  , obtainChromeDriver
-  , obtainGeckoDriver
+  obtainChromeDriver
+  -- , obtainGeckoDriver
   , downloadSeleniumIfNecessary
   , downloadChromeDriverIfNecessary
   ) where
@@ -46,22 +45,22 @@ defaultSeleniumJarUrl = "https://selenium-release.storage.googleapis.com/3.141/s
 
 -- TODO: remove curl dependencies here
 
--- | Manually obtain a Selenium server JAR file, according to the 'SeleniumToUse' policy,
--- storing it under the provided 'FilePath' if necessary and returning the exact path.
-obtainSelenium :: (MonadUnliftIO m, MonadLogger m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
-obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
-  let path = [i|#{toolsDir}/selenium-server-standalone.jar|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath url path
-  return $ Right path
-obtainSelenium toolsDir DownloadSeleniumDefault = do
-  let path = [i|#{toolsDir}/selenium-server-standalone-3.141.59.jar|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath defaultSeleniumJarUrl path
-  return $ Right path
-obtainSelenium _ (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
-  False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
+-- -- | Manually obtain a Selenium server JAR file, according to the 'SeleniumToUse' policy,
+-- -- storing it under the provided 'FilePath' if necessary and returning the exact path.
+-- obtainSelenium :: (MonadUnliftIO m, MonadLogger m) => FilePath -> SeleniumToUse -> m (Either T.Text FilePath)
+-- obtainSelenium toolsDir (DownloadSeleniumFrom url) = do
+--   let path = [i|#{toolsDir}/selenium-server-standalone.jar|]
+--   unlessM (liftIO $ doesFileExist path) $
+--     curlDownloadToPath url path
+--   return $ Right path
+-- obtainSelenium toolsDir DownloadSeleniumDefault = do
+--   let path = [i|#{toolsDir}/selenium-server-standalone-3.141.59.jar|]
+--   unlessM (liftIO $ doesFileExist path) $
+--     curlDownloadToPath defaultSeleniumJarUrl path
+--   return $ Right path
+-- obtainSelenium _ (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
+--   False -> return $ Left [i|Path '#{path}' didn't exist|]
+--   True -> return $ Right path
 
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
@@ -90,26 +89,26 @@ obtainChromeDriver _ (UseChromeDriverAt path) = liftIO (doesFileExist path) >>= 
 
 -- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
-obtainGeckoDriver :: (MonadUnliftIO m, MonadLogger m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
-obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
-  let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath url path
-  return $ Right path
-obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = runExceptT $ do
-  let path = getGeckoDriverPath toolsDir geckoDriverVersion
-  liftIO (doesFileExist path) >>= \case
-    True -> return path
-    False -> do
-      let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
-      ExceptT $ downloadAndUntarballToPath downloadPath path
-      return path
-obtainGeckoDriver toolsDir (DownloadGeckoDriverAutodetect maybeFirefoxPath) = runExceptT $ do
-  version <- ExceptT $ liftIO $ getGeckoDriverVersion maybeFirefoxPath
-  ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
-obtainGeckoDriver _ (UseGeckoDriverAt path) = liftIO (doesFileExist path) >>= \case
-  False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
+-- obtainGeckoDriver :: (MonadUnliftIO m, MonadLogger m) => FilePath -> GeckoDriverToUse -> m (Either T.Text FilePath)
+-- obtainGeckoDriver toolsDir (DownloadGeckoDriverFrom url) = do
+--   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
+--   unlessM (liftIO $ doesFileExist path) $
+--     curlDownloadToPath url path
+--   return $ Right path
+-- obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion geckoDriverVersion) = runExceptT $ do
+--   let path = getGeckoDriverPath toolsDir geckoDriverVersion
+--   liftIO (doesFileExist path) >>= \case
+--     True -> return path
+--     False -> do
+--       let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
+--       ExceptT $ downloadAndUntarballToPath downloadPath path
+--       return path
+-- obtainGeckoDriver toolsDir (DownloadGeckoDriverAutodetect maybeFirefoxPath) = runExceptT $ do
+--   version <- ExceptT $ liftIO $ getGeckoDriverVersion maybeFirefoxPath
+--   ExceptT $ obtainGeckoDriver toolsDir (DownloadGeckoDriverVersion version)
+-- obtainGeckoDriver _ (UseGeckoDriverAt path) = liftIO (doesFileExist path) >>= \case
+--   False -> return $ Left [i|Path '#{path}' didn't exist|]
+--   True -> return $ Right path
 
 -- * Lower level helpers
 

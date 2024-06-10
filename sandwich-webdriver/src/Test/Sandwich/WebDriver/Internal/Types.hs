@@ -16,6 +16,7 @@ import Data.Text as T
 import Network.HTTP.Client (Manager)
 import System.Process
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
@@ -79,6 +80,16 @@ data SeleniumToUse =
   -- ^ Download selenium from a default location to the 'toolsRoot'
   | UseSeleniumAt FilePath
   -- ^ Use the JAR file at the given path
+  | UseSeleniumFromNixpkgs NixContext
+  -- ^ Use the Selenium in the given Nixpkgs derivation
+  deriving Show
+
+-- | How to obtain the chrome binary.
+data ChromeToUse =
+  -- | Search the PATH for the "google-chrome" or "google-chrome-stable" binary.
+  UseChromeFromPath
+  -- | Get Chrome from Nixpkgs
+  | UseChromeFromNixpkgs NixContext
   deriving Show
 
 -- | How to obtain the chromedriver binary.
@@ -92,6 +103,16 @@ data ChromeDriverToUse =
   -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath
   -- ^ Use the chromedriver at the given path
+  | UseChromeDriverFromNixpkgs NixContext
+  -- ^ Use the chromedriver in the given Nixpkgs derivation
+  deriving Show
+
+-- | How to obtain the firefox binary.
+data FirefoxToUse =
+  -- | Search the PATH for the "firefox" binary.
+  UseFirefoxFromPath
+  -- | Get Firefox from Nixpkgs
+  | UseFirefoxFromNixpkgs NixContext
   deriving Show
 
 -- | How to obtain the geckodriver binary.
@@ -100,11 +121,12 @@ data GeckoDriverToUse =
   -- ^ Download geckodriver from the given URL to the 'toolsRoot'
   | DownloadGeckoDriverVersion GeckoDriverVersion
   -- ^ Download the given geckodriver version to the 'toolsRoot'
-  | DownloadGeckoDriverAutodetect (Maybe FilePath)
-  -- ^ Autodetect geckodriver to use based on the Gecko version and download it to the 'toolsRoot'
-  -- Pass the path to the Firefox binary, or else it will be found by looking for firefox on the PATH.
+  | DownloadGeckoDriverAutodetect
+  -- ^ Autodetect geckodriver to use based on the Firefox version and download it to the 'toolsRoot'.
   | UseGeckoDriverAt FilePath
   -- ^ Use the geckodriver at the given path
+  | UseGeckoDriverFromNixpkgs NixpkgsDerivation
+  -- ^ Use the geckodriver in the given Nixpkgs derivation
   deriving Show
 
 newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int) deriving Show
@@ -193,73 +215,3 @@ getWebDriverName (WebDriver {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]
-
--- * Video stuff
-
--- | Default options for fast X11 video recording.
-fastX11VideoOptions :: [String]
-fastX11VideoOptions = ["-an"
-                      , "-r", "30"
-                      , "-vcodec"
-                      , "libxvid"
-                      , "-qscale:v", "1"
-                      , "-threads", "0"]
-
--- | Default options for quality X11 video recording.
-qualityX11VideoOptions :: [String]
-qualityX11VideoOptions = ["-an"
-                         , "-r", "30"
-                         , "-vcodec", "libx264"
-                         , "-preset", "veryslow"
-                         , "-crf", "0"
-                         , "-threads", "0"]
-
--- | Default options for AVFoundation recording (for Darwin).
-defaultAvfoundationOptions :: [String]
-defaultAvfoundationOptions = ["-r", "30"
-                             , "-an"
-                             , "-vcodec", "libxvid"
-                             , "-qscale:v", "1"
-                             , "-threads", "0"]
-
--- | Default options for gdigrab recording (for Windows).
-defaultGdigrabOptions :: [String]
-defaultGdigrabOptions = ["-framerate", "30"]
-
-data VideoSettings = VideoSettings {
-  x11grabOptions :: [String]
-  -- ^ Arguments to x11grab, used with Linux.
-  , avfoundationOptions :: [String]
-  -- ^ Arguments to avfoundation, used with OS X.
-  , gdigrabOptions :: [String]
-  -- ^ Arguments to gdigrab, used with Windows.
-  , hideMouseWhenRecording :: Bool
-  -- ^ Hide the mouse while recording video. Linux and Windows only.
-  , logToDisk :: Bool
-  -- ^ Log ffmpeg stdout and stderr to disk.
-  }
-
--- | Default video settings.
-defaultVideoSettings :: VideoSettings
-defaultVideoSettings = VideoSettings {
-  x11grabOptions = fastX11VideoOptions
-  , avfoundationOptions = defaultAvfoundationOptions
-  , gdigrabOptions = defaultGdigrabOptions
-  , hideMouseWhenRecording = False
-  , logToDisk = True
-  }
-
-data BrowserDependencies = BrowserDependenciesChrome {
-  browserDependenciesChromeChrome :: FilePath
-  , browserDependenciesChromeChromedriver :: FilePath
-  }
-  | BrowserDependenciesFirefox {
-      browserDependenciesFirefoxFirefox :: FilePath
-      , browserDependenciesFirefoxGeckodriver :: FilePath
-      }
-  deriving (Show)
-
-browserDependencies :: Label "browserDependencies" BrowserDependencies
-browserDependencies = Label
-
-type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
