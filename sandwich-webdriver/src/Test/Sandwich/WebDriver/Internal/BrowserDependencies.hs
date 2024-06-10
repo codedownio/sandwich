@@ -14,7 +14,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
-import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 
 
 -- * All dependencies

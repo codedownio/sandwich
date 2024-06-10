@@ -52,6 +52,7 @@ import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
+import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
@@ -59,7 +60,6 @@ import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
-import UnliftIO.Directory
 import UnliftIO.MVar
 import UnliftIO.Process
 
@@ -99,13 +99,11 @@ introduceWebDriver' (WebDriverDependencies {..}) wdOptions =
   . introduce "Introduce WebDriver session" webdriver (allocateWebDriver wdOptions) cleanupWebDriver
   where
     getSeleniumJar :: ExampleT context m (EnvironmentFile "selenium.jar")
-    getSeleniumJar = case webDriverDependencySelenium of
-      UseSeleniumAt p -> liftIO (doesFileExist p) >>= \case
-        False -> expectationFailure [i|Path '#{p}' didn't exist|]
-        True -> pure $ EnvironmentFile p
-      DownloadSeleniumDefault -> undefined
-      DownloadSeleniumFrom url -> undefined
-      UseSeleniumFromNixpkgs nixContext -> undefined
+    getSeleniumJar = do
+      toolsDir <- undefined
+      obtainSelenium toolsDir webDriverDependencySelenium >>= \case
+        Left err -> expectationFailure (T.unpack err)
+        Right p -> pure $ EnvironmentFile p
 
     getBrowserDependencies = case webDriverDependencyBrowser of
       BrowserDependenciesSpecChrome {..} -> undefined
@@ -123,7 +121,8 @@ introduceWebDriverOptions wdOptions = undefined -- introduce "Introduce WebDrive
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (
-  BaseMonad m, HasBaseContext context, HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
+  BaseMonad m
+  , HasBaseContext context, HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
   ) => WdOptions -> ExampleT context m WebDriver
 allocateWebDriver wdOptions = do
   debug "Beginning allocateWebDriver"
