@@ -47,6 +47,18 @@ defaultWebDriverDependencies = WebDriverDependencies {
   , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox UseFirefoxFromPath (DownloadGeckoDriverAutodetect "/tmp/tools")
   }
 
+nixFirefoxWebDriverDependencies nixContext = WebDriverDependencies {
+  webDriverDependencyJava = Nothing
+  , webDriverDependencySelenium = UseSeleniumFromNixpkgs nixContext
+  , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox (UseFirefoxFromNixpkgs nixContext) (UseGeckoDriverFromNixpkgs nixContext)
+  }
+
+nixChromeWebDriverDependencies nixContext = WebDriverDependencies {
+  webDriverDependencyJava = Nothing
+  , webDriverDependencySelenium = UseSeleniumFromNixpkgs nixContext
+  , webDriverDependencyBrowser = BrowserDependenciesSpecChrome (UseChromeFromNixpkgs nixContext) (UseChromeDriverFromNixpkgs nixContext)
+  }
+
 -- * Browser dependencies
 
 data BrowserDependencies = BrowserDependenciesChrome {
