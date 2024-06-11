@@ -28,12 +28,17 @@ executable demo-webdriver-pool
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
+    , exceptions
     , filepath
-    , resource-pool
+    , monad-control
+    , monad-logger
     , sandwich
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
+    , text
     , unliftio
     , unliftio-core
+    , unliftio-pool
     , webdriver
   default-language: Haskell2010

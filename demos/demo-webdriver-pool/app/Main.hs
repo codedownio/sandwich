@@ -10,18 +10,25 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Monad.Logger
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Maybe
-import Data.Pool
 import Data.String.Interpolate
+import qualified Data.Text as T
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Video
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands
 import UnliftIO.Exception
+import UnliftIO.Pool
+import UnliftIO.Process
 
 
 -- * Introducing the pool
@@ -30,43 +37,49 @@ webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
 type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
 
 introduceWebDriverPool :: forall m context. (
-  MonadIO m, HasBaseContext context, HasSomeCommandLineOptions context
+  MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  , HasBaseContext context, HasSomeCommandLineOptions context, HasBrowserDependencies context, HasFile context "java", HasFile context "selenium.jar"
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduce "Introduce webdriver pool" webDriverPool alloc cleanup
   where
     alloc = do
       wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
-      runRoot <- fromMaybe "/tmp" <$> getRunRoot
-      runRoot <- fromMaybe "/tmp" <$> getRunRoot
-      liftIO $ createPool (allocateWebDriver' runRoot wdOptions) cleanupWebDriver' 1 30 poolSize
+      newPool =<< mkSafeDefaultPoolConfig (runNoLoggingT $ allocateWebDriver wdOptions) cleanupWebDriver 30.0 poolSize
     cleanup = liftIO . destroyAllResources
+
+    -- Based on https://hackage.haskell.org/package/unliftio-pool-0.4.2.0/docs/UnliftIO-Pool.html#v:mkDefaultPoolConfig
+    -- Due to https://github.com/scrive/pool/issues/31
+    mkSafeDefaultPoolConfig :: forall n a. MonadUnliftIO n => n a -> (a -> n ()) -> Double -> Int -> n (PoolConfig a)
+    mkSafeDefaultPoolConfig create destroy keepAlive maxOpen = (setNumStripes (Just 1)) <$>
+      mkDefaultPoolConfig create destroy keepAlive maxOpen
 
 -- * Claiming a WebDriver
 
 claimWebdriver spec = introduceWith' (
-  defaultNodeOptions {nodeOptionsRecordTime=False, nodeOptionsCreateFolder=False}
+  defaultNodeOptions {nodeOptionsRecordTime=False, nodeOptionsCreateFolder=True}
   ) "Claim webdriver" webdriver wrappedAction spec
   where
     wrappedAction action = do
       pool <- getContext webDriverPool
 
-#if !MIN_VERSION_resource_pool(3,0,0)
-      withRunInIO $ \runInIO ->
-        withResource pool $ \sess ->
-          runInIO $ (void $ action sess) `finally` closeAllSessions sess
-#else
-      withResource pool $ \sess ->
-        (void $ action sess) `finally` closeAllSessions sess
-#endif
+      withResource pool $ \webdriver ->
+        (void $ action webdriver) `finally` closeAllSessions webdriver
 
 -- * Tests
 
 tests :: TopSpecWithOptions
 tests =
-  introduceWebDriverPool 4 defaultWdOptions $
-    parallel $
-      replicateM_ 20 $
-        claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
+  introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
+    introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar $
+    introduceBinaryViaNixPackage @"java" "jre" $
+    introduceBrowserDependenciesViaNix $
+    introduceWebDriverPool 4 defaultWdOptions $
+    -- parallel $
+    replicateM_ 20 $
+    claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
+  where
+    tryFindSeleniumJar :: FilePath -> IO FilePath
+    tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory
