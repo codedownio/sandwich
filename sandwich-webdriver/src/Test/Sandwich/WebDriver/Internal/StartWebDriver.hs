@@ -24,7 +24,7 @@ import qualified Data.Text as T
 import GHC.Stack
 import System.Directory
 import System.FilePath
-import System.IO (hGetLine)
+import System.IO (hClose, hGetLine)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports (findFreePortOrException)
@@ -35,6 +35,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 import UnliftIO.Async
+import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
 
@@ -104,9 +105,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
   -- This is necessary because sometimes we get a race for the port we get from findFreePortOrException.
   -- There doesn't seem to be any way to make Selenium choose its own port.
   let policy = constantDelay 0 <> limitRetries 10
-  (port, hRead, p) <- recoverAll policy $ \retryStatus -> do
+  (port, hRead, p) <- recoverAll policy $ \retryStatus -> flip withException (\(e :: SomeException) -> warn [i|Exception in startWebDriver retry: #{e}|]) $ do
     when (rsIterNumber retryStatus > 0) $
-      warn [i|Trying again to start selenium server|]
+      warn [i|Trying again to start selenium server (attempt #{rsIterNumber retryStatus})|]
 
     (hRead, hWrite) <- createPipe
     port <- findFreePortOrException
@@ -126,18 +127,27 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
 
     (_, _, _, p) <- liftIO $ createProcess cp
 
-    -- Read from the (combined) output stream until we see the up and running message,
-    -- or the process ends and we get an exception from hGetLine
-    startupResult <- timeout 10_000_000 $ fix $ \loop -> do
-      line <- fmap T.pack $ liftIO $ hGetLine hRead
-      debug line
+    let teardown = do
+          gracefullyStopProcess p 30_000_000
+          liftIO $ hClose hRead
 
-      if | "Selenium Server is up and running" `T.isInfixOf` line -> return ()
-         | otherwise -> loop
+    -- On exception, make sure the process is gone and the pipe handle is closed
+    flip withException (\(_ :: SomeException) -> teardown) $ do
+      -- Read from the (combined) output stream until we see the up and running message,
+      -- or the process ends and we get an exception from hGetLine
+      startupResult <- timeout 10_000_000 $ fix $ \loop -> do
+        line <- fmap T.pack $ liftIO $ hGetLine hRead
+        debug line
 
-    case startupResult of
-      Nothing -> expectationFailure [i|Didn't see "up and running" line in Selenium output.|]
-      Just () -> return (port, hRead, p)
+        if | "Selenium Server is up and running" `T.isInfixOf` line -> return ()
+           | otherwise -> loop
+
+      case startupResult of
+        Nothing -> do
+          let msg = [i|Didn't see "up and running" line in Selenium output after 10s.|]
+          warn msg
+          expectationFailure (T.unpack msg)
+        Just () -> return (port, hRead, p)
 
   -- TODO: save this in the WebDriver to tear it down later?
   _logAsync <- async $ forever (liftIO (hGetLine hRead) >>= (debug . T.pack))
