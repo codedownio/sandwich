@@ -26,8 +26,6 @@ module Test.Sandwich.WebDriver (
   , Session
 
   -- * Lower-level allocation functions
-  , allocateWebDriver
-  , cleanupWebDriver
   , introduceBrowserDependenciesViaNix
 
   -- * Re-exports
@@ -36,6 +34,7 @@ module Test.Sandwich.WebDriver (
   , module Test.Sandwich.WebDriver.Types
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -67,7 +66,7 @@ import UnliftIO.Process
 introduceWebDriver :: (
   BaseMonadContext m context
   ) => WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
-introduceWebDriver = introduceWebDriver' defaultWebDriverDependencies allocateWebDriver
+introduceWebDriver = introduceWebDriver' defaultWebDriverDependencies return
 
 introduceWebDriverViaNix :: forall m context. (
   BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
@@ -76,12 +75,12 @@ introduceWebDriverViaNix wdOptions =
   introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar
   . introduceBinaryViaNixPackage @"java" "jre"
   . introduceBrowserDependenciesViaNix
-  . introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
-  where
-    alloc = do
+  . (introduceWith "Introduce WebDriver session" webdriver $ \action -> do
+      runRoot <- fromMaybe "/tmp" <$> getCurrentFolder
       clo <- getSomeCommandLineOptions
-      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions)
-
+      void $ withWebDriver (addCommandLineOptionsToWdOptions clo wdOptions) runRoot action
+    )
+  where
     tryFindSeleniumJar :: FilePath -> IO FilePath
     tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
 
@@ -106,21 +105,25 @@ introduceWebDriverOptions' wdd wdOptions = introduceWebDriver' wdd alloc wdOptio
   where
     alloc wdOptions' = do
       clo <- getSomeCommandLineOptions
-      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions')
+      return $ addCommandLineOptionsToWdOptions clo wdOptions'
 
 introduceWebDriver' :: forall m context. (
   BaseMonadContext m context
   )
   -- | Dependencies
   => WebDriverDependencies
-  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WebDriver)
+  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WdOptions)
   -> WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
-introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
+introduceWebDriver' (WebDriverDependencies {..}) transformWdOptions wdOptions =
   introduce "Introduce selenium.jar" (mkFileLabel @"selenium.jar") ((EnvironmentFile <$>) $ obtainSelenium webDriverDependencySelenium) (const $ return ())
   . (case webDriverDependencyJava of Nothing -> introduceBinaryViaEnvironment @"java"; Just p -> introduceFile @"java" p)
   . introduce "Introduce browser dependencies" browserDependencies (getBrowserDependencies webDriverDependencyBrowser) (const $ return ())
-  . introduce "Introduce WebDriver session" webdriver (alloc wdOptions) cleanupWebDriver
+  . (introduceWith "Introduce WebDriver session" webdriver $ \action -> do
+      runRoot <- fromMaybe "/tmp" <$> getCurrentFolder
+      wdOptions' <- transformWdOptions wdOptions
+      void $ withWebDriver wdOptions' runRoot action
+    )
 
 type ContextWithWebdriverDeps context =
   LabelValue "webdriver" WebDriver
@@ -131,21 +134,6 @@ type ContextWithBaseDeps context =
   :> LabelValue "file-java" (EnvironmentFile "java")
   :> LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar")
   :> context
-
--- | Allocate a WebDriver using the given options.
-allocateWebDriver :: (
-  BaseMonad m
-  , HasBaseContext context, HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
-  ) => WdOptions -> ExampleT context m WebDriver
-allocateWebDriver wdOptions = do
-  dir <- fromMaybe "/tmp" <$> getCurrentFolder
-  startWebDriver wdOptions dir
-
--- | Clean up the given WebDriver.
-cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()
-cleanupWebDriver sess = do
-  closeAllSessions sess
-  stopWebDriver sess
 
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (

@@ -46,11 +46,11 @@ import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
-startWebDriver :: (
+withWebDriver :: (
   Constraints m, MonadReader context m
   , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
-  ) => WdOptions -> FilePath -> m WebDriver
-startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot = do
+  ) => WdOptions -> FilePath -> (WebDriver -> m a) -> m a
+withWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot action = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
 
@@ -67,6 +67,10 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
   seleniumPath <- askFile @"selenium.jar"
   (driverArgs, capabilities') <- fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities''
 
+  -- Final extra capabilities configuration
+  capabilities <-
+    configureHeadlessCapabilities wdOptions runMode capabilities'
+    >>= configureDownloadCapabilities downloadDir
 
   (maybeXvfbSession, javaEnv) <- case runMode of
 #ifndef mingw32_HOST_OS
@@ -85,70 +89,57 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
   -- This is necessary because sometimes we get a race for the port we get from findFreePortOrException.
   -- There doesn't seem to be any way to make Selenium choose its own port.
   let policy = constantDelay 0 <> limitRetries 10
-  (port, hRead, p) <- recoverAll policy $ \retryStatus -> flip withException (\(e :: SomeException) -> warn [i|Exception in startWebDriver retry: #{e}|]) $ do
+  recovering policy [\_ -> Handler (\(_ :: StartupFailureException) -> return True)] $ \retryStatus -> do
     when (rsIterNumber retryStatus > 0) $
       warn [i|Trying again to start selenium server (attempt #{rsIterNumber retryStatus})|]
 
-    (hRead, hWrite) <- createPipe
     port <- findFreePortOrException
 
-    let allArgs = driverArgs <> ["-jar", seleniumPath
-                                , "-port", show port]
-    let cp = (proc java allArgs) {
-               env = javaEnv
-               , std_in = Inherit
-               , std_out = UseHandle hWrite
-               , std_err = UseHandle hWrite
-               , create_group = True
-             }
+    bracket createPipe (\(hR, hW) -> liftIO (hClose hR >> hClose hW)) $ \(hRead, hWrite) -> do
+      let allArgs = driverArgs <> ["-jar", seleniumPath, "-port", show port]
+      let cp = (proc java allArgs) {
+                 env = javaEnv
+                 , std_in = Inherit
+                 , std_out = UseHandle hWrite
+                 , std_err = UseHandle hWrite
+                 , create_group = True
+               }
 
-    -- Start the process and wait for it to be ready
-    debug [i|#{java} #{T.unwords $ fmap T.pack allArgs}|]
+      -- Start the process and wait for it to be ready
+      debug [i|#{java} #{T.unwords $ fmap T.pack allArgs}|]
 
-    (_, _, _, p) <- liftIO $ createProcess cp
+      withCreateProcess cp $ \_ _ _ p -> do
+        -- Read from the (combined) output stream until we see the up and running message,
+        -- or the process ends and we get an exception from hGetLine
+        startupResult <- timeout 10_000_000 $ fix $ \loop -> do
+          line <- fmap T.pack $ liftIO $ hGetLine hRead
+          debug line
 
-    let teardown = do
-          gracefullyStopProcess p 30_000_000
-          liftIO $ hClose hRead
+          if | "Selenium Server is up and running" `T.isInfixOf` line -> return ()
+             | otherwise -> loop
 
-    -- On exception, make sure the process is gone and the pipe handle is closed
-    flip withException (\(_ :: SomeException) -> teardown) $ do
-      -- Read from the (combined) output stream until we see the up and running message,
-      -- or the process ends and we get an exception from hGetLine
-      startupResult <- timeout 10_000_000 $ fix $ \loop -> do
-        line <- fmap T.pack $ liftIO $ hGetLine hRead
-        debug line
+        case startupResult of
+          Nothing -> do
+            warn [i|Didn't see "up and running" line in Selenium output after 10s.|]
+            throwIO StartupFailureException
+          Just () -> do
+            -- Make the WebDriver
+            webdriver <- WebDriver <$> pure (T.unpack webdriverName)
+                                   <*> pure (p, maybeXvfbSession)
+                                   <*> pure wdOptions
+                                   <*> liftIO (newMVar mempty)
+                                   <*> pure (def { W.wdPort = fromIntegral port
+                                                 , W.wdCapabilities = capabilities
+                                                 , W.wdHTTPManager = httpManager
+                                                 , W.wdHTTPRetryCount = httpRetryCount
+                                                 })
+                                   <*> pure downloadDir
+            withAsync (forever (liftIO (hGetLine hRead) >>= (debug . T.pack))) $ \_ ->
+              action webdriver
 
-        if | "Selenium Server is up and running" `T.isInfixOf` line -> return ()
-           | otherwise -> loop
-
-      case startupResult of
-        Nothing -> do
-          let msg = [i|Didn't see "up and running" line in Selenium output after 10s.|]
-          warn msg
-          expectationFailure (T.unpack msg)
-        Just () -> return (port, hRead, p)
-
-  -- TODO: save this in the WebDriver to tear it down later?
-  _logAsync <- async $ forever (liftIO (hGetLine hRead) >>= (debug . T.pack))
-
-  -- Final extra capabilities configuration
-  capabilities <-
-    configureHeadlessCapabilities wdOptions runMode capabilities'
-    >>= configureDownloadCapabilities downloadDir
-
-  -- Make the WebDriver
-  WebDriver <$> pure (T.unpack webdriverName)
-            <*> pure (p, maybeXvfbSession)
-            <*> pure wdOptions
-            <*> liftIO (newMVar mempty)
-            <*> pure (def { W.wdPort = fromIntegral port
-                          , W.wdCapabilities = capabilities
-                          , W.wdHTTPManager = httpManager
-                          , W.wdHTTPRetryCount = httpRetryCount
-                          })
-            <*> pure downloadDir
-
+data StartupFailureException = StartupFailureException
+  deriving Show
+instance Exception StartupFailureException
 
 stopWebDriver :: Constraints m => WebDriver -> m ()
 stopWebDriver (WebDriver {wdWebDriver=(h, maybeXvfbSession)}) = do
