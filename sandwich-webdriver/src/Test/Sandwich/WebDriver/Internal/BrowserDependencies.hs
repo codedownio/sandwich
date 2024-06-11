@@ -5,12 +5,28 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.WebDriver.Internal.BrowserDependencies where
+module Test.Sandwich.WebDriver.Internal.BrowserDependencies (
+  WebDriverDependencies(..)
+  , BrowserDependenciesSpec(..)
+
+  , defaultWebDriverDependencies
+  , nixFirefoxWebDriverDependencies
+  , nixChromeWebDriverDependencies
+
+  , BrowserDependencies(..)
+  , browserDependencies
+  , HasBrowserDependencies
+
+  , getBrowserDependencies
+  , introduceBrowserDependenciesViaNix
+  , fillInCapabilitiesAndGetDriverArgs
+  ) where
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
+import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
@@ -19,6 +35,7 @@ import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Util
+import qualified Test.WebDriver as W
 
 
 -- * All dependencies
@@ -109,3 +126,25 @@ introduceBrowserDependenciesViaNix = introduce "Introduce browser dependencies" 
                                      <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
       debug [i|Got browser dependencies: #{deps}|]
       return deps
+
+fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext browserDependencies >>= \case
+  BrowserDependenciesFirefox {..} -> do
+    let args = [
+          [i|-Dwebdriver.gecko.driver=#{browserDependenciesFirefoxGeckodriver}|]
+          -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
+          -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
+          ]
+    let capabilities' = capabilities'' {
+          W.browser = W.firefox { W.ffBinary = Just browserDependenciesFirefoxFirefox }
+          }
+    return (args, capabilities')
+  BrowserDependenciesChrome {..} -> do
+    let args = [
+          [i|-Dwebdriver.chrome.driver=#{browserDependenciesChromeChromedriver}|]
+          , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
+          , [i|-Dwebdriver.chrome.verboseLogging=true|]
+          ]
+    let capabilities' = capabilities'' {
+          W.browser = W.chrome { W.chromeBinary = Just browserDependenciesChromeChrome }
+          }
+    return (args, capabilities')

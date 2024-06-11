@@ -65,27 +65,8 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
   -- Get selenium, driver args, and capabilities with browser paths applied
   java <- askFile @"java"
   seleniumPath <- askFile @"selenium.jar"
-  (driverArgs, capabilities') <- getContext browserDependencies >>= \case
-    BrowserDependenciesFirefox {..} -> do
-      let args = [
-            [i|-Dwebdriver.gecko.driver=#{browserDependenciesFirefoxGeckodriver}|]
-            -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
-            -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
-            ]
-      let capabilities' = capabilities'' {
-            W.browser = W.firefox { W.ffBinary = Just browserDependenciesFirefoxFirefox }
-            }
-      return (args, capabilities')
-    BrowserDependenciesChrome {..} -> do
-      let args = [
-            [i|-Dwebdriver.chrome.driver=#{browserDependenciesChromeChromedriver}|]
-            , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
-            , [i|-Dwebdriver.chrome.verboseLogging=true|]
-            ]
-      let capabilities' = capabilities'' {
-            W.browser = W.chrome { W.chromeBinary = Just browserDependenciesChromeChrome }
-            }
-      return (args, capabilities')
+  (driverArgs, capabilities') <- fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities''
+
 
   (maybeXvfbSession, javaEnv) <- case runMode of
 #ifndef mingw32_HOST_OS
