@@ -40,13 +40,12 @@ introduceWebDriverPool :: forall m context. (
   MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, HasBrowserDependencies context, HasFile context "java", HasFile context "selenium.jar"
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
-introduceWebDriverPool poolSize wdOptions' = introduce "Introduce webdriver pool" webDriverPool alloc cleanup
-  where
-    alloc = do
-      wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
-      newPool =<< mkSafeDefaultPoolConfig (runNoLoggingT $ allocateWebDriver wdOptions) cleanupWebDriver 30.0 poolSize
-    cleanup = liftIO . destroyAllResources
+introduceWebDriverPool poolSize wdOptions' = introduceWith "Introduce webdriver pool" webDriverPool $ \action -> do
+  wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
+  bracket (newPool =<< mkSafeDefaultPoolConfig (allocateWebDriver wdOptions) cleanupWebDriver 30.0 poolSize) destroyAllResources $ \pool ->
+    void $ action pool
 
+  where
     -- Based on https://hackage.haskell.org/package/unliftio-pool-0.4.2.0/docs/UnliftIO-Pool.html#v:mkDefaultPoolConfig
     -- Due to https://github.com/scrive/pool/issues/31
     mkSafeDefaultPoolConfig :: forall n a. MonadUnliftIO n => n a -> (a -> n ()) -> Double -> Int -> n (PoolConfig a)
@@ -74,7 +73,7 @@ tests =
     introduceBinaryViaNixPackage @"java" "jre" $
     introduceBrowserDependenciesViaNix $
     introduceWebDriverPool 4 defaultWdOptions $
-    -- parallel $
+    parallel $
     replicateM_ 20 $
     claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
   where
