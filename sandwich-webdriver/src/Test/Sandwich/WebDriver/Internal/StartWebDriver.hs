@@ -15,7 +15,6 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import Data.Default
 import Data.Function
@@ -44,7 +43,7 @@ import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 #endif
 
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
 startWebDriver :: (
