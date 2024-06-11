@@ -7,16 +7,17 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
+import qualified Data.List as L
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
 import System.Directory
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Util
-import UnliftIO.Process
 
 
 type Constraints m = (
@@ -50,11 +51,8 @@ obtainSelenium (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
   False -> expectationFailure [i|Path '#{path}' didn't exist|]
   True -> return path
 obtainSelenium (UseSeleniumFromNixpkgs nixContext) = do
-  env <- buildNixSymlinkJoin' nixContext ["selenium-server-standalone"]
-  liftIO (tryFindSeleniumJar env)
-  where
-    tryFindSeleniumJar :: FilePath -> IO FilePath
-    tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
+  buildNixSymlinkJoin' nixContext ["selenium-server-standalone"] >>=
+    liftIO . findFirstFile (return . (".jar" `L.isSuffixOf`))
 
 
 -- * Lower level helpers

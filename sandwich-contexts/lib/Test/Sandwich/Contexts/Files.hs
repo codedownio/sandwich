@@ -44,6 +44,7 @@ module Test.Sandwich.Contexts.Files (
   -- * Introduce file from a Nix package
   , introduceFileViaNixPackage
   , introduceFileViaNixPackage'
+  , introduceFileViaNixPackage''
   , getFileViaNixPackage
 
   -- * Introduce a binary from a Nix derivation
@@ -54,11 +55,16 @@ module Test.Sandwich.Contexts.Files (
   -- * Introduce a file from a Nix derivation
   , introduceFileViaNixDerivation
   , introduceFileViaNixDerivation'
+  , introduceFileViaNixDerivation''
   , getFileViaNixDerivation
 
   -- * Get a file
   , askFile
   , askFile'
+
+  -- * Helpers for file-finding callbacks
+  , defaultFindFile
+  , findFirstFile
 
   -- * Low-level
   , mkFileLabel
@@ -70,6 +76,7 @@ module Test.Sandwich.Contexts.Files (
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Monad.Trans.Except
 import Data.String.Interpolate
 import GHC.TypeLits
 import Relude
@@ -158,6 +165,17 @@ introduceFileViaNixPackage :: forall a context m. (
     -- | Nix package name which contains the desired file.
     -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
     NixPackageName
+    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+    -> SpecFree context m ()
+introduceFileViaNixPackage name = introduceFileViaNixPackage' @a name (defaultFindFile (symbolVal (Proxy @a)))
+
+-- | Same as 'introduceFileViaNixPackage', but allows you to customize the search callback.
+introduceFileViaNixPackage' :: forall a context m. (
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  ) =>
+    -- | Nix package name which contains the desired file.
+    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+    NixPackageName
     -- | Callback to find the desired file within the Nix derivation path.
     -- It will be passed the derivation path, and should return the file. For example,
     -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
@@ -165,10 +183,10 @@ introduceFileViaNixPackage :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage = introduceFileViaNixPackage' (Proxy @a)
+introduceFileViaNixPackage' = introduceFileViaNixPackage'' (Proxy @a)
 
--- | Same as 'introduceFileViaNixPackage', but allows passing a 'Proxy'.
-introduceFileViaNixPackage' :: forall a context m. (
+-- | Same as 'introduceFileViaNixPackage'', but allows passing a 'Proxy'.
+introduceFileViaNixPackage'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) => Proxy a
     -- | Nix package name which contains the desired file.
@@ -180,7 +198,7 @@ introduceFileViaNixPackage' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage' proxy packageName tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixPackage'' proxy packageName tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
     alloc = buildNixSymlinkJoin [packageName] >>= \p -> EnvironmentFile <$> liftIO (tryFindFile p)
 
@@ -289,14 +307,24 @@ introduceFileViaNixDerivation :: forall a context m. (
   ) =>
     -- | Nix derivation as a string.
     Text
+    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+    -> SpecFree context m ()
+introduceFileViaNixDerivation derivation = introduceFileViaNixDerivation' @a derivation (defaultFindFile (symbolVal (Proxy @a)))
+
+-- | Same as 'introduceFileViaNixDerivation', but allows configuring the file finding callback.
+introduceFileViaNixDerivation' :: forall a context m. (
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  ) =>
+    -- | Nix derivation as a string.
+    Text
     -- | Callback to find the desired file.
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation = introduceFileViaNixDerivation' (Proxy @a)
+introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (Proxy @a)
 
--- | Same as 'introduceFileViaNixDerivation', but allows passing a 'Proxy'.
-introduceFileViaNixDerivation' :: forall a context m. (
+-- | Same as 'introduceFileViaNixDerivation'', but allows passing a 'Proxy'.
+introduceFileViaNixDerivation'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   ) => Proxy a
     -- | Nix derivation as a string.
@@ -305,7 +333,7 @@ introduceFileViaNixDerivation' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation' proxy derivation tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixDerivation'' proxy derivation tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
     alloc = EnvironmentFile <$> (buildNixCallPackageDerivation derivation >>= liftIO . tryFindFile)
 
@@ -327,3 +355,25 @@ tryFindBinary binaryName env = do
   findExecutablesInDirectories [env </> "bin"] binaryName >>= \case
     (x:_) -> return $ EnvironmentFile x
     _ -> expectationFailure [i|Couldn't find binary '#{binaryName}' in #{env </> "bin"}|]
+
+-- | Find a file whose name exactly matches a string, using 'findFirstFile'.
+-- This calls 'takeFileName', so it only matches against the name, not the relative path.
+defaultFindFile :: String -> FilePath -> IO FilePath
+defaultFindFile name root = findFirstFile (\x -> return (takeFileName x == name)) root
+
+-- | Find the first file under the given directory (recursively) which matches the predicate.
+-- Note that the callback receives the full relative path to the file from the root dir.
+-- Throws using 'expectationFailure' when the file is not found.
+findFirstFile :: (FilePath -> IO Bool) -> FilePath -> IO FilePath
+findFirstFile predicate dir = runExceptT (go dir) >>= \case
+  Left x -> return x
+  Right () -> expectationFailure [i|Couldn't find file in '#{dir}'|]
+  where
+    go :: FilePath -> ExceptT FilePath IO ()
+    go currentDir = do
+      contents <- liftIO $ listDirectory currentDir
+      forM_ contents $ \name -> do
+        let path = currentDir </> name
+        doesDirectoryExist path >>= \case
+          True -> go path
+          False -> whenM (liftIO $ predicate path) (throwE path)

@@ -67,6 +67,7 @@ library:
   - temporary
   - text
   - time
+  - transformers
   - unix
   - unliftio-core
   - vector

@@ -75,6 +75,7 @@ library
     , temporary
     , text
     , time
+    , transformers
     , unix
     , unliftio
     , unliftio-core

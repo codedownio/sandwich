@@ -40,10 +40,10 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.IORef
+import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
-import qualified Data.Text as T
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
@@ -60,7 +60,6 @@ import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 import UnliftIO.MVar
-import UnliftIO.Process
 
 
 -- | This is the main 'introduce' method for creating a WebDriver.
@@ -73,7 +72,7 @@ introduceWebDriverViaNix :: forall m context. (
   BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
   ) => WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
 introduceWebDriverViaNix wdOptions =
-  introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar
+  introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
   . introduceBinaryViaNixPackage @"java" "jre"
   . introduceBrowserDependenciesViaNix
   . introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
@@ -81,9 +80,6 @@ introduceWebDriverViaNix wdOptions =
     alloc = do
       clo <- getSomeCommandLineOptions
       allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions)
-
-    tryFindSeleniumJar :: FilePath -> IO FilePath
-    tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
 
 -- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
 introduceWebDriverOptions :: forall context m. (
