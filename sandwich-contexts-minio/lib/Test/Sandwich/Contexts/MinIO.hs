@@ -62,6 +62,7 @@ import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
 import UnliftIO.Process
+import UnliftIO.Timeout
 
 
 -- * Types
@@ -77,6 +78,8 @@ data MinIOContextOptions = MinIOContextOptions {
   , minioContextLabels :: Map Text Text
   , minioContextContainerName :: Maybe Text
   , minioContextContainerSystem :: ContainerSystem
+  -- | Maximum time to wait in microseconds before seeing an "API:" message during startup
+  , minioContextStartupTimeout :: Int
   } deriving (Show, Eq)
 defaultMinIOContextOptions :: MinIOContextOptions
 defaultMinIOContextOptions = MinIOContextOptions {
@@ -84,6 +87,7 @@ defaultMinIOContextOptions = MinIOContextOptions {
   , minioContextLabels = mempty
   , minioContextContainerName = Nothing
   , minioContextContainerSystem = ContainerSystemPodman
+  , minioContextStartupTimeout = 60_000_000
   }
 
 -- * Raw
@@ -128,7 +132,7 @@ withMinIO' minioPath (MinIOContextOptions {..}) action = do
 
   minioDir <- liftIO $ createTempDirectory dir "minio-storage"
 
-  (hReadErr, hWriteErr) <- liftIO createPipe
+  (hRead, hWrite) <- liftIO createPipe
   let cp = proc minioPath [
         "server"
         , minioDir
@@ -136,27 +140,30 @@ withMinIO' minioPath (MinIOContextOptions {..}) action = do
         , "--json"
         ]
 
-  let forwardStderr = forever $ do
-        line <- liftIO (T.hGetLine hReadErr)
-        debug [i|minio stderr: #{line}|]
+  withCreateProcess (cp { std_in = CreatePipe, std_out = UseHandle hWrite, std_err = UseHandle hWrite }) $ \_ _ _ _p -> do
+    maybeUriToUse <- timeout minioContextStartupTimeout $ fix $ \loop -> do
+      line <- liftIO $ T.hGetLine hRead
+      debug [i|minio: #{line}|]
+      case A.eitherDecode (encodeUtf8 line) of
+        Right (A.Object ( aesonLookup "message" -> Just (A.String t) ))
+          | "API:" `T.isInfixOf` t -> do
+              return $ t
+                     & T.words
+                     & mapMaybe (parseURI . toString)
+                     & L.sortOn scoreUri
+                     & headMay
+          | otherwise -> loop
+        _ -> loop
 
-  withAsync forwardStderr $ \_ ->
-    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \_ (Just sout) _ _p -> do
-      uriToUse <- fix $ \loop -> do
-        line <- liftIO $ T.hGetLine sout
-        debug [i|minio: #{line}|]
-        case A.eitherDecode (encodeUtf8 line) of
-          Right (A.Object ( aesonLookup "message" -> Just (A.String t) ))
-            | "S3-API:" `T.isPrefixOf` t -> do
-                return $ t
-                       & T.drop (T.length "S3-API:")
-                       & T.words
-                       & mapMaybe (parseURI . toString)
-                       & L.sortOn scoreUri
-                       & headMay
-            | otherwise -> loop
-          _ -> loop
+    uriToUse <- case maybeUriToUse of
+      Nothing -> expectationFailure [i|Didn't see "API:" message in MinIO output.|]
+      Just x -> pure x
 
+    let forwardOutput = forever $ do
+          line <- liftIO $ T.hGetLine hRead
+          debug [i|minio: #{line}|]
+
+    withAsync forwardOutput $ \_ -> do
       (hostname, port) <- case uriToUse of
         Nothing -> expectationFailure [i|Couldn't find MinIO URI to use.|]
         Just (URI { uriAuthority=(Just URIAuth {..}) }) -> case readMaybe (L.drop 1 uriPort) of
@@ -172,6 +179,8 @@ withMinIO' minioPath (MinIOContextOptions {..}) action = do
             , testS3ServerBucket = minioContextBucket
             , testS3ServerHttpMode = HttpModeHttp
             }
+
+      info [i|About to do waitForMinIOReady|]
 
       waitForMinIOReady server
 
