@@ -15,6 +15,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Control (MonadBaseControl)
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -69,16 +70,13 @@ claimWebdriver spec = introduceWith' (
 tests :: TopSpecWithOptions
 tests =
   introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
-    introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar $
+    introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`))) $
     introduceBinaryViaNixPackage @"java" "jre" $
     introduceBrowserDependenciesViaNix $
     introduceWebDriverPool 4 defaultWdOptions $
     parallel $
     replicateM_ 20 $
     claimWebdriver $ it "opens Google" $ withSession1 $ openPage "http://www.google.com"
-  where
-    tryFindSeleniumJar :: FilePath -> IO FilePath
-    tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

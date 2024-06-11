@@ -114,17 +114,19 @@ introduceBrowserDependenciesViaNix = introduce "Introduce browser dependencies" 
     alloc = do
       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
 
+      let useChrome = BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+                                                <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+
+      let useFirefox = BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
+                                                  <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+
       deps <- case optFirefox of
-        Just UseChrome ->
-          BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
-                                    <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
-        Just UseFirefox ->
-          BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
-                                     <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
-        _ ->
-          BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
-                                     <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+        Just UseChrome -> useChrome
+        Just UseFirefox -> useFirefox
+        Nothing -> useChrome
+
       debug [i|Got browser dependencies: #{deps}|]
+
       return deps
 
 fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext browserDependencies >>= \case
