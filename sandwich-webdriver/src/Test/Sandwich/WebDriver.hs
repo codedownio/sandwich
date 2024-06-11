@@ -27,9 +27,8 @@ module Test.Sandwich.WebDriver (
 
   -- * Lower-level allocation functions
   , allocateWebDriver
-  , allocateWebDriver'
   , cleanupWebDriver
-  , cleanupWebDriver'
+  , introduceBrowserDependenciesViaNix
 
   -- * Re-exports
   , module Test.Sandwich.WebDriver.Class
@@ -142,26 +141,11 @@ allocateWebDriver wdOptions = do
   dir <- fromMaybe "/tmp" <$> getCurrentFolder
   startWebDriver wdOptions dir
 
--- | Allocate a WebDriver using the given options and putting logs under the given path.
-allocateWebDriver' :: FilePath -> WdOptions -> IO WebDriver
-allocateWebDriver' runRoot wdOptions = do
-  let ctx = (undefined :: LabelValue "file-java" (EnvironmentFile "java"))
-          :> (undefined :: LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar"))
-          :> (undefined :: LabelValue "browserDependencies" BrowserDependencies)
-  runNoLoggingT $ flip runReaderT ctx $ startWebDriver wdOptions runRoot
-
 -- | Clean up the given WebDriver.
 cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
-
--- | Clean up the given WebDriver without logging.
-cleanupWebDriver' :: WebDriver -> IO ()
-cleanupWebDriver' sess = do
-  runNoLoggingT $ do
-    closeAllSessions sess
-    stopWebDriver sess
 
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (

@@ -11,7 +11,6 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Aeson as A
 import Data.Function
 import qualified Data.List as L
@@ -43,7 +42,7 @@ fromText = id
 #endif
 
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
+type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 
 -- | Add headless configuration to the Chrome browser
 configureHeadlessCapabilities :: (Constraints m) => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
@@ -95,14 +94,14 @@ configureHeadlessCapabilities _ _ browser = return browser
 -- | Configure download capabilities to set the download directory and disable prompts
 -- (since you can't test download prompts using Selenium)
 configureDownloadCapabilities :: (
-  MonadIO m, MonadBaseControl IO m
+  MonadIO m
   ) => [Char] -> W.Capabilities -> m W.Capabilities
 configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Firefox {..})}) = do
   case ffProfile of
     Nothing -> return ()
     Just _ -> liftIO $ throwIO $ userError [i|Can't support Firefox profile yet.|]
 
-  profile <- FF.defaultProfile
+  profile <- liftIO $ FF.defaultProfile
     & FF.addPref "browser.download.folderList" (2 :: Int)
     & FF.addPref "browser.download.manager.showWhenStarting" False
     & FF.addPref "browser.download.dir" downloadDir

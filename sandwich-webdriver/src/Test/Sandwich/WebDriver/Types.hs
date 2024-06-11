@@ -70,5 +70,5 @@ hoistExample (ExampleT r) = ExampleT $ transformContext r
 
 type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadUnliftIO m, MonadBaseControl IO m)
 type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriverSession" WebDriverSession)
-type BaseMonad m = (HasCallStack, MonadUnliftIO m, MonadBaseControl IO m, MonadMask m)
+type BaseMonad m = (HasCallStack, MonadUnliftIO m, MonadMask m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
