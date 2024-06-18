@@ -27,6 +27,11 @@ source-repository head
 library
   exposed-modules:
       Test.Sandwich.WebDriver
+      Test.Sandwich.WebDriver.Resolution
+      Test.Sandwich.WebDriver.Types
+      Test.Sandwich.WebDriver.Video
+      Test.Sandwich.WebDriver.Windows
+  other-modules:
       Test.Sandwich.WebDriver.Class
       Test.Sandwich.WebDriver.Config
       Test.Sandwich.WebDriver.Internal.Action
@@ -50,11 +55,7 @@ library
       Test.Sandwich.WebDriver.Internal.Types.Video
       Test.Sandwich.WebDriver.Internal.Util
       Test.Sandwich.WebDriver.Internal.Video
-      Test.Sandwich.WebDriver.Types
-      Test.Sandwich.WebDriver.Video
-      Test.Sandwich.WebDriver.Windows
-  other-modules:
-      Test.Sandwich.WebDriver.Resolution
+      Paths_sandwich_webdriver
   hs-source-dirs:
       src
   default-extensions:
@@ -130,87 +131,6 @@ library
         unix-src
     build-depends:
         temporary
-
-executable sandwich-webdriver-exe
-  main-is: Main.hs
-  other-modules:
-      Simple
-      Paths_sandwich_webdriver
-  hs-source-dirs:
-      app
-  default-extensions:
-      FlexibleContexts
-      FlexibleInstances
-      LambdaCase
-      MultiParamTypeClasses
-      MultiWayIf
-      NamedFieldPuns
-      NumericUnderscores
-      OverloadedStrings
-      QuasiQuotes
-      RecordWildCards
-      ScopedTypeVariables
-      ViewPatterns
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      aeson
-    , base <5
-    , bytestring
-    , containers
-    , data-default
-    , directory
-    , exceptions
-    , filepath
-    , http-client
-    , http-client-tls
-    , http-conduit
-    , lens
-    , lens-regex-pcre
-    , microlens
-    , microlens-aeson
-    , monad-control
-    , monad-logger
-    , mtl
-    , network
-    , process
-    , random
-    , retry
-    , safe
-    , sandwich >=0.1.0.3
-    , sandwich-contexts
-    , sandwich-webdriver
-    , string-interpolate
-    , text
-    , time
-    , transformers
-    , unliftio
-    , unliftio-core
-    , unordered-containers
-    , vector
-    , webdriver
-  default-language: Haskell2010
-  if os(darwin)
-    other-modules:
-        Test.Sandwich.WebDriver.Resolution
-    hs-source-dirs:
-        darwin-src
-    frameworks:
-        CoreGraphics
-  if os(windows)
-    other-modules:
-        Test.Sandwich.WebDriver.Resolution
-    hs-source-dirs:
-        windows-src
-  if os(linux)
-    other-modules:
-        Test.Sandwich.WebDriver.Resolution
-    hs-source-dirs:
-        linux-src
-    build-depends:
-        regex-compat
-  if !os(windows)
-    build-depends:
-        unix
 
 test-suite sandwich-webdriver-test
   type: exitcode-stdio-1.0

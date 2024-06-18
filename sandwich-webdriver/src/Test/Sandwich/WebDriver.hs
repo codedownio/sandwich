@@ -65,12 +65,20 @@ import UnliftIO.MVar
 -- | This is the main 'introduce' method for creating a WebDriver.
 introduceWebDriver :: (
   BaseMonadContext m context
-  ) => WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => WdOptions
+  -> SpecFree (ContextWithWebdriverDeps context) m ()
+  -> SpecFree context m ()
 introduceWebDriver = introduceWebDriver' defaultWebDriverDependencies allocateWebDriver
 
 introduceWebDriverViaNix :: forall m context. (
   BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
-  ) => WdOptions -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => WdOptions
+  -> SpecFree (ContextWithWebdriverDeps context) m ()
+  -> SpecFree context m ()
 introduceWebDriverViaNix wdOptions =
   introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
   . introduceBinaryViaNixPackage @"java" "jre"

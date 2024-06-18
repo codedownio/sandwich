@@ -65,8 +65,12 @@ default-extensions:
 
 library:
   source-dirs: src
-  other-modules:
+  exposed-modules:
+  - Test.Sandwich.WebDriver
   - Test.Sandwich.WebDriver.Resolution
+  - Test.Sandwich.WebDriver.Types
+  - Test.Sandwich.WebDriver.Video
+  - Test.Sandwich.WebDriver.Windows
   ghc-options:
   - -W
   when:
@@ -74,10 +78,6 @@ library:
     source-dirs: unix-src
     dependencies:
     - temporary
-  # exposed-modules:
-  #   - Test.Sandwich.Webdriver
-  #   - Test.Sandwich.Webdriver.Video
-  #   - Test.Sandwich.Webdriver.Windows
 
 when:
 - condition: os(darwin)
@@ -93,18 +93,6 @@ when:
 - condition: "!os(windows)"
   dependencies:
   - unix
-
-executables:
-  sandwich-webdriver-exe:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - sandwich-webdriver
-    - time
 
 tests:
   sandwich-webdriver-test:
