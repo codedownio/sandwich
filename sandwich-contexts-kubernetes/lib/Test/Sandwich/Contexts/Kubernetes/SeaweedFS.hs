@@ -31,7 +31,7 @@ import Relude hiding (withFile)
 import System.Exit
 import System.FilePath
 import Test.Sandwich
-import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+import Test.Sandwich.Contexts.Kubernetes.Images (loadImage')
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import UnliftIO.Environment
@@ -91,22 +91,23 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     info [i|Doing make docker-build|]
     runOperatorCmd "make docker-build" []
 
-    withLoadImages' kcc ["chrislusf/seaweedfs-operator:v0.0.1"] $ \[newImageName] -> do
-      info [i|------------------ Installing SeaweedFS operator ------------------|]
+    newImageName <- loadImage' kcc "chrislusf/seaweedfs-operator:v0.0.1" Nothing
 
-      info [i|Doing make install|]
-      runOperatorCmd "make install" [("IMG", toString newImageName)]
-      info [i|Doing make deploy|]
-      runOperatorCmd "make deploy" [("IMG", toString newImageName)]
+    info [i|------------------ Installing SeaweedFS operator ------------------|]
 
-      info [i|------------------ Creating SeaweedFS deployment ------------------|]
+    info [i|Doing make install|]
+    runOperatorCmd "make install" [("IMG", toString newImageName)]
+    info [i|Doing make deploy|]
+    runOperatorCmd "make deploy" [("IMG", toString newImageName)]
 
-      let val = decodeUtf8 $ A.encode $ example namespace options
-      createProcessWithLoggingAndStdin ((shell "kubectl create -f -") { env = Just env }) val >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    info [i|------------------ Creating SeaweedFS deployment ------------------|]
 
-      action $ SeaweedFSContext {
-        seaweedFsOptions = options
-        }
+    let val = decodeUtf8 $ A.encode $ example namespace options
+    createProcessWithLoggingAndStdin ((shell "kubectl create -f -") { env = Just env }) val >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+    action $ SeaweedFSContext {
+      seaweedFsOptions = options
+      }
 
 
 example :: Text -> SeaweedFSOptions -> Yaml.Value

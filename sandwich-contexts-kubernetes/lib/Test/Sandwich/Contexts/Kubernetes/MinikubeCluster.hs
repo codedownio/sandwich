@@ -15,9 +15,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   , withMinikubeCluster'
 
   -- * For loading images onto the cluster
-  , introduceImages
-  , withLoadImages
-  , withLoadImages'
+  , loadImage
 
   -- * Re-exported cluster types
   , kubernetesCluster

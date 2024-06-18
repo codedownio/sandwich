@@ -14,8 +14,7 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withKindCluster'
 
   -- * Loading images
-  , withLoadImages
-  , withLoadImages'
+  , loadImage
 
   -- * Re-exported types
   , KubernetesClusterContext (..)
@@ -199,7 +198,7 @@ withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
 
   let driver = fromMaybe "docker" kindClusterDriver
 
-  (bracket (startKindCluster opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
+  (bracket (startKindCluster kindBinary opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
            (\_ -> do
                ps <- createProcessWithLogging ((proc kindBinary ["delete", "cluster", "--name", toString clusterName]) {
                                                   env = environmentToUse
@@ -213,18 +212,18 @@ withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
 
 startKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m
-  ) => KindClusterOptions -> Text -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m KubernetesClusterContext
-startKindCluster (KindClusterOptions {..}) clusterName kindConfigFile kindKubeConfigFile environmentToUse driver = do
-  ps <- createProcessWithLogging ((proc "kind" ["create", "cluster", "-v", "1", "--name", toString clusterName
-                                               , "--config", kindConfigFile
-                                               , "--kubeconfig", kindKubeConfigFile]) {
+  ) => FilePath -> KindClusterOptions -> Text -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m KubernetesClusterContext
+startKindCluster kindBinary (KindClusterOptions {..}) clusterName kindConfigFile kindKubeConfigFile environmentToUse driver = do
+  ps <- createProcessWithLogging ((proc kindBinary ["create", "cluster", "-v", "1", "--name", toString clusterName
+                                                   , "--config", kindConfigFile
+                                                   , "--kubeconfig", kindKubeConfigFile]) {
                                      delegate_ctlc = True
                                      , env = environmentToUse
                                      })
   void $ waitForProcess ps
 
   whenM isInContainer $
-    callCommandWithLogging [i|kind get kubeconfig --internal --name #{clusterName} > "#{kindKubeConfigFile}"|]
+    callCommandWithLogging [i|#{kindBinary} get kubeconfig --internal --name #{clusterName} > "#{kindKubeConfigFile}"|]
 
   oidcCache <- newTVarIO mempty
   (m, c) <- liftIO $ mkKubeClientConfig oidcCache $ KubeConfigFile kindKubeConfigFile
@@ -234,5 +233,5 @@ startKindCluster (KindClusterOptions {..}) clusterName kindConfigFile kindKubeCo
     , kubernetesClusterKubeConfigPath = kindKubeConfigFile
     , kubernetesClusterNumNodes = kindClusterNumNodes
     , kubernetesClusterClientConfig = (m, c)
-    , kubernetesClusterType = KubernetesClusterKind clusterName driver environmentToUse
+    , kubernetesClusterType = KubernetesClusterKind kindBinary clusterName driver environmentToUse
     }

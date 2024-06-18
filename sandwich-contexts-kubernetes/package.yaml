@@ -35,6 +35,7 @@ library:
   source-dirs: lib
   exposed-modules:
   - Test.Sandwich.Contexts.Kubernetes.Cluster
+  - Test.Sandwich.Contexts.Kubernetes.Images
   - Test.Sandwich.Contexts.Kubernetes.KindCluster
   - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
   - Test.Sandwich.Contexts.Kubernetes.MinioOperator

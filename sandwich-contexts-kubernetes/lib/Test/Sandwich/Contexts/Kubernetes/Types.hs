@@ -22,7 +22,8 @@ instance Show Manager where
 -- * Kubernetes cluster
 
 data KubernetesClusterType =
-  KubernetesClusterKind { kindClusterName :: Text
+  KubernetesClusterKind { kindBinary :: FilePath
+                        , kindClusterName :: Text
                         , kindClusterDriver :: Text
                         , kindClusterEnvironment :: Maybe [(String, String)] }
   | KubernetesClusterMinikube { minikubeBinary :: FilePath
