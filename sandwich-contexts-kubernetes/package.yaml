@@ -29,7 +29,7 @@ ghc-options:
 - -Wunused-packages
 - -Wall
 # - -Wpartial-fields
-# - -Wredundant-constraints # Reports HasCallStack, so keep it off normally
+- -Wredundant-constraints
 
 library:
   source-dirs: lib

@@ -30,7 +30,14 @@ import UnliftIO.Process
 waitForServiceEndpointsToExist :: (
   MonadUnliftIO m, MonadLogger m, MonadMask m
   , MonadReader context m, HasKubernetesClusterContext context
-  ) => Text -> Text -> Double -> m ()
+  )
+  -- | Namespace
+  => Text
+  -- | Service name
+  -> Text
+  -- | Time in seconds to wait
+  -> Double
+  -> m ()
 waitForServiceEndpointsToExist namespace serviceName timeInSeconds = do
   waitUntil timeInSeconds $ do
     endpoints <- listEndpoints namespace mempty
@@ -45,7 +52,10 @@ waitForServiceEndpointsToExist namespace serviceName timeInSeconds = do
       | name == serviceName = L.all isSatisfactoryV1EndpointSubset (fromMaybe [] v1EndpointsSubsets)
     v1EndpointsSatisfies _ = False
 
-    isSatisfactoryV1EndpointSubset (V1EndpointSubset { v1EndpointSubsetAddresses=(Just addrs), v1EndpointSubsetNotReadyAddresses=(fromMaybe [] -> notReadyAddrs) }) =
+    isSatisfactoryV1EndpointSubset (V1EndpointSubset {
+                                       v1EndpointSubsetAddresses=(Just addrs)
+                                       , v1EndpointSubsetNotReadyAddresses=(fromMaybe [] -> notReadyAddrs)
+                                       }) =
       not (L.null addrs)
       && L.null notReadyAddrs
     isSatisfactoryV1EndpointSubset _ = False
@@ -64,7 +74,16 @@ listEndpoints namespace labels =
 waitForPodsToExist :: (
   MonadUnliftIO m, MonadLogger m, MonadMask m
   , MonadReader context m, HasKubernetesClusterContext context
-  ) => Text -> Map Text Text -> Double -> Maybe Int -> m ()
+  )
+  -- | Namespace
+  => Text
+  -- | Pod labels
+  -> Map Text Text
+  -- | Time in seconds to wait
+  -> Double
+  -- | Optional desired pod count to wait for
+  -> Maybe Int
+  -> m ()
 waitForPodsToExist namespace labels timeInSeconds maybeDesiredCount = do
   waitUntil timeInSeconds $ do
     pods <- listPods namespace labels
@@ -85,7 +104,14 @@ listPods namespace labels =
 waitForPodsToBeReady :: (
   MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context, HasFile context "kubectl"
-  ) => Text -> Map Text Text -> Double -> m ()
+  )
+  -- | Namespace
+  => Text
+  -- | Pod labels
+  -> Map Text Text
+  -- | Time in seconds to wait
+  -> Double
+  -> m ()
 waitForPodsToBeReady namespace labels timeInSeconds = do
   kubectlBinary <- askFile @"kubectl"
   kubeConfigFile <- kubernetesClusterKubeConfigPath <$> getContext kubernetesCluster

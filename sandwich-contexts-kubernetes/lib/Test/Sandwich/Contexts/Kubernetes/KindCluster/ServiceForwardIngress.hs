@@ -10,7 +10,6 @@ import Control.Lens.Regex.Text
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
@@ -34,7 +33,7 @@ import UnliftIO.Timeout
 
 
 withForwardKubernetesService' :: (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadLoggerIO m
+  MonadUnliftIO m, MonadLoggerIO m
   , MonadReader context m
   ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do

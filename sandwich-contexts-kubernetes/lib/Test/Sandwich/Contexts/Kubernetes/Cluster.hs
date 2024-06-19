@@ -44,7 +44,6 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.URI
 import Relude
 import Test.Sandwich
@@ -64,18 +63,36 @@ import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 
 withForwardKubernetesService :: (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
+  MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
-  ) => Text -> Text -> (URI -> m a) -> m a
+  )
+  -- | Namespace
+  => Text
+  -- | Service name
+  -> Text
+  -- | Callback receiving the service 'URL'.
+  -> (URI -> m a)
+  -> m a
 withForwardKubernetesService namespace serviceName action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
   withForwardKubernetesService' kcc kubectlBinary namespace serviceName action
 
 withForwardKubernetesService' :: (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadBaseControl IO m
+  MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
+  )
+  -- | Kubernetes cluster context
+  => KubernetesClusterContext
+  -- | Binary path for kubectl
+  -> FilePath
+  -- | Namespace
+  -> Text
+  -- | Service name
+  -> Text
+  -- | Callback receiving the service 'URL'.
+  -> (URI -> m a)
+  -> m a
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) _kubectlBinary =
   Minikube.withForwardKubernetesService' kcc minikubeProfileName
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) kubectlBinary =

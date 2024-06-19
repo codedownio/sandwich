@@ -4,9 +4,10 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Images (
-  introduceImages
-  , loadImage
+  loadImage
   , loadImage'
+
+  , introduceImages
   ) where
 
 import Control.Monad.IO.Unlift
@@ -20,14 +21,9 @@ import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Min
 import Test.Sandwich.Contexts.Kubernetes.Types
 
 
--- | Introduce a list of images into a Kubernetes cluster.
-introduceImages :: (
-  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context
-  ) => [Text] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
-introduceImages images = introduceWith "Introduce cluster images" kubernetesClusterImages $ \action ->
-  forM images (\x -> loadImage x Nothing) >>= (void . action)
-
--- | Load an image into a Kubernetes cluster.
+-- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
+-- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
+-- and return the modified image name (i.e. the name by which the cluster knows the image).
 loadImage :: (
   MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
@@ -35,7 +31,7 @@ loadImage :: (
   => Text
   -- | Optional environment variables to provide
   -> Maybe [(String, String)]
-  -- | Returns the transformed image name
+  -- | The transformed image name
   -> m Text
 loadImage image env = do
   kcc <- getContext kubernetesCluster
@@ -61,3 +57,11 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
         Kind.loadImage kindBinary kindClusterName image env
       (KubernetesClusterMinikube {..}) ->
         Minikube.loadImage minikubeBinary kubernetesClusterName minikubeFlags image
+
+-- | Helper to introduce a list of images into a Kubernetes cluster.
+-- Stores the list of transformed image names under the "kubernetesClusterImages" label.
+introduceImages :: (
+  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context
+  ) => [Text] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
+introduceImages images = introduceWith "Introduce cluster images" kubernetesClusterImages $ \action ->
+  forM images (\x -> loadImage x Nothing) >>= (void . action)

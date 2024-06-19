@@ -9,7 +9,6 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward w
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
@@ -24,7 +23,7 @@ import UnliftIO.Process
 
 
 withForwardKubernetesService' :: (
-  MonadUnliftIO m, MonadCatch m, MonadBaseControl IO m, MonadLoggerIO m
+  MonadUnliftIO m, MonadCatch m, MonadLoggerIO m
   , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do

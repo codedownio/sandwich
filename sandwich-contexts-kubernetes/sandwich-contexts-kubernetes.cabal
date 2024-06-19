@@ -62,7 +62,7 @@ library
       FlexibleContexts
       NoImplicitPrelude
       NumericUnderscores
-  ghc-options: -Wunused-packages -Wall
+  ghc-options: -Wunused-packages -Wall -Wredundant-constraints
   build-depends:
       aeson
     , base
