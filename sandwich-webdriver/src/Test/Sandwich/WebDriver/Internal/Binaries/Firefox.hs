@@ -2,7 +2,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries.Firefox where
+module Test.Sandwich.WebDriver.Internal.Binaries.Firefox (
+  obtainFirefox
+  , obtainGeckoDriver
+
+  , FirefoxToUse(..)
+  , GeckoDriverToUse(..)
+  ) where
 
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift

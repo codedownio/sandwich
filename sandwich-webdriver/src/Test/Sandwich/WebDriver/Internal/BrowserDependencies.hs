@@ -10,8 +10,6 @@ module Test.Sandwich.WebDriver.Internal.BrowserDependencies (
   , BrowserDependenciesSpec(..)
 
   , defaultWebDriverDependencies
-  , nixFirefoxWebDriverDependencies
-  , nixChromeWebDriverDependencies
 
   , BrowserDependencies(..)
   , browserDependencies
@@ -32,7 +30,6 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
-import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
@@ -40,6 +37,8 @@ import qualified Test.WebDriver as W
 
 -- * All dependencies
 
+-- | This type describes how we should obtain all the dependencies needed to launch a WebDriver session.
+-- You can configure them individually.
 data WebDriverDependencies = WebDriverDependencies {
   -- | Path to "java" binary to use to start Selenium. If not provided, we'll search the PATH.
   webDriverDependencyJava :: Maybe FilePath
@@ -49,6 +48,7 @@ data WebDriverDependencies = WebDriverDependencies {
   , webDriverDependencyBrowser :: BrowserDependenciesSpec
   }
 
+-- | This type describes how to obain a browser + browser driver combination.
 data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
   browserDependenciesSpecChromeChrome :: ChromeToUse
   , browserDependenciesSpecChromeChromeDriver :: ChromeDriverToUse
@@ -58,22 +58,16 @@ data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
       , browserDependenciesSpecFirefoxGeckodriver :: GeckoDriverToUse
       }
 
+-- | This configuration will
+--
+-- * Use @java@ from the PATH, failing if it isn't found.
+-- * Download Selenium to @\/tmp\/tools@, reusing the one there if found.
+-- * Use @firefox@ from the PATH as the browser.
+-- * Download a compatible @geckodriver@ to @\/tmp\/tools@, reusing the one there if found.
 defaultWebDriverDependencies = WebDriverDependencies {
   webDriverDependencyJava = Nothing
   , webDriverDependencySelenium = DownloadSeleniumDefault "/tmp/tools"
   , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox UseFirefoxFromPath (DownloadGeckoDriverAutodetect "/tmp/tools")
-  }
-
-nixFirefoxWebDriverDependencies nixContext = WebDriverDependencies {
-  webDriverDependencyJava = Nothing
-  , webDriverDependencySelenium = UseSeleniumFromNixpkgs nixContext
-  , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox (UseFirefoxFromNixpkgs nixContext) (UseGeckoDriverFromNixpkgs nixContext)
-  }
-
-nixChromeWebDriverDependencies nixContext = WebDriverDependencies {
-  webDriverDependencyJava = Nothing
-  , webDriverDependencySelenium = UseSeleniumFromNixpkgs nixContext
-  , webDriverDependencyBrowser = BrowserDependenciesSpecChrome (UseChromeFromNixpkgs nixContext) (UseChromeDriverFromNixpkgs nixContext)
   }
 
 -- * Browser dependencies
@@ -108,7 +102,11 @@ getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
 
 introduceBrowserDependenciesViaNix :: forall m context. (
   MonadUnliftIO m, HasBaseContext context, HasNixContext context, HasSomeCommandLineOptions context
-  ) => SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m () -> SpecFree context m ()
+  )
+  -- | Child spec
+  => SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
 introduceBrowserDependenciesViaNix = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
   where
     alloc = do

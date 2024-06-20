@@ -8,9 +8,16 @@ module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
   , introduceWebDriverViaNix
-  , introduceWebDriverOptions
-  , introduceWebDriver'
-  , addCommandLineOptionsToWdOptions
+
+  -- * Specifying how to obtain dependencies
+  , defaultWebDriverDependencies
+  , WebDriverDependencies(..)
+  , SeleniumToUse(..)
+  , BrowserDependenciesSpec(..)
+  , ChromeToUse(..)
+  , ChromeDriverToUse(..)
+  , FirefoxToUse(..)
+  , GeckoDriverToUse(..)
 
   -- * Running an example in a given session
   , withSession
@@ -29,9 +36,20 @@ module Test.Sandwich.WebDriver (
   , allocateWebDriver
   , cleanupWebDriver
   , introduceBrowserDependenciesViaNix
+  , introduceWebDriver'
+  , addCommandLineOptionsToWdOptions
+
+  -- * The main WebDriver type
+  , WebDriver
+  , getWdOptions
+  , getDisplayNumber
+  , getXvfbSession
+  , getWebDriverName
+
+  -- * The Xvfb session
+  , XvfbSession(..)
 
   -- * Re-exports
-  , module Test.Sandwich.WebDriver.Class
   , module Test.Sandwich.WebDriver.Config
   , module Test.Sandwich.WebDriver.Types
   ) where
@@ -48,10 +66,11 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Internal
-import Test.Sandwich.WebDriver.Class
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
@@ -62,16 +81,24 @@ import qualified Test.WebDriver.Session as W
 import UnliftIO.MVar
 
 
--- | This is the main 'introduce' method for creating a WebDriver.
-introduceWebDriver :: (
-  BaseMonadContext m context
+-- | Introduce a 'WebDriver', using the given 'WebDriverDependencies'.
+-- A good default is 'defaultWebDriverDependencies'.
+introduceWebDriver :: forall context m. (
+  BaseMonadContext m context, HasSomeCommandLineOptions context
   )
-  -- | Options
-  => WdOptions
-  -> SpecFree (ContextWithWebdriverDeps context) m ()
-  -> SpecFree context m ()
-introduceWebDriver = introduceWebDriver' defaultWebDriverDependencies allocateWebDriver
+  -- | How to obtain dependencies
+  => WebDriverDependencies
+  -- | WebDriver options
+  -> WdOptions
+  -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
+introduceWebDriver wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
+  where
+    alloc wdOptions' = do
+      clo <- getSomeCommandLineOptions
+      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions')
 
+-- | Introduce a 'WebDriver' using the current 'NixContext'.
+-- This will pull everything required from the configured Nixpkgs snapshot.
 introduceWebDriverViaNix :: forall m context. (
   BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
   )
@@ -88,29 +115,6 @@ introduceWebDriverViaNix wdOptions =
     alloc = do
       clo <- getSomeCommandLineOptions
       allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions)
-
--- | Same as introduceWebDriver, but merges command line options into the 'WdOptions'.
-introduceWebDriverOptions :: forall context m. (
-  BaseMonadContext m context, HasSomeCommandLineOptions context
-  )
-  -- | Dependencies
-  => WdOptions
-  -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
-introduceWebDriverOptions wdOptions = introduceWebDriverOptions' defaultWebDriverDependencies wdOptions
-
--- | Same as 'introduceWebDriverOptions', but allows you to customize the 'WebDriverDependencies'.
-introduceWebDriverOptions' :: forall context m. (
-  BaseMonadContext m context, HasSomeCommandLineOptions context
-  )
-  -- | Dependencies
-  => WebDriverDependencies
-  -> WdOptions
-  -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
-introduceWebDriverOptions' wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
-  where
-    alloc wdOptions' = do
-      clo <- getSomeCommandLineOptions
-      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions')
 
 introduceWebDriver' :: forall m context. (
   BaseMonadContext m context
@@ -140,7 +144,10 @@ type ContextWithBaseDeps context =
 allocateWebDriver :: (
   BaseMonad m
   , HasBaseContext context, HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
-  ) => WdOptions -> ExampleT context m WebDriver
+  )
+  -- | Options
+  => WdOptions
+  -> ExampleT context m WebDriver
 allocateWebDriver wdOptions = do
   dir <- fromMaybe "/tmp" <$> getCurrentFolder
   startWebDriver wdOptions dir
@@ -154,7 +161,11 @@ cleanupWebDriver sess = do
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (
   WebDriverMonad m context
-  ) => Session -> ExampleT (ContextWithSession context) m a -> ExampleT context m a
+  )
+  -- | Session to run
+  => Session
+  -> ExampleT (ContextWithSession context) m a
+  -> ExampleT context m a
 withSession session (ExampleT readerMonad) = do
   WebDriver {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)

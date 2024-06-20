@@ -34,16 +34,11 @@ module Test.Sandwich.WebDriver.Config (
   -- * Miscellaneous constructors
   , WhenToSave(..)
 
-  -- * Manually obtaining binaries
-  , obtainChromeDriver
-  -- , obtainGeckoDriver
-
   -- * Browser capabilities
   , chromeCapabilities
   , headlessChromeCapabilities
   , firefoxCapabilities
   , headlessFirefoxCapabilities
-
   ) where
 
 import Test.Sandwich.WebDriver.Internal.Binaries

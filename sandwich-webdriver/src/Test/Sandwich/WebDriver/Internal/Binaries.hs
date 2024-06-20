@@ -17,6 +17,4 @@ module Test.Sandwich.WebDriver.Internal.Binaries (
 
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
-import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium
-import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types

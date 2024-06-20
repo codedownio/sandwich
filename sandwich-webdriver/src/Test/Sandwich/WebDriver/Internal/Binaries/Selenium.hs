@@ -1,6 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries.Selenium where
+module Test.Sandwich.WebDriver.Internal.Binaries.Selenium (
+  obtainSelenium
+  , downloadSeleniumIfNecessary
+  , SeleniumToUse(..)
+  ) where
 
 import Control.Monad
 import Control.Monad.IO.Class
