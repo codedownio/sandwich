@@ -6,23 +6,28 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.WebDriver.Types (
-  ExampleWithWebDriver
-  , HasBrowserDependencies
-  , HasWebDriverContext
-  , HasWebDriverSessionContext
-  , ContextWithSession
+  -- * The 'Label'
+  webdriver
 
-  , hoistExample
-
-  , webdriver
-
-  , wdDownloadDir
+  -- * Type aliases to make signatures shorter
+  , ContextWithWebdriverDeps
+  , ContextWithBaseDeps
 
   -- * Constraint synonyms
   , BaseMonad
   , BaseMonadContext
+  , HasBrowserDependencies
+  , HasWebDriverContext
+  , HasWebDriverSessionContext
   , WebDriverMonad
   , WebDriverSessionMonad
+
+  -- * The Xvfb session
+  , XvfbSession(..)
+  , getXvfbSession
+
+  -- * Misc helpers
+  , hoistExample
   ) where
 
 import Control.Monad.Catch (MonadMask)
@@ -33,6 +38,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import GHC.Stack
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.Types
@@ -41,8 +47,6 @@ import qualified Test.WebDriver.Internal as WI
 import qualified Test.WebDriver.Session as W
 import UnliftIO.Exception as ES
 
-
-type ContextWithSession context = LabelValue "webdriverSession" WebDriverSession :> context
 
 instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession) => W.WDSessionState (ExampleT context m) where
   getSession = do
@@ -62,9 +66,22 @@ instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession, Monad
 
 type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
 type HasWebDriverSessionContext context = HasLabel context "webdriverSession" WebDriverSession
-type ExampleWithWebDriver context wd = (W.WDSessionState (ExampleT context wd), W.WebDriver wd)
 
-hoistExample :: ExampleT context IO a -> ExampleT (ContextWithSession context) IO a
+type ContextWithWebdriverDeps context =
+  LabelValue "webdriver" WebDriver
+  :> ContextWithBaseDeps context
+
+type ContextWithBaseDeps context =
+  -- | Browser dependencies
+  LabelValue "browserDependencies" BrowserDependencies
+  -- | Java
+  :> LabelValue "file-java" (EnvironmentFile "java")
+  -- | Selenium
+  :> LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar")
+  -- | Base context
+  :> context
+
+hoistExample :: ExampleT context IO a -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) IO a
 hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 

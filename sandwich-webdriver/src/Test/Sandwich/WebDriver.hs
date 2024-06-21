@@ -12,12 +12,6 @@ module Test.Sandwich.WebDriver (
   -- * Specifying how to obtain dependencies
   , defaultWebDriverDependencies
   , WebDriverDependencies(..)
-  , SeleniumToUse(..)
-  , BrowserDependenciesSpec(..)
-  , ChromeToUse(..)
-  , ChromeDriverToUse(..)
-  , FirefoxToUse(..)
-  , GeckoDriverToUse(..)
 
   -- * Running an example in a given session
   , withSession
@@ -39,19 +33,8 @@ module Test.Sandwich.WebDriver (
   , introduceWebDriver'
   , addCommandLineOptionsToWdOptions
 
-  -- * The main WebDriver type
-  , WebDriver
-  , getWdOptions
-  , getDisplayNumber
-  , getXvfbSession
-  , getWebDriverName
-
-  -- * The Xvfb session
-  , XvfbSession(..)
-
   -- * Re-exports
   , module Test.Sandwich.WebDriver.Config
-  , module Test.Sandwich.WebDriver.Types
   ) where
 
 import Control.Monad.IO.Class
@@ -69,8 +52,6 @@ import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
-import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
-import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
@@ -88,7 +69,6 @@ introduceWebDriver :: forall context m. (
   )
   -- | How to obtain dependencies
   => WebDriverDependencies
-  -- | WebDriver options
   -> WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
 introduceWebDriver wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
@@ -116,6 +96,7 @@ introduceWebDriverViaNix wdOptions =
       clo <- getSomeCommandLineOptions
       allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions)
 
+-- | Same as 'introduceWebDriver', but with a controllable allocation callback.
 introduceWebDriver' :: forall m context. (
   BaseMonadContext m context
   )
@@ -129,16 +110,6 @@ introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
   . (case webDriverDependencyJava of Nothing -> introduceBinaryViaEnvironment @"java"; Just p -> introduceFile @"java" p)
   . introduce "Introduce browser dependencies" browserDependencies (getBrowserDependencies webDriverDependencyBrowser) (const $ return ())
   . introduce "Introduce WebDriver session" webdriver (alloc wdOptions) cleanupWebDriver
-
-type ContextWithWebdriverDeps context =
-  LabelValue "webdriver" WebDriver
-  :> ContextWithBaseDeps context
-
-type ContextWithBaseDeps context =
-  LabelValue "browserDependencies" BrowserDependencies
-  :> LabelValue "file-java" (EnvironmentFile "java")
-  :> LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar")
-  :> context
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (
@@ -164,7 +135,7 @@ withSession :: forall m context a. (
   )
   -- | Session to run
   => Session
-  -> ExampleT (ContextWithSession context) m a
+  -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
 withSession session (ExampleT readerMonad) = do
   WebDriver {..} <- getContext webdriver
@@ -187,11 +158,11 @@ withSession session (ExampleT readerMonad) = do
   ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
 -- | Convenience function. 'withSession1' = 'withSession' "session1"
-withSession1 :: WebDriverMonad m context => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withSession1 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession1 = withSession "session1"
 
 -- | Convenience function. 'withSession2' = 'withSession' "session2"
-withSession2 :: WebDriverMonad m context => ExampleT (ContextWithSession context) m a -> ExampleT context m a
+withSession2 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession2 = withSession "session2"
 
 -- | Get all existing session names

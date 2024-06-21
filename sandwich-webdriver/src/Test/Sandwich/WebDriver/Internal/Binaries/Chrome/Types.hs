@@ -11,27 +11,27 @@ import Test.Sandwich.Contexts.Nix
 
 -- | How to obtain the chrome binary.
 data ChromeToUse =
-  -- | Search the PATH for the "google-chrome" or "google-chrome-stable" binary.
+  -- | Search the PATH for the @google-chrome@ or @google-chrome-stable@ binary.
   UseChromeFromPath
   -- | Use the Chrome at the given path.
   | UseChromeAt FilePath
-  -- | Get Chrome from Nixpkgs
+  -- | Get Chrome from Nixpkgs.
   | UseChromeFromNixpkgs NixContext
   deriving Show
 
 -- | How to obtain the chromedriver binary.
 data ChromeDriverToUse =
   DownloadChromeDriverFrom FilePath String
-  -- ^ Download chromedriver from the given URL to the 'toolsRoot'
+  -- ^ Download chromedriver from the given URL to the 'toolsRoot'.
   | DownloadChromeDriverVersion FilePath ChromeDriverVersion
-  -- ^ Download the given chromedriver version to the 'toolsRoot'
+  -- ^ Download the given chromedriver version to the 'toolsRoot'.
   | DownloadChromeDriverAutodetect FilePath FilePath
   -- ^ Autodetect chromedriver to use based on the Chrome version and download it to the 'toolsRoot'
   -- Pass the path to the Chrome binary, or else it will be found by looking for google-chrome on the PATH.
   | UseChromeDriverAt FilePath
-  -- ^ Use the chromedriver at the given path
+  -- ^ Use the chromedriver at the given path.
   | UseChromeDriverFromNixpkgs NixContext
-  -- ^ Use the chromedriver in the given Nixpkgs derivation
+  -- ^ Use the chromedriver in the given Nixpkgs derivation.
   deriving Show
 
 newtype ChromeVersion = ChromeVersion (Int, Int, Int, Int) deriving Show

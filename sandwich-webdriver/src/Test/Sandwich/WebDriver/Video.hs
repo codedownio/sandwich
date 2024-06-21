@@ -28,9 +28,9 @@ import System.FilePath
 import System.IO
 import System.Process
 import Test.Sandwich
-import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Internal.Types.Video
 import Test.Sandwich.WebDriver.Internal.Video
+import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Class as W
 import Test.WebDriver.Commands

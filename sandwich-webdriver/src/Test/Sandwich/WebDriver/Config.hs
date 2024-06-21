@@ -8,12 +8,14 @@ module Test.Sandwich.WebDriver.Config (
   , httpManager
   , httpRetryCount
   , saveSeleniumMessageHistory
-
-  -- * Browser options
-  , BrowserDependencies(..)
-
-  -- * Run mode constructors
+  , WhenToSave(..)
   , RunMode(..)
+
+  -- * The WebDriver context
+  , WebDriver
+  , getWdOptions
+  , getDisplayNumber
+  , getWebDriverName
 
   -- ** Xvfb mode
   , XvfbConfig
@@ -26,13 +28,15 @@ module Test.Sandwich.WebDriver.Config (
   , defaultHeadlessConfig
   , headlessResolution
 
-  -- * Binary fetching options
+  -- * Dependency obtaining options
   , SeleniumToUse(..)
+  , BrowserDependenciesSpec(..)
+  , ChromeToUse(..)
   , ChromeDriverToUse(..)
+  , FirefoxToUse(..)
   , GeckoDriverToUse(..)
-
-  -- * Miscellaneous constructors
-  , WhenToSave(..)
+  , GeckoDriverVersion(..)
+  , BrowserDependencies(..)
 
   -- * Browser capabilities
   , chromeCapabilities
@@ -42,6 +46,8 @@ module Test.Sandwich.WebDriver.Config (
   ) where
 
 import Test.Sandwich.WebDriver.Internal.Binaries
+import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
+import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.Types

@@ -40,9 +40,9 @@ import qualified Test.WebDriver as W
 -- | This type describes how we should obtain all the dependencies needed to launch a WebDriver session.
 -- You can configure them individually.
 data WebDriverDependencies = WebDriverDependencies {
-  -- | Path to "java" binary to use to start Selenium. If not provided, we'll search the PATH.
+  -- | Path to @java@ binary to use to start Selenium. If not provided, we'll search the PATH.
   webDriverDependencyJava :: Maybe FilePath
-  -- | How to obtain a selenium.jar file.
+  -- | How to obtain a @selenium.jar@ file.
   , webDriverDependencySelenium :: SeleniumToUse
   -- | Browser/driver dependencies.
   , webDriverDependencyBrowser :: BrowserDependenciesSpec
@@ -64,6 +64,9 @@ data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
 -- * Download Selenium to @\/tmp\/tools@, reusing the one there if found.
 -- * Use @firefox@ from the PATH as the browser.
 -- * Download a compatible @geckodriver@ to @\/tmp\/tools@, reusing the one there if found.
+--
+-- But, it's easy to customize this behavior. You can define your own 'WebDriverDependencies' and customize
+-- how each of these dependencies are found.
 defaultWebDriverDependencies = WebDriverDependencies {
   webDriverDependencyJava = Nothing
   , webDriverDependencySelenium = DownloadSeleniumDefault "/tmp/tools"
@@ -100,6 +103,8 @@ getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
   geckoDriver <- exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver
   return $ BrowserDependenciesFirefox firefox geckoDriver
 
+-- | Inroduce 'BrowserDependencies' via Nix, using the command line options.
+-- This is useful to create the context for functions like 'allocateWebDriver'.
 introduceBrowserDependenciesViaNix :: forall m context. (
   MonadUnliftIO m, HasBaseContext context, HasNixContext context, HasSomeCommandLineOptions context
   )

@@ -8,6 +8,7 @@ module Test.Sandwich.WebDriver.Internal.Binaries.Firefox (
 
   , FirefoxToUse(..)
   , GeckoDriverToUse(..)
+  , GeckoDriverVersion(..)
   ) where
 
 import Control.Monad.IO.Class

@@ -27,12 +27,12 @@ source-repository head
 library
   exposed-modules:
       Test.Sandwich.WebDriver
+      Test.Sandwich.WebDriver.Config
       Test.Sandwich.WebDriver.Resolution
       Test.Sandwich.WebDriver.Types
       Test.Sandwich.WebDriver.Video
       Test.Sandwich.WebDriver.Windows
   other-modules:
-      Test.Sandwich.WebDriver.Config
       Test.Sandwich.WebDriver.Internal.Action
       Test.Sandwich.WebDriver.Internal.Binaries
       Test.Sandwich.WebDriver.Internal.Binaries.Chrome

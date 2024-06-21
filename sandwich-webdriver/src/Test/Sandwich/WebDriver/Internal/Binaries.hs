@@ -13,6 +13,7 @@ module Test.Sandwich.WebDriver.Internal.Binaries (
 
   , obtainGeckoDriver
   , GeckoDriverToUse(..)
+  , GeckoDriverVersion(..)
   ) where
 
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
