@@ -28,8 +28,8 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports (findFreePortOrException)
 import Test.Sandwich.Util.Process
-import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.Capabilities.Extra
+import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W

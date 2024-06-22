@@ -40,7 +40,7 @@ import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Internal
-import Test.Sandwich.WebDriver.Internal.BrowserDependencies
+import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Internal as WI

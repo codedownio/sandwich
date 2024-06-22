@@ -48,6 +48,6 @@ module Test.Sandwich.WebDriver.Config (
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
-import Test.Sandwich.WebDriver.Internal.BrowserDependencies
 import Test.Sandwich.WebDriver.Internal.Capabilities
+import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types

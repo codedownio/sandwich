@@ -45,13 +45,14 @@ data WhenToSave = Always | OnException | Never deriving (Show, Eq)
 -- | Headless and Xvfb modes are useful because they allow you to run tests in the background, without popping up browser windows.
 -- This is useful for development or for running on a CI server, and is also more reproducible since the screen resolution can be fixed.
 -- In addition, Xvfb mode allows videos to be recorded of tests.
-data RunMode = Normal
-             -- ^ Normal Selenium behavior; will pop up a web browser.
-             | RunHeadless HeadlessConfig
-             -- ^ Run with a headless browser. Supports screenshots but videos will be black.
-             | RunInXvfb XvfbConfig
-             -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in their own X11 display.
-             -- xvfb-run script must be installed and on the PATH.
+data RunMode =
+  Normal
+  -- ^ Normal Selenium behavior; will pop up a web browser.
+  | RunHeadless HeadlessConfig
+  -- ^ Run with a headless browser. Supports screenshots but videos will be black.
+  | RunInXvfb XvfbConfig
+  -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in their own X11 display.
+  -- xvfb-run script must be installed and on the PATH.
 
 data WdOptions = WdOptions {
   capabilities :: W.Capabilities

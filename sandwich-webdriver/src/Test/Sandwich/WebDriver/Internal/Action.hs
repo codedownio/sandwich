@@ -18,7 +18,7 @@ import UnliftIO.Concurrent
 import UnliftIO.Exception
 
 
--- | Close the given sessions
+-- | Close the given sessions.
 closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => Session -> WebDriver -> m ()
 closeSession session (WebDriver {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
@@ -28,7 +28,7 @@ closeSession session (WebDriver {wdSessionMap}) = do
 
   whenJust toClose $ \sess -> liftIO $ W.runWD sess W.closeSession
 
--- | Close all sessions except those listed
+-- | Close all sessions except those listed.
 closeAllSessionsExcept :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => [Session] -> WebDriver -> m ()
 closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
@@ -37,11 +37,11 @@ closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
     catch (liftIO $ W.runWD sess W.closeSession)
           (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
 
--- | Close all sessions
+-- | Close all sessions.
 closeAllSessions :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => WebDriver -> m ()
 closeAllSessions = closeAllSessionsExcept []
 
--- | Close the current session
+-- | Close the current session.
 closeCurrentSession :: (
   HasCallStack, MonadLogger m, MonadUnliftIO m
   , MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession

@@ -52,7 +52,7 @@ import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
 import Test.Sandwich.WebDriver.Internal.Binaries
-import Test.Sandwich.WebDriver.Internal.BrowserDependencies
+import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Types
@@ -157,15 +157,15 @@ withSession session (ExampleT readerMonad) = do
 
   ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
--- | Convenience function. 'withSession1' = 'withSession' "session1"
+-- | Convenience function. 'withSession1' = 'withSession' "session1".
 withSession1 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession1 = withSession "session1"
 
--- | Convenience function. 'withSession2' = 'withSession' "session2"
+-- | Convenience function. 'withSession2' = 'withSession' "session2".
 withSession2 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession2 = withSession "session2"
 
--- | Get all existing session names
+-- | Get all existing session names.
 getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
 getSessions = do
   WebDriver {..} <- getContext webdriver

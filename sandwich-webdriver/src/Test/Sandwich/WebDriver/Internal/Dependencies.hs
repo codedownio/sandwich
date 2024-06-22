@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.WebDriver.Internal.BrowserDependencies (
+module Test.Sandwich.WebDriver.Internal.Dependencies (
   WebDriverDependencies(..)
   , BrowserDependenciesSpec(..)
 
@@ -29,8 +29,10 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
+import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
+import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 
@@ -46,6 +48,10 @@ data WebDriverDependencies = WebDriverDependencies {
   , webDriverDependencySelenium :: SeleniumToUse
   -- | Browser/driver dependencies.
   , webDriverDependencyBrowser :: BrowserDependenciesSpec
+  -- | How to obtain @Xvfb@ (used for the 'RunInXvfb' 'RunMode')
+  , webDriverXvfb :: XvfbDependenciesSpec
+  -- | How to obtain @ffmpeg@ (used for video recording).
+  , webDriverFfmpeg :: FfmpegToUse
   }
 
 -- | This type describes how to obain a browser + browser driver combination.
@@ -71,6 +77,8 @@ defaultWebDriverDependencies = WebDriverDependencies {
   webDriverDependencyJava = Nothing
   , webDriverDependencySelenium = DownloadSeleniumDefault "/tmp/tools"
   , webDriverDependencyBrowser = BrowserDependenciesSpecFirefox UseFirefoxFromPath (DownloadGeckoDriverAutodetect "/tmp/tools")
+  , webDriverXvfb = XvfbDependenciesSpec UseXvfbFromPath
+  , webDriverFfmpeg = UseFfmpegFromPath
   }
 
 -- * Browser dependencies

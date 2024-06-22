@@ -40,14 +40,18 @@ library
       Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types
       Test.Sandwich.WebDriver.Internal.Binaries.Common
       Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
+      Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
+      Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg.Types
       Test.Sandwich.WebDriver.Internal.Binaries.Firefox
       Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Detect
       Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Types
       Test.Sandwich.WebDriver.Internal.Binaries.Selenium
       Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
-      Test.Sandwich.WebDriver.Internal.BrowserDependencies
+      Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
+      Test.Sandwich.WebDriver.Internal.Binaries.Xvfb.Types
       Test.Sandwich.WebDriver.Internal.Capabilities
       Test.Sandwich.WebDriver.Internal.Capabilities.Extra
+      Test.Sandwich.WebDriver.Internal.Dependencies
       Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
       Test.Sandwich.WebDriver.Internal.Types
