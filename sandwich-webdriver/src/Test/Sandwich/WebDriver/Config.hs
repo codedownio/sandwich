@@ -36,6 +36,9 @@ module Test.Sandwich.WebDriver.Config (
   , FirefoxToUse(..)
   , GeckoDriverToUse(..)
   , GeckoDriverVersion(..)
+  , XvfbDependenciesSpec(..)
+  , XvfbToUse(..)
+  , FfmpegToUse(..)
   , BrowserDependencies(..)
 
   -- * Browser capabilities
@@ -47,7 +50,9 @@ module Test.Sandwich.WebDriver.Config (
 
 import Test.Sandwich.WebDriver.Internal.Binaries
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
+import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
+import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
