@@ -38,6 +38,7 @@ module Test.Sandwich.WebDriver.Config (
   , GeckoDriverVersion(..)
   , XvfbDependenciesSpec(..)
   , XvfbToUse(..)
+  , FluxboxToUse(..)
   , FfmpegToUse(..)
   , BrowserDependencies(..)
 
