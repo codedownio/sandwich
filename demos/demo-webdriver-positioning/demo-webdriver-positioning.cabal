@@ -29,6 +29,7 @@ executable demo-webdriver-positioning
   build-depends:
       base
     , sandwich
+    , sandwich-contexts
     , sandwich-webdriver
     , webdriver
   default-language: Haskell2010

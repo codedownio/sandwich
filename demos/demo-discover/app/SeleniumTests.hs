@@ -5,14 +5,15 @@
 module SeleniumTests where
 
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver
 
 #insert_test_imports
 
 
-tests :: TopSpec
-tests = describe "Selenium tests" $ introduceWebDriver defaultWdOptions $ do
+spec :: TopSpecWithOptions
+spec = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $ introduceWebDriverViaNix defaultWdOptions $ do
   $(getSpecFromFolder defaultGetSpecFromFolderOptions)
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs defaultOptions tests
+main = runSandwichWithCommandLineArgs defaultOptions spec

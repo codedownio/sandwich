@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
@@ -7,7 +8,7 @@
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
-  introduceSeaweedFSCluster
+  introduceSeaweedFS
   , withSeaweedFS
   , withSeaweedFS'
 
@@ -31,40 +32,75 @@ import Relude hiding (withFile)
 import System.Exit
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Images (loadImage')
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
+import Test.Sandwich.Contexts.Nix
 import UnliftIO.Environment
 import UnliftIO.IO (withFile)
 import UnliftIO.Process
 import UnliftIO.Temporary
 
 
-introduceSeaweedFSCluster :: (
-  HasBaseContext context, HasKubernetesClusterContext context, MonadUnliftIO m
-  ) =>Text -> SeaweedFSOptions -> SpecFree (LabelValue "seaweedFs" SeaweedFSContext :> context) m () -> SpecFree context m ()
-introduceSeaweedFSCluster namespace options = introduceWith "introduce SeaweedFS" seaweedFs (void . withSeaweedFS namespace options)
+data SeaweedFSContext = SeaweedFSContext {
+  seaweedFsOptions :: SeaweedFSOptions
+  } deriving (Show)
+
+data SeaweedFSOptions = SeaweedFSOptions {
+  seaweedFsImage :: Text
+  , seaweedFsBaseName :: Text
+  , seaweedFsMasterReplicas :: Int
+  , seaweedFsFilerReplicas :: Int
+  , seaweedFsVolumeReplicas :: Int
+  , seaweedFsVolumeServerDiskCount :: Int
+  , seaweedFsVolumeSizeLimitMb :: Int
+  , seaweedFsVolumeStorageRequest :: Text
+  } deriving (Show)
+defaultSeaweedFSOptions :: SeaweedFSOptions
+defaultSeaweedFSOptions = SeaweedFSOptions {
+  seaweedFsImage = "chrislusf/seaweedfs:2.99"
+  , seaweedFsBaseName = "seaweed1"
+  , seaweedFsMasterReplicas = 3
+  , seaweedFsFilerReplicas = 2
+  , seaweedFsVolumeReplicas = 1
+  , seaweedFsVolumeServerDiskCount = 1
+  , seaweedFsVolumeSizeLimitMb = 1024
+  , seaweedFsVolumeStorageRequest = "2Gi"
+  }
+
+seaweedFs :: Label "seaweedFs" SeaweedFSContext
+seaweedFs = Label
+type HasSeaweedFSContext context = HasLabel context "seaweedFs" SeaweedFSContext
+
+introduceSeaweedFS :: (
+  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
+  ) =>Text -> SeaweedFSOptions -> SpecFree (LabelValue "seaweedFs" SeaweedFSContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> context) m () -> SpecFree context m ()
+introduceSeaweedFS namespace options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce SeaweedFS" seaweedFs (void . withSeaweedFS namespace options)
 
 withSeaweedFS :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m, HasKubernetesClusterContext context
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasNixContext context, HasFile context "kubectl"
   ) => Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
 withSeaweedFS namespace options action = do
   kcc <- getContext kubernetesCluster
-  withSeaweedFS' kcc namespace options action
+  kubectlBinary <- askFile @"kubectl"
+  withSeaweedFS' kcc kubectlBinary namespace options action
 
 withSeaweedFS' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
-withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) namespace options action = do
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  , HasBaseContextMonad context m, HasNixContext context
+  ) => KubernetesClusterContext -> FilePath -> Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
+withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary namespace options action = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  let cp = proc "nix" ["build", "--impure", "--expr", [__i|with import <nixpkgs> {}; fetchFromGitHub {
-                                                             owner = "seaweedfs";
-                                                             repo = "seaweedfs-operator";
-                                                             rev = "1cb1ee5a78e68cfa2d83d00813f50fd98d7b1092";
-                                                             sha256 = "sha256-p2SNwwwJ0GrmkImdW1aUYAluDLuY86FtV1F21xUHnyk=";
-                                                           }|], "--json"]
+  NixContext {..} <- getContext nixContext
+
+  let cp = proc nixContextNixBinary ["build", "--impure"
+                                    , "--expr", seaweedFsOperatorDerivation
+                                    , "--json"]
+
   operatorJson <- withFile "/dev/null" WriteMode $ \hNull ->
     readCreateProcess (cp { std_err = UseHandle hNull }) ""
 
@@ -103,7 +139,8 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     info [i|------------------ Creating SeaweedFS deployment ------------------|]
 
     let val = decodeUtf8 $ A.encode $ example namespace options
-    createProcessWithLoggingAndStdin ((shell "kubectl create -f -") { env = Just env }) val >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    createProcessWithLoggingAndStdin ((shell [i|#{kubectlBinary} create -f -|]) { env = Just env }) val
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
     action $ SeaweedFSContext {
       seaweedFsOptions = options
@@ -135,3 +172,11 @@ spec:
       enabled = true
       dir = "/data/filerldb2"
 |]
+
+seaweedFsOperatorDerivation = [__i|with import <nixpkgs> {}; fetchFromGitHub {
+                                     owner = "seaweedfs";
+                                     repo = "seaweedfs-operator";
+                                     rev = "1cb1ee5a78e68cfa2d83d00813f50fd98d7b1092";
+                                     sha256 = "sha256-p2SNwwwJ0GrmkImdW1aUYAluDLuY86FtV1F21xUHnyk=";
+                                   }
+                                  |]

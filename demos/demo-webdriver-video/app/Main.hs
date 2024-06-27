@@ -9,6 +9,7 @@ import Data.String.Interpolate
 import Data.Time.Clock
 import System.FilePath
 import Test.Sandwich
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver
 import Test.Sandwich.WebDriver.Video
 import Test.Sandwich.WebDriver.Windows
@@ -16,8 +17,8 @@ import Test.WebDriver.Commands
 import UnliftIO.Exception
 
 
-manualVideo :: TopSpec
-manualVideo = introduceWebDriver defaultWdOptions $ do
+spec :: TopSpecWithOptions
+spec = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $ introduceWebDriverViaNix defaultWdOptions $ do
   describe "video recording" $ do
     it "opens Google" $ withSession1 $ do
       openPage "http://www.google.com"
@@ -35,4 +36,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs testOptions manualVideo
+main = runSandwichWithCommandLineArgs testOptions spec

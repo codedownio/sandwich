@@ -5,6 +5,7 @@ license:             BSD3
 dependencies:
 - base
 - sandwich
+- sandwich-contexts
 - sandwich-webdriver
 - webdriver
 

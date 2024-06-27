@@ -9,10 +9,10 @@ import qualified SeleniumTests
 import qualified UnitTests
 
 
-discoverDemo :: TopSpec
+discoverDemo :: TopSpecWithOptions
 discoverDemo = describe "Discover" $ do
   UnitTests.tests
-  SeleniumTests.tests
+  SeleniumTests.spec
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

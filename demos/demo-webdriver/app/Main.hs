@@ -21,8 +21,7 @@ import Test.WebDriver.Commands
 
 simple :: TopSpecWithOptions
 simple = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
-  introduceWebDriver defaultWdOptions $ do
-  -- introduceWebDriverViaNix defaultWdOptions $ do
+  introduceWebDriverViaNix defaultWdOptions $ do
     it "opens Google and searches" $ withSession1 $ do
       openPage [i|https://www.google.com|]
       search <- findElem (ByCSS [i|*[title="Search"]|])

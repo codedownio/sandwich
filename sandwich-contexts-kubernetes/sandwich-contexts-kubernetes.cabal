@@ -33,6 +33,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
       Test.Sandwich.Contexts.Kubernetes.KubectlLogs
       Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+      Test.Sandwich.Contexts.Kubernetes.Longhorn
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing

@@ -11,8 +11,8 @@ import System.Random
 import Test.Sandwich
 
 
-landingDemo :: TopSpec
-landingDemo = describe "Arithmetic tests" $ parallel $ do
+spec :: TopSpec
+spec = describe "Arithmetic tests" $ parallel $ do
   withTimingProfile "Addition" $
     describe "Addition" $ do
       it "basic addition" $ do
@@ -58,4 +58,4 @@ testOptions = defaultOptions {
   }
 
 main :: IO ()
-main = runSandwichWithCommandLineArgs testOptions landingDemo
+main = runSandwichWithCommandLineArgs testOptions spec

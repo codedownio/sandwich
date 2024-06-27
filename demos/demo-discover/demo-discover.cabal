@@ -38,6 +38,7 @@ executable demo-discover
   build-depends:
       base
     , sandwich
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
     , webdriver

@@ -30,6 +30,7 @@ executable demo-webdriver-video
       base
     , filepath
     , sandwich
+    , sandwich-contexts
     , sandwich-webdriver
     , string-interpolate
     , time

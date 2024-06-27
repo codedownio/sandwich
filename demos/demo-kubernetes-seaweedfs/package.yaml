@@ -1,14 +1,20 @@
-name:                demo-discover
+name:                demo-kubernetes-seaweedfs
 version:             0.1.0.0
 license:             BSD3
 
 dependencies:
 - base
+- bytestring
+- monad-logger
+- network
+- relude
 - sandwich
 - sandwich-contexts
-- sandwich-webdriver
+- sandwich-contexts-kubernetes
 - string-interpolate
-- webdriver
+- text
+- time
+- unliftio
 
 default-extensions:
 - OverloadedStrings
@@ -26,6 +32,6 @@ ghc-options:
 - -with-rtsopts=-N
 
 executables:
-  demo-discover:
+  demo-kubernetes-seaweedfs:
     main: Main.hs
     source-dirs: app

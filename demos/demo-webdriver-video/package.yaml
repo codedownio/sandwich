@@ -6,6 +6,7 @@ dependencies:
 - base
 - filepath
 - sandwich
+- sandwich-contexts
 - sandwich-webdriver
 - string-interpolate
 - time
