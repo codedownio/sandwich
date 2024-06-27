@@ -39,6 +39,7 @@ packages:
 - ./demos/demo-golden
 - ./demos/demo-hedgehog
 - ./demos/demo-kubernetes-kind
+- ./demos/demo-kubernetes-longhorn
 - ./demos/demo-kubernetes-minikube
 - ./demos/demo-kubernetes-seaweedfs
 - ./demos/demo-landing

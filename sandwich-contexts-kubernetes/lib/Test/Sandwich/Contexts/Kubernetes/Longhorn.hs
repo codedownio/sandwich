@@ -23,21 +23,15 @@ module Test.Sandwich.Contexts.Kubernetes.Longhorn (
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Data.Aeson as A
 import qualified Data.List as L
-import Data.String.Interpolate
-import qualified Data.Vector as V
 import Relude hiding (withFile)
 import System.Exit
-import System.FilePath
 import Test.Sandwich
-import Test.Sandwich.Contexts.Kubernetes.Images (loadImage')
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
+import Test.Sandwich.Contexts.Nix
 import UnliftIO.Environment
-import UnliftIO.IO (withFile)
 import UnliftIO.Process
-import UnliftIO.Temporary
 
 
 data LonghornContext = LonghornContext {
@@ -45,11 +39,11 @@ data LonghornContext = LonghornContext {
   } deriving (Show)
 
 data LonghornOptions = LonghornOptions {
-  longhornFoo :: ()
+  longhornYaml :: String
   } deriving (Show)
 defaultLonghornOptions :: LonghornOptions
 defaultLonghornOptions = LonghornOptions {
-  longhornFoo = ()
+  longhornYaml = "https://raw.githubusercontent.com/longhorn/longhorn/v1.6.2/deploy/longhorn.yaml"
   }
 
 longhorn :: Label "longhorn" LonghornContext
@@ -57,22 +51,29 @@ longhorn = Label
 type HasLonghornContext context = HasLabel context "longhorn" LonghornContext
 
 introduceLonghorn :: (
-  HasBaseContext context, HasKubernetesClusterContext context, MonadUnliftIO m
-  ) =>Text -> LonghornOptions -> SpecFree (LabelValue "longhorn" LonghornContext :> context) m () -> SpecFree context m ()
-introduceLonghorn namespace options = introduceWith "introduce Longhorn" longhorn (void . withLonghorn namespace options)
+  HasBaseContext context, HasKubernetesClusterContext context, MonadUnliftIO m, HasNixContext context
+  ) => LonghornOptions -> SpecFree (LabelValue "longhorn" LonghornContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> context) m () -> SpecFree context m ()
+introduceLonghorn options =
+  introduceBinaryViaNixPackage @"kubectl" "kubectl"
+  . introduceWith "introduce Longhorn" longhorn (void . withLonghorn options)
 
 withLonghorn :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m, HasKubernetesClusterContext context
-  ) => Text -> LonghornOptions -> (LonghornContext -> m a) -> m a
-withLonghorn namespace options action = do
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
+  ) => LonghornOptions -> (LonghornContext -> m a) -> m a
+withLonghorn options action = do
   kcc <- getContext kubernetesCluster
-  withLonghorn' kcc namespace options action
+  kubectlBinary <- askFile @"kubectl"
+  withLonghorn' kcc kubectlBinary options action
 
-withLonghorn' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> Text -> LonghornOptions -> (LonghornContext -> m a) -> m a
-withLonghorn' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) namespace options action = do
+withLonghorn' :: forall m a. (
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  ) => KubernetesClusterContext -> String -> LonghornOptions -> (LonghornContext -> m a) -> m a
+withLonghorn' (KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary options@(LonghornOptions {..}) action = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  undefined
+  createProcessWithLogging ((proc kubectlBinary ["apply", "-f", longhornYaml]) { env = Just env })
+    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+  action $ LonghornContext options
