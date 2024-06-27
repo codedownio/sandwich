@@ -33,6 +33,11 @@ import Test.Sandwich.Contexts.Nix
 import UnliftIO.Environment
 import UnliftIO.Process
 
+-- | Unfortunately it seems Longhorn isn't going to work on container-based Kubernetes contexts like
+-- Minikube or Kind: https://github.com\/longhorn\/longhorn\/discussions\/2702
+--
+-- So, this module is dead for now.
+
 
 data LonghornContext = LonghornContext {
   longhornOptions :: LonghornOptions
