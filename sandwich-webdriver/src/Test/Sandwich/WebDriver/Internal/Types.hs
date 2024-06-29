@@ -135,6 +135,10 @@ getXvfbSession :: WebDriver -> Maybe XvfbSession
 getXvfbSession (WebDriver {wdWebDriver=(_, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
+-- | Get the configured download directory for the 'WebDriver'.
+getDownloadDirectory :: WebDriver -> FilePath
+getDownloadDirectory = wdDownloadDir
+
 -- | Get the name of the 'WebDriver'.
 -- This corresponds to the folder that will be created to hold the log files for the 'WebDriver'.
 getWebDriverName :: WebDriver -> String

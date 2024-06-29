@@ -15,6 +15,7 @@ module Test.Sandwich.WebDriver.Config (
   , WebDriver
   , getWdOptions
   , getDisplayNumber
+  , getDownloadDirectory
   , getWebDriverName
 
   -- ** Xvfb mode
