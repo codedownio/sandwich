@@ -9,6 +9,8 @@ module Test.Sandwich.WebDriver.Video (
   , startFullScreenVideoRecording
   , startBrowserVideoRecording
 
+  , getXvfbSession
+
   -- * Configuration
   , VideoSettings(..)
   , defaultVideoSettings
