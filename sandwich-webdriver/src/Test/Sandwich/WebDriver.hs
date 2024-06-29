@@ -35,8 +35,10 @@ module Test.Sandwich.WebDriver (
 
   -- * Context types
   , webdriver
+  , WebDriver
   , HasWebDriverContext
   , webdriverSession
+  , WebDriverSession
   , HasWebDriverSessionContext
 
   -- * Re-exports

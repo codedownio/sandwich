@@ -6,11 +6,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.WebDriver.Types (
-  -- * The 'Label'
-  webdriver
-
   -- * Type aliases to make signatures shorter
-  , ContextWithWebdriverDeps
+  ContextWithWebdriverDeps
   , ContextWithBaseDeps
 
   -- * Constraint synonyms

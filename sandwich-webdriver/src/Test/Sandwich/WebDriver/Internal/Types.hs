@@ -31,13 +31,6 @@ webdriverSession = Label
 
 type WebDriverContext context wd = (HasLabel context "webdriver" WebDriver, W.WebDriver (ExampleT context wd))
 
--- TODO: remove
-class HasWebDriver a where
-  getWebDriver :: a -> WebDriver
-
-instance HasWebDriver WebDriver where
-  getWebDriver = id
-
 type ToolsRoot = FilePath
 
 data WhenToSave = Always | OnException | Never deriving (Show, Eq)
