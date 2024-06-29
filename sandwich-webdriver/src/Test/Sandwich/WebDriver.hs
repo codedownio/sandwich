@@ -34,6 +34,8 @@ module Test.Sandwich.WebDriver (
   , addCommandLineOptionsToWdOptions
 
   -- * Re-exports
+  , HasWebDriverContext
+  , HasWebDriverSessionContext
   , module Test.Sandwich.WebDriver.Config
   ) where
 
