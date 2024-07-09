@@ -9,6 +9,10 @@ nix:
 
 packages:
 - ./sandwich
+- ./sandwich-contexts
+- ./sandwich-contexts-docker
+- ./sandwich-contexts-kubernetes
+- ./sandwich-contexts-minio
 - ./sandwich-hedgehog
 - ./sandwich-quickcheck
 - ./sandwich-slack

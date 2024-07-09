@@ -1,9 +1,10 @@
 
-resolver: nightly-2024-07-08
+resolver: lts-22.27
 
 nix:
   pure: false
   packages:
+  - pcre
   - pkg-config
   - zlib
 
@@ -19,6 +20,8 @@ packages:
 - ./sandwich-webdriver
 
 extra-deps:
+- vty-windows-0.2.0.0
+
 ## For sandwich-contexts
 
 - git: https://github.com/codedownio/minio-hs
