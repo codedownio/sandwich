@@ -43,11 +43,13 @@ import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
 #endif
 
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
+type Constraints m = (
+  HasCallStack, MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  )
 
 -- | Spin up a Selenium WebDriver and create a WebDriver
 startWebDriver :: (
-  Constraints m, MonadReader context m
+  Constraints m, MonadReader context m, HasBaseContext context
   , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
   ) => WdOptions -> OnDemandOptions -> FilePath -> m WebDriver
 startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemandOptions {..}) runRoot = do
@@ -67,11 +69,12 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
   seleniumPath <- askFile @"selenium.jar"
   (driverArgs, capabilities') <- fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities''
 
-
+  -- Set up xvfb if configured
+  xvfbOnDemand <- newMVar OnDemandNotStarted
   (maybeXvfbSession, javaEnv) <- case runMode of
 #ifndef mingw32_HOST_OS
     RunInXvfb (XvfbConfig {..}) -> do
-      (s, e) <- makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot
+      (s, e) <- makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot xvfbToUse xvfbOnDemand
       return (Just s, Just e)
 #endif
     _ -> return (Nothing, Nothing)
@@ -151,6 +154,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
 
             <*> pure ffmpegToUse
             <*> newMVar OnDemandNotStarted
+
+            <*> pure xvfbToUse
+            <*> pure xvfbOnDemand
 
 
 stopWebDriver :: Constraints m => WebDriver -> m ()

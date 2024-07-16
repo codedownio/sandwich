@@ -87,6 +87,7 @@ introduceWebDriver wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
 
     onDemandOptions = OnDemandOptions {
       ffmpegToUse = webDriverFfmpeg wdd
+      , xvfbToUse = xvfbDependenciesSpecXvfb $ webDriverXvfb wdd
       }
 
 -- | Introduce a 'WebDriver' using the current 'NixContext'.
@@ -110,6 +111,7 @@ introduceWebDriverViaNix wdOptions =
       nc <- getContext nixContext
       let onDemandOptions = OnDemandOptions {
             ffmpegToUse = UseFfmpegFromNixpkgs nc
+            , xvfbToUse = UseXvfbFromNixpkgs nc
             }
 
       allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions) onDemandOptions

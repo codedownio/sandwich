@@ -17,6 +17,7 @@ import Network.HTTP.Client (Manager)
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
+import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
@@ -71,6 +72,9 @@ data WdOptions = WdOptions {
 data OnDemandOptions = OnDemandOptions {
   -- | How to obtain ffmpeg binary.
   ffmpegToUse :: FfmpegToUse
+
+  -- | How to obtain Xvfb binary.
+  , xvfbToUse :: XvfbToUse
   }
 
 data HeadlessConfig = HeadlessConfig {
@@ -121,6 +125,9 @@ data WebDriver = WebDriver {
 
   , wdFfmpegToUse :: FfmpegToUse
   , wdFfmpeg :: MVar (OnDemand FilePath)
+
+  , wdXvfbToUse :: XvfbToUse
+  , wdXvfb :: MVar (OnDemand FilePath)
   }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]

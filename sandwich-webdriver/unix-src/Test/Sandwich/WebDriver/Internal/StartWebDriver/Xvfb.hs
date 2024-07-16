@@ -13,6 +13,7 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Monad.Reader
 import Control.Retry
 import qualified Data.List as L
 import Data.Maybe
@@ -24,7 +25,10 @@ import System.Environment
 import System.IO.Temp
 import System.Process
 import Test.Sandwich
+import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
+import Test.Sandwich.WebDriver.Internal.OnDemand
 import Test.Sandwich.WebDriver.Internal.Types
+import UnliftIO.MVar
 
 
 #ifdef linux_HOST_OS
@@ -39,11 +43,16 @@ newtype Fd = Fd FD
 handleToFd h = Fd <$> HFD.handleToFd h
 #endif
 
-type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
+type Constraints m context = (
+  HasCallStack, MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  , MonadReader context m, HasBaseContext context
+  )
 
 
-makeXvfbSession :: Constraints m => Maybe (Int, Int) -> Bool -> FilePath -> m (XvfbSession, [(String, String)])
-makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
+makeXvfbSession :: (
+  Constraints m context
+  ) => Maybe (Int, Int) -> Bool -> FilePath -> XvfbToUse -> MVar (OnDemand FilePath) -> m (XvfbSession, [(String, String)])
+makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot xvfbOnDemand xvfbToUse = do
   let (w, h) = fromMaybe (1920, 1080) xvfbResolution
   liftIO $ createDirectoryIfMissing True webdriverRoot
 
@@ -51,7 +60,7 @@ makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
   (serverNum :: Int, p, authFile, displayNum) <- recoverAll policy $ \_ -> do
     withTempFile webdriverRoot "x11_server_num" $ \path tmpHandle -> do
       fd <- liftIO $ handleToFd tmpHandle
-      (serverNum, p, authFile) <- createXvfbSession webdriverRoot w h fd
+      (serverNum, p, authFile) <- createXvfbSession webdriverRoot w h fd xvfbOnDemand xvfbToUse
 
       debug [i|Trying to determine display number for auth file '#{authFile}', using '#{path}'|]
 
@@ -80,18 +89,25 @@ makeXvfbSession xvfbResolution xvfbStartFluxbox webdriverRoot = do
   return (xvfbSession, env)
 
 
-createXvfbSession :: Constraints m => FilePath -> Int -> Int -> Fd -> m (Int, ProcessHandle, FilePath)
-createXvfbSession webdriverRoot w h (Fd fd) = do
+createXvfbSession :: (
+  Constraints m context
+  ) => FilePath -> Int -> Int -> Fd -> XvfbToUse -> MVar (OnDemand FilePath) -> m (Int, ProcessHandle, FilePath)
+createXvfbSession webdriverRoot w h (Fd fd) xvfbToUse xvfbOnDemand = do
+  xvfb <- getOnDemand xvfbOnDemand (obtainXvfb xvfbToUse)
+
   serverNum <- liftIO findFreeServerNum
 
   -- Start the Xvfb session
   authFile <- liftIO $ writeTempFile webdriverRoot ".Xauthority" ""
-  p <- createProcessWithLogging $ (proc "Xvfb" [":" <> show serverNum
-                                               , "-screen", "0", [i|#{w}x#{h}x24|]
-                                               , "-displayfd", [i|#{fd}|]
-                                               , "-auth", authFile
-                                               ]) { cwd = Just webdriverRoot
-                                                  , create_group = True }
+  p <- createProcessWithLogging $ (
+    proc xvfb [":" <> show serverNum
+              , "-screen", "0", [i|#{w}x#{h}x24|]
+              , "-displayfd", [i|#{fd}|]
+              , "-auth", authFile
+              ]) {
+      cwd = Just webdriverRoot
+      , create_group = True
+      }
 
   return (serverNum, p, authFile)
 
@@ -106,7 +122,7 @@ findFreeServerNum = findFreeServerNum' 99
         False -> return candidate
 
 
-startFluxBoxOnDisplay :: Constraints m => FilePath -> Int -> m ProcessHandle
+startFluxBoxOnDisplay :: Constraints m context => FilePath -> Int -> m ProcessHandle
 startFluxBoxOnDisplay webdriverRoot x = do
   logPath <- liftIO $ writeTempFile webdriverRoot "fluxbox.log" ""
 
