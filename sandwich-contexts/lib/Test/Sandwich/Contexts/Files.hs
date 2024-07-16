@@ -51,6 +51,7 @@ module Test.Sandwich.Contexts.Files (
   , introduceBinaryViaNixDerivation
   , introduceBinaryViaNixDerivation'
   , getBinaryViaNixDerivation
+  , getBinaryViaNixDerivation'
 
   -- * Introduce a file from a Nix derivation
   , introduceFileViaNixDerivation
@@ -299,6 +300,18 @@ getBinaryViaNixDerivation :: forall a context m. (
 getBinaryViaNixDerivation derivation =
   unEnvironmentFile <$> (buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal (Proxy @a)))
 
+-- | Lower-level version of 'getBinaryViaNixDerivation'.
+getBinaryViaNixDerivation' :: forall a context m. (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  )
+  -- | Nix context.
+  => NixContext
+  -- | Nix derivation as a string.
+  -> Text
+  -> m FilePath
+getBinaryViaNixDerivation' nc derivation =
+  unEnvironmentFile <$> (buildNixCallPackageDerivation' nc derivation >>= tryFindBinary (symbolVal (Proxy @a)))
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.

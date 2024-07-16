@@ -13,6 +13,7 @@ module Test.Sandwich.Contexts.Nix (
   , buildNixExpression
   , buildNixExpression'
   , buildNixCallPackageDerivation
+  , buildNixCallPackageDerivation'
 
   -- * Nixpkgs releases
   , nixpkgsReleaseDefault
@@ -180,8 +181,20 @@ buildNixCallPackageDerivation :: (
   => Text
   -> m FilePath
 buildNixCallPackageDerivation derivation = do
-  NixContext {..} <- getContext nixContext
+  nc <- getContext nixContext
+  buildNixCallPackageDerivation' nc derivation
 
+-- | Lower-level version of 'buildNixCallPackageDerivation'
+buildNixCallPackageDerivation' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  )
+  -- | Nix context.
+  => NixContext
+  -- | Nix derivation.
+  -> Text
+  -> m FilePath
+buildNixCallPackageDerivation' nc@(NixContext {..}) derivation = do
   wait =<< modifyMVar nixContextBuildCache (\m ->
     case M.lookup derivation m of
       Just x -> return (m, x)
@@ -191,7 +204,7 @@ buildNixCallPackageDerivation derivation = do
           gcrootDir <- liftIO $ createTempDirectory dir "nix-expression"
           let derivationPath = gcrootDir </> "default.nix"
           liftIO $ T.writeFile derivationPath derivation
-          runNixBuild (renderCallPackageDerivation nixContextNixpkgsDerivation derivationPath) (gcrootDir </> "gcroot")
+          runNixBuild' nc (renderCallPackageDerivation nixContextNixpkgsDerivation derivationPath) (gcrootDir </> "gcroot")
 
         return (M.insert derivation asy m, asy)
     )
@@ -228,13 +241,11 @@ buildNixExpression' nc@(NixContext {..}) expr = do
         return (M.insert expr asy m, asy)
     )
 
+-- runNixBuild :: (MonadUnliftIO m, MonadLogger m, MonadReader context m, HasNixContext context) => Text -> String -> m String
+-- runNixBuild expr outputPath = do
+--   nc <- getContext nixContext
+--   runNixBuild' nc expr outputPath
 
-runNixBuild :: (MonadUnliftIO m, MonadLogger m, MonadReader context m, HasNixContext context) => Text -> String -> m String
-runNixBuild expr outputPath = do
-  nc <- getContext nixContext
-  runNixBuild' nc expr outputPath
-
--- | Lower-level version of 'runNixBuild'.
 runNixBuild' :: (MonadUnliftIO m, MonadLogger m) => NixContext -> Text -> String -> m String
 runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr outputPath = do
   maybeEnv <- case nixpkgsDerivationAllowUnfree nixContextNixpkgsDerivation of
@@ -254,8 +265,8 @@ runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr outputPath = do
 
   case A.eitherDecodeStrict (encodeUtf8 output) of
     Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure (toString p)
-    x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{output})|]
-
+    Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "bin" -> Just (A.String p))))):_))) -> pure (toString p)
+    x -> expectationFailure [i|Couldn't parse Nix build JSON output: #{x} (output was #{A.encode output})|]
 
 renderNixSymlinkJoin :: NixpkgsDerivation -> [Text] -> Text
 renderNixSymlinkJoin (NixpkgsDerivationFetchFromGitHub {..}) packageNames = [i|
