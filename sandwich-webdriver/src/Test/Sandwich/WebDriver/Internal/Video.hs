@@ -2,13 +2,21 @@
 
 module Test.Sandwich.WebDriver.Internal.Video where
 
-import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
+import Control.Monad.Logger
+import Control.Monad.Reader
+import Data.Function
+import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
-import System.Environment
 import System.Process
+import Test.Sandwich
+import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
+import Test.Sandwich.WebDriver.Internal.OnDemand
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Types.Video
+import Test.Sandwich.WebDriver.Types
+import UnliftIO.Environment
 
 #ifdef darwin_HOST_OS
 import Safe
@@ -18,27 +26,38 @@ getMacScreenNumber = undefined
 #endif
 
 
-getVideoArgs :: (MonadIO m) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m CreateProcess
+getVideoArgs :: (
+  MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  , MonadReader context m, HasBaseContext context, HasWebDriverContext context
+  ) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m CreateProcess
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
+  WebDriver {wdFfmpeg, wdFfmpegToUse} <- getContext webdriver
+  ffmpeg <- getOnDemand wdFfmpeg (obtainFfmpeg wdFfmpegToUse)
+
 #ifdef linux_HOST_OS
   displayNum <- case maybeXvfbSession of
     Nothing -> fromMaybe "" <$> (liftIO $ lookupEnv "DISPLAY")
     Just (XvfbSession {xvfbDisplayNum}) -> return $ ":" <> show xvfbDisplayNum
 
-  let videoPath = [i|#{path}.avi|]
-  let env' = [("DISPLAY", displayNum)]
+  baseEnv <- getEnvironment
+
   let env = case maybeXvfbSession of
-       Nothing -> Just env'
-       Just (XvfbSession {xvfbXauthority}) -> Just (("XAUTHORITY", xvfbXauthority) : env')
-  let cmd = ["-draw_mouse", (if hideMouseWhenRecording then "0" else "1")
-            , "-y"
+        Nothing -> baseEnv
+        Just (XvfbSession {..}) -> baseEnv
+          & (("DISPLAY", displayNum) :)
+          & (("XAUTHORITY", xvfbXauthority) :)
+          & L.nubBy ((==) `on` fst)
+
+  let videoPath = [i|#{path}.avi|]
+
+  let cmd = ["-y"
             , "-nostdin"
             , "-f", "x11grab"
             , "-s", [i|#{width}x#{height}|]
             , "-i", [i|#{displayNum}.0+#{x},#{y}|]]
-            ++ x11grabOptions
+            ++ xcbgrabOptions
             ++ [videoPath]
-  return ((proc "ffmpeg" cmd) { env = env })
+  return ((proc ffmpeg cmd) { env = Just env })
 #endif
 
 #ifdef darwin_HOST_OS
@@ -52,16 +71,15 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
                              ++ avfoundationOptions
                              ++ [videoPath]
         Nothing -> error [i|Not launching ffmpeg since OS X screen number couldn't be determined.|]
-  return ((proc "ffmpeg" cmd) { env = Nothing })
+  return ((proc ffmpeg cmd) { env = Nothing })
 #endif
 
 #ifdef mingw32_HOST_OS
   let videoPath = [i|#{path}.mkv|]
   let cmd = ["-f", "gdigrab"
             , "-nostdin"
-            , "-draw_mouse", (if hideMouseWhenRecording then "0" else "1")
             , "-i", "desktop"]
             ++ gdigrabOptions
             ++ [videoPath]
-  return ((proc "ffmpeg.exe" cmd) { env = Nothing })
+  return ((proc ffmpeg cmd) { env = Nothing })
 #endif

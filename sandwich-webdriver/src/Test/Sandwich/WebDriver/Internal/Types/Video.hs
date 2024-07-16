@@ -34,7 +34,7 @@ defaultGdigrabOptions :: [String]
 defaultGdigrabOptions = ["-framerate", "30"]
 
 data VideoSettings = VideoSettings {
-  x11grabOptions :: [String]
+  xcbgrabOptions :: [String]
   -- ^ Arguments to x11grab, used with Linux.
   , avfoundationOptions :: [String]
   -- ^ Arguments to avfoundation, used with OS X.
@@ -49,7 +49,7 @@ data VideoSettings = VideoSettings {
 -- | Default video settings.
 defaultVideoSettings :: VideoSettings
 defaultVideoSettings = VideoSettings {
-  x11grabOptions = fastX11VideoOptions
+  xcbgrabOptions = fastX11VideoOptions
   , avfoundationOptions = defaultAvfoundationOptions
   , gdigrabOptions = defaultGdigrabOptions
   , hideMouseWhenRecording = False

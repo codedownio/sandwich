@@ -8,7 +8,6 @@
 
 module Test.Sandwich.WebDriver.Internal.StartWebDriver where
 
-import Control.Concurrent
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
@@ -34,6 +33,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
 import qualified Test.WebDriver as W
 import UnliftIO.Async
+import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
@@ -49,8 +49,8 @@ type Constraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadMask m)
 startWebDriver :: (
   Constraints m, MonadReader context m
   , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
-  ) => WdOptions -> FilePath -> m WebDriver
-startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot = do
+  ) => WdOptions -> OnDemandOptions -> FilePath -> m WebDriver
+startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemandOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
 
@@ -148,6 +148,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) runRoot =
                           , W.wdHTTPRetryCount = httpRetryCount
                           })
             <*> pure downloadDir
+
+            <*> pure ffmpegToUse
+            <*> newMVar OnDemandNotStarted
 
 
 stopWebDriver :: Constraints m => WebDriver -> m ()

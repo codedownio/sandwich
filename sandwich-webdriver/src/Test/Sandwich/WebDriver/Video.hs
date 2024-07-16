@@ -40,7 +40,10 @@ import Test.WebDriver.Commands
 import UnliftIO.Exception
 
 
-type BaseVideoConstraints context m = (MonadLoggerIO m, MonadUnliftIO m, MonadReader context m, HasWebDriverContext context)
+type BaseVideoConstraints context m = (
+  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
+  , MonadReader context m, HasBaseContext context, HasWebDriverContext context
+  )
 
 -- | Wrapper around 'startVideoRecording' which uses the full screen dimensions.
 startFullScreenVideoRecording :: (
@@ -73,7 +76,7 @@ startVideoRecording path (width, height, x, y) vs = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess
 
-  cp' <- liftIO $ getVideoArgs path (width, height, x, y) vs maybeXvfbSession
+  cp' <- getVideoArgs path (width, height, x, y) vs maybeXvfbSession
   let cp = cp' { create_group = True }
 
   case cmdspec cp of

@@ -12,12 +12,16 @@ import Data.Default
 import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
+import Data.Text (Text)
 import Network.HTTP.Client (Manager)
 import System.Process
 import Test.Sandwich
+import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
+import UnliftIO.Async
+
 
 -- | 'Session' is just a 'String' name.
 type Session = String
@@ -64,6 +68,11 @@ data WdOptions = WdOptions {
   -- ^ Number of times to retry an HTTP request if it times out.
   }
 
+data OnDemandOptions = OnDemandOptions {
+  -- | How to obtain ffmpeg binary.
+  ffmpegToUse :: FfmpegToUse
+  }
+
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)
   -- ^ Resolution for the headless browser. Defaults to (1920, 1080)
@@ -96,6 +105,12 @@ defaultWdOptions = WdOptions {
   , httpRetryCount = 0
   }
 
+data OnDemand a =
+  OnDemandNotStarted
+  | OnDemandInProgress (Async a)
+  | OnDemandReady a
+  | OnDemandErrored Text
+
 data WebDriver = WebDriver {
   wdName :: String
   , wdWebDriver :: (ProcessHandle, Maybe XvfbSession)
@@ -103,6 +118,9 @@ data WebDriver = WebDriver {
   , wdSessionMap :: MVar (M.Map Session W.WDSession)
   , wdConfig :: W.WDConfig
   , wdDownloadDir :: FilePath
+
+  , wdFfmpegToUse :: FfmpegToUse
+  , wdFfmpeg :: MVar (OnDemand FilePath)
   }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]

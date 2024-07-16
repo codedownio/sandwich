@@ -11,8 +11,7 @@ module Test.Sandwich.WebDriver.Config (
   , WhenToSave(..)
   , RunMode(..)
 
-  -- * The WebDriver context
-  , WebDriver
+  -- * Accessors for the 'WebDriver' context
   , getWdOptions
   , getDisplayNumber
   , getDownloadDirectory

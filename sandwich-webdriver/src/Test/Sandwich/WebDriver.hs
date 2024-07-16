@@ -83,7 +83,11 @@ introduceWebDriver wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
   where
     alloc wdOptions' = do
       clo <- getSomeCommandLineOptions
-      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions')
+      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions') onDemandOptions
+
+    onDemandOptions = OnDemandOptions {
+      ffmpegToUse = webDriverFfmpeg wdd
+      }
 
 -- | Introduce a 'WebDriver' using the current 'NixContext'.
 -- This will pull everything required from the configured Nixpkgs snapshot.
@@ -102,7 +106,13 @@ introduceWebDriverViaNix wdOptions =
   where
     alloc = do
       clo <- getSomeCommandLineOptions
-      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions)
+
+      nc <- getContext nixContext
+      let onDemandOptions = OnDemandOptions {
+            ffmpegToUse = UseFfmpegFromNixpkgs nc
+            }
+
+      allocateWebDriver (addCommandLineOptionsToWdOptions clo wdOptions) onDemandOptions
 
 -- | Same as 'introduceWebDriver', but with a controllable allocation callback.
 introduceWebDriver' :: forall m context. (
@@ -126,10 +136,11 @@ allocateWebDriver :: (
   )
   -- | Options
   => WdOptions
+  -> OnDemandOptions
   -> ExampleT context m WebDriver
-allocateWebDriver wdOptions = do
+allocateWebDriver wdOptions onDemandOptions = do
   dir <- fromMaybe "/tmp" <$> getCurrentFolder
-  startWebDriver wdOptions dir
+  startWebDriver wdOptions onDemandOptions dir
 
 -- | Clean up the given WebDriver.
 cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()
