@@ -98,6 +98,7 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   NixContext {..} <- getContext nixContext
 
   let cp = proc nixContextNixBinary ["build", "--impure"
+                                    , "--extra-experimental-features", "nix-command"
                                     , "--expr", seaweedFsOperatorDerivation
                                     , "--json"]
 

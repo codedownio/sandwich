@@ -254,9 +254,11 @@ runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr outputPath = do
       env <- getEnvironment
       return $ Just (("NIXPKGS_ALLOW_UNFREE", "1") : env)
 
+  -- TODO: switch this to using nix-build so we can avoid the "--impure" flag?
   output <- readCreateProcessWithLogging (
     (proc "nix" ["build"
                , "--impure"
+               , "--extra-experimental-features", "nix-command"
                , "--expr", toString expr
                , "-o", outputPath
                , "--json"
