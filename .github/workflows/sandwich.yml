@@ -43,7 +43,6 @@ jobs:
 
     - name: Freeze
       run: |
-        cd sandwich
         cabal freeze
 
     - uses: actions/cache@v1
@@ -54,13 +53,11 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
     - name: Test
       run: |
-        cd sandwich
         cabal test all
 
   stack:
