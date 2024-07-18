@@ -2,7 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE Rank2Types #-}
 
-module Test.Sandwich.WebDriver.Internal.Binaries (
+module Test.Sandwich.WebDriver.Binaries (
   obtainSelenium
   , downloadSeleniumIfNecessary
   , SeleniumToUse(..)

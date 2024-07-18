@@ -66,6 +66,7 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Spec
+      Spec.Dummy
       Paths_sandwich_contexts_docker
   hs-source-dirs:
       test
@@ -85,11 +86,6 @@ test-suite tests
   ghc-options: -Wunused-packages -Wall -Wall -rtsopts -threaded
   build-depends:
       base
-    , filepath
-    , postgresql-simple
     , relude
     , sandwich
-    , sandwich-contexts
-    , string-interpolate
-    , unliftio
   default-language: Haskell2010

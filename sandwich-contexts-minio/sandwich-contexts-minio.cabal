@@ -84,7 +84,6 @@ test-suite tests
   build-depends:
       base
     , filepath
-    , postgresql-simple
     , relude
     , sandwich
     , sandwich-contexts

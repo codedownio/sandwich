@@ -49,7 +49,7 @@ module Test.Sandwich.WebDriver.Config (
   , headlessFirefoxCapabilities
   ) where
 
-import Test.Sandwich.WebDriver.Internal.Binaries
+import Test.Sandwich.WebDriver.Binaries
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox

@@ -8,7 +8,6 @@ copyright: 2023 Tom McLaughlin
 dependencies:
 - base
 - sandwich
-- unliftio
 
 default-extensions:
 - OverloadedStrings
@@ -55,6 +54,7 @@ library:
   - safe
   - string-interpolate
   - text
+  - unliftio
   - unliftio-core
 
 tests:
@@ -66,8 +66,4 @@ tests:
     - -rtsopts
     - -threaded
     dependencies:
-    - filepath
-    - postgresql-simple
     - relude
-    - sandwich-contexts
-    - string-interpolate
