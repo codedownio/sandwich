@@ -106,10 +106,33 @@ jobs:
 
     - name: Build
       run: |
-        cd sandwich
-        stack build --stack-yaml ../${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
-    - name: Test
+    - name: Test (sandwich)
       run: |
-        cd sandwich
-        stack test --stack-yaml ../${{matrix.yaml}} --system-ghc
+        stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - name: Test (sandwich-contexts)
+      run: |
+        echo "NIX_PATH: $NIX_PATH"
+        stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
+
+    - name: Test (sandwich-contexts-docker)
+      run: |
+        stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - name: Test (sandwich-contexts-minio)
+      run: |
+        stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - name: Test (sandwich-hedgehog)
+      run: |
+        stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - name: Test (sandwich-quickcheck)
+      run: |
+        stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - name: Test (sandwich-webdriver)
+      run: |
+        stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
