@@ -57,6 +57,21 @@ jobs:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install postgresql
+
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        curl -LO https://get.enterprisedb.com/postgresql/postgresql-13.3-1-windows-x64-binaries.zip
+        tar -xf postgresql-13.3-1-windows-x64-binaries.zip -C ${{ runner.temp }}
+        echo "${{ runner.temp }}\\pgsql\\bin" >> $GITHUB_PATH
+        where libpq.dll
+        where pg_config
+
     - name: Build
       run: |
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
