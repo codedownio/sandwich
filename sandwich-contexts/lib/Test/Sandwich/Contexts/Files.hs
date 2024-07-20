@@ -392,7 +392,7 @@ tryFindBinary binaryName env = do
 -- | Find a file whose name exactly matches a string, using 'findFirstFile'.
 -- This calls 'takeFileName', so it only matches against the name, not the relative path.
 defaultFindFile :: String -> FilePath -> IO FilePath
-defaultFindFile name root = findFirstFile (\x -> return (takeFileName x == name)) root
+defaultFindFile name = findFirstFile (\x -> return (takeFileName x == name))
 
 -- | Find the first file under the given directory (recursively) which matches the predicate.
 -- Note that the callback receives the full relative path to the file from the root dir.
