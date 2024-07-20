@@ -4,19 +4,19 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing (
   parseMinioUserAndPassword
   ) where
 
-import Control.Lens
-import Control.Lens.Regex.Text
+import Data.String.Interpolate
 import Data.Text
 import Relude
+import Text.Regex.TDFA
 
 
 parseMinioUserAndPassword :: Text -> Maybe (Text, Text)
 parseMinioUserAndPassword txt = case (userValues, passwordValues) of
-  ([[user]], [[password]]) -> Just (user, password)
+  (Just (_before, _fullMatch, _after, [user]), Just (_, _, _, [password])) -> Just (user, toText password)
   _ -> Nothing
   where
-    userValues = txt ^.. [regex|MINIO_ROOT_USER="([^\"]*)"|] . groups
-    passwordValues = txt ^.. [regex|MINIO_ROOT_PASSWORD="([^\"]*)"|] . groups
+    userValues :: Maybe (Text, Text, Text, [Text]) = txt =~~ ([i|MINIO_ROOT_USER="([^"]*)"|] :: Text)
+    passwordValues :: Maybe (Text, Text, Text, [Text]) = txt =~~ ([i|MINIO_ROOT_PASSWORD="([^"]*)"|] :: Text)
 
 -- testInput :: Text
 -- testInput = [__i|export MINIO_ROOT_USER="WXSTFUWIRS04LMGIMJGV"

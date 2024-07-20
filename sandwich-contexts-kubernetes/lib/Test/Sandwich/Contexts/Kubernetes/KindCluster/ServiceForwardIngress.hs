@@ -3,10 +3,10 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress where
+module Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress (
+  withForwardKubernetesService'
+  ) where
 
-import Control.Lens
-import Control.Lens.Regex.Text
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -24,6 +24,7 @@ import qualified System.Random as R
 import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Util.Process
+import Text.Regex.TDFA
 import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.IO (withFile)
@@ -135,6 +136,6 @@ generateRandomHostname = (toText <$>) $ liftIO $ do
 -- test = [i|"actual_address": "[::]:46763"|]
 
 parsePort :: Text -> Maybe PortNumber
-parsePort t = case t ^.. [regex|"actual_address":\s*"\[::\]:(\d+)"|] . groups of
-  [[(readMay . toString) -> Just p]] -> Just p
+parsePort t = case t =~~ ([i|"actual_address":[[:space:]]*"\\[::\\]:([[:digit:]]+)"|] :: Text) of
+  Just ((_before, _fullMatch, _after, [(readMay . toString) -> Just p]) :: (Text, Text, Text, [Text])) -> Just p
   _ -> Nothing

@@ -25,7 +25,6 @@ dependencies:
 - http-client
 - http-client-tls
 - http-conduit
-- lens
 - microlens
 - microlens-aeson
 - monad-control

@@ -57,8 +57,6 @@ library:
   - http-client
   - kubernetes-client
   - kubernetes-client-core
-  - lens
-  - lens-regex-pcre
   - minio-hs
   - monad-control
   - monad-logger
@@ -66,6 +64,7 @@ library:
   - network-uri
   - process
   - random
+  - regex-tdfa
   - relude
   - retry
   - safe
