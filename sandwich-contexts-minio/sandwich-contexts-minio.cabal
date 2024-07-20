@@ -57,36 +57,3 @@ library
     , unliftio
     , unliftio-core
   default-language: Haskell2010
-
-test-suite tests
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-      Spec
-      Spec.Basic
-      Paths_sandwich_contexts_minio
-  hs-source-dirs:
-      test
-  default-extensions:
-      OverloadedStrings
-      QuasiQuotes
-      NamedFieldPuns
-      RecordWildCards
-      ScopedTypeVariables
-      LambdaCase
-      MultiWayIf
-      ViewPatterns
-      TupleSections
-      FlexibleContexts
-      NoImplicitPrelude
-      NumericUnderscores
-  ghc-options: -Wunused-packages -Wall -Wall -rtsopts -threaded
-  build-depends:
-      base
-    , filepath
-    , relude
-    , sandwich
-    , sandwich-contexts
-    , string-interpolate
-    , unliftio
-  default-language: Haskell2010
