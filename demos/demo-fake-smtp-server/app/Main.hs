@@ -11,14 +11,14 @@ import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import Data.Text
 import Network.HTTP.Client
-import Network.HaskellNet.SMTP
+import Network.HaskellNet.SMTP (AuthType(..), authenticate, doSMTPPort, sendMail)
 import Network.Mail.Mime
 import Network.Socket (PortNumber)
+import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
-import Test.Sandwich
 import UnliftIO.Process
 
 
