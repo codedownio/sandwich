@@ -13,8 +13,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         ghc:
-        - "8.6.5"
-        - "8.8.4"
+        # - "8.6.5"
+        # - "8.8.4"
         - "8.10.7"
         - "9.0.2"
         - "9.2.8"
@@ -34,6 +34,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - uses: cachix/install-nix-action@v27
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
+
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
@@ -50,6 +55,12 @@ jobs:
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+
+    - name: Install pcre
+      if: runner.os == "macOS"
+      run: |
+        brew update
+        brew install pcre
 
     - name: Build
       run: |
@@ -72,7 +83,7 @@ jobs:
         - ghc: "9.4.8"
           yaml: "stack-9.4.8.yaml"
         - ghc: "9.6.5"
-          yaml: "stack-9.6.5.yaml"
+          yaml: "stack.yaml"
         - ghc: "9.8.1"
           yaml: "stack-9.8.1.yaml"
 

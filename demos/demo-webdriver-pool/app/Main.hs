@@ -44,7 +44,7 @@ introduceWebDriverPool :: forall m context. (
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduceWith "Introduce webdriver pool" webDriverPool $ \action -> do
   wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
-  bracket (newPool =<< mkSafeDefaultPoolConfig (allocateWebDriver wdOptions) cleanupWebDriver 30.0 poolSize) destroyAllResources $ \pool ->
+  bracket (newPool =<< mkSafeDefaultPoolConfig (allocateWebDriver wdOptions defaultOnDemandOptions) cleanupWebDriver 30.0 poolSize) destroyAllResources $ \pool ->
     void $ action pool
 
   where

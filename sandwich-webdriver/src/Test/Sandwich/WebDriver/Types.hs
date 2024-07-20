@@ -19,6 +19,10 @@ module Test.Sandwich.WebDriver.Types (
   , WebDriverMonad
   , WebDriverSessionMonad
 
+  -- * On demand options
+  , OnDemandOptions
+  , defaultOnDemandOptions
+
   -- * The Xvfb session
   , XvfbSession(..)
   , getXvfbSession

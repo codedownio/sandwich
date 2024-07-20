@@ -67,7 +67,7 @@ extra-deps:
 ## For sandwich-contexts
 
 - git: https://github.com/codedownio/minio-hs
-  commit: 768665c90321d118fdd3cde2c6ac6c01310d76a0
+  commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
 
 ## For sandwich-contexts-docker
 

@@ -76,6 +76,10 @@ data OnDemandOptions = OnDemandOptions {
   -- | How to obtain Xvfb binary.
   , xvfbToUse :: XvfbToUse
   }
+defaultOnDemandOptions = OnDemandOptions {
+  ffmpegToUse = UseFfmpegFromPath
+  , xvfbToUse = UseXvfbFromPath
+  }
 
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)

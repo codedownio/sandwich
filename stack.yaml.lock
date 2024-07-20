@@ -12,15 +12,15 @@ packages:
   original:
     hackage: vty-windows-0.2.0.0
 - completed:
-    commit: 768665c90321d118fdd3cde2c6ac6c01310d76a0
+    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
     git: https://github.com/codedownio/minio-hs
     name: minio-hs
     pantry-tree:
-      sha256: 63fecbf5146f8704eba62c12ba86494f7bc477d8d882e74846ea0d1dfce03a1a
+      sha256: 6487e6cdf336fda12f9f4e88fb8edc17b3fd32e3f837b5a143237c3d80498929
       size: 4744
     version: 1.7.0
   original:
-    commit: 768665c90321d118fdd3cde2c6ac6c01310d76a0
+    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
     git: https://github.com/codedownio/minio-hs
 - completed:
     commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c

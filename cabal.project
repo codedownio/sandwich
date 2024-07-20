@@ -55,7 +55,7 @@ source-repository-package
 source-repository-package
   type: git
   location: https://github.com/codedownio/minio-hs.git
-  tag: 768665c90321d118fdd3cde2c6ac6c01310d76a0
+  tag: 1e63a0ec44fff374799b25a0a02c041eab664c4f
 
 source-repository-package
   type: git
