@@ -49,6 +49,7 @@ library:
   - containers
   - crypton-connection
   - exceptions
+  - data-default
   - filepath
   - http-client
   - http-conduit

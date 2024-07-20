@@ -38,6 +38,10 @@ import UnliftIO.Exception
 import UnliftIO.Retry
 import UnliftIO.Timeout
 
+#if MIN_VERSION_crypton_connection(0,4,0)
+import Data.Default (def)
+#endif
+
 
 -- | Keep trying an action up to a timeout while it fails with a 'FailureReason'.
 -- Use exponential backoff, with delays capped at 1 second.
@@ -95,6 +99,9 @@ tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
       settingDisableCertificateValidation = True
       , settingDisableSession = False
       , settingUseServerName = False
+#if MIN_VERSION_crypton_connection(0,4,0)
+      , settingsClientSupported = def
+#endif
       }
 
 -- | Send HTTP requests to url until we get a response with an given code.
