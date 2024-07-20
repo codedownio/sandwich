@@ -51,8 +51,8 @@ jobs:
       run: |
         cabal freeze
 
-    - uses: actions/cache@v1
-      name: Cache ~/.cabal/store
+    - uses: actions/cache/restore@v4
+      id: cache-restore
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
@@ -65,6 +65,12 @@ jobs:
     - name: Test
       run: |
         cabal test all
+
+    - uses: actions/cache/save@v4
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -97,8 +103,9 @@ jobs:
         enable-stack: true
         stack-version: "latest"
 
-    - uses: actions/cache@v4
-      name: Cache ~/.stack
+    - uses: actions/cache/restore@v4
+      name: Cache restore ~/.stack
+      id: cache-restore
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
@@ -140,3 +147,9 @@ jobs:
     - name: Test (sandwich-webdriver)
       run: |
         stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
+
+    - uses: actions/cache/save@v4
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
