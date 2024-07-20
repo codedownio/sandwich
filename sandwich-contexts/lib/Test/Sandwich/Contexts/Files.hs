@@ -124,7 +124,12 @@ introduceFile' :: forall a context m. (
   )
   -- | Proxy for the file type to use. I.e. 'Proxy "my-file"'
   => Proxy a -> FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
-introduceFile' proxy path = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkFileLabel @a) (return $ EnvironmentFile path) (const $ return ())
+introduceFile' proxy path = introduce [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) (return $ EnvironmentFile path) (const $ return ())
+  where
+    -- Saw a bug where we couldn't embed "symbolVal proxy" directly in the quasi-quote above.
+    -- Failed with "Couldn't match kind ‘Bool’ with ‘Symbol’"
+    binaryName :: String
+    binaryName = symbolVal proxy
 
 -- | Introduce a file from the PATH, which must be present when tests are run.
 -- Useful when you want to set up your own environment with binaries etc. to use in tests.
@@ -147,11 +152,14 @@ introduceBinaryViaEnvironment' :: forall a context m. (
   => Proxy a
   -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -> SpecFree context m ()
-introduceBinaryViaEnvironment' proxy = introduce [i|#{symbolVal proxy} (binary from PATH)|] (mkFileLabel @a) alloc cleanup
+introduceBinaryViaEnvironment' proxy = introduce [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) alloc cleanup
   where
+    binaryName :: String
+    binaryName = symbolVal proxy
+
     alloc = do
-      liftIO (findExecutable (symbolVal proxy)) >>= \case
-        Nothing -> expectationFailure [i|Couldn't find binary '#{symbolVal proxy}' on PATH|]
+      liftIO (findExecutable binaryName) >>= \case
+        Nothing -> expectationFailure [i|Couldn't find binary '#{binaryName}' on PATH|]
         Just path -> return $ EnvironmentFile path
 
     cleanup _ = return ()
@@ -199,8 +207,11 @@ introduceFileViaNixPackage'' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage'' proxy packageName tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixPackage'' proxy packageName tryFindFile = introduce [i|#{binaryName} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
+    binaryName :: String
+    binaryName = symbolVal proxy
+
     alloc = buildNixSymlinkJoin [packageName] >>= \p -> EnvironmentFile <$> liftIO (tryFindFile p)
 
 -- | Lower-level version of 'introduceFileViaNixPackage'.
@@ -238,9 +249,12 @@ introduceBinaryViaNixPackage' :: forall a context m. (
     -> NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{symbolVal proxy} (binary via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
+introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{binaryName} (binary via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
-    alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal proxy)
+    binaryName :: String
+    binaryName = symbolVal proxy
+
+    alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary binaryName
 
 -- | Lower-level version of 'introduceBinaryViaNixPackage'.
 getBinaryViaNixPackage :: forall a context m. (
@@ -285,9 +299,12 @@ introduceBinaryViaNixDerivation' :: forall a context m. (
     -> Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{symbolVal proxy} (binary via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
+introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{binaryName} (binary via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
-    alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal proxy)
+    binaryName :: String
+    binaryName = symbolVal proxy
+
+    alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary binaryName
 
 -- | Lower-level version of 'introduceBinaryViaNixDerivation'.
 getBinaryViaNixDerivation :: forall a context m. (
@@ -346,8 +363,11 @@ introduceFileViaNixDerivation'' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation'' proxy derivation tryFindFile = introduce [i|#{symbolVal proxy} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixDerivation'' proxy derivation tryFindFile = introduce [i|#{binaryName} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
+    binaryName :: String
+    binaryName = symbolVal proxy
+
     alloc = EnvironmentFile <$> (buildNixCallPackageDerivation derivation >>= liftIO . tryFindFile)
 
 -- | Lower-level version of 'introduceFileViaNixDerivation'.
