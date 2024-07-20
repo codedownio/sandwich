@@ -45,6 +45,7 @@ import UnliftIO.Exception
 import Control.Monad.Fail
 #endif
 
+#define GHC_9_0_X (__GLASGOW_HASKELL__ >= 900 && __GLASGOW_HASKELL__ < 902)
 
 -- * ExampleM monad
 
@@ -458,7 +459,11 @@ introduceWith :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if GHC_9_0_X
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -473,7 +478,11 @@ introduceWith' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if GHC_9_0_X
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
@@ -490,7 +499,11 @@ introduceWith'' :: (HasCallStack) =>
   -- ^ String label for this node
   -> Label l intro
   -- ^ 'Label' under which to introduce the value
+#if GHC_9_0_X
+  -> ((intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#else
   -> (((HasCallStack) => intro -> ExampleT context m [Result]) -> ExampleT context m ())
+#endif
   -- ^ Callback to receive the new value and the child tree.
   -> SpecFree (LabelValue l intro :> context) m ()
   -- ^ Child spec tree
