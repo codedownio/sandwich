@@ -35,6 +35,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - uses: cachix/install-nix-action@v27
+      if: runner.os != 'Windows'
       with:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
