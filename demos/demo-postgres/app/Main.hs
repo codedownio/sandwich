@@ -10,7 +10,7 @@ import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import Data.Time
-import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple (Only(..), connectPostgreSQL, query_)
 import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer

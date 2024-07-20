@@ -2,7 +2,7 @@
 module Spec.NixContexts.PostgreSQL where
 
 import Data.String.Interpolate
-import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple (Only(..), connectPostgreSQL, query_)
 import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
