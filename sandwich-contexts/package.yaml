@@ -69,7 +69,7 @@ library:
   - text
   - time
   - transformers
-  - unix
+  - unix-compat
   - unliftio-core
   - vector
 

@@ -39,7 +39,7 @@ import Relude hiding (withFile)
 import System.Exit
 import System.FilePath
 import System.IO.Temp
-import System.Posix.Files
+import System.PosixCompat.Files (getFileStatus, isSocket)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Container
 import Test.Sandwich.Contexts.Nix
