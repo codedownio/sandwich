@@ -89,7 +89,6 @@ library
     , http-client-tls
     , http-conduit
     , lens
-    , lens-regex-pcre
     , microlens
     , microlens-aeson
     , monad-control
@@ -124,7 +123,7 @@ library
     hs-source-dirs:
         linux-src
     build-depends:
-        regex-compat
+        regex-tdfa
   if !os(windows)
     build-depends:
         unix
@@ -170,7 +169,6 @@ test-suite sandwich-webdriver-test
     , http-client-tls
     , http-conduit
     , lens
-    , lens-regex-pcre
     , microlens
     , microlens-aeson
     , monad-control
@@ -212,7 +210,7 @@ test-suite sandwich-webdriver-test
     hs-source-dirs:
         linux-src
     build-depends:
-        regex-compat
+        regex-tdfa
   if !os(windows)
     build-depends:
         unix

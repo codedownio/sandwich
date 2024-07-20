@@ -26,7 +26,6 @@ dependencies:
 - http-client-tls
 - http-conduit
 - lens
-- lens-regex-pcre
 - microlens
 - microlens-aeson
 - monad-control
@@ -91,7 +90,7 @@ when:
 - condition: os(linux)
   source-dirs: linux-src
   dependencies:
-  - regex-compat
+  - regex-tdfa
 - condition: "!os(windows)"
   dependencies:
   - unix

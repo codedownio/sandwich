@@ -15,7 +15,7 @@ import Safe
 import System.Directory
 import System.Exit
 import System.Process
-import Text.Regex
+import Text.Regex.TDFA
 
 
 -- | Previously we got the screen resolution on Linux using the X11 Haskell library.
@@ -52,12 +52,14 @@ getResolution' xrandrEnv = do
                      & filter ("connected" `T.isInfixOf`)
                      & L.sortBy preferPrimary
 
-  case headMay [(x, y, w, h) | (matchRegex resolutionRegex -> Just [(readMay -> Just w), (readMay -> Just h), (readMay -> Just x), (readMay -> Just y)]) <- fmap T.unpack connectedLines] of
+  case headMay [(x, y, w, h) | (parseRegex -> Just (x, y, w, h)) <- fmap T.unpack connectedLines] of
     Nothing -> throwIO $ userError "Couldn't parse xrandr output to find screen resolution.\n\n***Stdout***\n\n#{stdout}"
     Just x -> return x
 
-resolutionRegex :: Regex
-resolutionRegex = mkRegex "([0-9]+)x([0-9]+)\\+([0-9]+)\\+([0-9]+)"
+parseRegex :: String -> Maybe (Int, Int, Int, Int)
+parseRegex context = case (context =~~ ("([0-9]+)x([0-9]+)\\+([0-9]+)\\+([0-9]+)" :: String)) :: Maybe (String, String, String, [String]) of
+  Just (_before, _fullMatch, _after, [(readMay -> Just w), (readMay -> Just h), (readMay -> Just x), (readMay -> Just y)]) -> Just (x, y, w, h)
+  _ -> Nothing
 
 preferPrimary :: T.Text -> T.Text -> Ordering
 preferPrimary x y =
