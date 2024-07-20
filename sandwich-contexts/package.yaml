@@ -87,3 +87,4 @@ tests:
     - relude
     - sandwich-contexts
     - string-interpolate
+    build-tools: sandwich:sandwich-discover

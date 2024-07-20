@@ -67,3 +67,4 @@ tests:
     - -threaded
     dependencies:
     - relude
+    build-tools: sandwich:sandwich-discover

@@ -29,3 +29,4 @@ executables:
   demo-discover:
     main: Main.hs
     source-dirs: app
+    build-tools: sandwich:sandwich-discover

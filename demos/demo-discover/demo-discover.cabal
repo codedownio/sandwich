@@ -35,6 +35,8 @@ executable demo-discover
       FlexibleInstances
       LambdaCase
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      sandwich:sandwich-discover
   build-depends:
       base
     , sandwich

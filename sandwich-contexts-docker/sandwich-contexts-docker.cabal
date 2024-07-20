@@ -84,6 +84,8 @@ test-suite tests
       NoImplicitPrelude
       NumericUnderscores
   ghc-options: -Wunused-packages -Wall -Wall -rtsopts -threaded
+  build-tool-depends:
+      sandwich:sandwich-discover
   build-depends:
       base
     , relude
