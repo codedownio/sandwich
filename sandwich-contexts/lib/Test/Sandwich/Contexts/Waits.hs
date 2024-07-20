@@ -100,7 +100,7 @@ tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
       , settingDisableSession = False
       , settingUseServerName = False
 #if MIN_VERSION_crypton_connection(0,4,0)
-      , settingsClientSupported = def
+      , settingClientSupported = def
 #endif
       }
 
