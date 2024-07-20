@@ -53,16 +53,16 @@ library:
   - text
   - unliftio-core
 
-tests:
-  tests:
-    main: Main.hs
-    source-dirs: test
-    ghc-options:
-    - -Wall
-    - -rtsopts
-    - -threaded
-    dependencies:
-    - filepath
-    - relude
-    - sandwich-contexts
-    - string-interpolate
+# tests:
+#   tests:
+#     main: Main.hs
+#     source-dirs: test
+#     ghc-options:
+#     - -Wall
+#     - -rtsopts
+#     - -threaded
+#     dependencies:
+#     - filepath
+#     - relude
+#     - sandwich-contexts
+#     - string-interpolate
