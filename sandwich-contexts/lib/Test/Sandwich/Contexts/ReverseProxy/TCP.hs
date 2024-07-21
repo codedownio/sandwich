@@ -1,9 +1,12 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
 
 -- | This module is inspired by the http-reverse-proxy package:
 -- https://hackage.haskell.org/package/http-reverse-proxy
 
 module Test.Sandwich.Contexts.ReverseProxy.TCP where
+
+#ifndef mingw32_HOST_OS
 
 import Control.Monad.IO.Unlift
 import Data.Conduit
@@ -36,3 +39,5 @@ withProxyToUnixSocket socketPath f = do
       concurrently_
         (runConduit $ DCN.appSource appdata .| DCN.appSink appdataServer)
         (runConduit $ DCN.appSource appdataServer .| DCN.appSink appdata)
+
+#endif
