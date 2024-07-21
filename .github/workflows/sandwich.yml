@@ -47,7 +47,9 @@ jobs:
 
     - name: Print PATH
       run: |
-        echo "PATH: $PATH"
+        echo $env:PGBIN
+        echo "-------------"
+        echo $env:PATH
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
