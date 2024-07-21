@@ -60,7 +60,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install libpq
+        brew install libpq postgresql
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
