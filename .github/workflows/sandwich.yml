@@ -38,20 +38,11 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         pwd
-        ls "C:\Program Files\PostgreSQL"
         echo "------------"
-        ls "C:\Program Files\PostgreSQL\14"
+        env
         echo "++++++++++++"
-        ls "C:\Program Files\PostgreSQL\14\bin"
+        set
         echo "============"
-        echo "PGBIN: $PGBIN"
-        echo "$PGBIN" >> $GITHUB_PATH
-
-        # curl -LO https://get.enterprisedb.com/postgresql/postgresql-13.3-1-windows-x64-binaries.zip
-        # tar -xf postgresql-13.3-1-windows-x64-binaries.zip -C ${{ runner.temp }}
-        # echo "${{ runner.temp }}\\pgsql\\bin" >> $GITHUB_PATH
-        # where libpq.dll
-        # where pg_config
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
