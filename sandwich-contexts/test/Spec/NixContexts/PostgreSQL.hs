@@ -1,5 +1,17 @@
+{-# LANGUAGE CPP #-}
 
 module Spec.NixContexts.PostgreSQL where
+
+#ifdef mingw32_HOST_OS
+
+import Relude
+import Test.Sandwich
+
+tests :: TopSpec
+tests = describe "PostgreSQL Nix" $ do
+  it "works" pending
+
+#else
 
 import Data.String.Interpolate
 import Database.PostgreSQL.Simple (Only(..), connectPostgreSQL, query_)
@@ -25,3 +37,4 @@ selectTwoPlusTwo connString = liftIO $ do
   conn <- connectPostgreSQL connString
   [Only n] <- query_ conn "select 2 + 2"
   return n
+#endif
