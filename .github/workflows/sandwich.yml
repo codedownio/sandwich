@@ -74,22 +74,22 @@ jobs:
         cabal build all
 
     # - name: Test (sandwich-contexts)
-    #   run: | cabal test sandwich-contexts
+    #   run: cabal test sandwich-contexts
 
     # - name: Test (sandwich-contexts-docker)
-    #   run: | cabal test sandwich-contexts-docker
+    #   run: cabal test sandwich-contexts-docker
 
     - name: Test (sandwich-contexts-minio)
-      run: | cabal test sandwich-contexts-minio
+      run: cabal test sandwich-contexts-minio
 
     - name: Test (sandwich-hedgehog)
-      run: | cabal test sandwich-hedgehog
+      run: cabal test sandwich-hedgehog
 
     - name: Test (sandwich-quickcheck)
-      run: | cabal test sandwich-quickcheck
+      run: cabal test sandwich-quickcheck
 
     - name: Test (sandwich-webdriver)
-      run: | cabal test sandwich-webdriver
+      run: cabal test sandwich-webdriver
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
@@ -145,26 +145,25 @@ jobs:
         stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test (sandwich)
-      run: |
-        stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts)
-      run: | stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
+      run: stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
 
     - name: Test (sandwich-contexts-docker)
-      run: | stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts-minio)
-      run: | stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-hedgehog)
-      run: | stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-quickcheck)
-      run: | stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-webdriver)
-      run: | stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
