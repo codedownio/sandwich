@@ -19,7 +19,6 @@ library
       Test.Sandwich.Contexts.FakeSmtpServer
       Test.Sandwich.Contexts.Files
       Test.Sandwich.Contexts.Nix
-      Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Waits
       Test.Sandwich.Contexts.Types.Network
       Test.Sandwich.Contexts.Types.S3
@@ -82,6 +81,9 @@ library
     , unliftio-core
     , vector
   default-language: Haskell2010
+  if !os(windows)
+    exposed-modules:
+        Test.Sandwich.Contexts.PostgreSQL
 
 test-suite tests
   type: exitcode-stdio-1.0
