@@ -38,9 +38,12 @@ jobs:
       if: runner.os == 'Windows'
       run: |
         pwd
-        ls -lh "C:\Program Files\PostgreSQL"
-        ls -lh "C:\Program Files\PostgreSQL\14"
-        ls -lh "C:\Program Files\PostgreSQL\14\bin"
+        ls "C:\Program Files\PostgreSQL"
+        echo "------------"
+        ls "C:\Program Files\PostgreSQL\14"
+        echo "++++++++++++"
+        ls "C:\Program Files\PostgreSQL\14\bin"
+        echo "============"
         echo "PGBIN: $PGBIN"
         echo "$PGBIN" >> $GITHUB_PATH
 
