@@ -40,6 +40,14 @@ jobs:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        "$env:PGBIN" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+        # Disable demo-postgres since it requires unix sockets
+        sed -i 's/demos\/demo-postgres/-- demos\/demo-postgres/g' cabal.project
+
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
