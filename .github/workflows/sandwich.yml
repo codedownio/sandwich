@@ -41,8 +41,13 @@ jobs:
         echo "------------"
         env
         echo "++++++++++++"
-        set
+        echo "PGBIN: $PGBIN"
+        echo $PGBIN
         echo "============"
+
+    - name: Print PATH
+      run: |
+        echo "PATH: $PATH"
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
