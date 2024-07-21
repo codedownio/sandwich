@@ -40,7 +40,7 @@ jobs:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
-    - uses: haskell/actions/setup@v2
+    - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
@@ -66,14 +66,8 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        echo "PGBIN: $PGBIN"
-        echo "$PGBIN" >> $GITHUB_PATH
-
-        # curl -LO https://get.enterprisedb.com/postgresql/postgresql-13.3-1-windows-x64-binaries.zip
-        # tar -xf postgresql-13.3-1-windows-x64-binaries.zip -C ${{ runner.temp }}
-        # echo "${{ runner.temp }}\\pgsql\\bin" >> $GITHUB_PATH
-        # where libpq.dll
-        # where pg_config
+        # This needs to be a PowerShell command
+        "$env:PGBIN" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Build
       run: |
@@ -114,7 +108,7 @@ jobs:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
-    - uses: haskell/actions/setup@v2
+    - uses: haskell-actions/setup@v2
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
