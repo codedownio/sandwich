@@ -19,17 +19,8 @@ jobs:
         - "9.0.2"
         - "9.2.8"
         - "9.4.8"
-        - "9.6.5"
+        - "9.6.6"
         - "9.8.1"
-        exclude:
-        # Access violation in generated code when executing data at 0x6d88
-        - os: windows-latest
-          ghc: 8.8.4
-
-        - os: macOS-latest
-          ghc: 8.6.5
-        - os: macOS-latest
-          ghc: 8.8.4
 
     steps:
     - uses: actions/checkout@v2
@@ -62,7 +53,7 @@ jobs:
     - uses: actions/cache/restore@v4
       id: cache-restore
       with:
-        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        path: ~/.cabal
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
     - name: Install dependencies (macOS)
@@ -82,14 +73,28 @@ jobs:
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
-    - name: Test
-      run: |
-        cabal test all
+    # - name: Test (sandwich-contexts)
+    #   run: | cabal test sandwich-contexts
+
+    # - name: Test (sandwich-contexts-docker)
+    #   run: | cabal test sandwich-contexts-docker
+
+    - name: Test (sandwich-contexts-minio)
+      run: | cabal test sandwich-contexts-minio
+
+    - name: Test (sandwich-hedgehog)
+      run: | cabal test sandwich-hedgehog
+
+    - name: Test (sandwich-quickcheck)
+      run: | cabal test sandwich-quickcheck
+
+    - name: Test (sandwich-webdriver)
+      run: | cabal test sandwich-webdriver
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
-        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        path: ~/.cabal
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
   stack:
@@ -144,29 +149,22 @@ jobs:
         stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts)
-      run: |
-        echo "NIX_PATH: $NIX_PATH"
-        stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
+      run: | stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
 
     - name: Test (sandwich-contexts-docker)
-      run: |
-        stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: | stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts-minio)
-      run: |
-        stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: | stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-hedgehog)
-      run: |
-        stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: | stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-quickcheck)
-      run: |
-        stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: | stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-webdriver)
-      run: |
-        stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: | stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
