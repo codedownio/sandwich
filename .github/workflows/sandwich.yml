@@ -57,6 +57,8 @@ jobs:
         # For older GHCs
         brew install llvm@13
         echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
+        echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
@@ -66,9 +68,6 @@ jobs:
 
     - name: Build
       run: |
-        export C_INCLUDE_PATH="`xcrun --show-sdk-path`/usr/include/ffi"
-        # export LDFLAGS="-L/opt/homebrew/opt/llvm@13/lib"
-        # export CPPFLAGS="-I/opt/homebrew/opt/llvm@13/include"
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
