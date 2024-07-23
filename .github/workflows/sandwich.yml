@@ -64,6 +64,7 @@ jobs:
         brew install libpq postgresql
         # For older GHCs
         brew install llvm@13
+        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
