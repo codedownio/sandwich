@@ -39,15 +39,13 @@ jobs:
         # Disable demo-postgres since it requires unix sockets
         sed -i 's/demos\/demo-postgres/-- demos\/demo-postgres/g' cabal.project
 
+    # Because the HaskellNet dependency doesn't work yet with GHC 9.8
     - name: Disable demo-fake-smtp-server for GHC 9.8.x
-      if: ${{ matrix.ghc == '9.8.1' }}
-      run: |
-        # Because the HaskellNet dependency doesn't work yet with GHC 9.8
-        if [[ "$RUNNER_OS" == "macOS" ]]; then
-          sed -i '.bak' 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
-        else
-          sed -i 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
-        fi
+      if: ${{ matrix.ghc == '9.8.1' && runner.os == 'macOS' }}
+      run: sed -i '.bak' 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
+    - name: Disable demo-fake-smtp-server for GHC 9.8.x
+      if: ${{ matrix.ghc == '9.8.1' && runner.os != 'macOS' }}
+      run: sed -i 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
