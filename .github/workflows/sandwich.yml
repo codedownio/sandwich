@@ -60,7 +60,10 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
+        # For postgres context tests/demo
         brew install libpq postgresql
+        # For older GHCs
+        brew install llvm@13
 
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
