@@ -66,7 +66,7 @@ jobs:
 
     - name: Build
       run: |
-        C_INCLUDE_PATH="`xcrun --show-sdk-path`/usr/include/ffi"
+        export C_INCLUDE_PATH="`xcrun --show-sdk-path`/usr/include/ffi"
         # export LDFLAGS="-L/opt/homebrew/opt/llvm@13/lib"
         # export CPPFLAGS="-I/opt/homebrew/opt/llvm@13/include"
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
