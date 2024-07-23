@@ -43,7 +43,11 @@ jobs:
       if: ${{ matrix.ghc == '9.8.1' }}
       run: |
         # Because the HaskellNet dependency doesn't work yet with GHC 9.8
-        sed -i 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
+        if [[ "$RUNNER_OS" == "macOS" ]]; then
+          sed -i '.bak' 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
+        else
+          sed -i 's/demos\/demo-fake-smtp-server/-- demos\/demo-fake-smtp-server/g' cabal.project
+        fi
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
