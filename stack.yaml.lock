@@ -23,40 +23,40 @@ packages:
     commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
     git: https://github.com/codedownio/minio-hs
 - completed:
-    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    commit: f924f3262ef1dc5474f1b0ae3b60094376dca51e
     git: https://github.com/codedownio/docker-openapi.git
     name: docker-engine
     pantry-tree:
-      sha256: 54977c879b4e3054579f231a3c015c4262c1ad0e94417f78d4fe743d975f54d1
+      sha256: 0f84b7b9ca01b4de8261c39833b9e04fc3878b0533ad4c3141c5363e66535268
       size: 3152
     version: 1.36.0.0
   original:
-    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    commit: f924f3262ef1dc5474f1b0ae3b60094376dca51e
     git: https://github.com/codedownio/docker-openapi.git
 - completed:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: 47d88d7061cda5227c8f7819e3a640c7dea247f3
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     name: kubernetes-client-core
     pantry-tree:
-      sha256: 0cb86401de40cab1f2b32e37fb1d181d778ddc2a9205ec16a6cb45f1a790bf58
-      size: 8368
-    subdir: kubernetes
-    version: 0.4.3.0
+      sha256: 7dc8b722610d72138a66aaf6df67a63fe8ca847fdee565b3e0eda0e070e9d526
+      size: 6710
+    subdir: kubernetes-1.27
+    version: 1.27.0
   original:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: 47d88d7061cda5227c8f7819e3a640c7dea247f3
     git: https://github.com/codedownio/kubernetes-client-haskell.git
-    subdir: kubernetes
+    subdir: kubernetes-1.27
 - completed:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: 47d88d7061cda5227c8f7819e3a640c7dea247f3
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     name: kubernetes-client
     pantry-tree:
-      sha256: e1205ba33bd552ba23227eae6297728f01ecc07ab87c56413d99cb2cec9e89d1
+      sha256: 3550efb761185ee38e939bd88ad32564d17a0939f2a8983cd82d57e7c98a91a0
       size: 2125
     subdir: kubernetes-client
-    version: 0.4.3.1
+    version: 0.5.0.0
   original:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: 47d88d7061cda5227c8f7819e3a640c7dea247f3
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     subdir: kubernetes-client
 - completed:

@@ -78,9 +78,9 @@ extra-deps:
 
 - git: https://github.com/codedownio/kubernetes-client-haskell.git
   # codedown-feb-2024
-  commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+  commit: 47d88d7061cda5227c8f7819e3a640c7dea247f3
   subdirs:
-  - kubernetes
+  - kubernetes-1.27
   - kubernetes-client
 
 - git: https://github.com/codedownio/haskell-oidc-client
