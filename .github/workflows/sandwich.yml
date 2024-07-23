@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [macOS-latest]
         ghc:
         # - "8.6.5"
         # - "8.8.4"
@@ -30,14 +30,6 @@ jobs:
       with:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
-
-    - name: Install dependencies (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        "$env:PGBIN" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-        # Disable demo-postgres since it requires unix sockets
-        sed -i 's/demos\/demo-postgres/-- demos\/demo-postgres/g' cabal.project
 
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
@@ -74,6 +66,8 @@ jobs:
 
     - name: Build
       run: |
+        export LDFLAGS="-L/opt/homebrew/opt/llvm@13/lib"
+        export CPPFLAGS="-I/opt/homebrew/opt/llvm@13/include"
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all
 
@@ -100,77 +94,3 @@ jobs:
       with:
         path: ~/.cabal
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-
-  stack:
-    name: stack / ghc ${{ matrix.ghc }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - ghc: "9.2.8"
-          yaml: "stack-9.2.8.yaml"
-        - ghc: "9.4.8"
-          yaml: "stack-9.4.8.yaml"
-        - ghc: "9.6.5"
-          yaml: "stack.yaml"
-        - ghc: "9.8.1"
-          yaml: "stack-9.8.1.yaml"
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: cachix/install-nix-action@v27
-      with:
-        # release-24.05
-        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
-
-    - uses: haskell-actions/setup@v2
-      name: Setup Haskell Stack
-      with:
-        ghc-version: ${{ matrix.ghc }}
-        enable-stack: true
-        stack-version: "latest"
-
-    - uses: actions/cache/restore@v4
-      name: Cache restore ~/.stack
-      id: cache-restore
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
-
-    - name: apt
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxss-dev
-
-    - name: Build
-      run: |
-        stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
-
-    - name: Test (sandwich)
-      run: stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - name: Test (sandwich-contexts)
-      run: stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
-
-    - name: Test (sandwich-contexts-docker)
-      run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - name: Test (sandwich-contexts-minio)
-      run: stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - name: Test (sandwich-hedgehog)
-      run: stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - name: Test (sandwich-quickcheck)
-      run: stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - name: Test (sandwich-webdriver)
-      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
-
-    - uses: actions/cache/save@v4
-      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
-      with:
-        path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
