@@ -27,20 +27,20 @@ extra-deps:
 ## For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-openapi.git
-  commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+  commit: ada215498c2558ff6680f3b025ac3732b19bffb6
 
 ## For sandwich-contexts-kubernetes
 
 - git: https://github.com/codedownio/kubernetes-client-haskell.git
   # codedown-feb-2024
-  commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+  commit: a747f6fdc62d34c684709740422497d3c088f8d9
   subdirs:
-  - kubernetes
+  - kubernetes-1.27
   - kubernetes-client
 
 - git: https://github.com/codedownio/haskell-oidc-client
-  # codedown-jan-2024-ghc96
-  commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+  # codedown-jun-2024-ghc98
+  commit: b70757b85751525cba41316ea9af132d9a43cfaf
 
 # https://github.com/kubernetes-client/haskell/issues/64
 # https://github.com/channable/vaultenv/issues/99

@@ -25,30 +25,23 @@ extra-deps:
 - vty-unix-0.2.0.0
 - vty-windows-0.2.0.0
 
-- crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
-- crypton-connection-0.3.2@sha256:c7937edc25ab022bcf167703f2ec5ab73b62908e545bb587d2aa42b33cd6f6cc,1581
-- crypton-x509-1.7.6@sha256:c567657a705b6d6521f9dd2de999bf530d618ec00f3b939df76a41fb0fe94281,2339
-- crypton-x509-store-1.6.9@sha256:422b9b9f87a7382c66385d047615b16fc86a68c08ea22b1e0117c143a2d44050,1750
-- crypton-x509-system-1.6.7@sha256:023ed573d82983bc473a37a89e0434a085b413be9f68d07e085361056afd4637,1532
-- tls-2.0.1@sha256:6f93816f1b67efafe63a91296e047d6218ccdfd355cd17cd47c798871c871444,6046
-
 ## For sandwich-contexts
 
 - git: https://github.com/codedownio/minio-hs
-  commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+  commit: 2fae6ae212a346acf400847d0b6cc647045822d1
 
 ## For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-openapi.git
-  commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+  commit: dd83d02f45e059db515b0e90f53ddfccafdca494
 
 ## For sandwich-contexts-kubernetes
 
 - git: https://github.com/codedownio/kubernetes-client-haskell.git
   # codedown-feb-2024
-  commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+  commit: a747f6fdc62d34c684709740422497d3c088f8d9
   subdirs:
-  - kubernetes
+  - kubernetes-1.27
   - kubernetes-client
 
 - git: https://github.com/codedownio/haskell-oidc-client

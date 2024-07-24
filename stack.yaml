@@ -73,7 +73,7 @@ extra-deps:
 ## For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-openapi.git
-  commit: f924f3262ef1dc5474f1b0ae3b60094376dca51e
+  commit: ada215498c2558ff6680f3b025ac3732b19bffb6
 
 ## For sandwich-contexts-kubernetes
 

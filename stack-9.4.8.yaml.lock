@@ -40,93 +40,51 @@ packages:
   original:
     hackage: vty-windows-0.2.0.0
 - completed:
-    hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
-    pantry-tree:
-      sha256: 85f438e6d328fc2e464c8914a08089ff312044b96ac155a25747512e440e0a12
-      size: 23275
-  original:
-    hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
-- completed:
-    hackage: crypton-connection-0.3.2@sha256:c7937edc25ab022bcf167703f2ec5ab73b62908e545bb587d2aa42b33cd6f6cc,1581
-    pantry-tree:
-      sha256: f986ad29b008cbe5732606e9cde1897191c486a2f1f169a4cb75fd915bce397c
-      size: 394
-  original:
-    hackage: crypton-connection-0.3.2@sha256:c7937edc25ab022bcf167703f2ec5ab73b62908e545bb587d2aa42b33cd6f6cc,1581
-- completed:
-    hackage: crypton-x509-1.7.6@sha256:c567657a705b6d6521f9dd2de999bf530d618ec00f3b939df76a41fb0fe94281,2339
-    pantry-tree:
-      sha256: 729e7db8dfc0a8b43e08bbd8d1387c9065e39beda6ac39e0fb9f10140810a3eb
-      size: 1080
-  original:
-    hackage: crypton-x509-1.7.6@sha256:c567657a705b6d6521f9dd2de999bf530d618ec00f3b939df76a41fb0fe94281,2339
-- completed:
-    hackage: crypton-x509-store-1.6.9@sha256:422b9b9f87a7382c66385d047615b16fc86a68c08ea22b1e0117c143a2d44050,1750
-    pantry-tree:
-      sha256: 87654d130a7f987ee139c821a1be45736d18df9fa4cb1142c4e054d3802338f3
-      size: 406
-  original:
-    hackage: crypton-x509-store-1.6.9@sha256:422b9b9f87a7382c66385d047615b16fc86a68c08ea22b1e0117c143a2d44050,1750
-- completed:
-    hackage: crypton-x509-system-1.6.7@sha256:023ed573d82983bc473a37a89e0434a085b413be9f68d07e085361056afd4637,1532
-    pantry-tree:
-      sha256: c0ca49e6a9537f3fdb7b47c5cfe93f7d744a369bf9d089f3c668b9c2d97402b7
-      size: 399
-  original:
-    hackage: crypton-x509-system-1.6.7@sha256:023ed573d82983bc473a37a89e0434a085b413be9f68d07e085361056afd4637,1532
-- completed:
-    hackage: tls-2.0.1@sha256:6f93816f1b67efafe63a91296e047d6218ccdfd355cd17cd47c798871c871444,6046
-    pantry-tree:
-      sha256: 1c33032211c9f98ecd2718fbce45717b846e0799b36ca359c1d0070a213da519
-      size: 6391
-  original:
-    hackage: tls-2.0.1@sha256:6f93816f1b67efafe63a91296e047d6218ccdfd355cd17cd47c798871c871444,6046
-- completed:
-    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
     name: minio-hs
     pantry-tree:
-      sha256: 6487e6cdf336fda12f9f4e88fb8edc17b3fd32e3f837b5a143237c3d80498929
+      sha256: 62258fb7a35375b89bc1926d5ee21038a723a040a2b826b6dc6c1a474bc94462
       size: 4744
     version: 1.7.0
   original:
-    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
 - completed:
-    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    commit: dd83d02f45e059db515b0e90f53ddfccafdca494
     git: https://github.com/codedownio/docker-openapi.git
     name: docker-engine
     pantry-tree:
-      sha256: 54977c879b4e3054579f231a3c015c4262c1ad0e94417f78d4fe743d975f54d1
+      sha256: f4d791f4bb4fb61eb527cbb89427d5a24fef1e94c1beeed86f44aabf8220caf2
       size: 3152
     version: 1.36.0.0
   original:
-    commit: 8cf2e348999c6f8cf2bb2583b4f5f083fba5170c
+    commit: dd83d02f45e059db515b0e90f53ddfccafdca494
     git: https://github.com/codedownio/docker-openapi.git
 - completed:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     name: kubernetes-client-core
     pantry-tree:
-      sha256: 0cb86401de40cab1f2b32e37fb1d181d778ddc2a9205ec16a6cb45f1a790bf58
-      size: 8368
-    subdir: kubernetes
-    version: 0.4.3.0
+      sha256: d807cb64b68b4211e9f793be63eb4b01cd3325ef0b36d750dd35fe09a875ac38
+      size: 6710
+    subdir: kubernetes-1.27
+    version: 1.27.0
   original:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git
-    subdir: kubernetes
+    subdir: kubernetes-1.27
 - completed:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     name: kubernetes-client
     pantry-tree:
-      sha256: e1205ba33bd552ba23227eae6297728f01ecc07ab87c56413d99cb2cec9e89d1
+      sha256: 3550efb761185ee38e939bd88ad32564d17a0939f2a8983cd82d57e7c98a91a0
       size: 2125
     subdir: kubernetes-client
-    version: 0.4.3.1
+    version: 0.5.0.0
   original:
-    commit: 82f233c98f7124786c689c2407e84b1b94dba32f
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     subdir: kubernetes-client
 - completed:

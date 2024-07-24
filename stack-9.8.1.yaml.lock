@@ -5,22 +5,76 @@
 
 packages:
 - completed:
-    hackage: vty-windows-0.2.0.1@sha256:6c75230057a708168dbc420975572511ad3ec09956bf73c3b6f4be03324e8b13,2815
+    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    git: https://github.com/codedownio/minio-hs
+    name: minio-hs
     pantry-tree:
-      sha256: 0de977580639c2a90958ef68ec03128d0362ff13657c66c4f25cedc12ba3259e
-      size: 2160
+      sha256: 6487e6cdf336fda12f9f4e88fb8edc17b3fd32e3f837b5a143237c3d80498929
+      size: 4744
+    version: 1.7.0
   original:
-    hackage: vty-windows-0.2.0.1
+    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    git: https://github.com/codedownio/minio-hs
 - completed:
-    hackage: microlens-aeson-2.5.2@sha256:32c27de86a54e63ce917973050cf8338e2782e008f71986c0b98c10aeb88947d,1641
+    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
+    git: https://github.com/codedownio/docker-openapi.git
+    name: docker-engine
     pantry-tree:
-      sha256: 328d36a82932b7f43c399800cd1ae7cce6cac43d7f1e53476d6f8b1c4fb6c8bb
-      size: 574
+      sha256: 175c6ef9ad2b27058edf045710ddefbc1bfafa4b36626221a63c122bec06221b
+      size: 3152
+    version: 1.36.0.0
   original:
-    hackage: microlens-aeson-2.5.2
+    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
+    git: https://github.com/codedownio/docker-openapi.git
+- completed:
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    name: kubernetes-client-core
+    pantry-tree:
+      sha256: d807cb64b68b4211e9f793be63eb4b01cd3325ef0b36d750dd35fe09a875ac38
+      size: 6710
+    subdir: kubernetes-1.27
+    version: 1.27.0
+  original:
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    subdir: kubernetes-1.27
+- completed:
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    name: kubernetes-client
+    pantry-tree:
+      sha256: 3550efb761185ee38e939bd88ad32564d17a0939f2a8983cd82d57e7c98a91a0
+      size: 2125
+    subdir: kubernetes-client
+    version: 0.5.0.0
+  original:
+    commit: a747f6fdc62d34c684709740422497d3c088f8d9
+    git: https://github.com/codedownio/kubernetes-client-haskell.git
+    subdir: kubernetes-client
+- completed:
+    hackage: oidc-client-0.8.0.0@sha256:b07cb83e836e037014f37da4641687905e9a9f04817692ef64f0e3a00456e5b4,3376
+    pantry-tree:
+      sha256: 7d9a3d4ae677ad01de54e296e39dcde3881e0aa161f3e25a68f42db997adce5a
+      size: 1298
+  original:
+    hackage: oidc-client-0.8.0.0
+- completed:
+    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
+    git: https://github.com/codedownio/hs-certificate
+    name: crypton-x509-validation
+    pantry-tree:
+      sha256: a33d18d3ebc3011afac3a2fb39b1492b3c4687d332eb33ffcb4557bced4ce8a6
+      size: 639
+    subdir: x509-validation
+    version: 1.6.12
+  original:
+    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
+    git: https://github.com/codedownio/hs-certificate
+    subdir: x509-validation
 snapshots:
 - completed:
-    sha256: 10d5b7e3cff9a78279600fbf942938a517bf9fbffdc5786c3071f3b320322ef5
-    size: 604416
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/2/29.yaml
-  original: nightly-2024-02-29
+    sha256: bb93febdb9f085b5d3d5a841891ae5d13376dfd1034ff2ab026cb9d93cc67b05
+    size: 652323
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/7/8.yaml
+  original: nightly-2024-07-08
