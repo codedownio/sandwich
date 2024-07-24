@@ -54,8 +54,6 @@ library
     , conduit
     , conduit-extra
     , containers
-    , crypton-connection
-    , data-default
     , exceptions
     , filepath
     , http-client
@@ -84,6 +82,13 @@ library
   if !os(windows)
     exposed-modules:
         Test.Sandwich.Contexts.PostgreSQL
+  if impl(ghc >= 9.6)
+    build-depends:
+        crypton-connection
+      , data-default
+  if impl(ghc < 9.6)
+    build-depends:
+        connection
 
 test-suite tests
   type: exitcode-stdio-1.0

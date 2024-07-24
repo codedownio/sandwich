@@ -38,8 +38,10 @@ import UnliftIO.Exception
 import UnliftIO.Retry
 import UnliftIO.Timeout
 
+#ifdef MIN_VERSION_crypton_connection
 #if MIN_VERSION_crypton_connection(0,4,0)
 import Data.Default (def)
+#endif
 #endif
 
 
@@ -99,8 +101,10 @@ tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
       settingDisableCertificateValidation = True
       , settingDisableSession = False
       , settingUseServerName = False
+#ifdef MIN_VERSION_crypton_connection
 #if MIN_VERSION_crypton_connection(0,4,0)
       , settingClientSupported = def
+#endif
 #endif
       }
 

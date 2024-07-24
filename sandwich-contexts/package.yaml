@@ -46,9 +46,7 @@ library:
   - conduit
   - conduit-extra
   - containers
-  - crypton-connection
   - exceptions
-  - data-default
   - filepath
   - http-client
   - http-conduit
@@ -75,6 +73,13 @@ library:
   - condition: "!os(windows)"
     exposed-modules:
     - Test.Sandwich.Contexts.PostgreSQL
+  - condition: "impl(ghc >= 9.6)"
+    dependencies:
+    - crypton-connection
+    - data-default
+  - condition: "impl(ghc < 9.6)"
+    dependencies:
+    - connection
 
 tests:
   tests:
