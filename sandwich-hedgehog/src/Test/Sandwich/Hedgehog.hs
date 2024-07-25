@@ -64,10 +64,10 @@ import Data.String.Interpolate
 import GHC.Stack
 import Hedgehog as H
 import Hedgehog.Internal.Config (UseColor (..))
-import Hedgehog.Internal.Property hiding (Label)
-import Hedgehog.Internal.Report as H
-import Hedgehog.Internal.Runner as HR
-import Hedgehog.Internal.Seed as Seed
+import Hedgehog.Internal.Property (PropertyConfig(..), TerminationCriteria, defaultConfig)
+import Hedgehog.Internal.Report (Report(..), Result(..), ppResult, renderProgress, renderResult)
+import Hedgehog.Internal.Runner (checkReport)
+import Hedgehog.Internal.Seed (random)
 import Test.Sandwich
 import Test.Sandwich.Internal
 import UnliftIO.Exception
@@ -169,7 +169,7 @@ prop msg p = it msg $ do
         }
 
   let size = fromMaybe 0 hedgehogSize
-  seed <- maybe Seed.random return hedgehogSeed
+  seed <- maybe random return hedgehogSeed
 
   finalReport <- checkReport config size seed p $ \progressReport@(Report {}) -> do
     -- image <- (return . renderHedgehogToImage) =<< ppProgress Nothing progressReport
@@ -180,18 +180,18 @@ prop msg p = it msg $ do
 #ifdef mingw32_HOST_OS
   result <- renderResult EnableColor Nothing finalReport
   case reportStatus finalReport of
-    H.Failed fr -> throwIO $ Reason (Just callStack) result
-    H.GaveUp -> throwIO $ Reason (Just callStack) result
-    H.OK -> info [i|#{result}|]
+    Failed fr -> throwIO $ Reason (Just callStack) result
+    GaveUp -> throwIO $ Reason (Just callStack) result
+    OK -> info [i|#{result}|]
 #else
   image <- (return . renderHedgehogToImage) =<< ppResult Nothing finalReport
 
   -- Hedgehog naturally indents everything by 2. Remove this for the fallback text.
   resultText <- dedent 2 <$> renderResult EnableColor Nothing finalReport
   case reportStatus finalReport of
-    H.Failed _ -> throwIO $ RawImage (Just callStack) resultText image
-    H.GaveUp -> throwIO $ RawImage (Just callStack) resultText image
-    H.OK -> info [i|#{resultText}|]
+    Failed _ -> throwIO $ RawImage (Just callStack) resultText image
+    GaveUp -> throwIO $ RawImage (Just callStack) resultText image
+    OK -> info [i|#{resultText}|]
 #endif
 
 -- | Modify the 'HedgehogParams' for the given spec.
