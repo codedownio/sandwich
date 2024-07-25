@@ -23,15 +23,15 @@ packages:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
 - completed:
-    commit: f924f3262ef1dc5474f1b0ae3b60094376dca51e
+    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
     git: https://github.com/codedownio/docker-openapi.git
     name: docker-engine
     pantry-tree:
-      sha256: 0f84b7b9ca01b4de8261c39833b9e04fc3878b0533ad4c3141c5363e66535268
+      sha256: 175c6ef9ad2b27058edf045710ddefbc1bfafa4b36626221a63c122bec06221b
       size: 3152
     version: 1.36.0.0
   original:
-    commit: f924f3262ef1dc5474f1b0ae3b60094376dca51e
+    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
     git: https://github.com/codedownio/docker-openapi.git
 - completed:
     commit: a747f6fdc62d34c684709740422497d3c088f8d9
