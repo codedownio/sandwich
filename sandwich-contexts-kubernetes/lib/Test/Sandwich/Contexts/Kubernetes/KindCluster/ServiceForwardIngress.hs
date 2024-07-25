@@ -35,7 +35,6 @@ import UnliftIO.Timeout
 
 withForwardKubernetesService' :: (
   MonadUnliftIO m, MonadLoggerIO m
-  , MonadReader context m
   ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do
   baseEnv <- maybe getEnvironment return kindClusterEnvironment

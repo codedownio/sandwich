@@ -19,7 +19,6 @@ module Test.Sandwich.Contexts.Kubernetes.Util.Container (
 import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Retry
 import Data.Aeson as A
 import Data.Aeson.TH as A
@@ -57,7 +56,7 @@ isInContainer = do
     || ("systemd" `T.isInfixOf` output)
     || ("bwrap" `T.isInfixOf` output)
 
-waitForHealth :: forall m. (HasCallStack, MonadLoggerIO m, MonadBaseControl IO m, MonadMask m) => ContainerSystem -> Text -> m ()
+waitForHealth :: forall m. (HasCallStack, MonadLoggerIO m, MonadMask m) => ContainerSystem -> Text -> m ()
 waitForHealth containerSystem containerID = do
   let policy = limitRetriesByCumulativeDelay (60 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
   recoverAll policy $ \_ -> do

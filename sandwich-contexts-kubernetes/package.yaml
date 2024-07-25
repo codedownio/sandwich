@@ -58,7 +58,6 @@ library:
   - kubernetes-client
   - kubernetes-client-core
   - minio-hs
-  - monad-control
   - monad-logger
   - network
   - network-uri

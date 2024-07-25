@@ -197,7 +197,7 @@ withNewMinikubeCluster minikubeBinary clusterName options@(MinikubeClusterOption
              )
 
 startMinikubeCluster :: (
-  MonadLoggerIO m, MonadReader context m
+  MonadLoggerIO m
   ) => FilePath -> Handle -> String -> String -> MinikubeClusterOptions -> m ProcessHandle
 startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (MinikubeClusterOptions {..}) = do
   baseEnv <- getEnvironment

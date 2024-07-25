@@ -10,7 +10,6 @@ module Test.Sandwich.Contexts.Kubernetes.Namespace (
 import Control.Monad
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import Data.String.Interpolate
 import Relude
@@ -25,7 +24,7 @@ import UnliftIO.Process
 -- | Around-style node to create a Kubernetes namespace, and destroy it at the end.
 -- If you're installing something via Helm 3, you may not need this as you can just pass "--create-namespace".
 withKubernetesNamespace :: (
-  MonadUnliftIO m, HasLabel context "kubernetesCluster" KubernetesClusterContext, MonadBaseControl IO m, MonadThrow m
+  MonadUnliftIO m, HasLabel context "kubernetesCluster" KubernetesClusterContext, MonadThrow m
   )
   -- | Namespace to create
   => Text
