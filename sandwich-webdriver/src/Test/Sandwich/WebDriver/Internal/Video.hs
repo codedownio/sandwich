@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 {-# LANGUAGE CPP #-}
 
 module Test.Sandwich.WebDriver.Internal.Video where

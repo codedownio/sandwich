@@ -13,4 +13,4 @@ getResolution :: IO (Int, Int, Int, Int)
 getResolution = undefined
 
 getResolutionForDisplay :: Int -> IO (Int, Int, Int, Int)
-getResolutionForDisplay n = undefined
+getResolutionForDisplay _n = undefined

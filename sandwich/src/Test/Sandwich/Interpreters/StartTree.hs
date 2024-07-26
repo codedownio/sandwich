@@ -223,7 +223,6 @@ runInAsync node ctx action = do
                   -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
                   -- introduce ".." components, so we have to do it ourselves
                   let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
-                  let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
 
                   let symlinkBaseName = case runTreeLoc of
                         Nothing -> takeFileName dir
@@ -239,6 +238,7 @@ runInAsync node ctx action = do
                   -- Don't do createDirectoryLink on Windows, as creating symlinks is generally not allowed for users.
                   -- See https://security.stackexchange.com/questions/10194/why-do-you-have-to-be-an-admin-to-create-a-symlink-in-windows
                   -- TODO: could we detect if this permission is available?
+                  let relativePath = joinPath (L.replicate errorDirDepth "..") </> (makeRelative runRoot dir)
                   liftIO $ createDirectoryLink relativePath symlinkPath
 #endif
 

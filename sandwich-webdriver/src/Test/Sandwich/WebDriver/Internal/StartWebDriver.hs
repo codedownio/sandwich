@@ -16,7 +16,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Control.Retry
 import Data.Default
-import Data.Function
+import Data.Function (fix)
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
