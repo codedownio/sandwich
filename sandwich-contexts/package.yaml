@@ -37,10 +37,11 @@ library:
   - Test.Sandwich.Contexts.FakeSmtpServer
   - Test.Sandwich.Contexts.Files
   - Test.Sandwich.Contexts.Nix
-  - Test.Sandwich.Contexts.Waits
+  - Test.Sandwich.Contexts.PostgreSQL
   - Test.Sandwich.Contexts.Types.Network
   - Test.Sandwich.Contexts.Types.S3
   - Test.Sandwich.Contexts.Util.Ports
+  - Test.Sandwich.Contexts.Waits
   dependencies:
   - aeson
   - conduit
@@ -70,9 +71,6 @@ library:
   - unliftio-core
   - vector
   when:
-  - condition: "!os(windows)"
-    exposed-modules:
-    - Test.Sandwich.Contexts.PostgreSQL
   - condition: "impl(ghc >= 9.6)"
     dependencies:
     - crypton-connection

@@ -19,10 +19,11 @@ library
       Test.Sandwich.Contexts.FakeSmtpServer
       Test.Sandwich.Contexts.Files
       Test.Sandwich.Contexts.Nix
-      Test.Sandwich.Contexts.Waits
+      Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Types.Network
       Test.Sandwich.Contexts.Types.S3
       Test.Sandwich.Contexts.Util.Ports
+      Test.Sandwich.Contexts.Waits
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.ReverseProxy.TCP
@@ -79,9 +80,6 @@ library
     , unliftio-core
     , vector
   default-language: Haskell2010
-  if !os(windows)
-    exposed-modules:
-        Test.Sandwich.Contexts.PostgreSQL
   if impl(ghc >= 9.6)
     build-depends:
         crypton-connection
