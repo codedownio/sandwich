@@ -5,7 +5,7 @@ module Test.Sandwich.WebDriver.Internal.Video where
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Data.Function
+import Data.Function ((&))
 import Data.String.Interpolate
 import System.Process
 import Test.Sandwich

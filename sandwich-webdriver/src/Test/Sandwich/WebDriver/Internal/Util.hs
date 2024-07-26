@@ -9,10 +9,6 @@ import qualified System.Random as R
 import Test.Sandwich (expectationFailure)
 import UnliftIO.Exception
 
-#ifdef mingw32_HOST_OS
-import System.IO
-#endif
-
 
 -- * Exceptions
 
