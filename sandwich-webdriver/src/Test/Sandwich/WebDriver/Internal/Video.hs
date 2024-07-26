@@ -5,7 +5,6 @@ module Test.Sandwich.WebDriver.Internal.Video where
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Data.Function ((&))
 import Data.String.Interpolate
 import System.Process
 import Test.Sandwich
@@ -21,6 +20,7 @@ getMacScreenNumber = return $ Just 0 -- TODO
 #endif
 
 #ifdef linux_HOST_OS
+import Data.Function ((&), on)
 import qualified Data.List as L
 import Data.Maybe
 import UnliftIO.Environment
@@ -81,7 +81,11 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
   let videoPath = [i|#{path}.mkv|]
   let cmd = ["-f", "gdigrab"
             , "-nostdin"
-            , "-i", "desktop"]
+            , "-i", "desktop"
+            , "-offset_x", [i|#{x}|]
+            , "-offset_y", [i|#{y}|]
+            , "-video-size", [i|#{width}x#{height}|]
+            ]
             ++ gdigrabOptions
             ++ [videoPath]
   return ((proc ffmpeg cmd) { env = Nothing })
