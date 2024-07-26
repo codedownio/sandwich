@@ -220,10 +220,6 @@ runInAsync node ctx action = do
             whenJust baseContextErrorSymlinksDir $ \errorsDir ->
               whenJust baseContextPath $ \dir -> do
                 whenJust baseContextRunRoot $ \runRoot -> do
-                  -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
-                  -- introduce ".." components, so we have to do it ourselves
-                  let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
-
                   let symlinkBaseName = case runTreeLoc of
                         Nothing -> takeFileName dir
                         Just loc -> [i|#{srcLocFile loc}:#{srcLocStartLine loc}_#{takeFileName dir}|]
@@ -235,6 +231,10 @@ runInAsync node ctx action = do
                   when exists $ removePathForcibly symlinkPath
 
 #ifndef mingw32_HOST_OS
+                  -- Get a relative path from the error dir to the results dir. System.FilePath doesn't want to
+                  -- introduce ".." components, so we have to do it ourselves
+                  let errorDirDepth = L.length $ splitPath $ makeRelative runRoot errorsDir
+
                   -- Don't do createDirectoryLink on Windows, as creating symlinks is generally not allowed for users.
                   -- See https://security.stackexchange.com/questions/10194/why-do-you-have-to-be-an-admin-to-create-a-symlink-in-windows
                   -- TODO: could we detect if this permission is available?
