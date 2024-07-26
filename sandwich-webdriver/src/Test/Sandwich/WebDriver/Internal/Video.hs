@@ -6,8 +6,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Function
-import qualified Data.List as L
-import Data.Maybe
 import Data.String.Interpolate
 import System.Process
 import Test.Sandwich
@@ -16,13 +14,16 @@ import Test.Sandwich.WebDriver.Internal.OnDemand
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Types.Video
 import Test.Sandwich.WebDriver.Types
-import UnliftIO.Environment
 
 #ifdef darwin_HOST_OS
-import Safe
-
 getMacScreenNumber :: IO (Maybe Int)
-getMacScreenNumber = undefined
+getMacScreenNumber = return $ Just 0 -- TODO
+#endif
+
+#ifdef linux_HOST_OS
+import qualified Data.List as L
+import Data.Maybe
+import UnliftIO.Environment
 #endif
 
 
@@ -67,6 +68,8 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
         Just screenNumber -> ["-y"
                              , "-nostdin"
                              , "-f", "avfoundation"
+                             , "-video-size", [i|#{width}x#{height}|]
+                             , "-vf", [i|crop=#{width}:#{height}:#{x}:#{y}|]
                              , "-i", [i|#{screenNumber}|]]
                              ++ avfoundationOptions
                              ++ [videoPath]
