@@ -71,13 +71,16 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
                          True -> ["--rootless"]
                          False -> []
 
-      createProcessWithLogging (
-        proc minikubeBinary (["image", "load", toLoad
-                             , "--profile", toString clusterName
-                             , "--logtostderr=true", "--v=2"
-                             , "--daemon=true"
-                             ] <> extraFlags)
-        ) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+      let args = ["image", "load", toLoad
+                 , "--profile", toString clusterName
+                 , "--logtostderr=true", "--v=2"
+                 , "--daemon=true"
+                 ] <> extraFlags
+
+      debug [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
+
+      createProcessWithLogging (proc minikubeBinary args)
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> m (Set Text)
 getLoadedImages minikubeBinary clusterName minikubeFlags = do
