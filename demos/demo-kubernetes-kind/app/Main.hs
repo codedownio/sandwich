@@ -15,6 +15,7 @@ import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster
 import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
@@ -31,6 +32,10 @@ spec = describe "Introducing a Kubernetes cluster" $ do
         it "prints the cluster info" $ do
           kcc <- getContext kubernetesCluster
           info [i|Got Kubernetes cluster context: #{kcc}|]
+
+        it "prints the loaded images" $ do
+          images <- getLoadedImages
+          forM_ images $ \image -> info [i|Image: #{image}|]
 
         introduceBinaryViaNixPackage @"kubectl" "kubectl" $
           introduceBinaryViaNixDerivation @"kubectl-minio" kubectlMinioDerivation $

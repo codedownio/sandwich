@@ -103,9 +103,9 @@ defaultKindClusterOptions = KindClusterOptions {
 -- * Introduce
 
 -- | Alias to make type signatures shorter
-type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kind" (EnvironmentFile "kind") :> context
+type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> LabelValue "file-kind" (EnvironmentFile "kind") :> context
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the Nix context.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind and kubectl binaries from the Nix context.
 introduceKindClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, MonadMask m, HasNixContext context
   )
@@ -117,9 +117,10 @@ introduceKindClusterViaNix :: (
   -> SpecFree context m ()
 introduceKindClusterViaNix kindClusterOptions spec =
   introduceBinaryViaNixPackage @"kind" "kind" $
-    introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
+    introduceBinaryViaNixPackage @"kubectl" "kubectl" $
+      introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind binary from the PATH.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind and kubectl binaries from the PATH.
 introduceKindClusterViaEnvironment :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )
@@ -129,19 +130,23 @@ introduceKindClusterViaEnvironment :: (
   -> SpecFree context m ()
 introduceKindClusterViaEnvironment kindClusterOptions spec =
   introduceBinaryViaEnvironment @"kind" $
+    introduceBinaryViaEnvironment @"kubectl" $
     introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the kind binary.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the kind and kubectl binaries.
 introduceKindCluster' :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )
   -- | Path to kind binary
   => FilePath
+  -- | Path to kubectl binary
+  -> FilePath
   -> KindClusterOptions
   -> SpecFree (KindContext context) m ()
   -> SpecFree context m ()
-introduceKindCluster' kindBinary kindClusterOptions spec =
+introduceKindCluster' kindBinary kubectlBinary kindClusterOptions spec =
   introduceFile @"kind" kindBinary $
+    introduceFile @"kubectl" kubectlBinary $
     introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) $
       spec
 
@@ -150,7 +155,7 @@ introduceKindCluster' kindBinary kindClusterOptions spec =
 -- | Bracket-style variant of 'introduceKindCluster'.
 withKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
-  , HasBaseContextMonad context m, HasFile context "kind"
+  , HasBaseContextMonad context m, HasFile context "kind", HasFile context "kubectl"
   )
   -- | Options
   => KindClusterOptions
@@ -158,19 +163,22 @@ withKindCluster :: (
   -> m a
 withKindCluster opts action = do
   kindBinary <- askFile @"kind"
-  withKindCluster' kindBinary opts action
+  kubectlBinary <- askFile @"kubectl"
+  withKindCluster' kindBinary kubectlBinary opts action
 
--- | Same as 'withKindCluster', but allows you to pass in the path to the kind binary.
+-- | Same as 'withKindCluster', but allows you to pass in the paths to the kind and kubectl binaries.
 withKindCluster' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
   , HasBaseContextMonad context m
   )
   -- | Path to the kind binary
   => FilePath
+  -- | Path to the kubectl binary
+  -> FilePath
   -> KindClusterOptions
   -> (KubernetesClusterContext -> m a)
   -> m a
-withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
+withKindCluster' kindBinary kubectlBinary opts@(KindClusterOptions {..}) action = do
   clusterName <- case kindClusterName of
     KindClusterNameExactly t -> pure t
     KindClusterNameAutogenerate maybePrefix -> do
@@ -205,7 +213,7 @@ withKindCluster' kindBinary opts@(KindClusterOptions {..}) action = do
                                                   })
                void $ waitForProcess ps
            ))
-           (\kcc -> bracket_ (setUpKindCluster kcc environmentToUse driver)
+           (\kcc -> bracket_ (setUpKindCluster kcc kindBinary kubectlBinary environmentToUse driver)
                              (return ())
                              (action kcc)
            )

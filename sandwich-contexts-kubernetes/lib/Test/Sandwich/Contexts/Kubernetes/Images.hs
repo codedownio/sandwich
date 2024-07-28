@@ -4,7 +4,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Images (
-  loadImage
+  getLoadedImages
+
+  , loadImage
   , loadImage'
 
   , introduceImages
@@ -20,6 +22,31 @@ import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.Images as Kind
 import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Minikube
 import Test.Sandwich.Contexts.Kubernetes.Types
 
+
+-- | Get the images loaded onto the cluster.
+getLoadedImages :: (
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m, HasKubernetesClusterContext context
+  )
+  -- | List of image names
+  => m (Set Text)
+getLoadedImages = getContext kubernetesCluster >>= getLoadedImages'
+
+-- | Same as 'getLoadedImages', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
+getLoadedImages' :: (
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  )
+  -- | Cluster context
+  => KubernetesClusterContext
+  -- | List of image names
+  -> m (Set Text)
+getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) = do
+  timeAction [i|Getting loaded images|] $ do
+    case kubernetesClusterType of
+      (KubernetesClusterKind {..}) ->
+        Kind.getLoadedImages kcc kindClusterDriver kindBinary Nothing
+        -- Kind.loadImage kindBinary kindClusterName image env
+      (KubernetesClusterMinikube {..}) ->
+        Minikube.getLoadedImages minikubeBinary kubernetesClusterName minikubeFlags
 
 -- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
@@ -47,7 +74,7 @@ loadImage' :: (
   -> Text
   -- | Environment variables (currently used only for Kind clusters)
   -> Maybe [(String, String)]
-  -- | Callback with transformed image names (see above)
+  -- | The transformed image name
   -> m Text
 loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image env = do
   debug [i|Loading container image '#{image}'|]

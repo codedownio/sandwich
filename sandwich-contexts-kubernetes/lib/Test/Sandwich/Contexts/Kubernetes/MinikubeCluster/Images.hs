@@ -3,12 +3,16 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images where
+module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
+  loadImage
+  , getLoadedImages
+  ) where
 
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.List as L
+import qualified Data.Set as Set
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
@@ -30,7 +34,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
         True -> ["--rootless"]
         False -> []
 
-  image' <- case isAbsolute (toString image) of
+  case isAbsolute (toString image) of
     True -> do
       initialStream :: Text <- doesDirectoryExist (toString image) >>= \case
         True ->
@@ -63,9 +67,10 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
       createProcessWithLogging (shell cmd) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
       return $ tweak image
 
-  -- TODO: remove this?
-  let cmd = [iii|#{minikubeBinary} image ls --profile #{clusterName}|]
-  imageList <- readCreateProcessWithLogging (shell cmd) ""
-  info [i|Loaded image list: #{imageList}|]
-
-  return image'
+getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> m (Set Text)
+getLoadedImages minikubeBinary clusterName minikubeFlags = do
+  -- TODO: use "--format json" and parse?
+  (Set.fromList . T.words . toText) <$> readCreateProcessWithLogging (
+    proc minikubeBinary (["image", "ls"
+                         , "--profile", toString clusterName
+                         ] <> fmap toString minikubeFlags)) ""
