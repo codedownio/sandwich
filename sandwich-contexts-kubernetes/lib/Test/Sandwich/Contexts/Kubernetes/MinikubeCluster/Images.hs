@@ -40,7 +40,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
           -- Formerly we would execute a shell with a pipe to direct the tar output directly into "minikube image load".
           -- But then "minikube image load" would just write its own tarball in /tmp, like /tmp/build.12345.tar, and
           -- leave it there!
-          withTempDirectory dir "image-tarball" $ \tempDir -> do
+          withSystemTempDirectory "image-tarball" $ \tempDir -> do
             let tarFile = tempDir </> "image.tar"
             -- TODO: don't depend on external tar file
             createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
@@ -52,7 +52,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
             imageLoad (toString image)
             readImageName (toString image)
           ".gz" -> do
-            withTempDirectory dir "image-tarball" $ \tempDir -> do
+            withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
               -- TODO: don't depend on external gzip file
               createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
