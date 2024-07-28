@@ -52,7 +52,8 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
 -- and return the modified image name (i.e. the name by which the cluster knows the image).
 loadImage :: (
-  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m, HasKubernetesClusterContext context
+  MonadUnliftIO m, MonadLogger m, MonadFail m
+  , HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
   -- | Image name
   => Text
@@ -66,7 +67,7 @@ loadImage image env = do
 
 -- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 loadImage' :: (
-  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  MonadUnliftIO m, MonadLogger m, MonadFail m, HasBaseContextMonad context m
   )
   -- | Cluster context
   => KubernetesClusterContext
