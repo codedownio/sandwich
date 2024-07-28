@@ -11,6 +11,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import qualified Data.Aeson as A
 import qualified Data.List as L
 import qualified Data.Set as Set
 import Data.String.Interpolate
@@ -29,7 +30,7 @@ loadImage :: (
   MonadUnliftIO m, MonadLogger m, MonadFail m, MonadReader context m, HasBaseContext context
   ) => FilePath -> Text -> [Text] -> Text -> m Text
 loadImage minikubeBinary clusterName minikubeFlags image = do
-  Just dir <- getCurrentFolder
+  -- Just dir <- getCurrentFolder
 
   case isAbsolute (toString image) of
     True -> do
@@ -45,11 +46,11 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
             -- TODO: don't depend on external tar file
             createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
               >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-            imageLoad tarFile
+            imageLoad tarFile False
             readImageName (toString image)
         False -> case takeExtension (toString image) of
           ".tar" -> do
-            imageLoad (toString image)
+            imageLoad (toString image) False
             readImageName (toString image)
           ".gz" -> do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
@@ -57,16 +58,16 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
               -- TODO: don't depend on external gzip file
               createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-              imageLoad tarFile
+              imageLoad tarFile False
               readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
     False ->
       -- Docker/Podman image
-      imageLoad (toString image) >> return image
+      imageLoad (toString image) True >> return image
 
   where
-    imageLoad toLoad = do
+    imageLoad toLoad daemon = do
       let extraFlags = case "--rootless" `L.elem` minikubeFlags of
                          True -> ["--rootless"]
                          False -> []
@@ -74,7 +75,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
       let args = ["image", "load", toLoad
                  , "--profile", toString clusterName
                  , "--logtostderr=true", "--v=2"
-                 , "--daemon=true"
+                 , [i|--daemon=#{A.encode daemon}|]
                  ] <> extraFlags
 
       debug [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
