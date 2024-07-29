@@ -47,7 +47,10 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
         Kind.getLoadedImages kcc kindClusterDriver kindBinary Nothing
         -- Kind.loadImage kindBinary kindClusterName image env
       (KubernetesClusterMinikube {..}) ->
-        Minikube.getLoadedImages minikubeBinary kubernetesClusterName minikubeFlags
+        -- Note: don't pass minikubeFlags here. These are pretty much intended for "minikube start" only.
+        -- TODO: clarify the documentation and possibly add an extra field where extra options can be passed
+        -- to "minikube image" commands.
+        Minikube.getLoadedImages minikubeBinary kubernetesClusterName []
 
 -- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
