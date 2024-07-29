@@ -87,15 +87,24 @@ loadImage' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClust
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
         Kind.loadImage kindBinary kindClusterName image env
-      (KubernetesClusterMinikube {..}) -> do
-        image' <- Minikube.loadImage minikubeBinary kubernetesClusterName minikubeFlags image
+      (KubernetesClusterMinikube {..}) ->
+        -- Don't pass minikubeFlags; see comment above.
+        Minikube.loadImage minikubeBinary kubernetesClusterName [] image
 
         -- Because of the possible silent failure in "minikube image load", confirm that this
         -- image made it onto the cluster.
-        loadedImages <- Set.toList <$> getLoadedImages' kcc
-        loadedImages `shouldContain` [image']
-
-        return image'
+        -- At the moment this approach doesn't work, because if you do
+        -- "minikube image load busybox:1.36.1-musl"
+        -- followed by
+        -- "minikube image ls",
+        -- the result contains "docker.io/library/busybox:1.36.1-musl".
+        -- Where did the docker.io/library/ come from? Need to understand this before we can
+        -- check this properly.
+        --
+        -- image' <- Minikube.loadImage minikubeBinary kubernetesClusterName minikubeFlags image
+        -- loadedImages <- Set.toList <$> getLoadedImages' kcc
+        -- loadedImages `shouldContain` [image']
+        -- return image'
 
 -- | Helper to introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.

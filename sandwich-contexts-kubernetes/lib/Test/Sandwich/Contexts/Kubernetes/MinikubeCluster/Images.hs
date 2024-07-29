@@ -80,7 +80,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
 
       let args = ["image", "load", toLoad
                  , "--profile", toString clusterName
-                 , "--logtostderr=true", "--v=2"
+                 , "--logtostderr=true", "--v=1"
                  , [i|--daemon=#{A.encode daemon}|]
                  ] <> extraFlags
 
