@@ -32,6 +32,11 @@ loadImage :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   ) => FilePath -> Text -> [Text] -> Text -> m Text
 loadImage minikubeBinary clusterName minikubeFlags image = do
+  -- Don't know why this is needed. But if you load an image like codedown/server:abcdef,
+  -- Minikube will seemingly prepend docker.io/.
+  -- We probably need to prepend our images with own own domain name to change this.
+  let tweak = ("docker.io/" <>)
+
   case isAbsolute (toString image) of
     True -> do
       -- File or directory image
@@ -47,11 +52,11 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
             createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
               >>= waitForProcess >>= (`shouldBe` ExitSuccess)
             imageLoad tarFile False
-            readImageName (toString image)
+            tweak <$> readImageName (toString image)
         False -> case takeExtension (toString image) of
           ".tar" -> do
             imageLoad (toString image) False
-            readImageName (toString image)
+            tweak <$> readImageName (toString image)
           ".gz" -> do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
@@ -59,12 +64,12 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
               createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
               imageLoad tarFile False
-              readImageName (toString image)
+              tweak <$> readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
     False ->
       -- Docker/Podman image
-      imageLoad (toString image) True >> return image
+      imageLoad (toString image) True >> return (tweak image)
 
   where
     imageLoad :: (MonadLoggerIO m, HasCallStack) => String -> Bool -> m ()
