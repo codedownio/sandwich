@@ -25,7 +25,7 @@ import UnliftIO.Process
 
 
 withForwardKubernetesService' :: (
-  MonadLoggerIO m, MonadUnliftIO m
+  HasCallStack, MonadLoggerIO m, MonadUnliftIO m
   ) => KubernetesClusterContext -> Text -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) profile namespace service action = do
   baseEnv <- liftIO getEnvironment

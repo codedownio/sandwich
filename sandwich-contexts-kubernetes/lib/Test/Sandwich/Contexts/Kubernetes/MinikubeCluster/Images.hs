@@ -29,7 +29,7 @@ import UnliftIO.Temporary
 
 
 loadImage :: (
-  MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   ) => FilePath -> Text -> [Text] -> Text -> m Text
 loadImage minikubeBinary clusterName minikubeFlags image = do
   case isAbsolute (toString image) of
@@ -67,6 +67,7 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
       imageLoad (toString image) True >> return image
 
   where
+    imageLoad :: (MonadLoggerIO m, HasCallStack) => String -> Bool -> m ()
     imageLoad toLoad daemon = do
       let extraFlags = case "--rootless" `L.elem` minikubeFlags of
                          True -> ["--rootless"]

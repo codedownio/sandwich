@@ -27,7 +27,7 @@ import UnliftIO.Temporary
 
 
 loadImage :: (
-  MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m
   )
   -- | Kind binary
   => FilePath
@@ -61,7 +61,9 @@ loadImage kindBinary clusterName image env = do
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
       return $ tweak image
 
-getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> m (Set Text)
+getLoadedImages :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m
+  ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> m (Set Text)
 getLoadedImages kcc driver kindBinary env = do
   chosenNode <- getNodes kcc kindBinary env >>= \case
     (x:_) -> pure x
