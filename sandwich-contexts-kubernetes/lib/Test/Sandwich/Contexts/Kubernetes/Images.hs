@@ -14,6 +14,7 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import qualified Data.Set as Set
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
@@ -77,14 +78,21 @@ loadImage' :: (
   -> Maybe [(String, String)]
   -- | The transformed image name
   -> m Text
-loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image env = do
+loadImage' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image env = do
   debug [i|Loading container image '#{image}'|]
   timeAction [i|Loading container image '#{image}'|] $ do
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
         Kind.loadImage kindBinary kindClusterName image env
-      (KubernetesClusterMinikube {..}) ->
-        Minikube.loadImage minikubeBinary kubernetesClusterName minikubeFlags image
+      (KubernetesClusterMinikube {..}) -> do
+        image' <- Minikube.loadImage minikubeBinary kubernetesClusterName minikubeFlags image
+
+        -- Because of the possible silent failure in "minikube image load", confirm that this
+        -- image made it onto the cluster.
+        loadedImages <- Set.toList <$> getLoadedImages' kcc
+        loadedImages `shouldContain` [image']
+
+        return image'
 
 -- | Helper to introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
