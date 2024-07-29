@@ -12,6 +12,7 @@ import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.Aeson as A
+import qualified Data.ByteString as B
 import qualified Data.List as L
 import qualified Data.Set as Set
 import Data.String.Interpolate
@@ -21,17 +22,16 @@ import System.Exit
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.Util.Container
+import Text.Regex.TDFA
 import UnliftIO.Directory
 import UnliftIO.Process
 import UnliftIO.Temporary
 
 
 loadImage :: (
-  MonadUnliftIO m, MonadLogger m, MonadFail m, MonadReader context m, HasBaseContext context
+  MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   ) => FilePath -> Text -> [Text] -> Text -> m Text
 loadImage minikubeBinary clusterName minikubeFlags image = do
-  -- Just dir <- getCurrentFolder
-
   case isAbsolute (toString image) of
     True -> do
       -- File or directory image
@@ -80,8 +80,35 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
 
       debug [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
 
-      createProcessWithLogging (proc minikubeBinary args)
-        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+      -- Gather stderr output while also logging it
+      logFn <- askLoggerIO
+      stderrOutputVar <- newIORef mempty
+      let customLogFn loc src level str = do
+            modifyIORef' stderrOutputVar (<> str)
+            logFn loc src level str
+
+      liftIO $ flip runLoggingT customLogFn $
+        createProcessWithLogging (proc minikubeBinary args)
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+      stderrOutput <- fromLogStr <$> readIORef stderrOutputVar
+      when (or [f stderrOutput | f <- badOutputChecks]) $
+        expectationFailure [i|minikube image load failed; error output detected|]
+
+    -- This is crazy, but minikube image load sometimes fails silently.
+    -- One example: https://github.com/kubernetes/minikube/issues/16032
+    -- As a result, we add a few checks to detect the cases we've seen that represent a failed load.
+    badOutputChecks :: [ByteString -> Bool]
+    badOutputChecks = [check1, check2, check3]
+
+    check1 bytes = "Failed to load cached images for profile" `B.isInfixOf` bytes
+                 && "make sure the profile is running." `B.isInfixOf` bytes
+
+    check2 bytes = "ctr: failed to ingest" `B.isInfixOf` bytes
+                 && "failed to copy: failed to send write: error reading from server: EOF: unavailable" `B.isInfixOf` bytes
+
+    check3 :: ByteString -> Bool
+    check3 bytes = bytes =~ ("failed pushing to:[[:blank:]]*[^[:space:]]+" :: Text)
 
 getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> m (Set Text)
 getLoadedImages minikubeBinary clusterName minikubeFlags = do
