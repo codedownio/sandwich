@@ -25,10 +25,12 @@ data KubernetesClusterType =
   KubernetesClusterKind { kindBinary :: FilePath
                         , kindClusterName :: Text
                         , kindClusterDriver :: Text
-                        , kindClusterEnvironment :: Maybe [(String, String)] }
+                        , kindClusterEnvironment :: Maybe [(String, String)]
+                        }
   | KubernetesClusterMinikube { minikubeBinary :: FilePath
                               , minikubeProfileName :: Text
-                              , minikubeFlags :: [Text] }
+                              , minikubeFlags :: [Text]
+                              }
   deriving (Show, Eq)
 
 data KubernetesClusterContext = KubernetesClusterContext {

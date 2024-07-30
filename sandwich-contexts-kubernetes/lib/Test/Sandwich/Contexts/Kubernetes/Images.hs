@@ -5,6 +5,9 @@
 
 module Test.Sandwich.Contexts.Kubernetes.Images (
   getLoadedImages
+  , getLoadedImages'
+
+  , clusterContainsImage'
 
   , loadImageIfNecessary
   , loadImageIfNecessary'
@@ -54,20 +57,33 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
         -- to "minikube image" commands.
         Minikube.getLoadedImages minikubeBinary kubernetesClusterName []
 
+-- | Test if a cluster has a given image loaded.
+clusterContainsImage' :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m
+  )
+  -- | Cluster context
+  => KubernetesClusterContext
+  -- | Image
+  -> Text
+  -> m Bool
+clusterContainsImage' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image = do
+  case kubernetesClusterType of
+    KubernetesClusterKind {..} ->
+      Kind.clusterContainsImage kcc kindClusterDriver kindBinary kindClusterEnvironment image
+    KubernetesClusterMinikube {..} ->
+      Minikube.clusterContainsImage minikubeBinary kubernetesClusterName [] image
+
 -- | Same as 'loadImage', but first checks if the given image is already present on the cluster.
 loadImageIfNecessary :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   , HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
-  -- | Image name
+  -- | Image (file path or local Docker image)
   => Text
-  -- | Optional environment variables to provide
-  -> Maybe [(String, String)]
-  -- | The transformed image name
   -> m ()
-loadImageIfNecessary image env = do
+loadImageIfNecessary image = do
   kcc <- getContext kubernetesCluster
-  loadImageIfNecessary' kcc image env
+  loadImageIfNecessary' kcc image
 
 -- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 loadImageIfNecessary' :: (
@@ -77,20 +93,11 @@ loadImageIfNecessary' :: (
   => KubernetesClusterContext
   -- | Image (file path or local Docker image)
   -> Text
-  -- | Environment variables (currently used only for Kind clusters)
-  -> Maybe [(String, String)]
   -- | The transformed image name
   -> m ()
-loadImageIfNecessary' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image env = do
-  debug [i|Loading container image '#{image}'|]
-  timeAction [i|Loading container image '#{image}'|] $ do
-    case kubernetesClusterType of
-      (KubernetesClusterKind {..}) ->
-        whenM (Kind.clusterContainsImage kcc kindClusterDriver kindBinary kindClusterEnvironment image) $
-          void $ loadImage' kcc image env
-      (KubernetesClusterMinikube {..}) ->
-        whenM (Minikube.clusterContainsImage minikubeBinary kubernetesClusterName [] image) $
-          void $ loadImage' kcc image env
+loadImageIfNecessary' kcc image =
+  whenM (clusterContainsImage' kcc image) $
+    void $ loadImage' kcc image
 
 -- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
@@ -101,13 +108,11 @@ loadImage :: (
   )
   -- | Image name
   => Text
-  -- | Optional environment variables to provide
-  -> Maybe [(String, String)]
   -- | The transformed image name
   -> m Text
-loadImage image env = do
+loadImage image = do
   kcc <- getContext kubernetesCluster
-  loadImage' kcc image env
+  loadImage' kcc image
 
 -- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 loadImage' :: (
@@ -117,16 +122,14 @@ loadImage' :: (
   => KubernetesClusterContext
   -- | Image name
   -> Text
-  -- | Environment variables (currently used only for Kind clusters)
-  -> Maybe [(String, String)]
   -- | The transformed image name
   -> m Text
-loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image env = do
+loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image = do
   debug [i|Loading container image '#{image}'|]
   timeAction [i|Loading container image '#{image}'|] $ do
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
-        Kind.loadImage kindBinary kindClusterName image env
+        Kind.loadImage kindBinary kindClusterName image kindClusterEnvironment
       (KubernetesClusterMinikube {..}) ->
         -- Don't pass minikubeFlags; see comment above.
         Minikube.loadImage minikubeBinary kubernetesClusterName [] image
@@ -152,4 +155,4 @@ introduceImages :: (
   HasCallStack, MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context
   ) => [Text] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
 introduceImages images = introduceWith "Introduce cluster images" kubernetesClusterImages $ \action ->
-  forM images (\x -> loadImage x Nothing) >>= (void . action)
+  forM images (\x -> loadImage x) >>= (void . action)

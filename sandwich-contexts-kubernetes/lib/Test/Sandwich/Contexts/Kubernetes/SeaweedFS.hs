@@ -128,7 +128,7 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     info [i|Doing make docker-build|]
     runOperatorCmd "make docker-build" []
 
-    newImageName <- loadImage' kcc "chrislusf/seaweedfs-operator:v0.0.1" Nothing
+    newImageName <- loadImage' kcc "chrislusf/seaweedfs-operator:v0.0.1"
 
     info [i|------------------ Installing SeaweedFS operator ------------------|]
 
