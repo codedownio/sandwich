@@ -7,6 +7,7 @@ module Test.Sandwich.Expectations where
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import qualified Data.List as L
+import qualified Data.Set as Set
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
@@ -93,6 +94,12 @@ shouldNotContain :: (HasCallStack, MonadIO m, Eq a, Show a) => [a] -> [a] -> m (
 shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
   True -> expectationFailure [i|Expected #{show haystack} not to contain #{show needle}|]
   False -> return ()
+
+-- | Asserts that the given lists are equal as sets.
+shouldBeSet :: (HasCallStack, MonadIO m, Ord a, Show a) => [a] -> [a] -> m ()
+shouldBeSet haystack needle = case Set.fromList needle == Set.fromList haystack of
+  True -> return ()
+  False -> expectationFailure [i|Expected #{show haystack} to equal as a set #{show needle}|]
 
 -- | Asserts that the given list contains an item matching a predicate.
 shouldNotContainPredicate :: (HasCallStack, MonadIO m, Show a) => [a] -> (a -> Bool) -> m ()
