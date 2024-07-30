@@ -5,6 +5,7 @@
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.Images (
   getLoadedImages
+  , clusterContainsImage
   , loadImage
   ) where
 
@@ -86,3 +87,13 @@ getLoadedImages kcc driver kindBinary env = do
     extractRepoTags :: A.Value -> [Text]
     extractRepoTags (A.Object (aesonLookup "repoTags" -> Just (A.Array xs))) = [t | A.String t <- V.toList xs]
     extractRepoTags _ = []
+
+clusterContainsImage :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m
+  ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> Text -> m Bool
+clusterContainsImage kcc driver kindBinary env image = do
+  imageName <- case isAbsolute (toString image) of
+    False -> pure image
+    True -> readImageName (toString image)
+
+  (imageName `Set.member`) <$> getLoadedImages kcc driver kindBinary env

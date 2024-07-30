@@ -4,8 +4,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
-  loadImage
-  , getLoadedImages
+  getLoadedImages
+  , clusterContainsImage
+  , loadImage
   ) where
 
 import Control.Monad
@@ -123,3 +124,20 @@ getLoadedImages minikubeBinary clusterName minikubeFlags = do
     proc minikubeBinary (["image", "ls"
                          , "--profile", toString clusterName
                          ] <> fmap toString minikubeFlags)) ""
+
+clusterContainsImage :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> Text -> m Bool
+clusterContainsImage minikubeBinary clusterName minikubeFlags image = do
+  imageName <- case isAbsolute (toString image) of
+    False -> pure image
+    True -> readImageName (toString image)
+
+  loadedImages <- getLoadedImages minikubeBinary clusterName minikubeFlags
+
+  return (
+    imageName `Set.member` loadedImages
+
+    -- Deal with weird prefixing Minikube does; see
+    -- https://github.com/kubernetes/minikube/issues/19343
+    || ("docker.io/" <> imageName) `Set.member` loadedImages
+    || ("docker.io/library/" <> imageName) `Set.member` loadedImages
+    )
