@@ -14,9 +14,6 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   , withMinikubeCluster
   , withMinikubeCluster'
 
-  -- * For loading images onto the cluster
-  , loadImage
-
   -- * Re-exported cluster types
   , kubernetesCluster
   , KubernetesClusterContext (..)
@@ -40,7 +37,6 @@ import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.Nix

@@ -13,9 +13,6 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withKindCluster
   , withKindCluster'
 
-  -- * Loading images
-  , loadImage
-
   -- * Re-exported types
   , KubernetesClusterContext (..)
   , kubernetesCluster
@@ -42,7 +39,6 @@ import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
-import Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)

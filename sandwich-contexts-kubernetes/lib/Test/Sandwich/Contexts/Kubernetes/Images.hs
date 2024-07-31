@@ -7,6 +7,7 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   getLoadedImages
   , getLoadedImages'
 
+  , clusterContainsImage
   , clusterContainsImage'
 
   , loadImageIfNecessary
@@ -58,6 +59,17 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
         Minikube.getLoadedImages minikubeBinary kubernetesClusterName []
 
 -- | Test if a cluster has a given image loaded.
+clusterContainsImage :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, MonadReader context m, HasKubernetesClusterContext context
+  )
+  -- | Image
+  => Text
+  -> m Bool
+clusterContainsImage image = do
+  kcc <- getContext kubernetesCluster
+  clusterContainsImage' kcc image
+
+-- | Same as 'clusterContainsImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 clusterContainsImage' :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
   )

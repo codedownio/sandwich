@@ -7,9 +7,7 @@ maintainer: tom@codedown.io
 copyright: 2024 Tom McLaughlin
 dependencies:
 - base
-- containers
 - sandwich
-- unliftio
 
 default-extensions:
 - OverloadedStrings
@@ -37,8 +35,11 @@ library:
   - Test.Sandwich.Contexts.Kubernetes.Cluster
   - Test.Sandwich.Contexts.Kubernetes.Images
   - Test.Sandwich.Contexts.Kubernetes.KindCluster
+  - Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
+  - Test.Sandwich.Contexts.Kubernetes.Kubectl
   - Test.Sandwich.Contexts.Kubernetes.Longhorn
   - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+  - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
   - Test.Sandwich.Contexts.Kubernetes.MinioOperator
   - Test.Sandwich.Contexts.Kubernetes.MinioS3Server
   - Test.Sandwich.Contexts.Kubernetes.Namespace
@@ -70,6 +71,25 @@ library:
   - string-interpolate
   - temporary
   - text
+  - unliftio
   - unliftio-core
   - vector
   - yaml
+
+tests:
+  sandwich-contexts-kubernetes-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - random
+    - relude
+    - sandwich
+    - sandwich-contexts
+    - sandwich-contexts-kubernetes
+    - string-interpolate
+    - unliftio
+    - unliftio-core

@@ -1,21 +1,24 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Namespace (
   withKubernetesNamespace
+  , withKubernetesNamespace'
   ) where
 
 import Control.Monad
 import Control.Monad.IO.Unlift
-import qualified Data.List as L
+import Control.Monad.Logger
 import Data.String.Interpolate
 import Relude
 import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster
-import UnliftIO.Environment
+import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import UnliftIO.Exception
 import UnliftIO.Process
 
@@ -23,20 +26,53 @@ import UnliftIO.Process
 -- | Around-style node to create a Kubernetes namespace, and destroy it at the end.
 -- If you're installing something via Helm 3, you may not need this as you can just pass "--create-namespace".
 withKubernetesNamespace :: (
-  MonadUnliftIO m, HasLabel context "kubernetesCluster" KubernetesClusterContext
+  MonadUnliftIO m
+  , HasBaseContext context
+  , HasLabel context "kubernetesCluster" KubernetesClusterContext
+  , HasFile context "kubectl"
   )
   -- | Namespace to create
   => Text
   -> SpecFree context m ()
   -> SpecFree context m ()
-withKubernetesNamespace namespace = around [i|Create the '#{namespace}' kubernetes namespace|] (void . bracket_ create destroy)
-  where
-    create = runWithKubeConfig [i|kubectl create namespace #{namespace}|] >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+withKubernetesNamespace namespace = around [i|Create the '#{namespace}' kubernetes namespace|] (void . bracket_ (create namespace) (destroy namespace))
 
-    destroy = runWithKubeConfig [i|kubectl delete namespace #{namespace}|] >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+-- | Same as 'withKubernetesNamespace', but works in an arbitrary monad with reader context.
+withKubernetesNamespace' :: (
+  MonadUnliftIO m, MonadLoggerIO m
+  , MonadReader context m
+  , HasBaseContext context
+  , HasLabel context "kubernetesCluster" KubernetesClusterContext
+  , HasFile context "kubectl"
+  )
+  -- | Namespace to create
+  => Text
+  -> m ()
+  -> m ()
+withKubernetesNamespace' namespace = bracket_ (create namespace) (destroy namespace)
 
-    runWithKubeConfig cmd = do
-      KubernetesClusterContext {..} <- getContext kubernetesCluster
-      baseEnv <- getEnvironment
-      let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
-      createProcessWithLogging ((shell cmd) { env = Just env, delegate_ctlc = True })
+create :: (
+  MonadUnliftIO m, MonadLoggerIO m
+  , HasBaseContext context
+  , MonadReader context m
+  , HasKubernetesClusterContext context
+  , HasFile context "kubectl"
+  ) => Text -> m ()
+create namespace = do
+  let args = ["create", "namespace", toString namespace]
+  runWithKubectl $ \kubectl env ->
+    createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+destroy :: (
+  MonadUnliftIO m, MonadLoggerIO m
+  , HasBaseContext context
+  , MonadReader context m
+  , HasKubernetesClusterContext context
+  , HasFile context "kubectl"
+  ) => Text -> m ()
+destroy namespace = do
+  let args = ["delete", "namespace", toString namespace]
+  runWithKubectl $ \kubectl env ->
+    createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)

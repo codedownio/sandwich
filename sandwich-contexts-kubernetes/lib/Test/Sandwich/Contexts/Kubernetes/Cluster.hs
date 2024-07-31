@@ -19,6 +19,10 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , waitForPodsToBeReady
   , waitForServiceEndpointsToExist
 
+  -- * Run commands with kubectl
+  , runWithKubectl
+  , runWithKubectl'
+
   -- * Forward services
   , withForwardKubernetesService
   , withForwardKubernetesService'
@@ -48,6 +52,7 @@ import Network.URI
 import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.KubectlLogs
 import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
 import Test.Sandwich.Contexts.Kubernetes.Types

@@ -167,6 +167,9 @@ jobs:
     - name: Test (sandwich-contexts-docker)
       run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
 
+    - name: Test (sandwich-contexts-kubernetes)
+      run: stack test sandwich-contexts-kubernetes --stack-yaml ${{matrix.yaml}} --system-ghc
+
     - name: Test (sandwich-contexts-minio)
       run: stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
 

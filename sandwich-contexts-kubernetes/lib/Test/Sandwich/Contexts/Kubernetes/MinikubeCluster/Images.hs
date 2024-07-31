@@ -34,9 +34,9 @@ loadImage :: (
   ) => FilePath -> Text -> [Text] -> Text -> m Text
 loadImage minikubeBinary clusterName minikubeFlags image = do
   -- Don't know why this is needed. But if you load an image like codedown/server:abcdef,
-  -- Minikube will seemingly prepend docker.io/.
+  -- Minikube will seemingly prepend docker.io/library.
   -- We probably need to prepend our images with own own domain name to change this.
-  let tweak = ("docker.io/" <>)
+  let tweak = ("docker.io/library/" <>)
 
   case isAbsolute (toString image) of
     True -> do

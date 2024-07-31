@@ -18,8 +18,11 @@ library
       Test.Sandwich.Contexts.Kubernetes.Cluster
       Test.Sandwich.Contexts.Kubernetes.Images
       Test.Sandwich.Contexts.Kubernetes.KindCluster
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
+      Test.Sandwich.Contexts.Kubernetes.Kubectl
       Test.Sandwich.Contexts.Kubernetes.Longhorn
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioOperator
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server
       Test.Sandwich.Contexts.Kubernetes.Namespace
@@ -27,7 +30,6 @@ library
       Test.Sandwich.Contexts.Kubernetes.Types
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
-      Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Network
       Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress
       Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward
@@ -35,7 +37,6 @@ library
       Test.Sandwich.Contexts.Kubernetes.KubectlLogs
       Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
-      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
       Test.Sandwich.Contexts.Kubernetes.Run
       Test.Sandwich.Contexts.Kubernetes.Util
@@ -96,4 +97,37 @@ library
     , unliftio-core
     , vector
     , yaml
+  default-language: Haskell2010
+
+test-suite sandwich-contexts-kubernetes-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_sandwich_contexts_kubernetes
+  hs-source-dirs:
+      test
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      LambdaCase
+      MultiWayIf
+      ViewPatterns
+      TupleSections
+      FlexibleContexts
+      NoImplicitPrelude
+      NumericUnderscores
+  ghc-options: -Wunused-packages -Wall -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , random
+    , relude
+    , sandwich
+    , sandwich-contexts
+    , sandwich-contexts-kubernetes
+    , string-interpolate
+    , unliftio
+    , unliftio-core
   default-language: Haskell2010
