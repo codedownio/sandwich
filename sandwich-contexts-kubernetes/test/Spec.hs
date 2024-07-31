@@ -13,11 +13,10 @@ import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
-import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
+import UnliftIO.Exception
 import UnliftIO.Process
--- import Test.Sandwich.Contexts.Waits
 
 
 spec :: TopSpec
@@ -54,16 +53,23 @@ loadImageTests = do
         False -> expectationFailure [i|Cluster didn't contain image '#{transformedImageName}'|]
         True -> return ()
 
-      namespace <- ("test-namespace-" <>) <$> randomAlpha 8
       podName <- ("test-pod-" <>) <$> randomAlpha 8
-      withKubernetesNamespace' (toText namespace) $
-        runWithKubectl $ \kubectlBinary env -> do
-          -- Wait for service account to exist; see
-          -- https://github.com/kubernetes/kubernetes/issues/66689
-          waitUntil 60 $
-            createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace, "get", "serviceaccount", "default", "-o", "name"]) { env = Just env })
-              >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
+      -- namespace <- ("test-namespace-" <>) <$> randomAlpha 8
+      -- withKubernetesNamespace' (toText namespace) $
+      let namespace = "default"
+
+      runWithKubectl $ \kubectlBinary env -> do
+        -- Wait for service account to exist; see
+        -- https://github.com/kubernetes/kubernetes/issues/66689
+        waitUntil 60 $
+          createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace, "get", "serviceaccount", "default", "-o", "name"]) { env = Just env })
+            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+        let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace, "delete", "pod", podName]) { env = Just env })
+                          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+        flip finally deletePod $ do
           createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
                                                         , "run", podName
                                                         , "--image", toString transformedImageName
