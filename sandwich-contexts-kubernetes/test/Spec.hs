@@ -28,6 +28,16 @@ spec = introduceNixContext nixpkgsReleaseDefault $
     describe "Kind" $ introduceKindClusterViaNix defaultKindClusterOptions $
       loadImageTests
 
+imageLoadSpecs :: [ImageLoadSpec]
+imageLoadSpecs = [
+  ImageLoadSpecDocker "busybox:latest" IfNotPresent
+  , ImageLoadSpecDocker "registry.k8s.io/pause:3.9" IfNotPresent
+  , ImageLoadSpecDocker "gcr.io/distroless/static-debian11:latest" IfNotPresent
+  ]
+
+imageLabel :: Label "image" Text
+imageLabel = Label
+
 loadImageTests :: (
   MonadUnliftIO m
   , HasBaseContext context, HasKubernetesClusterContext context, HasFile context "kubectl"
@@ -37,54 +47,62 @@ loadImageTests = do
     kcc <- getContext kubernetesCluster
     info [i|Got Kubernetes cluster context: #{kcc}|]
 
-  forM_ ["busybox:latest", "registry.k8s.io/pause:3.9", "gcr.io/distroless/static-debian11:latest"] $ \image ->
-    it [i|#{image}|] $ do
-      -- dockerPullIfNecessary image
+  forM_ imageLoadSpecs $ \ils ->
+    introduce [i|#{ils} load|] imageLabel (loadImage ils) (const $ return ()) $ do
+      it "Doesn't transform Docker/Podman image names" $ do
+        image <- getContext imageLabel
+        case ils of
+          ImageLoadSpecTarball {} -> return ()
+          ImageLoadSpecDocker initialImage _ -> image `shouldBe` initialImage
+          ImageLoadSpecPodman initialImage _ -> image `shouldBe` initialImage
 
-      transformedImageName <- loadImage (ImageLoadSpecDockerImage image IfNotPresent)
+      it "Cluster contains the image" $ do
+        images <- getLoadedImages
+        forM_ images $ \img ->
+          info [i|loaded image: #{img}|]
 
-      transformedImageName `shouldBe` image
+        image <- getContext imageLabel
+        clusterContainsImage image >>= \case
+          False -> expectationFailure [i|Cluster didn't contain image '#{image}'|]
+          True -> return ()
 
-      images <- getLoadedImages
-      forM_ images $ \img ->
-        info [i|loaded image: #{img}|]
+      it "Creates a pod and the cluster finds the image already present" $ do
+        image <- getContext imageLabel
+        podName <- ("test-pod-" <>) <$> randomAlpha 8
 
-      clusterContainsImage transformedImageName >>= \case
-        False -> expectationFailure [i|Cluster didn't contain image '#{transformedImageName}'|]
-        True -> return ()
+        -- namespace <- ("test-namespace-" <>) <$> randomAlpha 8
+        -- withKubernetesNamespace' (toText namespace) $
+        let namespace = "default"
 
-      podName <- ("test-pod-" <>) <$> randomAlpha 8
+        runWithKubectl $ \kubectlBinary env -> do
+          -- Wait for service account to exist; see
+          -- https://github.com/kubernetes/kubernetes/issues/66689
+          waitUntil 60 $
+            createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                          , "get", "serviceaccount", "default"
+                                                          , "-o", "name"]) { env = Just env })
+              >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-      -- namespace <- ("test-namespace-" <>) <$> randomAlpha 8
-      -- withKubernetesNamespace' (toText namespace) $
-      let namespace = "default"
+          let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                                        , "delete", "pod", podName]) { env = Just env })
+                            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-      runWithKubectl $ \kubectlBinary env -> do
-        -- Wait for service account to exist; see
-        -- https://github.com/kubernetes/kubernetes/issues/66689
-        waitUntil 60 $
-          createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace, "get", "serviceaccount", "default", "-o", "name"]) { env = Just env })
-            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+          flip finally deletePod $ do
+            createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                          , "run", podName
+                                                          , "--image", toString image
+                                                          , "--image-pull-policy=IfNotPresent"
+                                                          , "--command", "--", "/bin/sh", "-c", "sleep infinity"
+                                                          ]) { env = Just env })
+              >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-        let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace, "delete", "pod", podName]) { env = Just env })
-                          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-
-        flip finally deletePod $ do
-          createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                        , "run", podName
-                                                        , "--image", toString transformedImageName
-                                                        , "--image-pull-policy=IfNotPresent"
-                                                        , "--command", "--", "/bin/sh", "-c", "sleep infinity"
-                                                        ]) { env = Just env })
-            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-
-          waitUntil 300 $ do
-            events <- readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                                        , "get", "events"
-                                                                        , "--field-selector", [i|involvedObject.kind=Pod,involvedObject.name=#{podName}|]
-                                                                        ]) { env = Just env }) ""
-            info [i|events: #{events}|]
-            events `shouldContain` "already present on machine"
+            waitUntil 300 $ do
+              events <- readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                                          , "get", "events"
+                                                                          , "--field-selector", [i|involvedObject.kind=Pod,involvedObject.name=#{podName}|]
+                                                                          ]) { env = Just env }) ""
+              info [i|events: #{events}|]
+              events `shouldContain` "already present on machine"
 
 
 

@@ -53,7 +53,7 @@ loadImage kindBinary clusterName imageLoadSpec env = do
               env = env
               }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
         readUncompressedImageName (toString image)
-    ImageLoadSpecDockerImage image pullPolicy -> do
+    ImageLoadSpecDocker image pullPolicy -> do
       _ <- dockerPullIfNecessary image pullPolicy
 
       createProcessWithLogging (
@@ -62,7 +62,7 @@ loadImage kindBinary clusterName imageLoadSpec env = do
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
       return image
-    ImageLoadSpecPodmanImage image pullPolicy -> do
+    ImageLoadSpecPodman image pullPolicy -> do
       _ <- podmanPullIfNecessary image pullPolicy
 
       _ <- expectationFailure [i|Not implemented yet.|]

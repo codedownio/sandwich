@@ -115,5 +115,5 @@ getImageNameFromManifestJson path contents = do
 
 imageLoadSpecToImageName :: (MonadUnliftIO m, MonadLogger m) => ImageLoadSpec -> m Text
 imageLoadSpecToImageName (ImageLoadSpecTarball image) = readImageName image
-imageLoadSpecToImageName (ImageLoadSpecDockerImage image _) = pure image
-imageLoadSpecToImageName (ImageLoadSpecPodmanImage image _) = pure image
+imageLoadSpecToImageName (ImageLoadSpecDocker image _) = pure image
+imageLoadSpecToImageName (ImageLoadSpecPodman image _) = pure image

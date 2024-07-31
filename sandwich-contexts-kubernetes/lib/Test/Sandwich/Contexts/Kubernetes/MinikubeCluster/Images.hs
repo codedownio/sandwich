@@ -64,11 +64,11 @@ loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
               readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
-    ImageLoadSpecDockerImage image pullPolicy -> do
+    ImageLoadSpecDocker image pullPolicy -> do
       _ <- dockerPullIfNecessary image pullPolicy
       imageLoad (toString image) True >> return image
 
-    ImageLoadSpecPodmanImage image pullPolicy -> do
+    ImageLoadSpecPodman image pullPolicy -> do
       _ <- podmanPullIfNecessary image pullPolicy
       imageLoad (toString image) True >> return image
 
