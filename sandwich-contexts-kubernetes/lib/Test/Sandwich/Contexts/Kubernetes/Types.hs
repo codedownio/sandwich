@@ -51,6 +51,20 @@ kubernetesClusterImages :: Label "kubernetesClusterImages" [Text]
 kubernetesClusterImages = Label
 type HasKubernetesClusterImagesContext context = HasLabel context "kubernetesClusterImages" [Text]
 
+data ImagePullPolicy = Always | IfNotPresent | Never
+  deriving (Show, Eq)
+
+data ImageLoadSpec =
+  -- | A .tar or .tar.gz file
+  ImageLoadSpecTarball FilePath
+  -- | An image pulled via Docker
+  | ImageLoadSpecDockerImage { imageName :: Text
+                             , pullPolicy :: ImagePullPolicy }
+  -- | An image pulled via Podman
+  | ImageLoadSpecPodmanImage { imageName :: Text
+                             , pullPolicy :: ImagePullPolicy }
+  deriving (Show, Eq)
+
 -- * MinIO Operator
 
 data MinioOperatorContext = MinioOperatorContext

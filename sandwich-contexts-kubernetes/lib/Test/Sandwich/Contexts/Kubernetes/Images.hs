@@ -17,6 +17,9 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   , loadImage'
 
   , introduceImages
+
+  , ImageLoadSpec(..)
+  , ImagePullPolicy(..)
   ) where
 
 import Control.Monad.IO.Unlift
@@ -28,6 +31,7 @@ import Test.Sandwich
 import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.Images as Kind
 import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Minikube
 import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Images
 
 
 -- | Get the images loaded onto the cluster.
@@ -90,8 +94,8 @@ loadImageIfNecessary :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   , HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
-  -- | Image (file path or local Docker image)
-  => Text
+  -- | Image load spec
+  => ImageLoadSpec
   -> m ()
 loadImageIfNecessary image = do
   kcc <- getContext kubernetesCluster
@@ -103,13 +107,15 @@ loadImageIfNecessary' :: (
   )
   -- | Cluster context
   => KubernetesClusterContext
-  -- | Image (file path or local Docker image)
-  -> Text
+  -- | Image load spec
+  -> ImageLoadSpec
   -- | The transformed image name
   -> m ()
-loadImageIfNecessary' kcc image =
+loadImageIfNecessary' kcc imageLoadSpec = do
+  image <- imageLoadSpecToImageName imageLoadSpec
+
   whenM (clusterContainsImage' kcc image) $
-    void $ loadImage' kcc image
+    void $ loadImage' kcc imageLoadSpec
 
 -- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
@@ -118,9 +124,9 @@ loadImage :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   , HasBaseContextMonad context m, HasKubernetesClusterContext context
   )
-  -- | Image name
-  => Text
-  -- | The transformed image name
+  -- | Image load spec
+  => ImageLoadSpec
+  -- | The loaded image name
   -> m Text
 loadImage image = do
   kcc <- getContext kubernetesCluster
@@ -132,19 +138,19 @@ loadImage' :: (
   )
   -- | Cluster context
   => KubernetesClusterContext
-  -- | Image name
-  -> Text
-  -- | The transformed image name
+  -- | Image load spec
+  -> ImageLoadSpec
+  -- | The loaded image name
   -> m Text
-loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image = do
-  debug [i|Loading container image '#{image}'|]
-  timeAction [i|Loading container image '#{image}'|] $ do
+loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) imageLoadSpec = do
+  debug [i|Loading container image '#{imageLoadSpec}'|]
+  timeAction [i|Loading container image '#{imageLoadSpec}'|] $ do
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
-        Kind.loadImage kindBinary kindClusterName image kindClusterEnvironment
+        Kind.loadImage kindBinary kindClusterName imageLoadSpec kindClusterEnvironment
       (KubernetesClusterMinikube {..}) ->
         -- Don't pass minikubeFlags; see comment above.
-        Minikube.loadImage minikubeBinary kubernetesClusterName [] image
+        Minikube.loadImage minikubeBinary kubernetesClusterName [] imageLoadSpec
 
         -- Because of the possible silent failure in "minikube image load", confirm that this
         -- image made it onto the cluster.
@@ -165,6 +171,6 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
 introduceImages :: (
   HasCallStack, MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context
-  ) => [Text] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
+  ) => [ImageLoadSpec] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
 introduceImages images = introduceWith "Introduce cluster images" kubernetesClusterImages $ \action ->
   forM images (\x -> loadImage x) >>= (void . action)

@@ -22,7 +22,8 @@ import Relude
 import System.Exit
 import System.FilePath
 import Test.Sandwich
-import Test.Sandwich.Contexts.Kubernetes.Util.Container
+import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.Images
 import Text.Regex.TDFA
 import UnliftIO.Directory
 import UnliftIO.Process
@@ -31,15 +32,10 @@ import UnliftIO.Temporary
 
 loadImage :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
-  ) => FilePath -> Text -> [Text] -> Text -> m Text
-loadImage minikubeBinary clusterName minikubeFlags image = do
-  -- Don't know why this is needed. But if you load an image like codedown/server:abcdef,
-  -- Minikube will seemingly prepend docker.io/library.
-  -- We probably need to prepend our images with own own domain name to change this.
-  let tweak = ("docker.io/library/" <>)
-
-  case isAbsolute (toString image) of
-    True -> do
+  ) => FilePath -> Text -> [Text] -> ImageLoadSpec -> m Text
+loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
+  case imageLoadSpec of
+    ImageLoadSpecTarball image -> do
       -- File or directory image
       doesDirectoryExist (toString image) >>= \case
         True ->
@@ -53,11 +49,11 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
             createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
               >>= waitForProcess >>= (`shouldBe` ExitSuccess)
             imageLoad tarFile False
-            tweak <$> readImageName (toString image)
+            readImageName (toString image)
         False -> case takeExtension (toString image) of
           ".tar" -> do
             imageLoad (toString image) False
-            tweak <$> readImageName (toString image)
+            readImageName (toString image)
           ".gz" -> do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
@@ -65,12 +61,16 @@ loadImage minikubeBinary clusterName minikubeFlags image = do
               createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
               imageLoad tarFile False
-              tweak <$> readImageName (toString image)
+              readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
 
-    False ->
-      -- Docker/Podman image
-      imageLoad (toString image) True >> return (tweak image)
+    ImageLoadSpecDockerImage image pullPolicy -> do
+      _ <- dockerPullIfNecessary image pullPolicy
+      imageLoad (toString image) True >> return image
+
+    ImageLoadSpecPodmanImage image pullPolicy -> do
+      _ <- podmanPullIfNecessary image pullPolicy
+      imageLoad (toString image) True >> return image
 
   where
     imageLoad :: (MonadLoggerIO m, HasCallStack) => String -> Bool -> m ()

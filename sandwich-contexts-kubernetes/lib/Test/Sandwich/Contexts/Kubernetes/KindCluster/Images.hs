@@ -22,29 +22,27 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
-import Test.Sandwich.Contexts.Kubernetes.Util.Container
+import Test.Sandwich.Contexts.Kubernetes.Util.Images
 import UnliftIO.Process
 import UnliftIO.Temporary
 
 
 loadImage :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m
   )
   -- | Kind binary
   => FilePath
   -- | Cluster name
   -> Text
   -- | Image name
-  -> Text
+  -> ImageLoadSpec
   -- | Environment variables
   -> Maybe [(String, String)]
   -- | Callback with transformed image names (see above)
   -> m Text
-loadImage kindBinary clusterName image env = do
-  let tweak = ("docker.io/" <>)
-
-  case isAbsolute (toString image) of
-    True -> do
+loadImage kindBinary clusterName imageLoadSpec env = do
+  case imageLoadSpec of
+    ImageLoadSpecTarball image -> do
       withSystemTempDirectory "kind-image-zip" $ \dir -> do
         let archive = dir </> "test.tar"
         _ <- readCreateProcessWithLogging (shell [i|tar -C #{image} --dereference --hard-dereference --xform s:'^./':: -c . > #{archive}|]) ""
@@ -54,13 +52,23 @@ loadImage kindBinary clusterName image env = do
           (shell [i|#{kindBinary} load image-archive #{archive} --name #{clusterName}|]) {
               env = env
               }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-        tweak <$> readUncompressedImageName (toString image)
-    False -> do
+        readUncompressedImageName (toString image)
+    ImageLoadSpecDockerImage image pullPolicy -> do
+      _ <- dockerPullIfNecessary image pullPolicy
+
       createProcessWithLogging (
         (shell [i|#{kindBinary} load docker-image #{image} --name #{clusterName}|]) {
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-      return $ tweak image
+
+      return image
+    ImageLoadSpecPodmanImage image pullPolicy -> do
+      _ <- podmanPullIfNecessary image pullPolicy
+
+      _ <- expectationFailure [i|Not implemented yet.|]
+
+      return image
+
 
 getLoadedImages :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
@@ -96,4 +104,13 @@ clusterContainsImage kcc driver kindBinary env image = do
     False -> pure image
     True -> readImageName (toString image)
 
-  (imageName `Set.member`) <$> getLoadedImages kcc driver kindBinary env
+  loadedImages <- getLoadedImages kcc driver kindBinary env
+
+  return (
+    imageName `Set.member` loadedImages
+
+    -- Deal with weird prefixing Minikube does; see
+    -- https://github.com/kubernetes/minikube/issues/19343
+    || ("docker.io/" <> imageName) `Set.member` loadedImages
+    || ("docker.io/library/" <> imageName) `Set.member` loadedImages
+    )

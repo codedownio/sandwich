@@ -10,9 +10,6 @@ module Test.Sandwich.Contexts.Kubernetes.Util.Container (
 
   , containerNameToContainerId
 
-  , readImageName
-  , readUncompressedImageName
-
   , waitForHealth
   ) where
 
@@ -22,23 +19,17 @@ import Control.Monad.Logger
 import Control.Retry
 import Data.Aeson as A
 import Data.Aeson.TH as A
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.String.Interpolate
 import qualified Data.Text as T
-import qualified Data.Vector as V
 import Network.Socket (PortNumber)
 import Relude
 import Safe
 import System.Exit
-import System.FilePath
 import Test.Sandwich
-import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import qualified Text.Show
-import UnliftIO.Directory
 import UnliftIO.Process
-import UnliftIO.Temporary
 
 
 data ContainerSystem = ContainerSystemDocker | ContainerSystemPodman
@@ -112,38 +103,3 @@ containerNameToContainerId containerSystem containerName = do
   liftIO (readCreateProcessWithExitCode (shell cmd) "") >>= \case
     (ExitSuccess, sout, _serr) -> return $ T.strip $ toText sout
     (ExitFailure n, sout, serr) -> expectationFailure [i|Failed to obtain container ID for container named '#{containerName}'. Code: #{n}. Stdout: '#{sout}'. Stderr: '#{serr}'.|]
-
-readUncompressedImageName :: (HasCallStack, MonadIO m) => FilePath -> m Text
-readUncompressedImageName path = liftIO (BL.readFile (path </> "manifest.json")) >>= getImageNameFromManifestJson path
-
-readImageName :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => FilePath -> m Text
-readImageName path = doesDirectoryExist path >>= \case
-  True -> readUncompressedImageName path
-  False -> case takeExtension path of
-    ".tar" -> extractFromTarball
-    ".gz" -> extractFromTarball
-    _ -> expectationFailure [i|readImageName: unexpected extension in #{path}. Wanted .tar, .tar.gz, or uncompressed directory.|]
-  where
-    extractFromTarball = do
-      files <- readCreateProcessWithLogging (proc "tar" ["tf", path]) ""
-      manifestFileName <- case headMay [t | t <- T.words (toText files), "manifest.json" `T.isInfixOf` t] of
-        Just f -> pure $ toString $ T.strip f
-        Nothing -> expectationFailure [i|readImageName: couldn't find manifest file in #{path}|]
-
-      withSystemTempDirectory "manifest.json" $ \dir -> do
-        _ <- readCreateProcessWithLogging ((proc "tar" ["xvf", path, manifestFileName]) { cwd = Just dir }) ""
-        liftIO (BL.readFile (dir </> "manifest.json")) >>= getImageNameFromManifestJson path
-
-getImageNameFromManifestJson :: (HasCallStack, MonadIO m) => FilePath -> LByteString -> m Text
-getImageNameFromManifestJson path contents = do
-  case A.eitherDecode contents of
-    Left err -> expectationFailure [i|Couldn't decode manifest.json: #{err}|]
-    Right (A.Array entries) -> case concatMap getRepoTags entries of
-      (x:_) -> pure x
-      [] -> expectationFailure [i|Didn't find a repo tag for image at #{path}|]
-    Right x -> expectationFailure [i|Unexpected manifest.json format: #{x}|]
-
-  where
-    getRepoTags :: A.Value -> [Text]
-    getRepoTags (A.Object (aesonLookup "RepoTags" -> Just (A.Array repoItems))) = [t | A.String t <- V.toList repoItems]
-    getRepoTags _ = []

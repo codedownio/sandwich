@@ -42,9 +42,9 @@ loadImageTests = do
     it [i|#{image}|] $ do
       -- dockerPullIfNecessary image
 
-      transformedImageName <- loadImage image
+      transformedImageName <- loadImage (ImageLoadSpecDockerImage image IfNotPresent)
 
-      let transformedImageName = image -- Testing
+      transformedImageName `shouldBe` image
 
       images <- getLoadedImages
       forM_ images $ \img ->

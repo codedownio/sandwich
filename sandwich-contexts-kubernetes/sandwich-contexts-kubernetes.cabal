@@ -43,6 +43,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.Util.Aeson
       Test.Sandwich.Contexts.Kubernetes.Util.Container
       Test.Sandwich.Contexts.Kubernetes.Util.Exception
+      Test.Sandwich.Contexts.Kubernetes.Util.Images
       Test.Sandwich.Contexts.Kubernetes.Util.Nix
       Test.Sandwich.Contexts.Kubernetes.Util.Ports
       Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
