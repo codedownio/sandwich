@@ -23,6 +23,7 @@ import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import Test.Sandwich.Contexts.Kubernetes.Util.Images
+import UnliftIO.Directory
 import UnliftIO.Process
 import UnliftIO.Temporary
 
@@ -43,16 +44,30 @@ loadImage :: (
 loadImage kindBinary clusterName imageLoadSpec env = do
   case imageLoadSpec of
     ImageLoadSpecTarball image -> do
-      withSystemTempDirectory "kind-image-zip" $ \dir -> do
-        let archive = dir </> "test.tar"
-        _ <- readCreateProcessWithLogging (shell [i|tar -C #{image} --dereference --hard-dereference --xform s:'^./':: -c . > #{archive}|]) ""
+      doesDirectoryExist (toString image) >>= \case
+        True ->
+          -- Uncompressed directory: tar it up (but don't zip).
+          -- TODO: don't depend on external tar binary
+          withSystemTempDirectory "kind-image-zip" $ \dir -> do
+            let tarFile = dir </> "test.tar"
+            _ <- readCreateProcessWithLogging (shell [i|tar -C #{image} --dereference --hard-dereference --xform s:'^./':: -c . > #{tarFile}|]) ""
+            imageLoad tarFile
+            readUncompressedImageName (toString image)
 
-        debug [i|Made image archive: #{archive}|]
-        createProcessWithLogging (
-          (shell [i|#{kindBinary} load image-archive #{archive} --name #{clusterName}|]) {
-              env = env
-              }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-        readUncompressedImageName (toString image)
+        False -> case takeExtension (toString image) of
+          ".tar" -> do
+            imageLoad (toString image)
+            readImageName (toString image)
+          ".gz" -> do
+            withSystemTempDirectory "image-tarball" $ \tempDir -> do
+              let tarFile = tempDir </> "image.tar"
+              -- TODO: don't depend on external gzip binary
+              createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
+                >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+              imageLoad tarFile
+              readImageName (toString image)
+          _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
+
     ImageLoadSpecDocker image pullPolicy -> do
       _ <- dockerPullIfNecessary image pullPolicy
 
@@ -68,7 +83,12 @@ loadImage kindBinary clusterName imageLoadSpec env = do
       _ <- expectationFailure [i|Not implemented yet.|]
 
       return image
-
+  where
+    imageLoad tarFile =
+      createProcessWithLogging (
+        (shell [i|#{kindBinary} load image-archive #{tarFile} --name #{clusterName}|]) {
+            env = env
+            }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 getLoadedImages :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
