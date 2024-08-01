@@ -30,17 +30,18 @@ import UnliftIO.Process
 
 spec :: TopSpec
 spec = describe "Introducing a Kubernetes cluster" $ do
-  describe "Via Minikube" $ do
-    introduceNixContext nixpkgsReleaseDefault $ do
-      introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $ do
-        it "prints the cluster info" $ do
-          kcc <- getContext kubernetesCluster
-          info [i|Got Kubernetes cluster context: #{kcc}|]
+  describe "Via Minikube" $
+    introduceNixContext nixpkgsReleaseDefault $
+    introduceBinaryViaNixPackage @"kubectl" "kubectl" $
+    introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $ do
+      it "prints the cluster info" $ do
+        kcc <- getContext kubernetesCluster
+        info [i|Got Kubernetes cluster context: #{kcc}|]
 
-        withKubernetesNamespace "foo" $ introduceSeaweedFS "foo" defaultSeaweedFSOptions $ do
-          it "Has a SeaweedFS context" $ do
-            sfs <- getContext seaweedFs
-            info [i|Got SeaweedFS context: #{sfs}|]
+      withKubernetesNamespace "foo" $ introduceSeaweedFS "foo" defaultSeaweedFSOptions $ do
+        it "Has a SeaweedFS context" $ do
+          sfs <- getContext seaweedFs
+          info [i|Got SeaweedFS context: #{sfs}|]
 
 
 main :: IO ()
