@@ -169,7 +169,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
 
         return userAndPassword
 
-  let destroy _ =
+  let destroy _ = do
         info [i|-------------------------- DESTROYING --------------------------|]
         runWithKubeConfig kubectlBinary ["delete", "-k", kustomizationDir
                                         , "--namespace", toString minioS3ServerNamespace]
