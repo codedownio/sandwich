@@ -47,8 +47,8 @@ withKubernetesNamespace' :: (
   )
   -- | Namespace to create
   => Text
-  -> m ()
-  -> m ()
+  -> m a
+  -> m a
 withKubernetesNamespace' namespace = bracket_ (create namespace) (destroy namespace)
 
 create :: (
