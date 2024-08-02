@@ -15,69 +15,80 @@ module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
   -- * Types
   , minioOperator
   , MinioOperatorContext(..)
+  , MinioOperatorOptions(..)
+  , defaultMinioOperatorOptions
   , HasMinioOperatorContext
   ) where
 
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import qualified Data.List as L
 import Relude
 import System.Exit
-import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.FindImages
+import Test.Sandwich.Contexts.Kubernetes.Images
+import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
-import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.Process
 
 
+data MinioOperatorOptions = MinioOperatorOptions {
+  minioOperatorPreloadImages :: Bool
+  }
+defaultMinioOperatorOptions :: MinioOperatorOptions
+defaultMinioOperatorOptions = MinioOperatorOptions {
+  minioOperatorPreloadImages = True
+  }
+
 -- | Install the MinIO Kubernetes plugin onto a Kubernetes cluster.
 -- See the docs [here](https://min.io/docs/minio/kubernetes/upstream/reference/kubectl-minio-plugin.html).
 introduceMinioOperator :: (
-  MonadUnliftIO m, HasKubernetesClusterContext context, HasFile context "kubectl", HasFile context "kubectl-minio"
-  ) => SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
-introduceMinioOperator = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
+  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context, HasFile context "kubectl"
+  ) => MinioOperatorOptions -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
+introduceMinioOperator options = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
   kcc <- getContext kubernetesCluster
-  void $ withMinioOperator kcc action
+  void $ withMinioOperator options kcc action
 
--- | Same as 'introduceMinioOperator', but allows you to pass in the "kubectl-minio" binary path.
+-- | Same as 'introduceMinioOperator', but allows you to pass in the "kubectl" binary path.
 introduceMinioOperator' :: (
-  MonadUnliftIO m, HasKubernetesClusterContext context
-  ) => FilePath -> FilePath -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
-introduceMinioOperator' kubectlBinary kubectlMinioBinary = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
+  MonadUnliftIO m, MonadFail m, HasKubernetesClusterContext context, HasBaseContext context
+  ) => MinioOperatorOptions -> FilePath -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
+introduceMinioOperator' options kubectlBinary = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
   kcc <- getContext kubernetesCluster
-  void $ withMinioOperator' kubectlBinary kubectlMinioBinary kcc action
+  void $ withMinioOperator' options kubectlBinary kcc action
 
 -- | Bracket-style variant of 'introduceMinioOperator'.
 withMinioOperator :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadReader context m, HasFile context "kubectl", HasFile context "kubectl-minio"
-  ) => KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
-withMinioOperator kcc action = do
+  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
+  , HasBaseContextMonad context m, HasFile context "kubectl"
+  ) => MinioOperatorOptions -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
+withMinioOperator options kcc action = do
   kubectlBinary <- askFile @"kubectl"
-  kubectlMinioBinary <- askFile @"kubectl-minio"
-  withMinioOperator' kubectlBinary kubectlMinioBinary kcc action
+  withMinioOperator' options kubectlBinary kcc action
 
--- | Same as 'withMinioOperator', but allows you to pass in the "kubectl-minio" binary path.
+-- | Same as 'withMinioOperator', but allows you to pass in the "kubectl" binary path.
 withMinioOperator' :: (
-  MonadLoggerIO m, MonadUnliftIO m
-  ) => FilePath -> FilePath -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
-withMinioOperator' kubectlBinary kubectlMinioBinary (KubernetesClusterContext {..}) action = do
-  baseEnv <- getEnvironment
+  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
+  , HasBaseContextMonad context m
+  ) => MinioOperatorOptions -> FilePath -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
+withMinioOperator' (MinioOperatorOptions {..}) kubectlBinary kcc action = do
+  (_, env) <- runWithKubectl' kcc kubectlBinary
 
-  let basePathParts = maybe [] splitSearchPath (L.lookup "PATH" baseEnv)
+  allYaml <- readCreateProcessWithLogging ((proc kubectlBinary ["kustomize", "github.com/minio/operator?ref=v6.0.1"]) { env = Just env }) ""
 
-  let newPath = L.intercalate [searchPathSeparator] ((takeDirectory kubectlBinary) : basePathParts)
+  when minioOperatorPreloadImages $ do
+    let images = findAllImages (toText allYaml)
 
-  let env = L.nubBy (\x y -> fst x == fst y) (("PATH", newPath) : ("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
+    forM_ images $ \image ->
+      loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
-  let runWithKubeConfig exe args = do
-        p <- createProcessWithLogging ((proc exe args) { env = Just env, delegate_ctlc = True })
-        code <- waitForProcess p
-        code `shouldBe` ExitSuccess
+  let create = createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) allYaml
+                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  bracket_ (runWithKubeConfig kubectlMinioBinary ["init"])
-           -- Can't delete -f yet; see https://github.com/minio/operator/issues/1683
-           (return ()) -- (runWithKubeConfig kubectlMinioBinary ["delete"])
-           (action MinioOperatorContext)
+  let destroy = createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"]) { env = Just env }) allYaml
+                  >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+  bracket_ create destroy (action MinioOperatorContext)

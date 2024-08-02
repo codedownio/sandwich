@@ -22,27 +22,24 @@ runWithKubectl :: (
   MonadLoggerIO m
   , HasBaseContextMonad context m, HasFile context "kubectl", HasKubernetesClusterContext context
   )
-  -- | Callback receiving the kubectl binary and env.
-  => (FilePath -> [(String, String)] -> m a)
-  -> m a
-runWithKubectl cb = do
+  -- | Return the kubectl binary and env.
+  => m (FilePath, [(String, String)])
+runWithKubectl = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  runWithKubectl' kcc kubectlBinary cb
+  runWithKubectl' kcc kubectlBinary
 
 runWithKubectl' :: (
   MonadLoggerIO m
-  , HasBaseContextMonad context m
   )
   -- | Kubernetes cluster context
   => KubernetesClusterContext
-  -- | Binary path for kubectl
+  -- | Path to kubectl binary
   -> FilePath
-  -- | Callback receiving the kubectl binary and env.
-  -> (FilePath -> [(String, String)] -> m a)
-  -> m a
-runWithKubectl' (KubernetesClusterContext {..}) kubectlBinary cb = do
+  -- | Return the kubectl binary and env.
+  -> m (FilePath, [(String, String)])
+runWithKubectl' (KubernetesClusterContext {..}) kubectlBinary = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  cb kubectlBinary env
+  return (kubectlBinary, env)

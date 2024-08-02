@@ -8,6 +8,9 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   , withK8SMinioS3Server
   , withK8SMinioS3Server'
 
+  , MinioS3ServerOptions(..)
+  , defaultMinioS3ServerOptions
+
   -- * Re-exports
   , testS3Server
   , TestS3Server(..)
@@ -18,8 +21,6 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import qualified Data.ByteString.Base64 as B64
-import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
 import Network.Minio
@@ -28,152 +29,171 @@ import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Cluster
+import Test.Sandwich.Contexts.Kubernetes.FindImages
+import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.MinIO
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
-import UnliftIO.Environment
+import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
 
 
+data MinioS3ServerOptions = MinioS3ServerOptions {
+  minioS3ServerNamespace :: Text
+  , minioS3ServerKustomizationDir :: KustomizationDir
+  , minioS3ServerPreloadImages :: Bool
+  }
+defaultMinioS3ServerOptions :: Text -> MinioS3ServerOptions
+defaultMinioS3ServerOptions namespace = MinioS3ServerOptions {
+  minioS3ServerNamespace = namespace
+  , minioS3ServerKustomizationDir = KustomizationDirUrl "https://github.com/minio/operator/examples/kustomization/base?ref=v6.0.1"
+  , minioS3ServerPreloadImages = True
+  }
+
+data KustomizationDir =
+  -- | URL Kustomize dir to be downloaded
+  KustomizationDirUrl Text
+  -- | Local Kustomize dir
+  | KustomizationDirLocal FilePath
+  -- | A Nix callPackage-style derivation to produce the Kustomize dir
+  | KustomizationDirNixDerivation Text
+  deriving (Show, Eq)
+
 -- | Introduce a MinIO server on a Kubernetes cluster.
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
-  MonadMask m, MonadUnliftIO m
+  MonadMask m, MonadUnliftIO m, Typeable context
   , HasBaseContext context, HasMinioOperatorContext context, HasKubernetesClusterContext context
-  , HasFile context "kubectl", HasFile context "kubectl-minio"
+  , HasFile context "kubectl"
   )
-  -- | Namespace
-  => Text
+  -- | Options
+  => MinioS3ServerOptions
   -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
   -> SpecFree context m ()
-introduceK8SMinioS3Server namespace = do
+introduceK8SMinioS3Server options = do
   introduceWith "minio S3 server" testS3Server $ \action -> do
     kcc <- getContext kubernetesCluster
     moc <- getContext minioOperator
-    withK8SMinioS3Server kcc moc namespace action
+    withK8SMinioS3Server kcc moc options action
 
 -- | Same as 'introduceK8SMinioS3Server', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SMinioS3Server' :: (
-  MonadMask m, MonadUnliftIO m
-  , HasBaseContext context, HasMinioOperatorContext context, HasFile context "kubectl", HasFile context "kubectl-minio"
+  MonadMask m, MonadUnliftIO m, Typeable context
+  , HasBaseContext context, HasMinioOperatorContext context, HasFile context "kubectl"
   )
   => KubernetesClusterContext
-  -- | Namespace
-  -> Text
+  -- | Options
+  -> MinioS3ServerOptions
   -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
   -> SpecFree context m ()
-introduceK8SMinioS3Server' kubernetesClusterContext namespace =
+introduceK8SMinioS3Server' kubernetesClusterContext options =
   introduceWith "minio S3 server" testS3Server $ \action -> do
     moc <- getContext minioOperator
-    withK8SMinioS3Server kubernetesClusterContext moc namespace action
+    withK8SMinioS3Server kubernetesClusterContext moc options action
 
 -- | Bracket-style variant of 'introduceK8SMinioS3Server'.
 withK8SMinioS3Server :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m, HasFile context "kubectl", HasFile context "kubectl-minio"
+  , HasBaseContextMonad context m, HasFile context "kubectl", Typeable context
   )
   => KubernetesClusterContext
   -> MinioOperatorContext
-  -- | Namespace
-  -> Text
+  -- | Options
+  -> MinioS3ServerOptions
   -> (TestS3Server -> m [Result])
   -> m ()
-withK8SMinioS3Server kcc moc namespace action = do
+withK8SMinioS3Server kcc moc options action = do
   kubectlBinary <- askFile @"kubectl"
-  kubectlMinioBinary <- askFile @"kubectl-minio"
-  withK8SMinioS3Server' kubectlBinary kubectlMinioBinary kcc moc namespace action
+  withK8SMinioS3Server' kubectlBinary kcc moc options action
 
 -- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
 withK8SMinioS3Server' :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m
+  , HasBaseContextMonad context m, Typeable context
   )
   -- | Path to kubectl binary
   => FilePath
-  -- | Path to kubectl-minio binary
-  -> FilePath
   -> KubernetesClusterContext
   -> MinioOperatorContext
-  -- | Namespace
-  -> Text
+  -- | Options
+  -> MinioS3ServerOptions
   -> (TestS3Server -> m [Result])
   -> m ()
-withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext {..}) MinioOperatorContext namespace action = do
-  baseEnv <- getEnvironment
-  let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
+withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOperatorContext (MinioS3ServerOptions {..}) action = do
+  (_, env) <- runWithKubectl' kcc kubectlBinary
   let runWithKubeConfig prog args = do
-        p <- createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })
-        waitForProcess p >>= (`shouldBe` ExitSuccess)
-  let runWithKubeConfig' prog args input = do
-        p <- createProcessWithLoggingAndStdin ((proc prog args) { env = Just env, delegate_ctlc = True }) input
-        waitForProcess p >>= (`shouldBe` ExitSuccess)
+        createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   deploymentName <- ("minio-" <>) <$> makeUUID' 5
 
-  let pool = "pool1"
+  -- let pool = "pool1"
   let port = 80
 
-  let create = do
-        runWithKubeConfig kubectlMinioBinary [
-          "tenant", "create", toString deploymentName
-          , "--namespace", toString namespace
-          , "--servers", "1"
-          , "--volumes", "1"
-          , "--capacity", "10G"
-          , "--pool", pool
-          , "--disable-tls"
-          ]
+  kustomizationDir <- case minioS3ServerKustomizationDir of
+    KustomizationDirLocal p -> pure p
+    KustomizationDirUrl u -> pure (toString u)
+    KustomizationDirNixDerivation d -> do
+      getContextMaybe nixContext >>= \case
+        Nothing -> expectationFailure [i|Couldn't find a Nix context to use with KustomizationDirNixDerivation|]
+        Just nc -> buildNixCallPackageDerivation' nc d
 
-  let destroy = do
-        runWithKubeConfig kubectlMinioBinary ["tenant", "delete", toString deploymentName
-                                             , "--namespace", toString namespace
-                                             , "-f"
-                                             ]
+  let busyboxImage = "busybox:1.36.1-musl"
+
+  let create = do
+        allYaml <- readCreateProcessWithLogging ((proc kubectlBinary ["kustomize", kustomizationDir]) { env = Just env, delegate_ctlc = True }) ""
+
+        when minioS3ServerPreloadImages $ do
+          let images = findAllImages (toText allYaml)
+
+          forM_ images $ \image ->
+            loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
+
+          loadImageIfNecessary' kcc (ImageLoadSpecDocker busyboxImage IfNotPresent)
+
+        (userAndPassword@(username, password), finalYaml) <- case transformKustomizeChunks (toString minioS3ServerNamespace) (T.splitOn "---\n" (toText allYaml)) of
+          Left err -> expectationFailure [i|Couldn't transform kustomize chunks: #{err}|]
+          Right x -> pure x
+
+        info [i|Got username and password: #{(username, password)}|]
+
+        createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+        return userAndPassword
+
+  let destroy _ =
+        runWithKubeConfig kubectlBinary ["delete", "-k", kustomizationDir
+                                        , "--namespace", toString minioS3ServerNamespace
+                                        , "-f"
+                                        ]
 
   let createNetworkPolicy = do
         let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
-        runWithKubeConfig' kubectlBinary ["create", "--namespace", toString namespace, "-f", "-"] yaml
+        createProcessWithLoggingAndStdin ((proc kubectlBinary ["create", "--namespace", toString minioS3ServerNamespace, "-f", "-"]) { env = Just env, delegate_ctlc = True }) yaml
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
         pure (policyName, discoverPodPolicyName)
   let destroyNetworkPolicy (policyName, discoverPodPolicyName) = do
-        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString namespace]
-        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString namespace]
+        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString minioS3ServerNamespace]
+        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString minioS3ServerNamespace]
 
   -- TODO: create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
-  bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket_ create destroy $ do
-    envConfig <- ((B64.decodeLenient . encodeUtf8 . T.strip . toText) <$>) $ do
-      let getSecretArgs = ["get", "secret", [i|#{deploymentName}-env-configuration|]
-                          , "--namespace", toString namespace
-                          , "-o", [i|jsonpath="{.data.config\\.env}"|]
-                          ]
-      debug [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath}'|]
-      debug [i|#{kubectlBinary} #{T.unwords $ fmap T.pack getSecretArgs}|]
-      ret <- readCreateProcessWithLogging ((proc kubectlBinary getSecretArgs) { env = Just env }) ""
-      debug [i|Got ret: #{ret}|]
-      return ret
-
-    -- envConfig <- case eitherEnvConfig of
-    --   Right x -> pure x
-    --   Left err -> expectationFailure [i|Failed to decode MinIO environment config: #{err}|]
-
-    -- info [i|Got envConfig: #{envConfig}|]
-
-    Just (username, password) <- return (parseMinioUserAndPassword (decodeUtf8 envConfig))
-    info [i|Got username and password: #{(username, password)}|]
-
+  bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \(username, password) -> do
     do
       uuid <- makeUUID
       p <- createProcessWithLogging ((proc kubectlBinary [
                                          "run", "discoverer-" <> toString uuid
                                          , "--rm", "-i"
                                          , "--attach"
-                                         , "--image=busybox:1.36.1-musl"
+                                         , [i|--image=#{busyboxImage}|]
                                          , "--restart=Never"
                                          , "--command"
-                                         , "--namespace", toString namespace
+                                         , "--namespace", toString minioS3ServerNamespace
                                          , "--labels=app=discover-pod"
                                          , "--"
                                          , "sh", "-c", [i|until nc -vz minio 80; do echo "Waiting for minio..."; sleep 3; done;|]
@@ -184,9 +204,9 @@ withK8SMinioS3Server' kubectlBinary kubectlMinioBinary (KubernetesClusterContext
 
     info [__i|Ready to try port-forward:
               export KUBECONFIG=#{kubernetesClusterKubeConfigPath}
-              kubectl --namespace #{namespace} port-forward "service/minio" 8080:#{port}|]
+              kubectl --namespace #{minioS3ServerNamespace} port-forward "service/minio" 8080:#{port}|]
 
-    withKubectlPortForward' kubectlBinary kubernetesClusterKubeConfigPath namespace (const True) Nothing "service/minio" port $ \(KubectlPortForwardContext {..}) -> do
+    withKubectlPortForward' kubectlBinary kubernetesClusterKubeConfigPath minioS3ServerNamespace (const True) Nothing "service/minio" port $ \(KubectlPortForwardContext {..}) -> do
       info [i|Did forward to localhost:#{kubectlPortForwardPort}|]
       -- liftIO $ threadDelay 999999999999
 

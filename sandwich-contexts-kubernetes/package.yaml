@@ -47,7 +47,6 @@ library:
   - Test.Sandwich.Contexts.Kubernetes.Types
   dependencies:
   - aeson
-  - base64-bytestring
   - bytestring
   - sandwich-contexts
   - sandwich-contexts-minio
@@ -58,6 +57,7 @@ library:
   - http-client
   - kubernetes-client
   - kubernetes-client-core
+  - lens
   - minio-hs
   - monad-logger
   - network

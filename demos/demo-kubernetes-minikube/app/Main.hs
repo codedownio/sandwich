@@ -4,7 +4,6 @@
 
 module Main where
 
-import Control.Concurrent
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -24,6 +23,7 @@ import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
 import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
+import UnliftIO.Concurrent
 import UnliftIO.Environment
 import UnliftIO.Process
 
@@ -42,8 +42,7 @@ spec = describe "Introducing a Kubernetes cluster" $ do
           forM_ images $ \image -> info [i|Image: #{image}|]
 
         introduceBinaryViaNixPackage @"kubectl" "kubectl" $
-          introduceBinaryViaNixDerivation @"kubectl-minio" kubectlMinioDerivation $
-          introduceMinioOperator $ do
+          introduceMinioOperator defaultMinioOperatorOptions $ do
             it "Has a MinIO operator" $ do
               moc <- getContext minioOperator
               info [i|Got MinIO operator: #{moc}|]
@@ -61,29 +60,13 @@ spec = describe "Introducing a Kubernetes cluster" $ do
                 p <- createProcessWithLogging ((proc kubectlBinary args) { env = Just env, delegate_ctlc = True })
                 waitForProcess p >>= (`shouldBe` ExitSuccess)
 
-              introduceK8SMinioS3Server "foo" $ do
+              introduceK8SMinioS3Server (defaultMinioS3ServerOptions "foo") $ do
                 it "has a MinIO S3 server" $ do
                   serv <- getContext testS3Server
                   info [i|Got test S3 server: #{serv}|]
 
-kubectlMinioDerivation :: Text
-kubectlMinioDerivation = [i|
-{ fetchurl
-}:
-
-fetchurl {
-  url = "https://github.com/minio/operator/releases/download/v5.0.6/kubectl-minio_5.0.6_linux_amd64";
-  hash = "sha256-j3mpgV1HLmFwYRdxfPXT1XzDWeiyQC2Ye8aeZt511bc=";
-
-  downloadToTemp = true;
-  executable = true;
-
-  postFetch = ''
-    mkdir -p $out/bin
-    mv "$downloadedFile" $out/bin/kubectl-minio
-  '';
-}
-|]
+                it "pauses" $ do
+                  threadDelay 9999999999999
 
 
 main :: IO ()

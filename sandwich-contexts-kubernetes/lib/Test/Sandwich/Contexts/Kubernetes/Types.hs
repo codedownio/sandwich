@@ -59,10 +59,10 @@ data ImageLoadSpec =
   ImageLoadSpecTarball FilePath
   -- | An image pulled via Docker
   | ImageLoadSpecDocker { imageName :: Text
-                             , pullPolicy :: ImagePullPolicy }
+                        , pullPolicy :: ImagePullPolicy }
   -- | An image pulled via Podman
   | ImageLoadSpecPodman { imageName :: Text
-                             , pullPolicy :: ImagePullPolicy }
+                        , pullPolicy :: ImagePullPolicy }
   deriving (Show, Eq)
 
 -- * MinIO Operator

@@ -101,35 +101,36 @@ loadImageTests' = do
     -- withKubernetesNamespace' (toText namespace) $
     let namespace = "default"
 
-    runWithKubectl $ \kubectlBinary env -> do
-      -- Wait for service account to exist; see
-      -- https://github.com/kubernetes/kubernetes/issues/66689
-      waitUntil 60 $
-        createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                      , "get", "serviceaccount", "default"
-                                                      , "-o", "name"]) { env = Just env })
-          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    (kubectlBinary, env) <- runWithKubectl
 
-      let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                                    , "delete", "pod", podName]) { env = Just env })
-                        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    -- Wait for service account to exist; see
+    -- https://github.com/kubernetes/kubernetes/issues/66689
+    waitUntil 60 $
+      createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                    , "get", "serviceaccount", "default"
+                                                    , "-o", "name"]) { env = Just env })
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-      flip finally deletePod $ do
-        createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                      , "run", podName
-                                                      , "--image", toString image
-                                                      , "--image-pull-policy=IfNotPresent"
-                                                      , "--command", "--", "/bin/sh", "-c", "sleep infinity"
-                                                      ]) { env = Just env })
-          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                                  , "delete", "pod", podName]) { env = Just env })
+                      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-        waitUntil 300 $ do
-          events <- readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                                      , "get", "events"
-                                                                      , "--field-selector", [i|involvedObject.kind=Pod,involvedObject.name=#{podName}|]
-                                                                      ]) { env = Just env }) ""
-          info [i|events: #{events}|]
-          events `shouldContain` "already present on machine"
+    flip finally deletePod $ do
+      createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                    , "run", podName
+                                                    , "--image", toString image
+                                                    , "--image-pull-policy=IfNotPresent"
+                                                    , "--command", "--", "/bin/sh", "-c", "sleep infinity"
+                                                    ]) { env = Just env })
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+      waitUntil 300 $ do
+        events <- readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                                    , "get", "events"
+                                                                    , "--field-selector", [i|involvedObject.kind=Pod,involvedObject.name=#{podName}|]
+                                                                    ]) { env = Just env }) ""
+        info [i|events: #{events}|]
+        events `shouldContain` "already present on machine"
 
 
 

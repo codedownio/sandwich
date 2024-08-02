@@ -60,9 +60,9 @@ create :: (
   ) => Text -> m ()
 create namespace = do
   let args = ["create", "namespace", toString namespace]
-  runWithKubectl $ \kubectl env ->
-    createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
-      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  (kubectl, env) <- runWithKubectl
+  createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 destroy :: (
   MonadUnliftIO m, MonadLoggerIO m
@@ -73,6 +73,6 @@ destroy :: (
   ) => Text -> m ()
 destroy namespace = do
   let args = ["delete", "namespace", toString namespace]
-  runWithKubectl $ \kubectl env ->
-    createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
-      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  (kubectl, env) <- runWithKubectl
+  createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
