@@ -170,10 +170,9 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
         return userAndPassword
 
   let destroy _ =
+        info [i|-------------------------- DESTROYING --------------------------|]
         runWithKubeConfig kubectlBinary ["delete", "-k", kustomizationDir
-                                        , "--namespace", toString minioS3ServerNamespace
-                                        , "-f"
-                                        ]
+                                        , "--namespace", toString minioS3ServerNamespace]
 
   let createNetworkPolicy = do
         let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
