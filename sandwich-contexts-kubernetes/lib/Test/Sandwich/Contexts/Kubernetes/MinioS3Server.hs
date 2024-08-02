@@ -167,12 +167,13 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
         createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-        return userAndPassword
+        return (userAndPassword, finalYaml)
 
-  let destroy _ = do
+  let destroy (_, finalYaml) = do
         info [i|-------------------------- DESTROYING --------------------------|]
-        runWithKubeConfig kubectlBinary ["delete", "-k", kustomizationDir
-                                        , "--namespace", toString minioS3ServerNamespace]
+        createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
 
   let createNetworkPolicy = do
         let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
@@ -184,7 +185,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
         runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString minioS3ServerNamespace]
 
   -- TODO: create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
-  bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \(username, password) -> do
+  bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \((username, password), _) -> do
     do
       uuid <- makeUUID
       p <- createProcessWithLogging ((proc kubectlBinary [
