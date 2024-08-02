@@ -23,7 +23,6 @@ import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
 import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
-import UnliftIO.Concurrent
 import UnliftIO.Environment
 import UnliftIO.Process
 
@@ -35,6 +34,7 @@ spec = describe "Introducing a Kubernetes cluster" $ do
       introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $ do
         it "prints the cluster info" $ do
           kcc <- getContext kubernetesCluster
+          info [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath kcc}'|]
           info [i|Got Kubernetes cluster context: #{kcc}|]
 
         it "prints the loaded images" $ do
@@ -48,25 +48,13 @@ spec = describe "Introducing a Kubernetes cluster" $ do
               info [i|Got MinIO operator: #{moc}|]
 
             withKubernetesNamespace "foo" $ do
-              it "creates a service account" $ do
-                kubectlBinary <- askFile @"kubectl"
-
-                KubernetesClusterContext {..} <- getContext kubernetesCluster
-                baseEnv <- getEnvironment
-                let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
-
-                let args = ["create", "serviceaccount", "default", "--namespace", "foo"]
-
-                p <- createProcessWithLogging ((proc kubectlBinary args) { env = Just env, delegate_ctlc = True })
-                waitForProcess p >>= (`shouldBe` ExitSuccess)
-
               introduceK8SMinioS3Server (defaultMinioS3ServerOptions "foo") $ do
                 it "has a MinIO S3 server" $ do
                   serv <- getContext testS3Server
                   info [i|Got test S3 server: #{serv}|]
 
-                it "pauses" $ do
-                  threadDelay 9999999999999
+                -- it "pauses" $ do
+                --   threadDelay 9999999999999
 
 
 main :: IO ()

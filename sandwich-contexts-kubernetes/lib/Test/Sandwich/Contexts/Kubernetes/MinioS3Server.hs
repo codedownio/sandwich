@@ -37,7 +37,6 @@ import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.MinIO
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
-import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
@@ -151,9 +150,11 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
         when minioS3ServerPreloadImages $ do
           let images = findAllImages (toText allYaml)
 
-          forM_ images $ \image ->
+          forM_ images $ \image -> do
+            debug [i|Preloading image: #{image}|]
             loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
+          debug [i|Preloading image: #{busyboxImage}|]
           loadImageIfNecessary' kcc (ImageLoadSpecDocker busyboxImage IfNotPresent)
 
         (userAndPassword@(username, password), finalYaml) <- case transformKustomizeChunks (toString minioS3ServerNamespace) (T.splitOn "---\n" (toText allYaml)) of
@@ -191,6 +192,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
                                          , "--rm", "-i"
                                          , "--attach"
                                          , [i|--image=#{busyboxImage}|]
+                                         , "--image-pull-policy=IfNotPresent"
                                          , "--restart=Never"
                                          , "--command"
                                          , "--namespace", toString minioS3ServerNamespace
@@ -208,7 +210,6 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
 
     withKubectlPortForward' kubectlBinary kubernetesClusterKubeConfigPath minioS3ServerNamespace (const True) Nothing "service/minio" port $ \(KubectlPortForwardContext {..}) -> do
       info [i|Did forward to localhost:#{kubectlPortForwardPort}|]
-      -- liftIO $ threadDelay 999999999999
 
       let bucket = "bucket1"
 

@@ -5,15 +5,17 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing (
   , transformKustomizeChunks
   ) where
 
+import Control.Lens
 import Data.Aeson (FromJSON)
 import qualified Data.Aeson as A
+import Data.Aeson.Lens
 import qualified Data.Map as M
 import Data.String.Interpolate
 import Data.Text as T
 import qualified Data.Yaml as Yaml
 import Kubernetes.OpenAPI.Model as Kubernetes
 import Relude
-import Safe
+import Safe (headMay)
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import Text.Regex.TDFA
 
@@ -41,7 +43,11 @@ transformKustomizeChunks namespace initialChunks = do
               -- Don't include a kind: Namespace
               & Relude.filter (not . isNamespace)
 
+              -- Set metadata.namespace on all values
               & fmap (setMetaNamespace namespace)
+
+              -- Disable TLS
+              & fmap disableTLS
 
               -- Combine everything into multi-document Yaml
               & T.intercalate "---\n"
@@ -72,6 +78,16 @@ setMetaNamespace namespace (decode -> Right (A.Object obj1@(aesonLookup "metadat
     obj2' :: A.Value
     obj2' = A.Object (aesonInsert "namespace" (A.String (toText namespace)) obj2)
 setMetaNamespace _ t = t
+
+-- Do the steps to disable TLS in the tenant CRD.
+-- See https://min.io/docs/minio/kubernetes/upstream/reference/operator-crd.html#tenantspec
+disableTLS :: Text -> Text
+disableTLS (decode -> Right x@(A.Object (aesonLookup "kind" -> Just (A.String "Tenant")))) = decodeUtf8 (Yaml.encode x')
+  where
+    x' = x
+       & set (_Object . ix "spec" . _Object . ix "requestAutoCert") (A.Bool False)
+       & set (_Object . ix "spec" . _Object . at "externalCertSecret") Nothing
+disableTLS t = t
 
 decode :: FromJSON a => Text -> Either Yaml.ParseException a
 decode = Yaml.decodeEither' . encodeUtf8

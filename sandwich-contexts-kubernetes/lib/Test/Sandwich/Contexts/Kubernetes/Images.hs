@@ -116,9 +116,7 @@ loadImageIfNecessary' :: (
   -- | The transformed image name
   -> m ()
 loadImageIfNecessary' kcc imageLoadSpec = do
-  image <- imageLoadSpecToImageName imageLoadSpec
-
-  whenM (clusterContainsImage' kcc image) $
+  unlessM (imageLoadSpecToImageName imageLoadSpec >>= clusterContainsImage' kcc) $
     void $ loadImage' kcc imageLoadSpec
 
 -- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz

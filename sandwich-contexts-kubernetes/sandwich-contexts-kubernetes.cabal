@@ -79,6 +79,7 @@ library
     , kubernetes-client
     , kubernetes-client-core
     , lens
+    , lens-aeson
     , minio-hs
     , monad-logger
     , network

@@ -37,14 +37,15 @@ spec = describe "Introducing a Kubernetes cluster" $ do
           images <- getLoadedImages
           forM_ images $ \image -> info [i|Image: #{image}|]
 
-        introduceBinaryViaNixPackage @"kubectl" "kubectl" $
+        withKubernetesNamespace "foo" $
+          introduceBinaryViaNixPackage @"kubectl" "kubectl" $
           introduceBinaryViaNixDerivation @"kubectl-minio" kubectlMinioDerivation $
-          introduceMinioOperator $ do
+          introduceMinioOperator defaultMinioOperatorOptions $ do
             it "Has a MinIO operator" $ do
               moc <- getContext minioOperator
               info [i|Got MinIO operator: #{moc}|]
 
-            withKubernetesNamespace "foo" $ introduceK8SMinioS3Server "foo" $ do
+            withKubernetesNamespace "foo" $ introduceK8SMinioS3Server (defaultMinioS3ServerOptions "foo") $ do
               it "has a MinIO S3 server" $ do
                 serv <- getContext testS3Server
                 info [i|Got test S3 server: #{serv}|]

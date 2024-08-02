@@ -10,11 +10,14 @@ module Test.Sandwich.Contexts.Kubernetes.FindImages (
 
 import Control.Lens
 import Data.Aeson (FromJSON)
+import qualified Data.Aeson as A
+import Data.Aeson.Lens
 import Data.Text as T
 import qualified Data.Yaml as Yaml
 import Kubernetes.OpenAPI.Model as Kubernetes
 import Kubernetes.OpenAPI.ModelLens as Kubernetes
 import Relude
+import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 
 
 -- | Find all image references in a chunk of YAML containing multiple sections
@@ -36,6 +39,12 @@ findAllImages' (decode -> Right x@(V1DaemonSet {})) = maybe [] imagesFromPodSpec
   where
     maybePodSpec :: Maybe V1PodSpec
     maybePodSpec = x ^? (v1DaemonSetSpecL . _Just . v1DaemonSetSpecTemplateL . v1PodTemplateSpecSpecL . _Just)
+
+-- Pick up images in MinIO "Tenant" CRDs
+findAllImages' (decode -> Right x@(A.Object obj))
+  | Just (A.String "Tenant") <- aesonLookup "kind" obj
+    , Just (A.String img) <- x ^? (_Object . ix "spec" . _Object . ix "image") = [img]
+
 findAllImages' _ = []
 
 imagesFromPodSpec :: V1PodSpec -> [Text]
