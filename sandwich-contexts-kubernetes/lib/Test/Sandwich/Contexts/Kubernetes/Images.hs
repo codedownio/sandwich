@@ -16,6 +16,9 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   , loadImage
   , loadImage'
 
+  , withImageLoadRetry
+  , withImageLoadRetry'
+
   , introduceImages
 
   , findAllImages
@@ -25,8 +28,10 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   , ImagePullPolicy(..)
   ) where
 
+import Control.Monad.Catch (Handler(..), MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Retry
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
@@ -168,6 +173,20 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
         -- loadedImages <- Set.toList <$> getLoadedImages' kcc
         -- loadedImages `shouldContain` [image']
         -- return image'
+
+-- | Same as 'withImageLoadRetry'', but with a reasonable default retry policy.
+withImageLoadRetry :: (MonadLoggerIO m, MonadMask m) => ImageLoadSpec -> m a -> m a
+withImageLoadRetry = withImageLoadRetry' (exponentialBackoff 50000 <> limitRetries 5)
+
+-- | A combinator to wrap around your 'loadImage' or 'loadImageIfNecessary' calls to retry
+-- on failure. Image loads sometimes fail on Minikube (version 1.33.0 at time of writing).
+withImageLoadRetry' :: (MonadLoggerIO m, MonadMask m) => RetryPolicyM m -> ImageLoadSpec -> m a -> m a
+withImageLoadRetry' policy ils action =
+  recovering policy [\_status -> Handler (\(e :: FailureReason) -> do
+                                             warn [i|#{ils}: retrying load due to exception: #{e}|]
+                                             return True)] $ \_ ->
+    action
+
 
 -- | Helper to introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
