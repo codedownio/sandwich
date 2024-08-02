@@ -111,7 +111,7 @@ withK8SMinioS3Server kcc moc options action = do
   withK8SMinioS3Server' kubectlBinary kcc moc options action
 
 -- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
-withK8SMinioS3Server' :: (
+withK8SMinioS3Server' :: forall m context. (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m, Typeable context
   )
@@ -125,7 +125,8 @@ withK8SMinioS3Server' :: (
   -> m ()
 withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOperatorContext (MinioS3ServerOptions {..}) action = do
   (_, env) <- runWithKubectl' kcc kubectlBinary
-  let runWithKubeConfig prog args = do
+  let runWithKubeConfig :: (HasCallStack) => String -> [String] -> m ()
+      runWithKubeConfig prog args = do
         createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
