@@ -7,13 +7,16 @@
 module Test.Sandwich.Contexts.Kubernetes.Namespace (
   withKubernetesNamespace
   , withKubernetesNamespace'
+
+  , createKubernetesNamespace
+  , destroyKubernetesNamespace
   ) where
 
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.String.Interpolate
-import Relude
+import Relude hiding (force)
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
@@ -35,7 +38,7 @@ withKubernetesNamespace :: (
   => Text
   -> SpecFree context m ()
   -> SpecFree context m ()
-withKubernetesNamespace namespace = around [i|Create the '#{namespace}' kubernetes namespace|] (void . bracket_ (create namespace) (destroy namespace))
+withKubernetesNamespace namespace = around [i|Create the '#{namespace}' kubernetes namespace|] (void . bracket_ (createKubernetesNamespace namespace) (destroyKubernetesNamespace False namespace))
 
 -- | Same as 'withKubernetesNamespace', but works in an arbitrary monad with reader context.
 withKubernetesNamespace' :: (
@@ -49,30 +52,31 @@ withKubernetesNamespace' :: (
   => Text
   -> m a
   -> m a
-withKubernetesNamespace' namespace = bracket_ (create namespace) (destroy namespace)
+withKubernetesNamespace' namespace = bracket_ (createKubernetesNamespace namespace) (destroyKubernetesNamespace False namespace)
 
-create :: (
+createKubernetesNamespace :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContext context
   , MonadReader context m
   , HasKubernetesClusterContext context
   , HasFile context "kubectl"
   ) => Text -> m ()
-create namespace = do
+createKubernetesNamespace namespace = do
   let args = ["create", "namespace", toString namespace]
   (kubectl, env) <- runWithKubectl
   createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-destroy :: (
+destroyKubernetesNamespace :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContext context
   , MonadReader context m
   , HasKubernetesClusterContext context
   , HasFile context "kubectl"
-  ) => Text -> m ()
-destroy namespace = do
+  ) => Bool -> Text -> m ()
+destroyKubernetesNamespace force namespace = do
   let args = ["delete", "namespace", toString namespace]
+           <> if force then ["--force"] else []
   (kubectl, env) <- runWithKubectl
   createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
