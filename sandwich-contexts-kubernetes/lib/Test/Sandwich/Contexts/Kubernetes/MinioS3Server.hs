@@ -158,7 +158,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
           debug [i|Preloading image: #{busyboxImage}|]
           loadImageIfNecessary' kcc (ImageLoadSpecDocker busyboxImage IfNotPresent)
 
-        (userAndPassword@(username, password), finalYaml) <- case transformKustomizeChunks (toString minioS3ServerNamespace) (T.splitOn "---\n" (toText allYaml)) of
+        (userAndPassword@(username, password), finalYaml) <- case transformKustomizeChunks (toString minioS3ServerNamespace) (toString deploymentName) (T.splitOn "---\n" (toText allYaml)) of
           Left err -> expectationFailure [i|Couldn't transform kustomize chunks: #{err}|]
           Right x -> pure x
 
@@ -175,6 +175,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 
+  -- Create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
   let createNetworkPolicy = do
         let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
         createProcessWithLoggingAndStdin ((proc kubectlBinary ["create", "--namespace", toString minioS3ServerNamespace, "-f", "-"]) { env = Just env, delegate_ctlc = True }) yaml
@@ -184,7 +185,6 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
         runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString minioS3ServerNamespace]
         runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString minioS3ServerNamespace]
 
-  -- TODO: create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
   bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \((username, password), _) -> do
     do
       uuid <- makeUUID

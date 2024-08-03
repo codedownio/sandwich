@@ -32,8 +32,8 @@ parseMinioUserAndPassword txt = case (userValues, passwordValues) of
 -- testInput = [__i|export MINIO_ROOT_USER="WXSTFUWIRS04LMGIMJGV"
 --                  export MINIO_ROOT_PASSWORD="NCDCfTaiXcGHq8QRfSaXMAWOXgdrhpGwPSkoYMWf"|]
 
-transformKustomizeChunks :: String -> [Text] -> Either String ((Text, Text), Text)
-transformKustomizeChunks namespace initialChunks = do
+transformKustomizeChunks :: String -> String -> [Text] -> Either String ((Text, Text), Text)
+transformKustomizeChunks namespace deploymentName initialChunks = do
   userAndPassword <- getUserAndPassword initialChunks
 
   return (userAndPassword, finalYaml)
@@ -48,6 +48,9 @@ transformKustomizeChunks namespace initialChunks = do
 
               -- Disable TLS
               & fmap disableTLS
+
+              -- Set deployment name
+              & fmap (setDeploymentNameAndPoolSize deploymentName)
 
               -- Combine everything into multi-document Yaml
               & T.intercalate "---\n"
@@ -88,6 +91,14 @@ disableTLS (decode -> Right x@(A.Object (aesonLookup "kind" -> Just (A.String "T
        & set (_Object . ix "spec" . _Object . ix "requestAutoCert") (A.Bool False)
        & set (_Object . ix "spec" . _Object . at "externalCertSecret") Nothing
 disableTLS t = t
+
+setDeploymentNameAndPoolSize :: String -> Text -> Text
+setDeploymentNameAndPoolSize deploymentName (decode -> Right x@(A.Object (aesonLookup "kind" -> Just (A.String "Tenant")))) = decodeUtf8 (Yaml.encode x')
+  where
+    x' = x
+       & set (_Object . ix "metadata" . _Object . ix "name") (A.String (toText deploymentName))
+       & set (_Object . ix "spec" . _Object . ix "pools" . _Array . ix 0 . _Object . ix "servers") (A.Number 1)
+setDeploymentNameAndPoolSize _ t = t
 
 decode :: FromJSON a => Text -> Either Yaml.ParseException a
 decode = Yaml.decodeEither' . encodeUtf8
