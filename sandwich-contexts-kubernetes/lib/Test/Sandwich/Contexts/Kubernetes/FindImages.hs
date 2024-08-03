@@ -26,16 +26,16 @@ findAllImages = Relude.concatMap findAllImages' . T.splitOn "---\n"
 
 -- | Find all image references in a single chunk of YAML
 findAllImages' :: Text -> [Text]
-findAllImages' (decode -> Right x@(V1Pod {})) = maybe [] imagesFromPodSpec (v1PodSpec x)
-findAllImages' (decode -> Right x@(V1Deployment {})) = maybe [] imagesFromPodSpec maybePodSpec
+findAllImages' (decode -> Right x@(V1Pod {v1PodKind=(Just "Pod")})) = maybe [] imagesFromPodSpec (v1PodSpec x)
+findAllImages' (decode -> Right x@(V1Deployment {v1DeploymentKind=(Just "Deployment")})) = maybe [] imagesFromPodSpec maybePodSpec
   where
     maybePodSpec :: Maybe V1PodSpec
     maybePodSpec = x ^? (v1DeploymentSpecL . _Just . v1DeploymentSpecTemplateL . v1PodTemplateSpecSpecL . _Just)
-findAllImages' (decode -> Right x@(V1StatefulSet {})) = maybe [] imagesFromPodSpec maybePodSpec
+findAllImages' (decode -> Right x@(V1StatefulSet {v1StatefulSetKind=(Just "StatefulSet")})) = maybe [] imagesFromPodSpec maybePodSpec
   where
     maybePodSpec :: Maybe V1PodSpec
     maybePodSpec = x ^? (v1StatefulSetSpecL . _Just . v1StatefulSetSpecTemplateL . v1PodTemplateSpecSpecL . _Just)
-findAllImages' (decode -> Right x@(V1DaemonSet {})) = maybe [] imagesFromPodSpec maybePodSpec
+findAllImages' (decode -> Right x@(V1DaemonSet {v1DaemonSetKind=(Just "DaemonSet")})) = maybe [] imagesFromPodSpec maybePodSpec
   where
     maybePodSpec :: Maybe V1PodSpec
     maybePodSpec = x ^? (v1DaemonSetSpecL . _Just . v1DaemonSetSpecTemplateL . v1PodTemplateSpecSpecL . _Just)
