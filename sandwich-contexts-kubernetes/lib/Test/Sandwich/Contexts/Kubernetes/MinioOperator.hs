@@ -23,7 +23,13 @@ module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Data.Aeson (FromJSON)
+import Data.String.Interpolate
+import Data.Text as T
+import qualified Data.Yaml as Yaml
+import Kubernetes.OpenAPI.Model as Kubernetes
 import Relude
+import Safe
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
@@ -88,7 +94,35 @@ withMinioOperator' (MinioOperatorOptions {..}) kubectlBinary kcc action = do
   let create = createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) allYaml
                  >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  let destroy = createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"]) { env = Just env }) allYaml
-                  >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  let namespaceToDestroy = fromMaybe "minio-operator" (findNamespace (toText allYaml))
+  info [i|Detected MinIO operator namespace: #{namespaceToDestroy}|]
+
+  let destroy = do
+        -- I think this is a robust way to delete everything?
+        -- Just doing "delete -f -" produces errors, seemingly because the minio-operator Namespace
+        -- gets deleted first and then subsequent deletes encounter missing objects.
+        -- If this doesn't work, we can fall back to just deleting the namespace below.
+        -- But I think this will be better because it should pick up CRDs?
+        createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"
+                                                              , "--ignore-not-found", "--wait=false", "--all=true"
+                                                              ]) {
+                                             env = Just env, delegate_ctlc = True }) allYaml
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+        -- createProcessWithLogging ((proc kubectlBinary ["delete", "namespace", toString namespaceToDestroy, "-f"]) {
+        --                              env = Just env, delegate_ctlc = True
+        --                              })
+        --   >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   bracket_ create destroy (action MinioOperatorContext)
+
+-- | Find the first "Namespace" resource in some multi-document YAML and extract its name
+findNamespace :: Text -> Maybe Text
+findNamespace = headMay . mapMaybe findNamespace' . T.splitOn "---\n"
+  where
+    findNamespace' :: Text -> Maybe Text
+    findNamespace' (decode -> Right (V1Namespace {v1NamespaceKind=(Just "Namespace"), v1NamespaceMetadata=(Just meta)})) = v1ObjectMetaName meta
+    findNamespace' _ = Nothing
+
+    decode :: FromJSON a => Text -> Either Yaml.ParseException a
+    decode = Yaml.decodeEither' . encodeUtf8
