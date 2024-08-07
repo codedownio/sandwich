@@ -143,7 +143,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
   -- Make the WebDriver
   WebDriver <$> pure (T.unpack webdriverName)
             <*> pure (p, maybeXvfbSession)
-            <*> pure wdOptions
+            <*> pure (wdOptions {
+                       capabilities = capabilities
+                     })
             <*> liftIO (newMVar mempty)
             <*> pure (def { W.wdPort = fromIntegral port
                           , W.wdCapabilities = capabilities
