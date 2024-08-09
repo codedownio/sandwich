@@ -99,14 +99,16 @@ loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
       stderrOutput <- fromLogStr <$> readIORef stderrOutputVar
-      when (or [f stderrOutput | f <- badOutputChecks]) $
-        expectationFailure [i|minikube image load failed; error output detected|]
+
+      let ef (details :: Text) = expectationFailure [i|minikube image load failed; error output detected (#{details})|]
+
+      when (check1 stderrOutput) $ ef "Contained 'Failed to load cached images for profile' message"
+      when (check2 stderrOutput) $ ef "Contained 'ctr: failed to ingest' message"
+      when (check3 stderrOutput) $ ef "Contained 'failed pushing to' message"
 
     -- This is crazy, but minikube image load sometimes fails silently.
     -- One example: https://github.com/kubernetes/minikube/issues/16032
     -- As a result, we add a few checks to detect the cases we've seen that represent a failed load.
-    badOutputChecks :: [ByteString -> Bool]
-    badOutputChecks = [check1, check2, check3]
 
     check1 bytes = "Failed to load cached images for profile" `B.isInfixOf` bytes
                  && "make sure the profile is running." `B.isInfixOf` bytes
