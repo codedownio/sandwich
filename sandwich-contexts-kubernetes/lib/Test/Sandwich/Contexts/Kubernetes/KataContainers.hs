@@ -100,6 +100,9 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
 
   (_, env) <- runWithKubectl' kcc kubectlBinary
 
+  -- Now follow the instructions from
+  -- https://github.com/kata-containers/kata-containers/blob/main/docs/install/minikube-installation-guide.md#installing-kata-containers
+
   -- Install kata-deploy
   createProcessWithLogging ((proc kubectlBinary ["apply", "-f", kataRoot </> "tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
@@ -112,7 +115,7 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
                       , "get", "pods", "-o=name"]) { env = Just env }
       ) { env = Just env }) ""
 
-    case headMay [t | t <- pods, "pods/kata-deploy" `T.isPrefixOf` t] of
+    case headMay [t | t <- pods, "pod/kata-deploy" `T.isPrefixOf` t] of
       Just x -> pure x
       Nothing -> expectationFailure [i|Couldn't find kata-deploy pod in: #{pods}|]
 
@@ -120,14 +123,19 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
 
   -- Wait until the kata-deploy pod starts sleeping
   waitUntil 600 $ do
-    createProcessWithLogging (
+    (exitCode, sout, serr) <- readCreateProcessWithExitCode (
       (proc kubectlBinary ["-n", "kube-system"
                           , "exec", toString podName
                           , "--"
-                          , "ps -ef | fgrep infinity"
+                          , "ps", "-ef"
                           ])
       { env = Just env }
-      ) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+      ) ""
+    case exitCode of
+      ExitSuccess -> return ()
+      ExitFailure n -> expectationFailure [i|Command failed with code #{n}. Stderr: #{serr}|]
+
+    toText sout `textShouldContain` "sleep infinity"
 
   action $ KataContainersContext options
 
