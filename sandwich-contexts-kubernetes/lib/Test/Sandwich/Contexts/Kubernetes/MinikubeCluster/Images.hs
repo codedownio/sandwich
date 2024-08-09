@@ -117,7 +117,7 @@ loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
                  && "failed to copy: failed to send write: error reading from server: EOF: unavailable" `B.isInfixOf` bytes
 
     check3 :: ByteString -> Bool
-    check3 bytes = bytes =~ ("failed pushing to:[[:blank:]]*[^[:space:]]+" :: Text)
+    check3 bytes = bytes =~ ("failed pushing to:[[:blank:]]*[^[:space:]]+$" :: Text)
 
 getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> m (Set Text)
 getLoadedImages minikubeBinary clusterName minikubeFlags = do
