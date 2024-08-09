@@ -107,15 +107,28 @@ configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browse
         , "application/x-gtar"
         , "application/x-tgz"
 
+        , "application/octet-stream"
         , "application/pdf"
         , "application/zip"
         ]
 
   profile <- liftIO $ FF.defaultProfile
-    & FF.addPref "browser.download.folderList" (2 :: Int)
-    & FF.addPref "browser.download.manager.showWhenStarting" False
     & FF.addPref "browser.download.dir" downloadDir
-    & FF.addPref "browser.helperApps.neverAsk.saveToDisk" (T.unpack (T.intercalate "," saveToDiskMimeTypes))
+
+    & FF.addPref "browser.download.folderList" (2 :: Int)
+    & FF.addPref "browser.download.useDownloadDir" True
+
+    & FF.addPref "browser.download.manager.closeWhenDone" True
+    & FF.addPref "browser.download.manager.focusWhenStarting" False
+    & FF.addPref "browser.download.manager.showAlertOnComplete" False
+    & FF.addPref "browser.download.manager.showWhenStarting" False
+    & FF.addPref "browser.download.manager.useWindow" False
+
+    & FF.addPref "services.sync.prefs.sync.browser.download.manager.showWhenStarting" False
+
+    & FF.addPref "browser.helperApps.alwaysAsk.force" False
+    & FF.addPref "browser.helperApps.neverAsk.saveToDisk" (T.unpack (T.intercalate ", " saveToDiskMimeTypes))
+
     & FF.prepareProfile
 
   return (caps { W.browser = browser { W.ffProfile = Just profile } })
