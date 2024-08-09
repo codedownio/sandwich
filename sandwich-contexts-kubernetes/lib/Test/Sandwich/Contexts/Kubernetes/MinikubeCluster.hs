@@ -224,6 +224,7 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
              <> driverAndResourceFlags
              <> (fmap toString minikubeClusterExtraFlags)
 
+  info [i|export KUBECONFIG='#{minikubeKubeConfigFile}'|]
   debug [i|Starting minikube with args: #{minikubeBinary} #{T.unwords $ fmap toText args}|]
 
   (_, _, _, p) <- createProcess (
