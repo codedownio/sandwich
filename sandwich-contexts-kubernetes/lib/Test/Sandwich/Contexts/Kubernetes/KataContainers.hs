@@ -24,6 +24,7 @@ import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Relude hiding (withFile)
 import Safe
 import System.Exit
@@ -76,7 +77,7 @@ withKataContainers' :: forall context m a. (
   HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> KataContainersOptions -> (KataContainersContext -> m a) -> m a
-withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary (KataContainersOptions {..}) action = do
+withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(KataContainersOptions {..}) action = do
   -- Preflight checks
   case kubernetesClusterType of
     KubernetesClusterKind {} -> expectationFailure [i|Can't install Kata Containers on Kind at present.|]
@@ -105,14 +106,30 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary (KataConta
   createProcessWithLogging ((proc kubectlBinary ["apply", "-f", kataRoot </> "tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
+  podName <- waitUntil 600 $ do
+    pods <- (T.words . toText) <$> readCreateProcessWithLogging ((
+      (proc "kubectl" ["-n", "kube-system"
+                      , "get", "pods", "-o=name"]) { env = Just env }
+      ) { env = Just env }) ""
+
+    case headMay [t | t <- pods, "pods/kata-deploy" `T.isPrefixOf` t] of
+      Just x -> pure x
+      Nothing -> expectationFailure [i|Couldn't find kata-deploy pod in: #{pods}|]
+
+  info [i|Got podName: #{podName}|]
+
+  -- Wait until the kata-deploy pod starts sleeping
   waitUntil 600 $ do
-    pods <- readCreateProcessWithLogging ((proc "kubectl" ["-n", "kube-system"
-                                                          , "get", "pods", "-o=name"]) { env = Just env }) ""
-    info [i|Got pods: #{pods}|]
-    pods `shouldContain` "pods/kata-deploy"
+    createProcessWithLogging (
+      (proc kubectlBinary ["-n", "kube-system"
+                          , "exec", toString podName
+                          , "--"
+                          , "ps -ef | fgrep infinity"
+                          ])
+      { env = Just env }
+      ) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  pending
-
+  action $ KataContainersContext options
 
 kataContainersDerivation = [__i|{fetchFromGitHub}:
 
