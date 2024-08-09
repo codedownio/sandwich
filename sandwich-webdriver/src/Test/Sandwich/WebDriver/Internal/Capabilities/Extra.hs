@@ -27,7 +27,6 @@ import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types (ChromeVersion(..)
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Firefox.Profile as FF
-import UnliftIO.Exception
 
 
 #if MIN_VERSION_aeson(2,0,0)
@@ -97,16 +96,14 @@ configureDownloadCapabilities :: (
   MonadIO m
   ) => [Char] -> W.Capabilities -> m W.Capabilities
 configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Firefox {..})}) = do
-  case ffProfile of
-    Nothing -> return ()
-    Just _ -> liftIO $ throwIO $ userError [i|Can't support Firefox profile yet.|]
-
-  profile <- liftIO $ FF.defaultProfile
-    & FF.addPref "browser.download.folderList" (2 :: Int)
-    & FF.addPref "browser.download.manager.showWhenStarting" False
-    & FF.addPref "browser.download.dir" downloadDir
-    & FF.addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
-    & FF.prepareProfile
+  profile <- case ffProfile of
+    Just x -> pure x
+    Nothing -> liftIO $ FF.defaultProfile
+      & FF.addPref "browser.download.folderList" (2 :: Int)
+      & FF.addPref "browser.download.manager.showWhenStarting" False
+      & FF.addPref "browser.download.dir" downloadDir
+      & FF.addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
+      & FF.prepareProfile
 
   return (caps { W.browser = browser { W.ffProfile = Just profile } })
 configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = return $ caps { W.browser=browser' }
