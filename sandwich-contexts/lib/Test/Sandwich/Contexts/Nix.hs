@@ -109,7 +109,7 @@ nixpkgsRelease2311 = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationAllowUnfree = False
   }
 
--- | Currently set to 'nixpkgsRelease2311'.
+-- | Currently set to 'nixpkgsRelease2405'.
 nixpkgsReleaseDefault :: NixpkgsDerivation
 nixpkgsReleaseDefault = nixpkgsRelease2405
 
