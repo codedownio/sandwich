@@ -5,9 +5,11 @@
 module Test.Sandwich.Contexts.Nix (
   -- * Nix contexts
   introduceNixContext
+  , introduceNixContext'
 
   -- * Nix environments
   , introduceNixEnvironment
+  , introduceNixEnvironment'
   , buildNixSymlinkJoin
   , buildNixSymlinkJoin'
   , buildNixExpression
@@ -124,7 +126,21 @@ introduceNixContext :: (
   -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceNixContext nixpkgsDerivation = introduce "Introduce Nix context" nixContext getNixContext (const $ return ())
+introduceNixContext = introduceNixContext' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+
+-- | Same as 'introduceNixContext', but allows passing custom 'NodeOptions'.
+introduceNixContext' :: (
+  MonadUnliftIO m, MonadThrow m
+  )
+  -- | Custom 'NodeOptions'
+  => NodeOptions
+  -- | Nixpkgs derivation to use
+  -> NixpkgsDerivation
+  -- | Child spec
+  -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
+introduceNixContext' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext getNixContext (const $ return ())
   where
     getNixContext = findExecutable "nix" >>= \case
       Nothing -> expectationFailure [i|Couldn't find "nix" binary when introducing Nix context. A Nix binary and store must already be available in the environment.|]
@@ -144,7 +160,20 @@ introduceNixEnvironment :: (
   => [Text]
   -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m ()
   -> SpecFree context m ()
-introduceNixEnvironment packageNames = introduce "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
+introduceNixEnvironment = introduceNixEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+
+-- | Same as 'introduceNixEnvironment', but allows passing custom 'NodeOptions'.
+introduceNixEnvironment' :: (
+  HasBaseContextMonad context m, HasNixContext context
+  , MonadUnliftIO m
+  )
+  -- | Custom 'NodeOptions'
+  => NodeOptions
+  -- | List of package names to include in the Nix environment
+  -> [Text]
+  -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m ()
+  -> SpecFree context m ()
+introduceNixEnvironment' nodeOptions packageNames = introduce' nodeOptions "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
 
 -- | Build a Nix environment, as in 'introduceNixEnvironment'.
 buildNixSymlinkJoin :: (

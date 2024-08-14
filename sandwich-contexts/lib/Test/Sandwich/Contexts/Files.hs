@@ -117,19 +117,22 @@ introduceFile :: forall a context m. (
   -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceFile path = introduceFile' (Proxy @a) path
+introduceFile path = introduceFile' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 }) path
 
+-- | Same as 'introduceFile', but allows passing custom 'NodeOptions'.
 introduceFile' :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
   )
-  -- | Proxy for the file type to use. I.e. 'Proxy "my-file"'
-  => Proxy a -> FilePath -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m () -> SpecFree context m ()
-introduceFile' proxy path = introduce [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) (return $ EnvironmentFile path) (const $ return ())
+  => NodeOptions
+  -> FilePath
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
+introduceFile' nodeOptions path = introduce' nodeOptions [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) (return $ EnvironmentFile path) (const $ return ())
   where
     -- Saw a bug where we couldn't embed "symbolVal proxy" directly in the quasi-quote above.
     -- Failed with "Couldn't match kind ‘Bool’ with ‘Symbol’"
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
 -- | Introduce a file from the PATH, which must be present when tests are run.
 -- Useful when you want to set up your own environment with binaries etc. to use in tests.
@@ -141,21 +144,19 @@ introduceBinaryViaEnvironment :: forall a context m. (
   => SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -- | Child spec
   -> SpecFree context m ()
-introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (Proxy @a)
+introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
--- | Variant of 'introduceBinaryViaEnvironment' that you can use with a 'Proxy' rather
--- than a type application.
+-- | Same as 'introduceBinaryViaEnvironment', but allows you to pass custom 'NodeOptions'.
 introduceBinaryViaEnvironment' :: forall a context m. (
   MonadUnliftIO m, KnownSymbol a
   )
-  -- | Proxy for the file type to use. I.e. 'Proxy "my-file"'
-  => Proxy a
+  => NodeOptions
   -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -> SpecFree context m ()
-introduceBinaryViaEnvironment' proxy = introduce [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) alloc cleanup
+introduceBinaryViaEnvironment' nodeOptions = introduce' nodeOptions [i|#{binaryName} (binary from PATH)|] (mkFileLabel @a) alloc cleanup
   where
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
     alloc = do
       liftIO (findExecutable binaryName) >>= \case
@@ -192,12 +193,12 @@ introduceFileViaNixPackage' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage' = introduceFileViaNixPackage'' (Proxy @a)
+introduceFileViaNixPackage' = introduceFileViaNixPackage'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
--- | Same as 'introduceFileViaNixPackage'', but allows passing a 'Proxy'.
+-- | Same as 'introduceFileViaNixPackage'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixPackage'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a
+  ) => NodeOptions
     -- | Nix package name which contains the desired file.
     -> NixPackageName
     -- | Callback to find the desired file within the Nix derivation path.
@@ -207,10 +208,10 @@ introduceFileViaNixPackage'' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage'' proxy packageName tryFindFile = introduce [i|#{binaryName} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixPackage'' nodeOptions packageName tryFindFile = introduce' nodeOptions [i|#{binaryName} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
     alloc = buildNixSymlinkJoin [packageName] >>= \p -> EnvironmentFile <$> liftIO (tryFindFile p)
 
@@ -239,20 +240,20 @@ introduceBinaryViaNixPackage :: forall a context m. (
     NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' (Proxy @a)
+introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' @a (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
--- | Same as 'introduceBinaryViaNixPackage', but allows passing a 'Proxy'.
+-- | Same as 'introduceBinaryViaNixPackage', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixPackage' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a
+  ) => NodeOptions
     -- | Nix package name which contains the desired binary.
     -> NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixPackage' proxy packageName = introduce [i|#{binaryName} (binary via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
+introduceBinaryViaNixPackage' nodeOptions packageName = introduce' nodeOptions [i|#{binaryName} (binary via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
     alloc = buildNixSymlinkJoin [packageName] >>= tryFindBinary binaryName
 
@@ -289,20 +290,20 @@ introduceBinaryViaNixDerivation :: forall a context m. (
     Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (Proxy @a)
+introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
--- | Same as 'introduceBinaryViaNixDerivation', but allows passing a 'Proxy'.
+-- | Same as 'introduceBinaryViaNixDerivation', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixDerivation' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a
+  ) => NodeOptions
     -- | Nix derivation as a string.
     -> Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixDerivation' proxy derivation = introduce [i|#{binaryName} (binary via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
+introduceBinaryViaNixDerivation' nodeOptions derivation = introduce' nodeOptions [i|#{binaryName} (binary via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
     alloc = buildNixCallPackageDerivation derivation >>= tryFindBinary binaryName
 
@@ -351,22 +352,22 @@ introduceFileViaNixDerivation' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (Proxy @a)
+introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
 
--- | Same as 'introduceFileViaNixDerivation'', but allows passing a 'Proxy'.
+-- | Same as 'introduceFileViaNixDerivation'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixDerivation'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => Proxy a
+  ) => NodeOptions
     -- | Nix derivation as a string.
     -> Text
     -- | Callback to find the desired file.
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation'' proxy derivation tryFindFile = introduce [i|#{binaryName} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
+introduceFileViaNixDerivation'' nodeOptions derivation tryFindFile = introduce' nodeOptions [i|#{binaryName} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
-    binaryName = symbolVal proxy
+    binaryName = symbolVal (Proxy @a)
 
     alloc = EnvironmentFile <$> (buildNixCallPackageDerivation derivation >>= liftIO . tryFindFile)
 
