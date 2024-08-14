@@ -17,6 +17,7 @@ module Test.Sandwich.WebDriver.Internal.Dependencies (
 
   , getBrowserDependencies
   , introduceBrowserDependenciesViaNix
+  , introduceBrowserDependenciesViaNix'
   , fillInCapabilitiesAndGetDriverArgs
   ) where
 
@@ -112,7 +113,7 @@ getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
   geckoDriver <- exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver
   return $ BrowserDependenciesFirefox firefox geckoDriver
 
--- | Inroduce 'BrowserDependencies' via Nix, using the command line options.
+-- | Introduce 'BrowserDependencies' via Nix, using the command line options.
 -- This is useful to create the context for functions like 'allocateWebDriver'.
 introduceBrowserDependenciesViaNix :: forall m context. (
   MonadUnliftIO m, HasBaseContext context, HasNixContext context, HasSomeCommandLineOptions context
@@ -121,7 +122,18 @@ introduceBrowserDependenciesViaNix :: forall m context. (
   => SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceBrowserDependenciesViaNix = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
+introduceBrowserDependenciesViaNix = introduceBrowserDependenciesViaNix' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+
+-- | Same as 'introduceBrowserDependenciesViaNix', but allows passing custom 'NodeOptions'.
+introduceBrowserDependenciesViaNix' :: forall m context. (
+  MonadUnliftIO m, HasBaseContext context, HasNixContext context, HasSomeCommandLineOptions context
+  )
+  => NodeOptions
+  -- | Child spec
+  -> SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
+introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introduce browser dependencies" browserDependencies alloc (const $ return ())
   where
     alloc = do
       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions

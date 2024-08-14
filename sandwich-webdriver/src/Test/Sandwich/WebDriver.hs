@@ -30,6 +30,7 @@ module Test.Sandwich.WebDriver (
   , allocateWebDriver
   , cleanupWebDriver
   , introduceBrowserDependenciesViaNix
+  , introduceBrowserDependenciesViaNix'
   , introduceWebDriver'
   , addCommandLineOptionsToWdOptions
 
