@@ -8,6 +8,7 @@ module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
   , introduceWebDriverViaNix
+  , introduceWebDriverViaNix'
 
   -- * Specifying how to obtain dependencies
   , defaultWebDriverDependencies
@@ -100,10 +101,21 @@ introduceWebDriverViaNix :: forall m context. (
   => WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m ()
   -> SpecFree context m ()
-introduceWebDriverViaNix wdOptions =
-  introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
-  . introduceBinaryViaNixPackage @"java" "jre"
-  . introduceBrowserDependenciesViaNix
+introduceWebDriverViaNix = introduceWebDriverViaNix' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+
+-- | Same as 'introduceWebDriverViaNix', but allows passing custom 'NodeOptions'.
+introduceWebDriverViaNix' :: forall m context. (
+  BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
+  )
+  => NodeOptions
+  -- | Options
+  -> WdOptions
+  -> SpecFree (ContextWithWebdriverDeps context) m ()
+  -> SpecFree context m ()
+introduceWebDriverViaNix' nodeOptions wdOptions =
+  introduceFileViaNixPackage'' @"selenium.jar" nodeOptions "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
+  . introduceBinaryViaNixPackage' @"java" nodeOptions "jre"
+  . introduceBrowserDependenciesViaNix' nodeOptions
   . introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
   where
     alloc = do
