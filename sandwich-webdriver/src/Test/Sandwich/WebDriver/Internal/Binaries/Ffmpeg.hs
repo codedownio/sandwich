@@ -8,6 +8,7 @@ module Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg (
   , FfmpegToUse(..)
   ) where
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -22,7 +23,7 @@ import UnliftIO.Directory
 -- | Manually obtain an ffmpeg binary, according to the 'FfmpegToUse' policy.
 obtainFfmpeg :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  , MonadUnliftIO m, MonadLoggerIO m, MonadMask m
   ) => FfmpegToUse -> m (Either T.Text FilePath)
 obtainFfmpeg UseFfmpegFromPath = findExecutable "ffmpeg" >>= \case
   Nothing -> return $ Left [i|Couldn't find "ffmpeg" on the PATH.|]

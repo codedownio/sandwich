@@ -75,6 +75,7 @@ module Test.Sandwich.Contexts.Files (
   , HasFile
   ) where
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Except
@@ -218,7 +219,7 @@ introduceFileViaNixPackage'' nodeOptions packageName tryFindFile = introduce' no
 -- | Lower-level version of 'introduceFileViaNixPackage'.
 getFileViaNixPackage :: forall context m. (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  , MonadUnliftIO m, MonadLoggerIO m
   ) =>
     -- | Nix package name which contains the desired file.
     NixPackageName
@@ -260,7 +261,7 @@ introduceBinaryViaNixPackage' nodeOptions packageName = introduce' nodeOptions [
 -- | Lower-level version of 'introduceBinaryViaNixPackage'.
 getBinaryViaNixPackage :: forall a context m. (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  , MonadUnliftIO m, MonadLoggerIO m, KnownSymbol a
   ) =>
     -- | Nix package name which contains the desired binary.
     NixPackageName
@@ -271,7 +272,7 @@ getBinaryViaNixPackage packageName = do
 -- | Lower-level version of 'introduceBinaryViaNixPackage'.
 getBinaryViaNixPackage' :: forall a context m. (
   HasBaseContext context, MonadReader context m
-  , MonadLogger m, MonadUnliftIO m, MonadFail m, KnownSymbol a
+  , MonadLogger m, MonadUnliftIO m, KnownSymbol a
   ) =>
     -- | 'NixContext' to use.
     NixContext
@@ -284,7 +285,7 @@ getBinaryViaNixPackage' nc packageName = do
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
 introduceBinaryViaNixDerivation :: forall a context m. (
-  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
   ) =>
     -- | Nix derivation as a string.
     Text
@@ -294,7 +295,7 @@ introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (defaultNodeO
 
 -- | Same as 'introduceBinaryViaNixDerivation', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixDerivation' :: forall a context m. (
-  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
   ) => NodeOptions
     -- | Nix derivation as a string.
     -> Text
@@ -310,7 +311,7 @@ introduceBinaryViaNixDerivation' nodeOptions derivation = introduce' nodeOptions
 -- | Lower-level version of 'introduceBinaryViaNixDerivation'.
 getBinaryViaNixDerivation :: forall a context m. (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  , MonadUnliftIO m, MonadLoggerIO m, MonadMask m, KnownSymbol a
   ) =>
     -- | Nix derivation as a string.
     Text
@@ -321,7 +322,7 @@ getBinaryViaNixDerivation derivation =
 -- | Lower-level version of 'getBinaryViaNixDerivation'.
 getBinaryViaNixDerivation' :: forall a context m. (
   HasBaseContextMonad context m
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m, KnownSymbol a
+  , MonadUnliftIO m, MonadLoggerIO m, MonadMask m, KnownSymbol a
   )
   -- | Nix context.
   => NixContext
@@ -334,7 +335,7 @@ getBinaryViaNixDerivation' nc derivation =
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
 introduceFileViaNixDerivation :: forall a context m. (
-  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
   ) =>
     -- | Nix derivation as a string.
     Text
@@ -344,7 +345,7 @@ introduceFileViaNixDerivation derivation = introduceFileViaNixDerivation' @a der
 
 -- | Same as 'introduceFileViaNixDerivation', but allows configuring the file finding callback.
 introduceFileViaNixDerivation' :: forall a context m. (
-  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
   ) =>
     -- | Nix derivation as a string.
     Text
@@ -356,7 +357,7 @@ introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (defaultNodeOpt
 
 -- | Same as 'introduceFileViaNixDerivation'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixDerivation'' :: forall a context m. (
-  HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
   ) => NodeOptions
     -- | Nix derivation as a string.
     -> Text
@@ -374,7 +375,7 @@ introduceFileViaNixDerivation'' nodeOptions derivation tryFindFile = introduce' 
 -- | Lower-level version of 'introduceFileViaNixDerivation'.
 getFileViaNixDerivation :: forall context m. (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  , MonadUnliftIO m, MonadLoggerIO m, MonadMask m
   ) =>
     -- | Nix derivation as a string.
     Text

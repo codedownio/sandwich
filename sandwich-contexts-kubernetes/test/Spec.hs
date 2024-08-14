@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import qualified Data.List as L
 import Data.String.Interpolate
@@ -50,7 +51,7 @@ opts :: NodeOptions
 opts = defaultNodeOptions { nodeOptionsVisibilityThreshold = 50 }
 
 loadImageTests :: (
-  MonadUnliftIO m
+  MonadUnliftIO m, MonadMask m
   , HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context, HasFile context "kubectl"
   ) => SpecFree context m ()
 loadImageTests = do

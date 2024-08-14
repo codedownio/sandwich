@@ -21,6 +21,7 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
   ) where
 
 import Control.Monad
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.String.Interpolate
@@ -60,12 +61,12 @@ kataContainers = Label
 type HasKataContainersContext context = HasLabel context "kataContainers" KataContainersContext
 
 introduceKataContainers :: (
-  MonadUnliftIO m, Typeable context, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
+  MonadUnliftIO m, MonadMask m, Typeable context, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
   ) => KataContainersOptions -> SpecFree (LabelValue "kataContainers" KataContainersContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> context) m () -> SpecFree context m ()
 introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
 
 withKataContainers :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
+  HasCallStack, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
   ) => KataContainersOptions -> (KataContainersContext -> m a) -> m a
 withKataContainers options action = do
@@ -74,7 +75,7 @@ withKataContainers options action = do
   withKataContainers' kcc kubectlBinary options action
 
 withKataContainers' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
+  HasCallStack, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> KataContainersOptions -> (KataContainersContext -> m a) -> m a
 withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(KataContainersOptions {..}) action = do

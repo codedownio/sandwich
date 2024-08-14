@@ -20,6 +20,7 @@ module Test.Sandwich.WebDriver.Video (
   , defaultGdigrabOptions
   ) where
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
@@ -41,7 +42,7 @@ import UnliftIO.Exception
 
 
 type BaseVideoConstraints context m = (
-  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
+  MonadLoggerIO m, MonadUnliftIO m, MonadMask m
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
   )
 

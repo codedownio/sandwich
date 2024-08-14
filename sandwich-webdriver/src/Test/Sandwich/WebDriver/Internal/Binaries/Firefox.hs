@@ -30,7 +30,7 @@ import UnliftIO.Directory
 -- | Manually obtain a firefox binary, according to the 'FirefoxToUse' policy,
 obtainFirefox :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadUnliftIO m, MonadLogger m
   ) => FirefoxToUse -> m (Either T.Text FilePath)
 obtainFirefox UseFirefoxFromPath = do
   findExecutable "firefox" >>= \case
@@ -46,7 +46,7 @@ obtainFirefox (UseFirefoxFromNixpkgs nixContext) =
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainGeckoDriver :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadUnliftIO m, MonadLogger m
   ) => GeckoDriverToUse -> m (Either T.Text FilePath)
 obtainGeckoDriver (DownloadGeckoDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]

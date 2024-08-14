@@ -3,6 +3,7 @@
 
 module Test.Sandwich.WebDriver.Internal.Video where
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -29,7 +30,7 @@ import UnliftIO.Environment
 
 
 getVideoArgs :: (
-  MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  MonadUnliftIO m, MonadLoggerIO m, MonadMask m
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
   ) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m CreateProcess
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do

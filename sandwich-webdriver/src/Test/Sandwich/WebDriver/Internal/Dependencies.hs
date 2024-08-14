@@ -101,7 +101,7 @@ browserDependencies = Label
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
 
 getBrowserDependencies :: (
-  MonadUnliftIO m, MonadLogger m, MonadFail m
+  MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasBaseContext context
   ) => BrowserDependenciesSpec -> m BrowserDependencies
 getBrowserDependencies BrowserDependenciesSpecChrome {..} = do

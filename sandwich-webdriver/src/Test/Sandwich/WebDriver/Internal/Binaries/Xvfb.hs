@@ -24,7 +24,7 @@ import UnliftIO.Directory
 -- | Manually obtain an Xvfb binary, according to the 'XvfbToUse' policy.
 obtainXvfb :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  , MonadUnliftIO m, MonadLoggerIO m
   ) => XvfbToUse -> m (Either T.Text FilePath)
 obtainXvfb UseXvfbFromPath = findExecutable "xvfb" >>= \case
   Nothing -> return $ Left [i|Couldn't find "xvfb" on the PATH.|]

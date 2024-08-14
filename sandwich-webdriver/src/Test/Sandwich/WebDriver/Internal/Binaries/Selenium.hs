@@ -39,7 +39,7 @@ defaultSeleniumJarUrl = "https://selenium-release.storage.googleapis.com/3.141/s
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainSelenium :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadUnliftIO m, MonadLogger m
   ) => SeleniumToUse -> m FilePath
 obtainSelenium (DownloadSeleniumFrom toolsDir url) = do
   let path = [i|#{toolsDir}/selenium-server-standalone.jar|]

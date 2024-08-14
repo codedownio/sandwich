@@ -41,7 +41,7 @@ type Constraints m = (
 -- | Manually obtain a chrome binary, according to the 'ChromeToUse' policy,
 obtainChrome :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadUnliftIO m, MonadLogger m
   ) => ChromeToUse -> m (Either T.Text FilePath)
 obtainChrome UseChromeFromPath = do
   findExecutable "google-chrome" >>= \case
@@ -58,7 +58,7 @@ obtainChrome (UseChromeFromNixpkgs nixContext) =
 -- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy.
 obtainChromeDriver :: (
   MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m, MonadFail m
+  , MonadUnliftIO m, MonadLogger m
   ) => ChromeDriverToUse -> m (Either T.Text FilePath)
 obtainChromeDriver (DownloadChromeDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
