@@ -20,18 +20,26 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
   , HasKataContainersContext
   ) where
 
+import Control.Lens
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Data.Aeson (FromJSON)
 import Data.String.Interpolate
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import qualified Data.Yaml as Yaml
+import Kubernetes.OpenAPI.Model as Kubernetes
+import Kubernetes.OpenAPI.ModelLens as Kubernetes
 import Relude hiding (withFile)
 import Safe
 import System.Exit
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.FindImages
+import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Nix
@@ -50,10 +58,18 @@ data SourceCheckout =
 
 data KataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout :: SourceCheckout
+  -- | If set, this will overwrite the image in the DaemonSet in kata-deploy.yaml and will set the ImagePullPolicy
+  -- to "IfNotPresent".
+  -- This is useful because it's currently (8/15/2024) set to "quay.io/kata-containers/kata-deploy:latest",
+  -- with "imagePullPolicy: Always". This is not reproducible and also doesn't allow us to cache images.
+  , kataContainersKataDeployImage :: Maybe Text
+  , kataContainersPreloadImages :: Bool
   } deriving (Show)
 defaultKataContainersOptions :: KataContainersOptions
 defaultKataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout = SourceCheckoutNixDerivation kataContainersDerivation
+  , kataContainersKataDeployImage = Just "quay.io/kata-containers/kata-deploy:3.7.0"
+  , kataContainersPreloadImages = True
   }
 
 kataContainers :: Label "kataContainers" KataContainersContext
@@ -66,7 +82,7 @@ introduceKataContainers :: (
 introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
 
 withKataContainers :: forall context m a. (
-  HasCallStack, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
+  HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
   ) => KataContainersOptions -> (KataContainersContext -> m a) -> m a
 withKataContainers options action = do
@@ -75,7 +91,7 @@ withKataContainers options action = do
   withKataContainers' kcc kubectlBinary options action
 
 withKataContainers' :: forall context m a. (
-  HasCallStack, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
+  HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> KataContainersOptions -> (KataContainersContext -> m a) -> m a
 withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(KataContainersOptions {..}) action = do
@@ -104,10 +120,29 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
   -- Now follow the instructions from
   -- https://github.com/kata-containers/kata-containers/blob/main/docs/install/minikube-installation-guide.md#installing-kata-containers
 
+  let rbacFile = kataRoot </> "tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"
+  let deploymentFile = kataRoot </> "tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"
+
+  -- Read the RBAC and DaemonSet configs
+  rbacContents <- liftIO $ T.readFile rbacFile
+  deploymentContents' <- liftIO $ T.readFile deploymentFile
+  let deploymentContents = case kataContainersKataDeployImage of
+        Nothing -> deploymentContents'
+        Just deployImage -> deploymentContents'
+                          & setDaemonSetImage deployImage
+
+  -- Preload any images
+  when kataContainersPreloadImages $ do
+    let images = findAllImages (rbacContents <> "\n---\n" <> deploymentContents)
+
+    forM_ images $ \image -> do
+      info [i|Preloading image: #{image}|]
+      loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
+
   -- Install kata-deploy
-  createProcessWithLogging ((proc kubectlBinary ["apply", "-f", kataRoot </> "tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"]) { env = Just env })
+  createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString rbacContents)
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-  createProcessWithLogging ((proc kubectlBinary ["apply", "-f", kataRoot </> "tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"]) { env = Just env })
+  createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString deploymentContents)
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   podName <- waitUntil 600 $ do
@@ -149,3 +184,17 @@ kataContainersDerivation = [__i|{fetchFromGitHub}:
                                   sha256 = "sha256-c8C3UdQ4PZF4gxN1ZskN30OJ64IY2/N5eAkUhtUHM7E=";
                                 }
                                |]
+
+setDaemonSetImage :: Text -> Text -> Text
+setDaemonSetImage image = mconcat . fmap setDaemonSetImage' . T.splitOn "---\n"
+  where
+    setDaemonSetImage' :: Text -> Text
+    setDaemonSetImage' (decode -> Right x@(V1DaemonSet {v1DaemonSetKind=(Just "DaemonSet")})) = x
+      & set (v1DaemonSetSpecL . _Just . v1DaemonSetSpecTemplateL . v1PodTemplateSpecSpecL . _Just . v1PodSpecContainersL . ix 0 . v1ContainerImageL) (Just image)
+      & set (v1DaemonSetSpecL . _Just . v1DaemonSetSpecTemplateL . v1PodTemplateSpecSpecL . _Just . v1PodSpecContainersL . ix 0 . v1ContainerImagePullPolicyL) (Just "IfNotPresent")
+      & Yaml.encode
+      & decodeUtf8
+    setDaemonSetImage' t = t
+
+decode :: FromJSON a => Text -> Either Yaml.ParseException a
+decode = Yaml.decodeEither' . encodeUtf8
