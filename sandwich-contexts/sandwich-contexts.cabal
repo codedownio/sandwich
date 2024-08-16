@@ -10,7 +10,7 @@ synopsis:       Sandwich test contexts
 description:    Please see README.md
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2023 Tom McLaughlin
+copyright:      2024 Tom McLaughlin
 build-type:     Simple
 
 library

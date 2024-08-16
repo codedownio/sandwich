@@ -3,7 +3,7 @@ version:             0.1.0.0
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
-copyright:           "2023 Tom McLaughlin"
+copyright:           "2024 Tom McLaughlin"
 
 dependencies:
 - base

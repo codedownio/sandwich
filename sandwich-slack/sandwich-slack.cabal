@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fcdf5ae347bc0a4c0ad7121ecde0a71859cb7369fa2fe48e8e16a82ecc86b628
+-- hash: b35bc2d69d737f3bb4cf23662fd937928be5ad5c7870aebbde8b8764d864b132
 
 name:           sandwich-slack
 version:        0.1.2.0
@@ -15,7 +15,7 @@ homepage:       https://codedownio.github.io/sandwich
 bug-reports:    https://github.com/codedownio/sandwich/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2023 Tom McLaughlin
+copyright:      2024 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple

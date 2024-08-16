@@ -4,7 +4,7 @@ github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
 maintainer:          "tom@codedown.io"
-copyright:           "2023 Tom McLaughlin"
+copyright:           "2024 Tom McLaughlin"
 category:            Testing
 homepage:            https://codedownio.github.io/sandwich
 synopsis:            Sandwich integration with Hedgehog
