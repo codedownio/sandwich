@@ -63,13 +63,18 @@ data KataContainersOptions = KataContainersOptions {
   -- This is useful because it's currently (8/15/2024) set to "quay.io/kata-containers/kata-deploy:latest",
   -- with "imagePullPolicy: Always". This is not reproducible and also doesn't allow us to cache images.
   , kataContainersKataDeployImage :: Maybe Text
+  -- | Whether to pull the image using Docker and load it onto the cluster using 'loadImageIfNecessary''.
   , kataContainersPreloadImages :: Bool
+  -- | Whether to label the node(s) with "katacontainers.io/kata-runtime=true", since this seems not to happen
+  -- automatically with kata-deploy.
+  , kataContainersLabelNode :: Bool
   } deriving (Show)
 defaultKataContainersOptions :: KataContainersOptions
 defaultKataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout = SourceCheckoutNixDerivation kataContainersDerivation
   , kataContainersKataDeployImage = Just "quay.io/kata-containers/kata-deploy:3.7.0"
   , kataContainersPreloadImages = True
+  , kataContainersLabelNode = True
   }
 
 kataContainers :: Label "kataContainers" KataContainersContext
@@ -120,12 +125,9 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
   -- Now follow the instructions from
   -- https://github.com/kata-containers/kata-containers/blob/main/docs/install/minikube-installation-guide.md#installing-kata-containers
 
-  let rbacFile = kataRoot </> "tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"
-  let deploymentFile = kataRoot </> "tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"
-
   -- Read the RBAC and DaemonSet configs
-  rbacContents <- liftIO $ T.readFile rbacFile
-  deploymentContents' <- liftIO $ T.readFile deploymentFile
+  rbacContents <- liftIO $ T.readFile $ kataRoot </> "tools/packaging/kata-deploy/kata-rbac/base/kata-rbac.yaml"
+  deploymentContents' <- liftIO $ T.readFile $ kataRoot </> "tools/packaging/kata-deploy/kata-deploy/base/kata-deploy.yaml"
   let deploymentContents = case kataContainersKataDeployImage of
         Nothing -> deploymentContents'
         Just deployImage -> deploymentContents'
@@ -172,6 +174,16 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
       ExitFailure n -> expectationFailure [i|Command failed with code #{n}. Stderr: #{serr}|]
 
     toText sout `textShouldContain` "sleep infinity"
+
+  -- Now install the runtime classes
+  runtimeClassesContents <- liftIO $ T.readFile $ kataRoot </> "tools/packaging/kata-deploy/runtimeclasses/kata-runtimeClasses.yaml"
+  createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString runtimeClassesContents)
+    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+  -- Finally, label the node(s)
+  when kataContainersLabelNode $ do
+    createProcessWithLoggingAndStdin ((proc kubectlBinary ["label", "nodes", "--all", "--overwrite", "katacontainers.io/kata-runtime=true"]) { env = Just env }) (toString deploymentContents)
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   action $ KataContainersContext options
 
