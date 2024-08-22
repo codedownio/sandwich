@@ -19,12 +19,13 @@ import Test.WebDriver
 import qualified Test.WebDriver.Firefox.Profile as FF
 
 loggingPrefs :: A.Value
-loggingPrefs = A.object [("browser", "ALL")
-                        , ("client", "WARNING")
-                        , ("driver", "WARNING")
-                        , ("performance", "ALL")
-                        , ("server", "WARNING")
-                        ]
+loggingPrefs = A.object [
+  ("browser", "ALL")
+  , ("client", "WARNING")
+  , ("driver", "WARNING")
+  , ("performance", "ALL")
+  , ("server", "WARNING")
+  ]
 
 -- * Chrome
 

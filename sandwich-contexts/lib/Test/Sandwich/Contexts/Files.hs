@@ -69,6 +69,7 @@ module Test.Sandwich.Contexts.Files (
 
   -- * Low-level
   , mkFileLabel
+  , defaultFileContextVisibilityThreshold
 
   -- * Types
   , EnvironmentFile(..)
@@ -87,6 +88,9 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import UnliftIO.Directory
 
+
+defaultFileContextVisibilityThreshold :: Int
+defaultFileContextVisibilityThreshold = 150
 
 -- | A file path to make available to tests.
 -- For example, this can be an external binary like "minikube" if a given test context wants
@@ -118,7 +122,7 @@ introduceFile :: forall a context m. (
   -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceFile path = introduceFile' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 }) path
+introduceFile path = introduceFile' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold }) path
 
 -- | Same as 'introduceFile', but allows passing custom 'NodeOptions'.
 introduceFile' :: forall a context m. (
@@ -145,7 +149,7 @@ introduceBinaryViaEnvironment :: forall a context m. (
   => SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
   -- | Child spec
   -> SpecFree context m ()
-introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceBinaryViaEnvironment = introduceBinaryViaEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceBinaryViaEnvironment', but allows you to pass custom 'NodeOptions'.
 introduceBinaryViaEnvironment' :: forall a context m. (
@@ -194,7 +198,7 @@ introduceFileViaNixPackage' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixPackage' = introduceFileViaNixPackage'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceFileViaNixPackage' = introduceFileViaNixPackage'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceFileViaNixPackage'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixPackage'' :: forall a context m. (
@@ -241,7 +245,7 @@ introduceBinaryViaNixPackage :: forall a context m. (
     NixPackageName
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' @a (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' @a (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceBinaryViaNixPackage', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixPackage' :: forall a context m. (
@@ -291,7 +295,7 @@ introduceBinaryViaNixDerivation :: forall a context m. (
     Text
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceBinaryViaNixDerivation', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixDerivation' :: forall a context m. (
@@ -353,7 +357,7 @@ introduceFileViaNixDerivation' :: forall a context m. (
     -> (FilePath -> IO FilePath)
     -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
     -> SpecFree context m ()
-introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceFileViaNixDerivation'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixDerivation'' :: forall a context m. (

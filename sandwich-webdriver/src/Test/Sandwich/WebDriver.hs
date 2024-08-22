@@ -101,7 +101,7 @@ introduceWebDriverViaNix :: forall m context. (
   => WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m ()
   -> SpecFree context m ()
-introduceWebDriverViaNix = introduceWebDriverViaNix' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceWebDriverViaNix = introduceWebDriverViaNix' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceWebDriverViaNix', but allows passing custom 'NodeOptions'.
 introduceWebDriverViaNix' :: forall m context. (
