@@ -31,6 +31,8 @@ module Test.Sandwich.Contexts.Nix (
   , HasNixEnvironment
 
   , NixpkgsDerivation(..)
+
+  , defaultFileContextVisibilityThreshold
   ) where
 
 import Control.Monad.Catch (MonadMask, MonadThrow)
@@ -74,6 +76,8 @@ nixEnvironment = Label
 
 type HasNixEnvironment context = HasLabel context "nixEnvironment" FilePath
 
+defaultFileContextVisibilityThreshold :: Int
+defaultFileContextVisibilityThreshold = 150
 
 data NixpkgsDerivation =
   NixpkgsDerivationFetchFromGitHub {
@@ -126,7 +130,7 @@ introduceNixContext :: (
   -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceNixContext = introduceNixContext' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceNixContext = introduceNixContext' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceNixContext', but allows passing custom 'NodeOptions'.
 introduceNixContext' :: (
@@ -160,7 +164,7 @@ introduceNixEnvironment :: (
   => [Text]
   -> SpecFree (LabelValue "nixEnvironment" FilePath :> context) m ()
   -> SpecFree context m ()
-introduceNixEnvironment = introduceNixEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = 100 })
+introduceNixEnvironment = introduceNixEnvironment' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceNixEnvironment', but allows passing custom 'NodeOptions'.
 introduceNixEnvironment' :: (

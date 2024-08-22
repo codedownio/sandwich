@@ -89,9 +89,6 @@ import Test.Sandwich.Contexts.Nix
 import UnliftIO.Directory
 
 
-defaultFileContextVisibilityThreshold :: Int
-defaultFileContextVisibilityThreshold = 150
-
 -- | A file path to make available to tests.
 -- For example, this can be an external binary like "minikube" if a given test context wants
 -- to use it to start a Minikube cluster.

@@ -775,4 +775,4 @@ alterTopLevelNodeOptions g (Free x) = Free (x { nodeOptions = g (nodeOptions x)
 alterTopLevelNodeOptions _ x@(Pure _) = x
 
 systemVisibilityThreshold :: Int
-systemVisibilityThreshold = 150
+systemVisibilityThreshold = 200
