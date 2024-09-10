@@ -126,6 +126,7 @@ test-suite sandwich-contexts-kubernetes-test
   ghc-options: -Wunused-packages -Wall -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base
+    , exceptions
     , random
     , relude
     , sandwich
