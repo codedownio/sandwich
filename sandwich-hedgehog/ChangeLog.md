@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.3.1
+
+* Support hedgehog-1.5
+
 ## 0.1.3.0
 
 * Fix bug-reports URL
