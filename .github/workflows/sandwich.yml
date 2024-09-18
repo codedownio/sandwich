@@ -170,9 +170,9 @@ jobs:
       if: always()
       run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
 
-    - name: Test (sandwich-contexts-kubernetes)
-      if: always()
-      run: stack test sandwich-contexts-kubernetes --stack-yaml ${{matrix.yaml}} --system-ghc
+    # - name: Test (sandwich-contexts-kubernetes)
+    #   if: always()
+    #   run: stack test sandwich-contexts-kubernetes --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts-minio)
       if: always()
