@@ -24,7 +24,7 @@ import DockerEngine.API.Network
 import DockerEngine.Client
 import DockerEngine.Core
 import DockerEngine.MimeTypes
-import DockerEngine.Model
+import DockerEngine.Model hiding (Map, Status(..))
 import Network.HTTP.Client as NH
 import Network.HTTP.Types.Status
 import qualified Network.Socket as S
@@ -63,17 +63,17 @@ doesNetworkExist ds networkName = isRight <$> inspectNetwork ds (Id networkName)
 
 createNetwork :: (HasCallStack, MonadUnliftIO m, MonadLoggerIO m) => DockerState -> Text -> Map Text Text -> Either () (Maybe (AddrRange IPv4)) -> m (Either Text ())
 createNetwork ds networkName labels ipv6OrSubnet = leftOnException $ do
-  let networkConfig = (mkNetworkConfig networkName) {
-        networkConfigAttachable = Just True
-        , networkConfigLabels = Just $ M.mapKeys toString labels
-        , networkConfigIpam = case ipv6OrSubnet of
+  let networkConfig = (mkNetworkCreateRequest networkName) {
+        networkCreateRequestAttachable = Just True
+        , networkCreateRequestLabels = Just $ M.mapKeys toString labels
+        , networkCreateRequestIpam = case ipv6OrSubnet of
             Right (Just subnet) -> Just $ mkIPAM {
               iPAMDriver = Just "default"
               -- ^ Need to set this default driver explicitly; see https://github.com/docker/compose/issues/5248
-              , iPAMConfig = Just [M.singleton "Subnet" (show subnet)]
+              , iPAMConfig = Just [mkIPAMConfig { iPAMConfigSubnet = Just (show subnet) }]
               }
             _ -> Nothing
-        , networkConfigEnableIPv6 = case ipv6OrSubnet of
+        , networkCreateRequestEnableIpv6 = case ipv6OrSubnet of
             Left _ -> Just True
             _ -> Nothing
         }

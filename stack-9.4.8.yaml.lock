@@ -51,16 +51,18 @@ packages:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
 - completed:
-    commit: dd83d02f45e059db515b0e90f53ddfccafdca494
-    git: https://github.com/codedownio/docker-openapi.git
+    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    git: https://github.com/codedownio/docker-engine.git
     name: docker-engine
     pantry-tree:
-      sha256: f4d791f4bb4fb61eb527cbb89427d5a24fef1e94c1beeed86f44aabf8220caf2
-      size: 3152
-    version: 1.36.0.0
+      sha256: 040cc87fbb2b6d61c03ffef104e9e2b8a4185c17b63ba0dd1590c518d4543d40
+      size: 2451
+    subdir: v1.44
+    version: 0.144.0
   original:
-    commit: dd83d02f45e059db515b0e90f53ddfccafdca494
-    git: https://github.com/codedownio/docker-openapi.git
+    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    git: https://github.com/codedownio/docker-engine.git
+    subdir: v1.44
 - completed:
     commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git

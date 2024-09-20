@@ -16,16 +16,18 @@ packages:
     commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
     git: https://github.com/codedownio/minio-hs
 - completed:
-    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
-    git: https://github.com/codedownio/docker-openapi.git
+    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    git: https://github.com/codedownio/docker-engine.git
     name: docker-engine
     pantry-tree:
-      sha256: 175c6ef9ad2b27058edf045710ddefbc1bfafa4b36626221a63c122bec06221b
-      size: 3152
-    version: 1.36.0.0
+      sha256: 040cc87fbb2b6d61c03ffef104e9e2b8a4185c17b63ba0dd1590c518d4543d40
+      size: 2451
+    subdir: v1.44
+    version: 0.144.0
   original:
-    commit: ada215498c2558ff6680f3b025ac3732b19bffb6
-    git: https://github.com/codedownio/docker-openapi.git
+    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    git: https://github.com/codedownio/docker-engine.git
+    subdir: v1.44
 - completed:
     commit: a747f6fdc62d34c684709740422497d3c088f8d9
     git: https://github.com/codedownio/kubernetes-client-haskell.git
@@ -53,12 +55,16 @@ packages:
     git: https://github.com/codedownio/kubernetes-client-haskell.git
     subdir: kubernetes-client
 - completed:
-    hackage: oidc-client-0.8.0.0@sha256:b07cb83e836e037014f37da4641687905e9a9f04817692ef64f0e3a00456e5b4,3376
+    commit: b70757b85751525cba41316ea9af132d9a43cfaf
+    git: https://github.com/codedownio/haskell-oidc-client
+    name: oidc-client
     pantry-tree:
-      sha256: 7d9a3d4ae677ad01de54e296e39dcde3881e0aa161f3e25a68f42db997adce5a
-      size: 1298
+      sha256: b389011ec2b8e7422a56c82833075ddf0152f613044f7acdd1f51a1346d2f7ca
+      size: 1901
+    version: 0.8.0.0
   original:
-    hackage: oidc-client-0.8.0.0
+    commit: b70757b85751525cba41316ea9af132d9a43cfaf
+    git: https://github.com/codedownio/haskell-oidc-client
 - completed:
     commit: dcd0d5b200e96e90c6daa728585c23be5309a955
     git: https://github.com/codedownio/hs-certificate
@@ -74,7 +80,7 @@ packages:
     subdir: x509-validation
 snapshots:
 - completed:
-    sha256: bb93febdb9f085b5d3d5a841891ae5d13376dfd1034ff2ab026cb9d93cc67b05
-    size: 652323
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/7/8.yaml
-  original: nightly-2024-07-08
+    sha256: 027e1c40fdbeed68a4779a099ff8307c3054cd6ba61012305ea11b916bb41790
+    size: 663135
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2024/9/19.yaml
+  original: nightly-2024-09-19
