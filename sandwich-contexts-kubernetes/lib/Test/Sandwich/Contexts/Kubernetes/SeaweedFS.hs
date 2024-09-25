@@ -140,10 +140,13 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
 
     info [i|------------------ Building and uploading SeaweedFS Docker image ------------------|]
 
-    info [i|Doing make docker-build|]
-    runOperatorCmd "make docker-build" []
+    let initialImageName = "seaweedfs/seaweedfs-operator:v0.0.1"
 
-    newImageName <- loadImage' kcc (ImageLoadSpecDocker "chrislusf/seaweedfs-operator:v0.0.1" IfNotPresent)
+    info [i|Doing make docker-build|]
+    runOperatorCmd "make docker-build" [("IMG", toString initialImageName)]
+
+    newImageName <- loadImage' kcc (ImageLoadSpecDocker initialImageName IfNotPresent)
+    info [i|Loaded image into cluster as: #{newImageName}|]
 
     info [i|------------------ Installing SeaweedFS operator ------------------|]
 
