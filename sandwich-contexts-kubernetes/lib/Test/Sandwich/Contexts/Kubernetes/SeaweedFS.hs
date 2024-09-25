@@ -116,7 +116,7 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   info [i|Built Nix environment for operator builds: #{nixEnvPath}|]
 
   let originalSearchPathParts = maybe [] splitSearchPath (L.lookup "PATH" baseEnv)
-  let finalPath = (nixEnvPath </> "bin") : originalSearchPathParts
+  let finalPath = (nixEnvPath </> "bin") : takeDirectory kubectlBinary : originalSearchPathParts
                 & fmap toText
                 & T.intercalate (toText [searchPathSeparator])
                 & toString
