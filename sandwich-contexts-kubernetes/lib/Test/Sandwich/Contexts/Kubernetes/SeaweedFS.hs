@@ -26,6 +26,7 @@ import Control.Monad.Logger
 import Data.Aeson as A
 import qualified Data.List as L
 import Data.String.Interpolate
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Yaml as Yaml
 import Relude hiding (withFile)
@@ -59,7 +60,7 @@ data SeaweedFSOptions = SeaweedFSOptions {
   } deriving (Show)
 defaultSeaweedFSOptions :: SeaweedFSOptions
 defaultSeaweedFSOptions = SeaweedFSOptions {
-  seaweedFsImage = "chrislusf/seaweedfs:2.99"
+  seaweedFsImage = "chrislusf/seaweedfs:3.73"
   , seaweedFsBaseName = "seaweed1"
   , seaweedFsMasterReplicas = 3
   , seaweedFsFilerReplicas = 2
@@ -93,7 +94,6 @@ withSeaweedFS' :: forall context m a. (
   ) => KubernetesClusterContext -> FilePath -> Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
 withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary namespace options action = do
   baseEnv <- getEnvironment
-  let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
   NixContext {..} <- getContext nixContext
 
@@ -110,6 +110,21 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     x -> expectationFailure [i|Couldn't parse seaweedfs-operator path: #{x}|]
 
   info [i|Got operator path: #{operatorPath}|]
+
+  -- Build a Nix environment with some tools needed by the operator
+  nixEnvPath <- buildNixSymlinkJoin ["coreutils", "gnumake", "go", "stdenv", "which"]
+  info [i|Built Nix environment for operator builds: #{nixEnvPath}|]
+
+  let originalSearchPathParts = maybe [] splitSearchPath (L.lookup "PATH" baseEnv)
+  let finalPath = (nixEnvPath </> "bin") : originalSearchPathParts
+                & fmap toText
+                & T.intercalate (toText [searchPathSeparator])
+                & toString
+
+  let env = baseEnv
+          & (("KUBECONFIG", kubernetesClusterKubeConfigPath) :)
+          & (("PATH", finalPath) :)
+          & L.nubBy (\x y -> fst x == fst y)
 
   withSystemTempDirectory "seaweedfs-operator" $ \dir -> do
     let target = dir </> "seaweefs-operator"
@@ -177,7 +192,7 @@ spec:
 seaweedFsOperatorDerivation = [__i|with import <nixpkgs> {}; fetchFromGitHub {
                                      owner = "seaweedfs";
                                      repo = "seaweedfs-operator";
-                                     rev = "1cb1ee5a78e68cfa2d83d00813f50fd98d7b1092";
-                                     sha256 = "sha256-p2SNwwwJ0GrmkImdW1aUYAluDLuY86FtV1F21xUHnyk=";
+                                     rev = "6fa4c24d47c57daa10a084e3a5598efbb8d808c8";
+                                     sha256 = "sha256-gFFIG2tglzvXoqzUvbzWAG2Bg2RwCCsuX0tXwV95D/0=";
                                    }
                                   |]
