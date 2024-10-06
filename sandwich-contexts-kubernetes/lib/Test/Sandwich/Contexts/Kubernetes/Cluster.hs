@@ -3,6 +3,14 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeApplications #-}
 
+{-|
+
+This is the main module for creating and working with Kubernetes clusters. You can create clusters with either Kind or Minikube, obtaining the relevant binary from either the current PATH or from Nix.
+
+The module also contains functions for waiting for pods and services to exist, running commands with Kubectl, logging, service forwarding, and port forwarding.
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.Cluster (
   -- * Kind clusters
   Kind.introduceKindClusterViaNix
@@ -20,8 +28,8 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , waitForServiceEndpointsToExist
 
   -- * Run commands with kubectl
-  , runWithKubectl
-  , runWithKubectl'
+  , askKubectlArgs
+  , askKubectlEnvironment
 
   -- * Forward services
   , withForwardKubernetesService

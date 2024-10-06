@@ -120,7 +120,7 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
 
   info [i|kataRoot: #{kataRoot}|]
 
-  (_, env) <- runWithKubectl' kcc kubectlBinary
+  env <- askKubectlEnvironment kcc
 
   -- Now follow the instructions from
   -- https://github.com/kata-containers/kata-containers/blob/main/docs/install/minikube-installation-guide.md#installing-kata-containers

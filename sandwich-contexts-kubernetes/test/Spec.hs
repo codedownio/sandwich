@@ -102,7 +102,7 @@ loadImageTests' = do
     -- withKubernetesNamespace' (toText namespace) $
     let namespace = "default"
 
-    (kubectlBinary, env) <- runWithKubectl
+    (kubectlBinary, env) <- askKubectlArgs
 
     -- Wait for service account to exist; see
     -- https://github.com/kubernetes/kubernetes/issues/66689

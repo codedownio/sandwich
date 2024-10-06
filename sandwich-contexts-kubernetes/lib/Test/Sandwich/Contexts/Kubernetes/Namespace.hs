@@ -63,7 +63,7 @@ createKubernetesNamespace :: (
   ) => Text -> m ()
 createKubernetesNamespace namespace = do
   let args = ["create", "namespace", toString namespace]
-  (kubectl, env) <- runWithKubectl
+  (kubectl, env) <- askKubectlArgs
   createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
@@ -77,6 +77,6 @@ destroyKubernetesNamespace :: (
 destroyKubernetesNamespace force namespace = do
   let args = ["delete", "namespace", toString namespace]
            <> if force then ["--force"] else []
-  (kubectl, env) <- runWithKubectl
+  (kubectl, env) <- askKubectlArgs
   createProcessWithLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)

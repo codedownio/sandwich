@@ -124,7 +124,7 @@ withK8SMinioS3Server' :: forall m context. (
   -> (TestS3Server -> m [Result])
   -> m ()
 withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOperatorContext (MinioS3ServerOptions {..}) action = do
-  (_, env) <- runWithKubectl' kcc kubectlBinary
+  env <- askKubectlEnvironment kcc
   let runWithKubeConfig :: (HasCallStack) => String -> [String] -> m ()
       runWithKubeConfig prog args = do
         createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })

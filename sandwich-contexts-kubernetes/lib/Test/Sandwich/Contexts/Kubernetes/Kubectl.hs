@@ -1,12 +1,14 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeApplications #-}
+
+{-|
+Helper module for working with @kubectl@ processes.
+-}
 
 module Test.Sandwich.Contexts.Kubernetes.Kubectl (
   -- * Run commands with kubectl
-  runWithKubectl
-  , runWithKubectl'
+  askKubectlArgs
+  , askKubectlEnvironment
   ) where
 
 import Control.Monad.Logger
@@ -18,28 +20,29 @@ import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Environment
 
 
-runWithKubectl :: (
+-- | Retrieve the @kubectl@ binary path and the set of environment variables to use when invoking it.
+-- Derives these from a 'HasFile' context and the 'KubernetesClusterContext' respectively.
+--
+-- Useful for running Kubectl commands with 'System.Process.createProcess' etc.
+askKubectlArgs :: (
   MonadLoggerIO m
   , HasBaseContextMonad context m, HasFile context "kubectl", HasKubernetesClusterContext context
   )
-  -- | Return the kubectl binary and env.
+  -- | Returns the @kubectl@ binary and environment variables.
   => m (FilePath, [(String, String)])
-runWithKubectl = do
+askKubectlArgs = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  runWithKubectl' kcc kubectlBinary
+  (kubectlBinary, ) <$> askKubectlEnvironment kcc
 
-runWithKubectl' :: (
+-- | Same as 'askKubectlArgs', but only returns the environment variables.
+askKubectlEnvironment :: (
   MonadLoggerIO m
   )
   -- | Kubernetes cluster context
   => KubernetesClusterContext
-  -- | Path to kubectl binary
-  -> FilePath
-  -- | Return the kubectl binary and env.
-  -> m (FilePath, [(String, String)])
-runWithKubectl' (KubernetesClusterContext {..}) kubectlBinary = do
+  -- | Returns the @kubectl@ binary and environment variables.
+  -> m [(String, String)]
+askKubectlEnvironment (KubernetesClusterContext {..}) = do
   baseEnv <- getEnvironment
-  let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
-
-  return (kubectlBinary, env)
+  return $ L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)

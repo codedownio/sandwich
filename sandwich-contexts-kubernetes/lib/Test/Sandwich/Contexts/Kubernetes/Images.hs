@@ -124,7 +124,7 @@ loadImageIfNecessary' kcc imageLoadSpec = do
   unlessM (imageLoadSpecToImageName imageLoadSpec >>= clusterContainsImage' kcc) $
     void $ loadImage' kcc imageLoadSpec
 
--- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a .tar or .tar.gz
+-- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a @.tar@ or @.tar.gz@
 -- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
 -- and return the modified image name (i.e. the name by which the cluster knows the image).
 loadImage :: (

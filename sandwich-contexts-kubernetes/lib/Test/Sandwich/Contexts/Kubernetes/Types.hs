@@ -55,7 +55,7 @@ data ImagePullPolicy = Always | IfNotPresent | Never
   deriving (Show, Eq)
 
 data ImageLoadSpec =
-  -- | A .tar or .tar.gz file
+  -- | A @.tar@ or @.tar.gz@ file
   ImageLoadSpecTarball FilePath
   -- | An image pulled via Docker
   | ImageLoadSpecDocker { imageName :: Text

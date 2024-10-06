@@ -81,7 +81,7 @@ withMinioOperator' :: (
   , HasBaseContextMonad context m
   ) => MinioOperatorOptions -> FilePath -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
 withMinioOperator' (MinioOperatorOptions {..}) kubectlBinary kcc action = do
-  (_, env) <- runWithKubectl' kcc kubectlBinary
+  env <- askKubectlEnvironment kcc
 
   allYaml <- readCreateProcessWithLogging ((proc kubectlBinary ["kustomize", "github.com/minio/operator?ref=v6.0.1"]) { env = Just env }) ""
 
