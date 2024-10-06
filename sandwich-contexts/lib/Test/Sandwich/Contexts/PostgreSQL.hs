@@ -2,6 +2,25 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+This module provides tools for introducing PostgreSQL databases, either via a container (Docker or Podman) or
+via a raw process (typically obtaining the binary from Nix).
+
+The container method is traditional, but the raw method can be nice because it tends to leave less junk on the
+system such as container images, networks, and volumes.
+
+A note about raw processes and random TCP ports: starting a Postgres process on a randomly chosen port is tricky,
+because Postgres currently lacks a setting for choosing its own port and reporting it back to us. So, the only way
+to start it on a random TCP port is to first manually  find a free port on the system and then start Postgres
+with it. Since this procedure is inherently racy, it can cause failures if your tests are starting lots of
+Postgres instances (or other network-using processes) in parallel. This module takes a different approach: it starts
+the Postgres instance on a Unix socket, which can never fail. You can connect to it via the Unix socket directly if
+you like. If you use the TCP-based methods like 'introducePostgresViaNix', they will open a TCP socket inside the
+test process and then run a proxy to forward packets to the Postgres server's Unix socket.
+
+-}
+
 module Test.Sandwich.Contexts.PostgreSQL (
 #ifndef mingw32_HOST_OS
   -- * Raw PostgreSQL via Nix (TCP socket)
@@ -65,16 +84,16 @@ postgres = Label
 
 data PostgresNixOptions = PostgresNixOptions {
   -- | Postgres version to use within the Nixpkgs snapshot of your 'NixContext'.
-  -- Defaults to "postgresql", but you can pick specific versions like "postgresql_15".
-  -- See "<nixpkgs>/top-level/all-packages.nix" for the available versions in your
+  -- Defaults to "postgresql", but you can pick specific versions like @postgresql_15@.
+  -- See @\<nixpkgs\>\/top-level\/all-packages.nix@ for the available versions in your
   -- snapshot.
   postgresNixPostgres :: Text
-  -- | Postgres username. Default to "postgres".
+  -- | Postgres username. Default to @postgres@.
   , postgresNixUsername :: Text
-  -- | Postgres password. Default to "postgres".
+  -- | Postgres password. Default to @postgres@.
   , postgresNixPassword :: Text
-  -- | Postgres default database. The "postgres" database is always created, but you
-  -- can create an additional one here. Defaults to "test".
+  -- | Postgres default database. The @postgres@ database is always created, but you
+  -- can create an additional one here. Defaults to @test@.
   , postgresNixDatabase :: Text
   }
 defaultPostgresNixOptions :: PostgresNixOptions
@@ -168,8 +187,26 @@ withPostgresUnixSocketViaNix :: (
   -> (FilePath -> m a)
   -> m a
 withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
-  nixEnv <- buildNixSymlinkJoin [postgresNixPostgres]
+  postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin [postgresNixPostgres]
+  withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase action
 
+-- | The lowest-level raw process version.
+withPostgresUnixSocket :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadFail m, MonadMask m, MonadLogger m
+  )
+  -- | Postgres binary dir
+  => FilePath
+  -- | Username
+  -> Text
+  -- | Password
+  -> Text
+  -- | Database
+  -> Text
+  -- | Action callback
+  -> (FilePath -> m a)
+  -> m a
+withPostgresUnixSocket postgresBinDir username password database action = do
   Just dir <- getCurrentFolder
   baseDir <- liftIO $ createTempDirectory dir "postgres-nix"
   let dbDirName = baseDir </> "db"
@@ -187,10 +224,10 @@ withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
                   : ("LC_CTYPE", "C")
                   : baseEnv
           withTempFile baseDir "pwfile" $ \pwfile h -> do
-            liftIO $ T.hPutStrLn h postgresNixPassword
+            liftIO $ T.hPutStrLn h password
             hClose h
-            createProcessWithLogging ((proc (nixEnv </> "bin" </> "initdb") [dbDirName
-                                                                            , "--username", toString postgresNixUsername
+            createProcessWithLogging ((proc (postgresBinDir </> "initdb") [dbDirName
+                                                                            , "--username", toString username
                                                                             , "-A", "md5"
                                                                             , "--pwfile", pwfile
                                                                             ]) {
@@ -205,7 +242,7 @@ withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
             T.hPutStrLn h [i|listen_addresses=''|]
 
           -- Run pg_ctl to start the DB
-          createProcessWithLogging ((proc (nixEnv </> "bin" </> "pg_ctl") [
+          createProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
                                         "-D", dbDirName
                                         , "-l", logfileName
                                         , "-o", [i|--unix_socket_directories='#{unixSockDir}'|]
@@ -214,11 +251,11 @@ withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
             >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
           -- Create the default db
-          createProcessWithLogging ((proc (nixEnv </> "bin" </> "psql") [
+          createProcessWithLogging ((proc (postgresBinDir </> "psql") [
                                         -- "-h", unixSockDir
                                         -- , "--username", toString postgresNixUsername
-                                        [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@/?host=#{unixSockDir}|]
-                                        , "-c", [i|CREATE DATABASE #{postgresNixDatabase};|]
+                                        [i|postgresql://#{username}:#{password}@/?host=#{unixSockDir}|]
+                                        , "-c", [i|CREATE DATABASE #{database};|]
                                         ]) { cwd = Just dir })
             >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
@@ -230,7 +267,7 @@ withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
             xs -> expectationFailure [i|Found multiple Unix sockets for PostgreSQL server, not sure which one to use: #{xs}|]
       )
       (\_ -> do
-          void $ readCreateProcessWithLogging ((proc (nixEnv </> "bin" </> "pg_ctl") [
+          void $ readCreateProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
                                                    "-D", dbDirName
                                                    , "-l", logfileName
                                                    , "stop" , "--wait"

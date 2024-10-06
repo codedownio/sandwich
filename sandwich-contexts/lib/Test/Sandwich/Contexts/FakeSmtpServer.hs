@@ -8,6 +8,7 @@
 {-|
 
 This module provides functions for introducing a mock SMTP server, represented by 'FakeSmtpServer'.
+
 If you send emails to this server, you can read them out to confirm they were received correctly.
 
 -}
@@ -15,10 +16,14 @@ If you send emails to this server, you can read them out to confirm they were re
 module Test.Sandwich.Contexts.FakeSmtpServer (
   -- * Introduce a fake SMTP server
   introduceFakeSmtpServerNix
+  , introduceFakeSmtpServerNix'
   , introduceFakeSmtpServer
 
   -- * Bracket-style version
   , withFakeSMTPServer
+
+  -- * Nix derivation
+  , fakeSmtpServerDerivation
 
   -- * Types
   , fakeSmtpServer
@@ -69,6 +74,7 @@ defaultFakeSmtpServerOptions = FakeSmtpServerOptions {
   , fakeSmtpServerAllowInsecureLogin = True
   }
 
+-- | An email, as received by the server.
 data EmailInfo = EmailInfo {
   emailInfoAttachments :: A.Value
   , emailInfoText :: Text
@@ -84,7 +90,9 @@ data EmailInfo = EmailInfo {
 $(A.deriveJSON (A.defaultOptions { A.fieldLabelModifier = dropNAndCamelCase (length ("emailInfo" :: String)) }) ''EmailInfo)
 
 data FakeSmtpServer = FakeSmtpServer {
+  -- | The port on which the fake SMTP server is running.
   fakeSmtpServerSmtpPort :: PortNumber
+  -- | Callback to retrieve the emails the server has received.
   , fakeSmtpServerGetEmails :: forall m. (MonadLoggerIO m, MonadUnliftIO m, MonadThrow m) => m [EmailInfo]
   }
 
@@ -95,20 +103,37 @@ fakeSmtpServer = Label
 
 type BaseMonad context m = (HasBaseContext context, MonadMask m, MonadUnliftIO m)
 
--- | Introduce a fake SMTP server using a Nix derivation hardcoded into this package, based on
--- https://github.com/ReachFive/fake-smtp-server.
--- Users can use this derivation as an example to write their own.
+type FakeSmtpServerContext context =
+  LabelValue "fakeSmtpServer" FakeSmtpServer
+  :> LabelValue (AppendSymbol "file-" "fake-smtp-server") (EnvironmentFile "fake-smtp-server")
+  :> context
+
+-- | Introduce a fake SMTP server using a Nix derivation hardcoded into this package as 'fakeSmtpServerDerivation'.
 introduceFakeSmtpServerNix :: (
   BaseMonad context m, HasNixContext context
   )
   -- | Options
   => FakeSmtpServerOptions
   -- | Child spec
-  -> SpecFree (LabelValue "fakeSmtpServer" FakeSmtpServer :> LabelValue (AppendSymbol "file-" "fake-smtp-server") (EnvironmentFile "fake-smtp-server") :> context) m ()
+  -> SpecFree (FakeSmtpServerContext context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceFakeSmtpServerNix options =
-  introduceBinaryViaNixDerivation @"fake-smtp-server" fakeSmtpServerDerivation . introduceFakeSmtpServer options
+introduceFakeSmtpServerNix = introduceFakeSmtpServerNix' fakeSmtpServerDerivation
+
+-- | Same as 'introduceFakeSmtpServerNix', but allows you to specify the derivation.
+introduceFakeSmtpServerNix' :: (
+  BaseMonad context m, HasNixContext context
+  )
+  -- | Nix derivation
+  => Text
+  -- | Options
+  -> FakeSmtpServerOptions
+  -- | Child spec
+  -> SpecFree (FakeSmtpServerContext context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
+introduceFakeSmtpServerNix' derivation options =
+  introduceBinaryViaNixDerivation @"fake-smtp-server" derivation . introduceFakeSmtpServer options
 
 -- | Introduce a fake SMTP server given a binary already available via 'HasFile'.
 introduceFakeSmtpServer :: (

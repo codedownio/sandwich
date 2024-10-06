@@ -7,6 +7,8 @@ import Data.String.Interpolate
 import Relude
 
 
+-- | A Nix derivation to build a fake Node.js SMTP server, based on
+-- https://github.com/ReachFive/fake-smtp-server.
 fakeSmtpServerDerivation :: Text
 fakeSmtpServerDerivation = [i|
 { callPackage

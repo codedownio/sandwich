@@ -1,6 +1,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
 
+{-|
+Helper module for working with containers.
+-}
+
 module Test.Sandwich.Contexts.Container (
   ContainerSystem (..)
   , waitForHealth

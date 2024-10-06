@@ -1,11 +1,36 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+
+{-|
+
+This module contains tools for working with Nix, in order to provide Nix-built artifacts to tests.
+
+The Nix package set (Nixpkgs) is one of the largest package sets in the world, and can be a great way to get artifacts reproducibly. All you need is a @nix@ binary available on the PATH.
+
+For example, the following will build a Nix environment based on Nixpkgs release 24.05, containing Emacs and Firefox.
+
+@
+introduceNixContext nixpkgsRelease2405 $
+  introduceNixEnvironment ["emacs", "firefox"] $ do
+    it "uses the environment" $ do
+      envPath <- getContext nixEnvironment
+
+      emacsVersion <- readCreateProcess (proc (envPath <\/\> "bin" <\/\> "emacs") ["--version"]) ""
+      info [i|Emacs version: #{emacsVersion}|]
+
+      firefoxVersion <- readCreateProcess (proc (envPath <\/\> "bin" <\/\> "firefox") ["--version"]) ""
+      info [i|Firefox version: #{firefoxVersion}|]
+@
+
+-}
 
 module Test.Sandwich.Contexts.Nix (
   -- * Nix contexts
   introduceNixContext
   , introduceNixContext'
+  , introduceNixContext''
 
   -- * Nix environments
   , introduceNixEnvironment
@@ -48,6 +73,7 @@ import Relude
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Util.Aeson
 import qualified Text.Show
 import UnliftIO.Async
@@ -87,7 +113,7 @@ data NixpkgsDerivation =
     , nixpkgsDerivationSha256 :: Text
 
     -- | Set the environment variable NIXPKGS_ALLOW_UNFREE=1 when building with this derivation.
-    -- Useful when you want to use packages with unfree licenses, like "google-chrome".
+    -- Useful when you want to use packages with unfree licenses, like @google-chrome@.
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
@@ -121,6 +147,12 @@ nixpkgsReleaseDefault = nixpkgsRelease2405
 
 -- | Introduce a 'NixContext', which contains information about where to find Nix and what
 -- version of Nixpkgs to use. This can be leveraged to introduce Nix packages in tests.
+--
+-- The 'NixContext' contains a build cache, so if you build a given derivation more than
+-- once in your tests under this node, runs after the first one will be fast.
+--
+-- This function requires a @nix@ binary to be in the PATH and will throw an exception if it
+-- isn't found.
 introduceNixContext :: (
   MonadUnliftIO m, MonadThrow m
   )
@@ -153,8 +185,30 @@ introduceNixContext' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Int
         buildCache <- newMVar mempty
         pure (NixContext p nixpkgsDerivation buildCache)
 
+-- | Same as 'introduceNixContext'', but allows specifying the Nix binary via 'HasFile'.
+introduceNixContext'' :: (
+  MonadUnliftIO m
+  , MonadThrow m
+  , HasFile context "nix"
+  )
+  -- | Custom 'NodeOptions'
+  => NodeOptions
+  -- | Nixpkgs derivation to use
+  -> NixpkgsDerivation
+  -- | Child spec
+  -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
+  -- | Parent spec
+  -> SpecFree context m ()
+introduceNixContext'' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext getNixContext (const $ return ())
+  where
+    getNixContext = do
+      nix <- askFile @"nix"
+      -- TODO: make sure the Nixpkgs derivation works
+      buildCache <- newMVar mempty
+      pure (NixContext nix nixpkgsDerivation buildCache)
+
 -- | Introduce a Nix environment containing the given list of packages, using the current 'NixContext'.
--- These packages are mashed together using the Nix "symlinkJoin" function. Their binaries will generally
+-- These packages are mashed together using the Nix @symlinkJoin@ function. Their binaries will generally
 -- be found in "\<environment path\>\/bin".
 introduceNixEnvironment :: (
   HasBaseContextMonad context m, HasNixContext context

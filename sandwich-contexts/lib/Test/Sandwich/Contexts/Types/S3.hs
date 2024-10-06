@@ -1,6 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 
+{-|
+Helper module for working with S3 servers.
+-}
+
 module Test.Sandwich.Contexts.Types.S3 (
   TestS3Server(..)
   , HttpMode(..)
@@ -38,17 +42,24 @@ data TestS3Server = TestS3Server {
   , testS3ServerHttpMode :: HttpMode
   } deriving (Show, Eq)
 
-data HttpMode = HttpModeHttp | HttpModeHttps | HttpModeHttpsNoValidate
+data HttpMode =
+  HttpModeHttp
+  | HttpModeHttps
+  -- | A special mode to allow a server to run in HTTPS mode, but connect to it without HTTPS validation. Useful for tests.
+  | HttpModeHttpsNoValidate
   deriving (Show, Eq)
 
 type HasTestS3Server context = HasLabel context "testS3Server" TestS3Server
 
+-- | Generate an S3 connection string for the given server.
 testS3ServerEndpoint :: TestS3Server -> Text
 testS3ServerEndpoint serv@(TestS3Server {testS3ServerAddress=(NetworkAddressTCP hostname port)}) =
   [i|#{s3Protocol serv}://#{hostname}:#{port}|]
 testS3ServerEndpoint serv@(TestS3Server {testS3ServerAddress=(NetworkAddressUnix path)}) =
   [i|#{s3Protocol serv}://#{path}|]
 
+-- | Generate an S3 connection string for the given containerized server, for the network address inside the container.
+-- Returns 'Nothing' if this server isn't containerized.
 testS3ServerContainerEndpoint :: TestS3Server -> Maybe Text
 testS3ServerContainerEndpoint serv@(TestS3Server {testS3ServerContainerAddress=(Just (NetworkAddressTCP hostname port))}) =
   Just [i|#{s3Protocol serv}://#{hostname}:#{port}|]
@@ -56,5 +67,6 @@ testS3ServerContainerEndpoint serv@(TestS3Server {testS3ServerContainerAddress=(
   Just [i|#{s3Protocol serv}://#{path}|]
 testS3ServerContainerEndpoint _ = Nothing
 
+-- | Return either "http" or "https", based on the 'testS3ServerHttpMode'.
 s3Protocol :: TestS3Server -> Text
 s3Protocol (TestS3Server {..}) = if testS3ServerHttpMode == HttpModeHttp then "http" else "https"

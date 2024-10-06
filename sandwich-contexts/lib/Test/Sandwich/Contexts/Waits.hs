@@ -3,6 +3,15 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-|
+
+This module contains helper function for waiting. It can be very useful in tests to retry something, with a reasonable backoff policy to prevent the test from consuming lots of CPU while waiting.
+
+There are also a couple HTTP(S)-specific wait functions, for waiting on servers.
+
+-}
+
+
 module Test.Sandwich.Contexts.Waits (
   -- * General waits
   waitUntil
@@ -15,6 +24,7 @@ module Test.Sandwich.Contexts.Waits (
 
   -- * Types
   , VerifyCerts(..)
+  , WaitConstraints
   ) where
 
 import Control.Concurrent
@@ -91,6 +101,7 @@ timePerRequest = 10_000_000
 
 type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadThrow m)
 
+-- | Whether to verify certificates or not when connecting to an HTTPS endpoint.
 data VerifyCerts = YesVerify | NoVerify
   deriving (Eq)
 
@@ -108,7 +119,7 @@ tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
 #endif
       }
 
--- | Send HTTP requests to url until we get a response with an given code.
+-- | Send HTTP requests to a URL until we get a response with an given code.
 waitUntilStatusCode :: (WaitConstraints m) => (Int, Int, Int) -> VerifyCerts -> String -> m ()
 waitUntilStatusCode code verifyCerts url = do
   debug [i|Beginning waitUntilStatusCode request to #{url}|]

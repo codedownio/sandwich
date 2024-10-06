@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,7 @@ library
       Test.Sandwich.Contexts.Waits
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
+      Test.Sandwich.Contexts.Files.Types
       Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Nix
