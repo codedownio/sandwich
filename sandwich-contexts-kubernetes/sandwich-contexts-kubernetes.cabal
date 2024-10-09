@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -19,11 +19,8 @@ library
       Test.Sandwich.Contexts.Kubernetes.Images
       Test.Sandwich.Contexts.Kubernetes.KataContainers
       Test.Sandwich.Contexts.Kubernetes.KindCluster
-      Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
       Test.Sandwich.Contexts.Kubernetes.Kubectl
-      Test.Sandwich.Contexts.Kubernetes.Longhorn
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
-      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioOperator
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server
       Test.Sandwich.Contexts.Kubernetes.Namespace
@@ -32,13 +29,16 @@ library
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
+      Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Network
       Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardIngress
       Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPortForward
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
       Test.Sandwich.Contexts.Kubernetes.KubectlLogs
       Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+      Test.Sandwich.Contexts.Kubernetes.Longhorn
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
       Test.Sandwich.Contexts.Kubernetes.Run
       Test.Sandwich.Contexts.Kubernetes.Util

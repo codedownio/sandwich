@@ -13,6 +13,11 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withKindCluster
   , withKindCluster'
 
+  -- * Image management
+  , Images.clusterContainsImage
+  , Images.getLoadedImages
+  , Images.loadImage
+
   -- * Re-exported types
   , KubernetesClusterContext (..)
   , kubernetesCluster
@@ -39,6 +44,7 @@ import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
+import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.Images as Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)
@@ -68,7 +74,7 @@ data KindClusterName =
 
 data KindClusterOptions = KindClusterOptions {
   kindClusterNumNodes :: Int
-  -- | Extra flags to pass to kind
+  -- | Extra flags to pass to @kind@
   , kindClusterExtraFlags :: [Text]
   -- | Labels to apply to the created containers
   , kindClusterContainerLabels :: Map Text Text
@@ -78,7 +84,7 @@ data KindClusterOptions = KindClusterOptions {
   , kindClusterExtraMounts :: [ExtraMount]
   -- | Prefix for the generated cluster name
   , kindClusterName :: KindClusterName
-  -- | Container driver, either "docker" or "podman". Defaults to "docker"
+  -- | Container driver, either "docker" or "podman". Defaults to "docker".
   , kindClusterDriver :: Maybe Text
   -- , kindClusterCpus :: Maybe Text
   -- , kindClusterMemory :: Maybe Text
@@ -101,7 +107,7 @@ defaultKindClusterOptions = KindClusterOptions {
 -- | Alias to make type signatures shorter
 type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> LabelValue "file-kind" (EnvironmentFile "kind") :> context
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind and kubectl binaries from the Nix context.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the @kind@ and @kubectl@ binaries from the Nix context.
 introduceKindClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, MonadMask m, HasNixContext context
   )
@@ -116,7 +122,7 @@ introduceKindClusterViaNix kindClusterOptions spec =
     introduceBinaryViaNixPackage @"kubectl" "kubectl" $
       introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the kind and kubectl binaries from the PATH.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the @kind@ and @kubectl@ binaries from the PATH.
 introduceKindClusterViaEnvironment :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )

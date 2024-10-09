@@ -27,6 +27,10 @@ import Test.Sandwich.Contexts.Waits
 import UnliftIO.Process
 
 
+-- | Wait for a service to have its set of endpoints ready, i.e.:
+--
+-- * They each have at least one IP address
+-- * They each have an empty set of "not ready addresses"
 waitForServiceEndpointsToExist :: (
   MonadUnliftIO m, MonadLogger m, MonadMask m
   , MonadReader context m, HasKubernetesClusterContext context
@@ -71,6 +75,7 @@ listEndpoints namespace labels =
       -&- (LabelSelector (T.intercalate "," [k <> "=" <> v | (k, v) <- M.toList labels]))
     )
 
+-- | Wait for a set of pods to exist, specified by a set of labels.
 waitForPodsToExist :: (
   MonadUnliftIO m, MonadLogger m, MonadMask m
   , MonadReader context m, HasKubernetesClusterContext context
@@ -91,6 +96,7 @@ waitForPodsToExist namespace labels timeInSeconds maybeDesiredCount = do
       Nothing -> when (L.null pods) $ expectationFailure [i|Found no pods.|]
       Just n -> when (L.length pods /= n) $ expectationFailure [i|Expected #{n} pods, but found #{L.length pods}|]
 
+-- | List the pods matching a set of labels.
 listPods :: (
   MonadUnliftIO m, MonadLogger m, MonadMask m
   , MonadReader context m, HasKubernetesClusterContext context
@@ -101,6 +107,7 @@ listPods namespace labels =
       -&- (LabelSelector (T.intercalate "," [k <> "=" <> v | (k, v) <- M.toList labels]))
     )
 
+-- | Wait for a set of pods to be in the Ready condition, specified by a set of labels.
 waitForPodsToBeReady :: (
   MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context, HasFile context "kubectl"

@@ -2,8 +2,8 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KubectlLogs (
-  KubectlLogsContext (..)
-  , withKubectlLogs
+  withKubectlLogs
+  , KubectlLogsContext (..)
   ) where
 
 import Control.Monad
@@ -23,16 +23,33 @@ import UnliftIO.Process
 
 -- * Types
 
-data KubectlLogsContext = KubectlLogsContext
+data KubectlLogsContext = KubectlLogsContext {
+  kubectlProcessHandle :: ProcessHandle
+  }
 
 -- * Implementation
 
--- | Note that this will stop working if the pod you're talking to goes away (even if you do it against a service)
+-- | Run a @kubectl logs@ process, placing the logs in a file in the current test node directory.
+--
+-- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
 -- If this happens, a rerun of the command is needed to resume forwarding
 withKubectlLogs :: (
   MonadLogger m, MonadFail m, MonadUnliftIO m
   , HasBaseContextMonad ctx m, HasFile ctx "kubectl"
-  ) => FilePath -> Text -> Text -> Maybe Text -> Bool -> (KubectlLogsContext -> m a) -> m a
+  )
+  -- | Kubeconfig file
+  => FilePath
+  -- | Namespace
+  -> Text
+  -- | Log target (pod, service, etc.)
+  -> Text
+  -- | Specific container to get logs from
+  -> Maybe Text
+  -- | Whether to interrupt the process to shut it down while cleaning up
+  -> Bool
+  -- | Callback receiving the 'KubectlLogsContext'
+  -> (KubectlLogsContext -> m a)
+  -> m a
 withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone action = do
   kubectlBinary <- askFile @"kubectl"
 
@@ -58,6 +75,6 @@ withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone
                 | interruptWhenDone -> void $ gracefullyStopProcess ps 30_000_000
                 | otherwise -> void $ waitForProcess ps
             )
-            (\_ -> do
-                action KubectlLogsContext
+            (\(_, _, _, ps) -> do
+                action $ KubectlLogsContext ps
             )

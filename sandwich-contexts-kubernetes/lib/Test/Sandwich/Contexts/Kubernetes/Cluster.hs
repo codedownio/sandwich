@@ -17,10 +17,16 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , Kind.introduceKindClusterViaEnvironment
   , Kind.introduceKindCluster'
 
+  , Kind.defaultKindClusterOptions
+  , Kind.KindClusterOptions(..)
+
   -- * Minikube clusters
   , Minikube.introduceMinikubeClusterViaNix
   , Minikube.introduceMinikubeClusterViaEnvironment
   , Minikube.introduceMinikubeCluster'
+
+  , Minikube.defaultMinikubeClusterOptions
+  , Minikube.MinikubeClusterOptions(..)
 
   -- * Wait for pods/services
   , waitForPodsToExist
@@ -45,9 +51,6 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , KubernetesClusterContext (..)
   , kubernetesCluster
   , HasKubernetesClusterContext
-
-  , Minikube.MinikubeClusterOptions(..)
-  , Minikube.defaultMinikubeClusterOptions
 
   -- * Util
   , Util.parseHostnameAndPort
@@ -75,9 +78,9 @@ import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards as M
 import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 
+-- | Forward a Kubernetes service, so that it can be reached at a local URI.
 withForwardKubernetesService :: (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
+  MonadMask m, KubernetesClusterBasic m context
   )
   -- | Namespace
   => Text
@@ -91,6 +94,7 @@ withForwardKubernetesService namespace serviceName action = do
   kubectlBinary <- askFile @"kubectl"
   withForwardKubernetesService' kcc kubectlBinary namespace serviceName action
 
+-- | Same as 'withForwardKubernetesService', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary.
 withForwardKubernetesService' :: (
   MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   , HasBaseContextMonad context m

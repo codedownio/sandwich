@@ -14,6 +14,11 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   , withMinikubeCluster
   , withMinikubeCluster'
 
+  -- * Image management
+  , Images.clusterContainsImage
+  , Images.getLoadedImages
+  , Images.loadImage
+
   -- * Re-exported cluster types
   , kubernetesCluster
   , KubernetesClusterContext (..)
@@ -37,6 +42,7 @@ import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Images
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.Nix
@@ -66,40 +72,45 @@ defaultMinikubeClusterOptions = MinikubeClusterOptions {
 
 -- * Introduce
 
--- | Introduce a Minikube cluster, deriving the minikube binary from the Nix context.
+type MinikubeClusterContext context =
+  LabelValue "kubernetesCluster" KubernetesClusterContext
+  :> LabelValue "file-minikube" (EnvironmentFile "minikube")
+  :> context
+
+-- | Introduce a Minikube cluster, deriving the @minikube@ binary from the Nix context.
 introduceMinikubeClusterViaNix :: (
   HasBaseContext context, MonadUnliftIO m, HasNixContext context
   )
   -- | Options
   => MinikubeClusterOptions
   -- | Child spec
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree (MinikubeClusterContext context) m ()
   -- | Parent spec
   -> SpecFree context m ()
 introduceMinikubeClusterViaNix minikubeClusterOptions spec =
   introduceBinaryViaNixPackage @"minikube" "minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec
 
--- | Introduce a Minikube cluster, deriving the minikube binary from the PATH.
+-- | Introduce a Minikube cluster, deriving the @minikube@ binary from the PATH.
 introduceMinikubeClusterViaEnvironment :: (
   HasBaseContext context, MonadUnliftIO m
   )
   -- | Options
   => MinikubeClusterOptions
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree (MinikubeClusterContext context) m ()
   -> SpecFree context m ()
 introduceMinikubeClusterViaEnvironment minikubeClusterOptions spec =
   introduceBinaryViaEnvironment @"minikube" $
     introduceWith "introduce minikube cluster" kubernetesCluster (void . withMinikubeCluster minikubeClusterOptions) spec
 
--- | Introduce a Minikube cluster, passing in the minikube binary path.
+-- | Introduce a Minikube cluster, passing in the @minikube@ binary path.
 introduceMinikubeCluster' :: (
   HasBaseContext context, MonadUnliftIO m
   )
-  -- | Path to minikube binary
+  -- | Path to @minikube@ binary
   => FilePath
   -> MinikubeClusterOptions
-  -> SpecFree (LabelValue "kubernetesCluster" KubernetesClusterContext :> LabelValue "file-minikube" (EnvironmentFile "minikube") :> context) m ()
+  -> SpecFree (MinikubeClusterContext context) m ()
   -> SpecFree context m ()
 introduceMinikubeCluster' minikubeBinary minikubeClusterOptions spec =
   introduceFile @"minikube" minikubeBinary $
@@ -121,7 +132,7 @@ withMinikubeCluster options action = do
   minikubeBinary <- askFile @"minikube"
   withMinikubeCluster' minikubeBinary options action
 
--- | Same as 'withMinikubeCluster', but allows you to pass the path to the Minikube binary.
+-- | Same as 'withMinikubeCluster', but allows you to pass the path to the @minikube@ binary.
 withMinikubeCluster' :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m

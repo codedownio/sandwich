@@ -37,7 +37,7 @@ import Data.Text as T
 import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.FindImages
-import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.Images as Kind
+import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster as Kind
 import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Minikube
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Images

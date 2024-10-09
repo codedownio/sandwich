@@ -9,10 +9,13 @@
 
 module Test.Sandwich.Contexts.Kubernetes.Types where
 
+import Control.Monad.IO.Unlift
+import Control.Monad.Logger
 import Kubernetes.OpenAPI.Core as Kubernetes
 import Network.HTTP.Client
 import Relude
 import Test.Sandwich
+import Test.Sandwich.Contexts.Files
 import qualified Text.Show
 
 
@@ -44,6 +47,16 @@ data KubernetesClusterContext = KubernetesClusterContext {
 kubernetesCluster :: Label "kubernetesCluster" KubernetesClusterContext
 kubernetesCluster = Label
 type HasKubernetesClusterContext context = HasLabel context "kubernetesCluster" KubernetesClusterContext
+
+-- * Context
+
+type KubernetesClusterBasic m context = (
+  MonadLoggerIO m
+  , MonadUnliftIO m
+  , HasBaseContextMonad context m
+  , HasFile context "kubectl"
+  , HasKubernetesClusterContext context
+  )
 
 -- * Kubernetes cluster images
 
