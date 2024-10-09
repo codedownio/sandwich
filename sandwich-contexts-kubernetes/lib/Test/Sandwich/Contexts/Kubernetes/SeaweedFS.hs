@@ -74,24 +74,50 @@ seaweedFs :: Label "seaweedFs" SeaweedFSContext
 seaweedFs = Label
 type HasSeaweedFSContext context = HasLabel context "seaweedFs" SeaweedFSContext
 
+type ContextWithSeaweedFS context =
+  LabelValue "seaweedFs" SeaweedFSContext
+  :> LabelValue "file-kubectl" (EnvironmentFile "kubectl")
+  :> context
+
+-- | Introduce [SeaweedFS](https://github.com/seaweedfs/seaweedfs) on the Kubernetes cluster, in a given namespace.
 introduceSeaweedFS :: (
-  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
-  ) =>Text -> SeaweedFSOptions -> SpecFree (LabelValue "seaweedFs" SeaweedFSContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> context) m () -> SpecFree context m ()
+  KubernetesClusterBasic m context, HasNixContext context
+  )
+  -- | Namespace
+  => Text
+  -> SeaweedFSOptions
+  -> SpecFree (ContextWithSeaweedFS context) m ()
+  -> SpecFree context m ()
 introduceSeaweedFS namespace options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce SeaweedFS" seaweedFs (void . withSeaweedFS namespace options)
 
+-- | Bracket-style version of 'introduceSeaweedFS'.
 withSeaweedFS :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
-  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasNixContext context, HasFile context "kubectl"
-  ) => Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
+  HasCallStack, MonadFail m, KubernetesClusterBasic m context, HasNixContext context
+  )
+  -- | Namespace
+  => Text
+  -> SeaweedFSOptions
+  -> (SeaweedFSContext -> m a)
+  -> m a
 withSeaweedFS namespace options action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
   withSeaweedFS' kcc kubectlBinary namespace options action
 
+-- | Same as 'withSeaweedFS', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withSeaweedFS' :: forall context m a. (
   HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
   , HasBaseContextMonad context m, HasNixContext context
-  ) => KubernetesClusterContext -> FilePath -> Text -> SeaweedFSOptions -> (SeaweedFSContext -> m a) -> m a
+  )
+  -- | Cluster context
+  => KubernetesClusterContext
+  -- | Path to @kubectl@ binary
+  -> FilePath
+  -- | Namespce
+  -> Text
+  -> SeaweedFSOptions
+  -> (SeaweedFSContext -> m a)
+  -> m a
 withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary namespace options action = do
   baseEnv <- getEnvironment
 
