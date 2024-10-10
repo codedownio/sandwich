@@ -16,6 +16,7 @@ import Network.HTTP.Client
 import Relude
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
 import qualified Text.Show
 
 
@@ -50,12 +51,28 @@ type HasKubernetesClusterContext context = HasLabel context "kubernetesCluster" 
 
 -- * Context
 
-type KubernetesClusterBasic m context = (
+type KubernetesBasic m context = (
   MonadLoggerIO m
   , MonadUnliftIO m
   , HasBaseContextMonad context m
+  )
+
+type KubectlBasic m context = (
+  KubernetesBasic m context
   , HasFile context "kubectl"
   , HasKubernetesClusterContext context
+  )
+
+type KubernetesClusterBasic m context = (
+  KubectlBasic m context
+  , HasKubernetesClusterContext context
+  )
+
+type NixContextBasic m context = (
+  MonadLoggerIO m
+  , MonadUnliftIO m
+  , HasBaseContextMonad context m
+  , HasNixContext context
   )
 
 -- * Kubernetes cluster images
@@ -77,12 +94,3 @@ data ImageLoadSpec =
   | ImageLoadSpecPodman { imageName :: Text
                         , pullPolicy :: ImagePullPolicy }
   deriving (Show, Eq)
-
--- * MinIO Operator
-
-data MinioOperatorContext = MinioOperatorContext
-  deriving (Show)
-
-minioOperator :: Label "minioOperator" MinioOperatorContext
-minioOperator = Label
-type HasMinioOperatorContext context = HasLabel context "minioOperator" MinioOperatorContext

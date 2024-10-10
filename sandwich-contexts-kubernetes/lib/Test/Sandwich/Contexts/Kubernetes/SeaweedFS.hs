@@ -21,8 +21,6 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   ) where
 
 import Control.Monad
-import Control.Monad.IO.Unlift
-import Control.Monad.Logger
 import Data.Aeson as A
 import qualified Data.List as L
 import Data.String.Interpolate
@@ -106,8 +104,7 @@ withSeaweedFS namespace options action = do
 
 -- | Same as 'withSeaweedFS', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withSeaweedFS' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
-  , HasBaseContextMonad context m, HasNixContext context
+  HasCallStack, MonadFail m, NixContextBasic m context
   )
   -- | Cluster context
   => KubernetesClusterContext

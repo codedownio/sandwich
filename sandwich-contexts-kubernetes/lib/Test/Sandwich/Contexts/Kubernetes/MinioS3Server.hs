@@ -2,12 +2,22 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+This module can be used to install MinIO S3 servers onto a Kubernetes cluster.
+
+Such a server is provided as a generic 'TestS3Server', so that you can easily run the same tests against both Kubernetes environments and normal ones. See for example the @sandwich-contexts-minio@ package.
+
+-}
 module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   introduceK8SMinioS3Server
   , introduceK8SMinioS3Server'
+
+  -- * Bracket-style variants
   , withK8SMinioS3Server
   , withK8SMinioS3Server'
 
+  -- * Types
   , MinioS3ServerOptions(..)
   , defaultMinioS3ServerOptions
 
@@ -20,7 +30,6 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
 import Data.String.Interpolate
 import Data.Text as T
 import Network.Minio
@@ -31,6 +40,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Cluster
 import Test.Sandwich.Contexts.Kubernetes.FindImages
 import Test.Sandwich.Contexts.Kubernetes.Images
+import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
@@ -66,9 +76,7 @@ data KustomizationDir =
 -- | Introduce a MinIO server on a Kubernetes cluster.
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
-  MonadMask m, MonadUnliftIO m, Typeable context
-  , HasBaseContext context, HasMinioOperatorContext context, HasKubernetesClusterContext context
-  , HasFile context "kubectl"
+  MonadMask m, Typeable context, KubernetesClusterBasic m context, HasMinioOperatorContext context
   )
   -- | Options
   => MinioS3ServerOptions
@@ -82,8 +90,7 @@ introduceK8SMinioS3Server options = do
 
 -- | Same as 'introduceK8SMinioS3Server', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SMinioS3Server' :: (
-  MonadMask m, MonadUnliftIO m, Typeable context
-  , HasBaseContext context, HasMinioOperatorContext context, HasFile context "kubectl"
+  MonadMask m, Typeable context, KubectlBasic m context, HasMinioOperatorContext context
   )
   => KubernetesClusterContext
   -- | Options
@@ -97,8 +104,7 @@ introduceK8SMinioS3Server' kubernetesClusterContext options =
 
 -- | Bracket-style variant of 'introduceK8SMinioS3Server'.
 withK8SMinioS3Server :: (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m, HasFile context "kubectl", Typeable context
+  Typeable context, MonadMask m, MonadFail m, KubectlBasic m context
   )
   => KubernetesClusterContext
   -> MinioOperatorContext
@@ -112,8 +118,7 @@ withK8SMinioS3Server kcc moc options action = do
 
 -- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
 withK8SMinioS3Server' :: forall m context. (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m, Typeable context
+  Typeable context, MonadMask m, MonadFail m, KubernetesBasic m context
   )
   -- | Path to kubectl binary
   => FilePath

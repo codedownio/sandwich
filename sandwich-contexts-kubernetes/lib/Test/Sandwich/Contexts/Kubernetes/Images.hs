@@ -3,6 +3,12 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+This module contains tools for managing images on a Kubernetes cluster.
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.Images (
   getLoadedImages
   , getLoadedImages'

@@ -13,6 +13,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   -- * Bracket-style functions
   , withMinikubeCluster
   , withMinikubeCluster'
+  , withMinikubeCluster''
 
   -- * Image management
   , Images.clusterContainsImage
@@ -136,18 +137,30 @@ withMinikubeCluster options action = do
 withMinikubeCluster' :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  ) => FilePath -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
+  )
+  -- | Path to @minikube@ binary
+  => FilePath
+  -> MinikubeClusterOptions
+  -> (KubernetesClusterContext -> m a)
+  -> m a
 withMinikubeCluster' minikubeBinary options@(MinikubeClusterOptions {..}) action = do
   let prefix = fromMaybe "test-minikube-cluster" minikubeClusterNamePrefix
   clusterID <- makeUUID' 5
   let clusterName = [i|#{prefix}-#{clusterID}|]
-  withNewMinikubeCluster minikubeBinary clusterName options action
+  withMinikubeCluster'' clusterName minikubeBinary options action
 
-withNewMinikubeCluster :: (
+-- | Same as 'withMinikubeCluster'', but allows you to pass the cluster name.
+withMinikubeCluster'' :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  ) => FilePath -> String -> MinikubeClusterOptions -> (KubernetesClusterContext -> m a) -> m a
-withNewMinikubeCluster minikubeBinary clusterName options@(MinikubeClusterOptions {..}) action = do
+  )
+  -- | Cluster name
+  => String
+  -> FilePath
+  -> MinikubeClusterOptions
+  -> (KubernetesClusterContext -> m a)
+  -> m a
+withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions {..}) action = do
   Just dir <- getCurrentFolder
 
   minikubeDir <- liftIO $ createTempDirectory dir "minikube"

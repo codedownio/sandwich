@@ -4,6 +4,14 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+This module can be used to install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
+
+This is necessary if you want to use 'Test.Sandwich.Contexts.Kubernetes.MinioS3Server' to create actual S3 servers.
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
   introduceMinioOperator
   , introduceMinioOperator'
@@ -41,6 +49,13 @@ import UnliftIO.Exception
 import UnliftIO.Process
 
 
+data MinioOperatorContext = MinioOperatorContext
+  deriving (Show)
+
+minioOperator :: Label "minioOperator" MinioOperatorContext
+minioOperator = Label
+type HasMinioOperatorContext context = HasLabel context "minioOperator" MinioOperatorContext
+
 data MinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages :: Bool
   }
@@ -49,38 +64,59 @@ defaultMinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages = True
   }
 
--- | Install the MinIO Kubernetes plugin onto a Kubernetes cluster.
--- See the docs [here](https://min.io/docs/minio/kubernetes/upstream/reference/kubectl-minio-plugin.html).
+-- | Install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
 introduceMinioOperator :: (
-  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context, HasFile context "kubectl"
-  ) => MinioOperatorOptions -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
+  KubernetesClusterBasic m context
+  )
+  -- | Options
+  => MinioOperatorOptions
+  -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m ()
+  -> SpecFree context m ()
 introduceMinioOperator options = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
   kcc <- getContext kubernetesCluster
   void $ withMinioOperator options kcc action
 
--- | Same as 'introduceMinioOperator', but allows you to pass in the "kubectl" binary path.
+-- | Same as 'introduceMinioOperator', but allows you to pass in the @kubectl@ binary path.
 introduceMinioOperator' :: (
   MonadUnliftIO m, MonadFail m, HasKubernetesClusterContext context, HasBaseContext context
-  ) => MinioOperatorOptions -> FilePath -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m () -> SpecFree context m ()
-introduceMinioOperator' options kubectlBinary = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
+  )
+  -- | Path to @kubectl@ binary
+  => FilePath
+  -- | Options
+  -> MinioOperatorOptions
+  -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m ()
+  -> SpecFree context m ()
+introduceMinioOperator' kubectlBinary options = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
   kcc <- getContext kubernetesCluster
-  void $ withMinioOperator' options kubectlBinary kcc action
+  void $ withMinioOperator' kubectlBinary options kcc action
 
 -- | Bracket-style variant of 'introduceMinioOperator'.
 withMinioOperator :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m, HasFile context "kubectl"
-  ) => MinioOperatorOptions -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
+  )
+  -- | Options
+  => MinioOperatorOptions
+  -> KubernetesClusterContext
+  -> (MinioOperatorContext -> m a)
+  -> m a
 withMinioOperator options kcc action = do
   kubectlBinary <- askFile @"kubectl"
-  withMinioOperator' options kubectlBinary kcc action
+  withMinioOperator' kubectlBinary options kcc action
 
--- | Same as 'withMinioOperator', but allows you to pass in the "kubectl" binary path.
+-- | Same as 'withMinioOperator', but allows you to pass in the @kubectl@ binary path.
 withMinioOperator' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m
-  ) => MinioOperatorOptions -> FilePath -> KubernetesClusterContext -> (MinioOperatorContext -> m a) -> m a
-withMinioOperator' (MinioOperatorOptions {..}) kubectlBinary kcc action = do
+  )
+  -- | Path to @kubectl@ binary
+  => FilePath
+  -- | Options
+  -> MinioOperatorOptions
+  -> KubernetesClusterContext
+  -> (MinioOperatorContext -> m a)
+  -> m a
+withMinioOperator' kubectlBinary (MinioOperatorOptions {..}) kcc action = do
   env <- askKubectlEnvironment kcc
 
   allYaml <- readCreateProcessWithLogging ((proc kubectlBinary ["kustomize", "github.com/minio/operator?ref=v6.0.1"]) { env = Just env }) ""

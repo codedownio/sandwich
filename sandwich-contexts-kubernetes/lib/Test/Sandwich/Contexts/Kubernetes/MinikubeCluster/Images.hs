@@ -30,9 +30,18 @@ import UnliftIO.Process
 import UnliftIO.Temporary
 
 
+-- | Load an image onto a cluster. This image can come from a variety of sources, as specified by the 'ImageLoadSpec'.
 loadImage :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
-  ) => FilePath -> Text -> [Text] -> ImageLoadSpec -> m Text
+  )
+  -- | Path to @minikube@ binary
+  => FilePath
+  -- | Cluster name
+  -> Text
+  -- | Extra flags to pass to @minikube@
+  -> [Text]
+  -> ImageLoadSpec
+  -> m Text
 loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
   case imageLoadSpec of
     ImageLoadSpecTarball image -> do
@@ -119,7 +128,17 @@ loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
     check3 :: ByteString -> Bool
     check3 bytes = bytes =~ ("failed pushing to:[[:blank:]]*[^[:space:]]+$" :: Text)
 
-getLoadedImages :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> m (Set Text)
+-- | Get the loaded images on a cluster, by cluster name.
+getLoadedImages :: (
+  MonadUnliftIO m, MonadLogger m
+  )
+  -- | Path to @minikube@ binary
+  => FilePath
+  -- | Cluster name
+  -> Text
+  -- | Extra flags to pass to @minikube@
+  -> [Text]
+  -> m (Set Text)
 getLoadedImages minikubeBinary clusterName minikubeFlags = do
   -- TODO: use "--format json" and parse?
   (Set.fromList . T.words . toText) <$> readCreateProcessWithLogging (
@@ -127,7 +146,19 @@ getLoadedImages minikubeBinary clusterName minikubeFlags = do
                          , "--profile", toString clusterName
                          ] <> fmap toString minikubeFlags)) ""
 
-clusterContainsImage :: (MonadUnliftIO m, MonadLogger m) => FilePath -> Text -> [Text] -> Text -> m Bool
+-- | Test if the cluster contains a given image, by cluster name.
+clusterContainsImage :: (
+  MonadUnliftIO m, MonadLogger m
+  )
+  -- | Path to @minikube@ binary
+  => FilePath
+  -- | Cluster name
+  -> Text
+  -- | Extra flags to pass to @minikube@
+  -> [Text]
+  -- | Image name
+  -> Text
+  -> m Bool
 clusterContainsImage minikubeBinary clusterName minikubeFlags image = do
   imageName <- case isAbsolute (toString image) of
     False -> pure image
