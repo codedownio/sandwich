@@ -104,7 +104,7 @@ introduceK8SMinioS3Server' kubernetesClusterContext options =
 
 -- | Bracket-style variant of 'introduceK8SMinioS3Server'.
 withK8SMinioS3Server :: (
-  Typeable context, MonadMask m, MonadFail m, KubectlBasic context m
+  Typeable context, MonadMask m, MonadFail m, KubernetesBasic context m, HasFile context "kubectl"
   )
   => KubernetesClusterContext
   -> MinioOperatorContext
