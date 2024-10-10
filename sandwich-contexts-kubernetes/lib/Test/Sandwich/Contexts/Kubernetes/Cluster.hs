@@ -80,7 +80,7 @@ import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 -- | Forward a Kubernetes service, so that it can be reached at a local URI.
 withForwardKubernetesService :: (
-  MonadMask m, KubernetesClusterBasic m context
+  MonadMask m, KubectlBasic m context
   )
   -- | Namespace
   => Text

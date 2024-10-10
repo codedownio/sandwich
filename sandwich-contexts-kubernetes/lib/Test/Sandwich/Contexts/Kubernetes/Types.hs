@@ -57,15 +57,14 @@ type KubernetesBasic m context = (
   , HasBaseContextMonad context m
   )
 
-type KubectlBasic m context = (
+type KubernetesClusterBasic m context = (
   KubernetesBasic m context
-  , HasFile context "kubectl"
   , HasKubernetesClusterContext context
   )
 
-type KubernetesClusterBasic m context = (
-  KubectlBasic m context
-  , HasKubernetesClusterContext context
+type KubectlBasic m context = (
+  KubernetesClusterBasic m context
+  , HasFile context "kubectl"
   )
 
 type NixContextBasic m context = (

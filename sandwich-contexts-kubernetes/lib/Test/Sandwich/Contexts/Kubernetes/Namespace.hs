@@ -27,7 +27,7 @@ import UnliftIO.Process
 --
 -- If you're installing something via Helm 3, you may not need this as you can just pass @--create-namespace@.
 withKubernetesNamespace :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   )
   -- | Namespace to create
   => Text
@@ -37,7 +37,7 @@ withKubernetesNamespace namespace = around [i|Create the '#{namespace}' kubernet
 
 -- | Same as 'withKubernetesNamespace', but works in an arbitrary monad with reader context.
 withKubernetesNamespace' :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   )
   -- | Namespace to create
   => Text
@@ -47,7 +47,7 @@ withKubernetesNamespace' namespace = bracket_ (createKubernetesNamespace namespa
 
 -- | Create a Kubernetes namespace.
 createKubernetesNamespace :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   ) => Text -> m ()
 createKubernetesNamespace namespace = do
   let args = ["create", "namespace", toString namespace]
@@ -57,7 +57,7 @@ createKubernetesNamespace namespace = do
 
 -- | Destroy a Kubernetes namespace.
 destroyKubernetesNamespace :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   ) => Bool -> Text -> m ()
 destroyKubernetesNamespace force namespace = do
   let args = ["delete", "namespace", toString namespace]

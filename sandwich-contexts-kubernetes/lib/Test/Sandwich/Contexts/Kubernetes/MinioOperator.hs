@@ -66,7 +66,7 @@ defaultMinioOperatorOptions = MinioOperatorOptions {
 
 -- | Install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
 introduceMinioOperator :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   )
   -- | Options
   => MinioOperatorOptions

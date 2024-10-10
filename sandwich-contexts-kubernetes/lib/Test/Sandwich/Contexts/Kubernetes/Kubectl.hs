@@ -25,7 +25,7 @@ import UnliftIO.Environment
 --
 -- Useful for running Kubectl commands with 'System.Process.createProcess' etc.
 askKubectlArgs :: (
-  KubernetesClusterBasic m context
+  KubectlBasic m context
   )
   -- | Returns the @kubectl@ binary and environment variables.
   => m (FilePath, [(String, String)])

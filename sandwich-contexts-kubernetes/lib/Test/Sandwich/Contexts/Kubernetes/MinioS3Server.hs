@@ -76,7 +76,7 @@ data KustomizationDir =
 -- | Introduce a MinIO server on a Kubernetes cluster.
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
-  MonadMask m, Typeable context, KubernetesClusterBasic m context, HasMinioOperatorContext context
+  MonadMask m, Typeable context, KubectlBasic m context, HasMinioOperatorContext context
   )
   -- | Options
   => MinioS3ServerOptions

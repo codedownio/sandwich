@@ -90,7 +90,7 @@ introduceSeaweedFS namespace options = introduceBinaryViaNixPackage @"kubectl" "
 
 -- | Bracket-style version of 'introduceSeaweedFS'.
 withSeaweedFS :: forall context m a. (
-  HasCallStack, MonadFail m, KubernetesClusterBasic m context, HasNixContext context
+  HasCallStack, MonadFail m, KubectlBasic m context, HasNixContext context
   )
   -- | Namespace
   => Text
