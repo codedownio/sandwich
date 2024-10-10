@@ -36,6 +36,9 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   , findAllImages'
 
   -- * Types
+  , kubernetesClusterImages
+  , HasKubernetesClusterImagesContext
+
   , ImageLoadSpec(..)
   , ImagePullPolicy(..)
   ) where
