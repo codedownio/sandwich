@@ -203,7 +203,7 @@ withImageLoadRetry' policy ils action =
 -- | Helper to introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
 introduceImages :: (
-  HasCallStack, KubernetesClusterBasic context m
+  HasCallStack, KubernetesClusterBasicWithoutReader context m
   )
   -- | Images to load
   => [ImageLoadSpec]
