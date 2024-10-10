@@ -26,14 +26,14 @@ instance Show Manager where
 -- * Kubernetes cluster
 
 data KubernetesClusterType =
-  KubernetesClusterKind { kindBinary :: FilePath
-                        , kindClusterName :: Text
-                        , kindClusterDriver :: Text
-                        , kindClusterEnvironment :: Maybe [(String, String)]
+  KubernetesClusterKind { kubernetesClusterTypeKindBinary :: FilePath
+                        , kubernetesClusterTypeKindClusterName :: Text
+                        , kubernetesClusterTypeKindClusterDriver :: Text
+                        , kubernetesClusterTypeKindClusterEnvironment :: Maybe [(String, String)]
                         }
-  | KubernetesClusterMinikube { minikubeBinary :: FilePath
-                              , minikubeProfileName :: Text
-                              , minikubeFlags :: [Text]
+  | KubernetesClusterMinikube { kubernetesClusterTypeMinikubeBinary :: FilePath
+                              , kubernetesClusterTypeMinikubeProfileName :: Text
+                              , kubernetesClusterTypeMinikubeFlags :: [Text]
                               }
   deriving (Show, Eq)
 
@@ -49,29 +49,50 @@ kubernetesCluster :: Label "kubernetesCluster" KubernetesClusterContext
 kubernetesCluster = Label
 type HasKubernetesClusterContext context = HasLabel context "kubernetesCluster" KubernetesClusterContext
 
--- * Context
+-- * Contexts with MonadReader
 
-type KubernetesBasic m context = (
+type KubernetesBasic context m = (
   MonadLoggerIO m
   , MonadUnliftIO m
   , HasBaseContextMonad context m
   )
 
-type KubernetesClusterBasic m context = (
-  KubernetesBasic m context
+type KubernetesClusterBasic context m = (
+  KubernetesBasic context m
   , HasKubernetesClusterContext context
   )
 
-type KubectlBasic m context = (
-  KubernetesClusterBasic m context
+type KubectlBasic context m = (
+  KubernetesClusterBasic context m
   , HasFile context "kubectl"
   )
 
-type NixContextBasic m context = (
+type NixContextBasic context m = (
   MonadLoggerIO m
   , MonadUnliftIO m
   , HasBaseContextMonad context m
   , HasNixContext context
+  )
+
+-- * Context with MonadReader
+
+type KubernetesBasicWithoutReader context m = (
+  MonadLoggerIO m
+  , MonadUnliftIO m
+  , HasBaseContext context
+  )
+
+type KubernetesClusterBasicWithoutReader context m = (
+  MonadUnliftIO m
+  , HasBaseContext context
+  , HasKubernetesClusterContext context
+  )
+
+type KubectlBasicWithoutReader context m = (
+  MonadUnliftIO m
+  , HasBaseContext context
+  , HasKubernetesClusterContext context
+  , HasFile context "kubectl"
   )
 
 -- * Kubernetes cluster images

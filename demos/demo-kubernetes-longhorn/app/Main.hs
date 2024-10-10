@@ -16,7 +16,7 @@ import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Kubernetes.Longhorn
+-- import Test.Sandwich.Contexts.Kubernetes.Longhorn
 import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
 import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
@@ -37,15 +37,15 @@ spec = describe "Introducing a Kubernetes cluster" $ do
           kcc <- getContext kubernetesCluster
           info [i|Got Kubernetes cluster context: #{kcc}|]
 
-        introduceLonghorn defaultLonghornOptions $ do
-          it "Has a Longhorn context" $ do
-            x <- getContext longhorn
-            info [i|Got Longhorn context: #{x}|]
+        -- introduceLonghorn defaultLonghornOptions $ do
+        --   it "Has a Longhorn context" $ do
+        --     x <- getContext longhorn
+        --     info [i|Got Longhorn context: #{x}|]
 
-          it "Pauses for 5 minutes for examination" $ do
-            kcc <- getContext kubernetesCluster
-            debug [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath kcc}'|]
-            threadDelay 300_000_000
+        --   it "Pauses for 5 minutes for examination" $ do
+        --     kcc <- getContext kubernetesCluster
+        --     debug [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath kcc}'|]
+        --     threadDelay 300_000_000
 
 
 main :: IO ()

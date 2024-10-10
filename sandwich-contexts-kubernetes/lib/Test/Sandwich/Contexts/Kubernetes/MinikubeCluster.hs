@@ -16,9 +16,9 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   , withMinikubeCluster''
 
   -- * Image management
-  , Images.clusterContainsImage
-  , Images.getLoadedImages
-  , Images.loadImage
+  , Images.clusterContainsImageMinikube
+  , Images.getLoadedImagesMinikube
+  , Images.loadImageMinikube
 
   -- * Re-exported cluster types
   , kubernetesCluster
@@ -209,9 +209,9 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                    , kubernetesClusterNumNodes = minikubeClusterNumNodes
                    , kubernetesClusterClientConfig = (m, c)
                    , kubernetesClusterType = KubernetesClusterMinikube {
-                       minikubeBinary = minikubeBinary
-                       , minikubeProfileName = toText clusterName
-                       , minikubeFlags = minikubeClusterExtraFlags
+                       kubernetesClusterTypeMinikubeBinary = minikubeBinary
+                       , kubernetesClusterTypeMinikubeProfileName = toText clusterName
+                       , kubernetesClusterTypeMinikubeFlags = minikubeClusterExtraFlags
                        }
                    }
              )

@@ -4,9 +4,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster.Images (
-  getLoadedImages
-  , clusterContainsImage
-  , loadImage
+  getLoadedImagesKind
+  , clusterContainsImageKind
+  , loadImageKind
   ) where
 
 import Control.Monad.IO.Unlift
@@ -28,7 +28,7 @@ import UnliftIO.Process
 import UnliftIO.Temporary
 
 
-loadImage :: (
+loadImageKind :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m
   )
   -- | Kind binary
@@ -41,7 +41,7 @@ loadImage :: (
   -> Maybe [(String, String)]
   -- | Callback with transformed image names (see above)
   -> m Text
-loadImage kindBinary clusterName imageLoadSpec env = do
+loadImageKind kindBinary clusterName imageLoadSpec env = do
   case imageLoadSpec of
     ImageLoadSpecTarball image -> do
       doesDirectoryExist (toString image) >>= \case
@@ -90,10 +90,10 @@ loadImage kindBinary clusterName imageLoadSpec env = do
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-getLoadedImages :: (
+getLoadedImagesKind :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
   ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> m (Set Text)
-getLoadedImages kcc driver kindBinary env = do
+getLoadedImagesKind kcc driver kindBinary env = do
   chosenNode <- getNodes kcc kindBinary env >>= \case
     (x:_) -> pure x
     [] -> expectationFailure [i|Couldn't identify a Kind node.|]
@@ -116,15 +116,15 @@ getLoadedImages kcc driver kindBinary env = do
     extractRepoTags (A.Object (aesonLookup "repoTags" -> Just (A.Array xs))) = [t | A.String t <- V.toList xs]
     extractRepoTags _ = []
 
-clusterContainsImage :: (
+clusterContainsImageKind :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
   ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> Text -> m Bool
-clusterContainsImage kcc driver kindBinary env image = do
+clusterContainsImageKind kcc driver kindBinary env image = do
   imageName <- case isAbsolute (toString image) of
     False -> pure image
     True -> readImageName (toString image)
 
-  loadedImages <- getLoadedImages kcc driver kindBinary env
+  loadedImages <- getLoadedImagesKind kcc driver kindBinary env
 
   return (
     imageName `Set.member` loadedImages

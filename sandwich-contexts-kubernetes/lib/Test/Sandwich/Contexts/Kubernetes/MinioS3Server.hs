@@ -76,7 +76,7 @@ data KustomizationDir =
 -- | Introduce a MinIO server on a Kubernetes cluster.
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
-  MonadMask m, Typeable context, KubectlBasic m context, HasMinioOperatorContext context
+  MonadMask m, Typeable context, KubectlBasicWithoutReader context m, HasMinioOperatorContext context
   )
   -- | Options
   => MinioS3ServerOptions
@@ -90,7 +90,7 @@ introduceK8SMinioS3Server options = do
 
 -- | Same as 'introduceK8SMinioS3Server', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SMinioS3Server' :: (
-  MonadMask m, Typeable context, KubectlBasic m context, HasMinioOperatorContext context
+  MonadMask m, Typeable context, KubectlBasic context m, HasMinioOperatorContext context
   )
   => KubernetesClusterContext
   -- | Options
@@ -104,7 +104,7 @@ introduceK8SMinioS3Server' kubernetesClusterContext options =
 
 -- | Bracket-style variant of 'introduceK8SMinioS3Server'.
 withK8SMinioS3Server :: (
-  Typeable context, MonadMask m, MonadFail m, KubectlBasic m context
+  Typeable context, MonadMask m, MonadFail m, KubectlBasic context m
   )
   => KubernetesClusterContext
   -> MinioOperatorContext
@@ -118,7 +118,7 @@ withK8SMinioS3Server kcc moc options action = do
 
 -- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
 withK8SMinioS3Server' :: forall m context. (
-  Typeable context, MonadMask m, MonadFail m, KubernetesBasic m context
+  Typeable context, MonadMask m, MonadFail m, KubernetesBasic context m
   )
   -- | Path to kubectl binary
   => FilePath

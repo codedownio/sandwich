@@ -30,7 +30,6 @@ module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
 
 import Control.Monad
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
 import Data.Aeson (FromJSON)
 import Data.String.Interpolate
 import Data.Text as T
@@ -66,7 +65,7 @@ defaultMinioOperatorOptions = MinioOperatorOptions {
 
 -- | Install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
 introduceMinioOperator :: (
-  KubectlBasic m context
+  KubectlBasicWithoutReader context m
   )
   -- | Options
   => MinioOperatorOptions
@@ -78,7 +77,7 @@ introduceMinioOperator options = introduceWith "introduce MinIO operator" minioO
 
 -- | Same as 'introduceMinioOperator', but allows you to pass in the @kubectl@ binary path.
 introduceMinioOperator' :: (
-  MonadUnliftIO m, MonadFail m, HasKubernetesClusterContext context, HasBaseContext context
+  HasCallStack, MonadFail m, MonadUnliftIO m, HasKubernetesClusterContext context, HasBaseContext context
   )
   -- | Path to @kubectl@ binary
   => FilePath
@@ -92,8 +91,7 @@ introduceMinioOperator' kubectlBinary options = introduceWith "introduce MinIO o
 
 -- | Bracket-style variant of 'introduceMinioOperator'.
 withMinioOperator :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m, HasFile context "kubectl"
+  HasCallStack, MonadFail m, KubectlBasic context m
   )
   -- | Options
   => MinioOperatorOptions
@@ -106,8 +104,7 @@ withMinioOperator options kcc action = do
 
 -- | Same as 'withMinioOperator', but allows you to pass in the @kubectl@ binary path.
 withMinioOperator' :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
-  , HasBaseContextMonad context m
+  HasCallStack, MonadFail m, KubernetesBasic context m
   )
   -- | Path to @kubectl@ binary
   => FilePath

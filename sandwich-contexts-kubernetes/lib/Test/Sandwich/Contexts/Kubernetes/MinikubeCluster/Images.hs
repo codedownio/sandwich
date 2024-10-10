@@ -4,9 +4,9 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
-  getLoadedImages
-  , clusterContainsImage
-  , loadImage
+  getLoadedImagesMinikube
+  , clusterContainsImageMinikube
+  , loadImageMinikube
   ) where
 
 import Control.Monad
@@ -31,7 +31,7 @@ import UnliftIO.Temporary
 
 
 -- | Load an image onto a cluster. This image can come from a variety of sources, as specified by the 'ImageLoadSpec'.
-loadImage :: (
+loadImageMinikube :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
   )
   -- | Path to @minikube@ binary
@@ -42,7 +42,7 @@ loadImage :: (
   -> [Text]
   -> ImageLoadSpec
   -> m Text
-loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
+loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
   case imageLoadSpec of
     ImageLoadSpecTarball image -> do
       -- File or directory image
@@ -129,7 +129,7 @@ loadImage minikubeBinary clusterName minikubeFlags imageLoadSpec = do
     check3 bytes = bytes =~ ("failed pushing to:[[:blank:]]*[^[:space:]]+$" :: Text)
 
 -- | Get the loaded images on a cluster, by cluster name.
-getLoadedImages :: (
+getLoadedImagesMinikube :: (
   MonadUnliftIO m, MonadLogger m
   )
   -- | Path to @minikube@ binary
@@ -139,7 +139,7 @@ getLoadedImages :: (
   -- | Extra flags to pass to @minikube@
   -> [Text]
   -> m (Set Text)
-getLoadedImages minikubeBinary clusterName minikubeFlags = do
+getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags = do
   -- TODO: use "--format json" and parse?
   (Set.fromList . T.words . toText) <$> readCreateProcessWithLogging (
     proc minikubeBinary (["image", "ls"
@@ -147,7 +147,7 @@ getLoadedImages minikubeBinary clusterName minikubeFlags = do
                          ] <> fmap toString minikubeFlags)) ""
 
 -- | Test if the cluster contains a given image, by cluster name.
-clusterContainsImage :: (
+clusterContainsImageMinikube :: (
   MonadUnliftIO m, MonadLogger m
   )
   -- | Path to @minikube@ binary
@@ -159,12 +159,12 @@ clusterContainsImage :: (
   -- | Image name
   -> Text
   -> m Bool
-clusterContainsImage minikubeBinary clusterName minikubeFlags image = do
+clusterContainsImageMinikube minikubeBinary clusterName minikubeFlags image = do
   imageName <- case isAbsolute (toString image) of
     False -> pure image
     True -> readImageName (toString image)
 
-  loadedImages <- getLoadedImages minikubeBinary clusterName minikubeFlags
+  loadedImages <- getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags
 
   return (
     imageName `Set.member` loadedImages

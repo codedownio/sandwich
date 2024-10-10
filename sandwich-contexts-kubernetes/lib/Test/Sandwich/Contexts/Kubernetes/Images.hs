@@ -10,22 +10,24 @@ This module contains tools for managing images on a Kubernetes cluster.
 -}
 
 module Test.Sandwich.Contexts.Kubernetes.Images (
-  -- * Querying
-  getLoadedImages
+  -- * Introduce a set of images
+  introduceImages
+
+  -- * Query images
+  , getLoadedImages
   , getLoadedImages'
 
   , clusterContainsImage
   , clusterContainsImage'
 
-  -- * Loading
-  , introduceImages
-
+  -- * Load images
   , loadImageIfNecessary
   , loadImageIfNecessary'
 
   , loadImage
   , loadImage'
 
+  -- * Retry helpers
   , withImageLoadRetry
   , withImageLoadRetry'
 
@@ -55,7 +57,7 @@ import Test.Sandwich.Contexts.Kubernetes.Util.Images
 
 -- | Get the images loaded onto the cluster.
 getLoadedImages :: (
-  HasCallStack, KubernetesClusterBasic m context
+  HasCallStack, KubernetesClusterBasic context m
   )
   -- | List of image names
   => m (Set Text)
@@ -63,7 +65,7 @@ getLoadedImages = getContext kubernetesCluster >>= getLoadedImages'
 
 -- | Same as 'getLoadedImages', but allows you to pass in the 'KubernetesClusterContext'.
 getLoadedImages' :: (
-  HasCallStack, KubernetesBasic m context
+  HasCallStack, KubernetesBasic context m
   )
   -- | Cluster context
   => KubernetesClusterContext
@@ -73,17 +75,17 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
   timeAction [i|Getting loaded images|] $ do
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
-        Kind.getLoadedImages kcc kindClusterDriver kindBinary Nothing
+        Kind.getLoadedImagesKind kcc kubernetesClusterTypeKindClusterDriver kubernetesClusterTypeKindBinary Nothing
         -- Kind.loadImage kindBinary kindClusterName image env
       (KubernetesClusterMinikube {..}) ->
         -- Note: don't pass minikubeFlags here. These are pretty much intended for "minikube start" only.
         -- TODO: clarify the documentation and possibly add an extra field where extra options can be passed
         -- to "minikube image" commands.
-        Minikube.getLoadedImages minikubeBinary kubernetesClusterName []
+        Minikube.getLoadedImagesMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName []
 
 -- | Test if a cluster has a given image loaded.
 clusterContainsImage :: (
-  HasCallStack, KubernetesClusterBasic m context
+  HasCallStack, KubernetesClusterBasic context m
   )
   -- | Image
   => Text
@@ -104,13 +106,13 @@ clusterContainsImage' :: (
 clusterContainsImage' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernetesClusterName}) image = do
   case kubernetesClusterType of
     KubernetesClusterKind {..} ->
-      Kind.clusterContainsImage kcc kindClusterDriver kindBinary kindClusterEnvironment image
+      Kind.clusterContainsImageKind kcc kubernetesClusterTypeKindClusterDriver kubernetesClusterTypeKindBinary kubernetesClusterTypeKindClusterEnvironment image
     KubernetesClusterMinikube {..} ->
-      Minikube.clusterContainsImage minikubeBinary kubernetesClusterName [] image
+      Minikube.clusterContainsImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] image
 
 -- | Same as 'loadImage', but first checks if the given image is already present on the cluster.
 loadImageIfNecessary :: (
-  HasCallStack, MonadFail m, KubernetesClusterBasic m context
+  HasCallStack, MonadFail m, KubernetesClusterBasic context m
   )
   -- | Image load spec
   => ImageLoadSpec
@@ -121,7 +123,7 @@ loadImageIfNecessary image = do
 
 -- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
 loadImageIfNecessary' :: (
-  HasCallStack, MonadFail m, KubernetesBasic m context
+  HasCallStack, MonadFail m, KubernetesBasic context m
   )
   -- | Cluster context
   => KubernetesClusterContext
@@ -133,11 +135,10 @@ loadImageIfNecessary' kcc imageLoadSpec = do
   unlessM (imageLoadSpecToImageName imageLoadSpec >>= clusterContainsImage' kcc) $
     void $ loadImage' kcc imageLoadSpec
 
--- | Load an image into a Kubernetes cluster. The image you pass may be an absolute path to a @.tar@ or @.tar.gz@
--- image archive, *or* the name of an image in your local Docker daemon. It will load the image onto the cluster,
+-- | Load an image into a Kubernetes cluster. This will load the image onto the cluster
 -- and return the modified image name (i.e. the name by which the cluster knows the image).
 loadImage :: (
-  HasCallStack, MonadFail m, KubernetesClusterBasic m context
+  HasCallStack, MonadFail m, KubernetesClusterBasic context m
   )
   -- | Image load spec
   => ImageLoadSpec
@@ -149,7 +150,7 @@ loadImage image = do
 
 -- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext'.
 loadImage' :: (
-  HasCallStack, MonadFail m, KubernetesBasic m context
+  HasCallStack, MonadFail m, KubernetesBasic context m
   )
   -- | Cluster context
   => KubernetesClusterContext
@@ -162,10 +163,10 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
   timeAction [i|Loading container image '#{imageLoadSpec}'|] $ do
     case kubernetesClusterType of
       (KubernetesClusterKind {..}) ->
-        Kind.loadImage kindBinary kindClusterName imageLoadSpec kindClusterEnvironment
+        Kind.loadImageKind kubernetesClusterTypeKindBinary kubernetesClusterTypeKindClusterName imageLoadSpec kubernetesClusterTypeKindClusterEnvironment
       (KubernetesClusterMinikube {..}) ->
         -- Don't pass minikubeFlags; see comment above.
-        Minikube.loadImage minikubeBinary kubernetesClusterName [] imageLoadSpec
+        Minikube.loadImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] imageLoadSpec
 
         -- Because of the possible silent failure in "minikube image load", confirm that this
         -- image made it onto the cluster.
@@ -182,12 +183,12 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
         -- loadedImages `shouldContain` [image']
         -- return image'
 
--- | Same as 'withImageLoadRetry'', but with a reasonable default retry policy.
+-- | A combinator to wrap around your 'loadImage' or 'loadImageIfNecessary' calls to retry
+-- on failure. Image loads sometimes fail on Minikube (version 1.33.0 at time of writing).
 withImageLoadRetry :: (MonadLoggerIO m, MonadMask m) => ImageLoadSpec -> m a -> m a
 withImageLoadRetry = withImageLoadRetry' (exponentialBackoff 50000 <> limitRetries 5)
 
--- | A combinator to wrap around your 'loadImage' or 'loadImageIfNecessary' calls to retry
--- on failure. Image loads sometimes fail on Minikube (version 1.33.0 at time of writing).
+-- | Same as 'withImageLoadRetry', but allows you to specify the retry policy.
 withImageLoadRetry' :: (MonadLoggerIO m, MonadMask m) => RetryPolicyM m -> ImageLoadSpec -> m a -> m a
 withImageLoadRetry' policy ils action =
   recovering policy [\_status -> Handler (\(e :: FailureReason) -> do
@@ -199,7 +200,11 @@ withImageLoadRetry' policy ils action =
 -- | Helper to introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
 introduceImages :: (
-  HasCallStack, KubernetesClusterBasic m context
-  ) => [ImageLoadSpec] -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m () -> SpecFree context m ()
+  HasCallStack, KubernetesClusterBasic context m
+  )
+  -- | Images to load
+  => [ImageLoadSpec]
+  -> SpecFree (LabelValue "kubernetesClusterImages" [Text] :> context) m ()
+  -> SpecFree context m ()
 introduceImages images = introduceWith "Introduce cluster images" kubernetesClusterImages $ \action ->
   forM images (\x -> loadImage x) >>= (void . action)

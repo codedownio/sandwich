@@ -14,9 +14,9 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withKindCluster'
 
   -- * Image management
-  , Images.clusterContainsImage
-  , Images.getLoadedImages
-  , Images.loadImage
+  , Images.clusterContainsImageKind
+  , Images.getLoadedImagesKind
+  , Images.loadImageKind
 
   -- * Re-exported types
   , KubernetesClusterContext (..)

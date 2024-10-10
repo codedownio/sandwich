@@ -25,7 +25,6 @@ library
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server
       Test.Sandwich.Contexts.Kubernetes.Namespace
       Test.Sandwich.Contexts.Kubernetes.SeaweedFS
-      Test.Sandwich.Contexts.Kubernetes.Types
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
@@ -41,6 +40,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
       Test.Sandwich.Contexts.Kubernetes.Run
+      Test.Sandwich.Contexts.Kubernetes.Types
       Test.Sandwich.Contexts.Kubernetes.Util
       Test.Sandwich.Contexts.Kubernetes.Util.Aeson
       Test.Sandwich.Contexts.Kubernetes.Util.Container

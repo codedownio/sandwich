@@ -79,7 +79,7 @@ type ContextWithSeaweedFS context =
 
 -- | Introduce [SeaweedFS](https://github.com/seaweedfs/seaweedfs) on the Kubernetes cluster, in a given namespace.
 introduceSeaweedFS :: (
-  KubernetesClusterBasic m context, HasNixContext context
+  KubernetesClusterBasicWithoutReader context m, HasNixContext context
   )
   -- | Namespace
   => Text
@@ -90,7 +90,7 @@ introduceSeaweedFS namespace options = introduceBinaryViaNixPackage @"kubectl" "
 
 -- | Bracket-style version of 'introduceSeaweedFS'.
 withSeaweedFS :: forall context m a. (
-  HasCallStack, MonadFail m, KubectlBasic m context, HasNixContext context
+  HasCallStack, MonadFail m, KubectlBasic context m, HasNixContext context
   )
   -- | Namespace
   => Text
@@ -104,7 +104,7 @@ withSeaweedFS namespace options action = do
 
 -- | Same as 'withSeaweedFS', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withSeaweedFS' :: forall context m a. (
-  HasCallStack, MonadFail m, NixContextBasic m context
+  HasCallStack, MonadFail m, NixContextBasic context m
   )
   -- | Cluster context
   => KubernetesClusterContext

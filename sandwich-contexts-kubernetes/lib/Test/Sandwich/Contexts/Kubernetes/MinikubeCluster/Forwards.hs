@@ -31,7 +31,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
   baseEnv <- liftIO getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  let extraFlags = case "--rootless" `L.elem` minikubeFlags of
+  let extraFlags = case "--rootless" `L.elem` kubernetesClusterTypeMinikubeFlags of
         True -> ["--rootless"]
         False -> []
 
@@ -42,7 +42,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
         , "service"
         , toString service
         , "--url"]
-  info [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
+  info [i|#{kubernetesClusterTypeMinikubeBinary} #{T.unwords $ fmap toText args}|]
 
   (stdoutRead, stdoutWrite) <- liftIO createPipe
   (stderrRead, stderrWrite) <- liftIO createPipe
@@ -52,7 +52,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
         info [i|minikube service stderr: #{line}|]
 
   withAsync forwardStderr $ \_ -> do
-    let cp = (proc minikubeBinary args) {
+    let cp = (proc kubernetesClusterTypeMinikubeBinary args) {
           env = Just env
           , std_out = UseHandle stdoutWrite
           , std_err = UseHandle stderrWrite

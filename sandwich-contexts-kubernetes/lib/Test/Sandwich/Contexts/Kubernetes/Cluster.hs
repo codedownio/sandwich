@@ -48,8 +48,9 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
 
   -- * Types
-  , KubernetesClusterContext (..)
   , kubernetesCluster
+  , KubernetesClusterContext(..)
+  , KubernetesClusterType(..)
   , HasKubernetesClusterContext
 
   -- * Util
@@ -80,7 +81,7 @@ import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 -- | Forward a Kubernetes service, so that it can be reached at a local URI.
 withForwardKubernetesService :: (
-  MonadMask m, KubectlBasic m context
+  MonadMask m, KubectlBasic context m
   )
   -- | Namespace
   => Text
@@ -111,6 +112,6 @@ withForwardKubernetesService' :: (
   -> (URI -> m a)
   -> m a
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) _kubectlBinary =
-  Minikube.withForwardKubernetesService' kcc minikubeProfileName
+  Minikube.withForwardKubernetesService' kcc kubernetesClusterTypeMinikubeProfileName
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) kubectlBinary =
   Kind.withForwardKubernetesService' kcc kubectlBinary

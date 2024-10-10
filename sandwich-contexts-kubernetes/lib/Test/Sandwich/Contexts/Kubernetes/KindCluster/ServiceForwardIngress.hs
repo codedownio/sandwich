@@ -37,7 +37,7 @@ withForwardKubernetesService' :: (
   MonadUnliftIO m, MonadLoggerIO m
   ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do
-  baseEnv <- maybe getEnvironment return kindClusterEnvironment
+  baseEnv <- maybe getEnvironment return kubernetesClusterTypeKindClusterEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
   randomHost <- generateRandomHostname
@@ -61,7 +61,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     Just x -> pure x
 
   hostAndPort <- (T.strip . toText) <$> readCreateProcessWithLogging (
-    proc (toString kindClusterDriver) [
+    proc (toString kubernetesClusterTypeKindClusterDriver) [
       "port", toString controlPlaneNode, "80/tcp"
       ]) ""
   let caddyArgs :: [String] = [
