@@ -6,9 +6,9 @@
 
 {-|
 
-This module can be used to install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
+Install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
 
-This is necessary if you want to use 'Test.Sandwich.Contexts.Kubernetes.MinioS3Server' to create actual S3 servers.
+This is necessary if you want to use the 'Test.Sandwich.Contexts.Kubernetes.MinioS3Server' module to create actual S3 servers.
 
 -}
 

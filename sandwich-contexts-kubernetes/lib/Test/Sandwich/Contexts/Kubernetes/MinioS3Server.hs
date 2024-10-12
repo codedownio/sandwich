@@ -4,7 +4,7 @@
 
 {-|
 
-This module can be used to install MinIO S3 servers onto a Kubernetes cluster.
+Install MinIO S3 servers onto a Kubernetes cluster.
 
 Such a server is provided as a generic 'TestS3Server', so that you can easily run the same tests against both Kubernetes environments and normal ones. See for example the @sandwich-contexts-minio@ package.
 

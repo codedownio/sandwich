@@ -4,6 +4,12 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+
+Create and manage Kubernetes clusters via [Minikube](https://minikube.sigs.k8s.io).
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   -- * Introducing a cluster via Minikube
   introduceMinikubeClusterViaNix

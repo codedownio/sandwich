@@ -7,11 +7,21 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
+{-|
+
+Install [Kata Containers](https://katacontainers.io) on a Kubernetes cluster.
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.KataContainers (
+  -- * Introduce Kata Containers
   introduceKataContainers
+
+  -- * Bracket-style versions
   , withKataContainers
   , withKataContainers'
 
+  -- * Types
   , KataContainersOptions(..)
   , defaultKataContainersOptions
 
@@ -72,7 +82,7 @@ data KataContainersOptions = KataContainersOptions {
 defaultKataContainersOptions :: KataContainersOptions
 defaultKataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout = SourceCheckoutNixDerivation kataContainersDerivation
-  , kataContainersKataDeployImage = Just "quay.io/kata-containers/kata-deploy:3.7.0"
+  , kataContainersKataDeployImage = Just "quay.io/kata-containers/kata-deploy:3.9.0"
   , kataContainersPreloadImages = True
   , kataContainersLabelNode = True
   }
@@ -81,24 +91,46 @@ kataContainers :: Label "kataContainers" KataContainersContext
 kataContainers = Label
 type HasKataContainersContext context = HasLabel context "kataContainers" KataContainersContext
 
+type ContextWithKataContainers context =
+  LabelValue "kataContainers" KataContainersContext
+  :> LabelValue "file-kubectl" (EnvironmentFile "kubectl")
+  :> context
+
+-- | Install Kata Containers on the cluster and introduce a 'KataContainersContext'.
 introduceKataContainers :: (
   MonadUnliftIO m, MonadMask m, Typeable context, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
-  ) => KataContainersOptions -> SpecFree (LabelValue "kataContainers" KataContainersContext :> LabelValue "file-kubectl" (EnvironmentFile "kubectl") :> context) m () -> SpecFree context m ()
+  )
+  -- | Options
+  => KataContainersOptions
+  -> SpecFree (ContextWithKataContainers context) m ()
+  -> SpecFree context m ()
 introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
 
+-- | Bracket-style version of 'introduceKataContainers'.
 withKataContainers :: forall context m a. (
   HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
-  ) => KataContainersOptions -> (KataContainersContext -> m a) -> m a
+  )
+  -- | Options
+  => KataContainersOptions
+  -> (KataContainersContext -> m a)
+  -> m a
 withKataContainers options action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
   withKataContainers' kcc kubectlBinary options action
 
+-- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withKataContainers' :: forall context m a. (
   HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> KataContainersOptions -> (KataContainersContext -> m a) -> m a
+  )
+  => KubernetesClusterContext
+  -- | Path to @kubectl@ binary
+  -> FilePath
+  -> KataContainersOptions
+  -> (KataContainersContext -> m a)
+  -> m a
 withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(KataContainersOptions {..}) action = do
   -- Preflight checks
   case kubernetesClusterType of
@@ -194,8 +226,8 @@ kataContainersDerivation = [__i|{fetchFromGitHub}:
                                 fetchFromGitHub {
                                   owner = "kata-containers";
                                   repo = "kata-containers";
-                                  rev = "44b08b84b00d453b6e8a96d362c3f191c4b8257e";
-                                  sha256 = "sha256-c8C3UdQ4PZF4gxN1ZskN30OJ64IY2/N5eAkUhtUHM7E=";
+                                  rev = "cdaaf708a18da8e5f7e2b9824fa3e43b524893a5";
+                                  sha256 = "sha256-aBcu59LybgZ9xkCDUzZXb60FeClQNG1ivfC6lWQdlb0=";
                                 }
                                |]
 

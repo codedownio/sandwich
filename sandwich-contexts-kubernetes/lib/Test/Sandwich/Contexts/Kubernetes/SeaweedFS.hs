@@ -9,7 +9,7 @@
 
 {-|
 
-This module can be used to install [SeaweedFS](https://github.com/seaweedfs/seaweedfs) deployments on a Kubernetes cluster.
+Install [SeaweedFS](https://github.com/seaweedfs/seaweedfs) deployments on a Kubernetes cluster.
 
 -}
 

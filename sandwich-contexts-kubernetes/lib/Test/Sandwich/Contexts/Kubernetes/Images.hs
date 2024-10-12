@@ -5,7 +5,7 @@
 
 {-|
 
-This module contains tools for managing images on a Kubernetes cluster.
+Functions for managing images on a Kubernetes cluster.
 
 -}
 
@@ -21,11 +21,12 @@ module Test.Sandwich.Contexts.Kubernetes.Images (
   , clusterContainsImage'
 
   -- * Load images
-  , loadImageIfNecessary
-  , loadImageIfNecessary'
-
   , loadImage
   , loadImage'
+
+  -- * Load images if not present
+  , loadImageIfNecessary
+  , loadImageIfNecessary'
 
   -- * Retry helpers
   , withImageLoadRetry
@@ -97,7 +98,7 @@ clusterContainsImage image = do
   kcc <- getContext kubernetesCluster
   clusterContainsImage' kcc image
 
--- | Same as 'clusterContainsImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
+-- | Same as 'clusterContainsImage', but allows you to pass in the 'KubernetesClusterContext'.
 clusterContainsImage' :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
   )
@@ -124,7 +125,7 @@ loadImageIfNecessary image = do
   kcc <- getContext kubernetesCluster
   loadImageIfNecessary' kcc image
 
--- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext', rather than requiring one in context.
+-- | Same as 'loadImage', but allows you to pass in the 'KubernetesClusterContext'.
 loadImageIfNecessary' :: (
   HasCallStack, MonadFail m, KubernetesBasic context m
   )
@@ -200,7 +201,7 @@ withImageLoadRetry' policy ils action =
     action
 
 
--- | Helper to introduce a list of images into a Kubernetes cluster.
+-- | Introduce a list of images into a Kubernetes cluster.
 -- Stores the list of transformed image names under the "kubernetesClusterImages" label.
 introduceImages :: (
   HasCallStack, KubernetesClusterBasicWithoutReader context m

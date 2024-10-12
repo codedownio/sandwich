@@ -1,8 +1,14 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+
+{-|
+
+Create and manage Kubernetes clusters via [kind](https://kind.sigs.k8s.io/).
+
+-}
 
 module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   introduceKindClusterViaNix

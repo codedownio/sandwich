@@ -5,9 +5,9 @@
 
 {-|
 
-This is the main module for creating and working with Kubernetes clusters. You can create clusters with either Kind or Minikube, obtaining the relevant binary from either the current PATH or from Nix.
+Create Kubernetes clusters with either Kind or Minikube, obtaining the relevant binary from either the current PATH or from Nix.
 
-The module also contains functions for waiting for pods and services to exist, running commands with Kubectl, logging, service forwarding, and port forwarding.
+Also contains functions for waiting for pods and services to exist, running commands with Kubectl, logging, service forwarding, and port forwarding.
 
 -}
 
