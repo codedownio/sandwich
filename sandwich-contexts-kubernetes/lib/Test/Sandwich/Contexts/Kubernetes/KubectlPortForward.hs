@@ -10,7 +10,6 @@ module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward (
 import Control.Monad
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
 import Control.Retry
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -20,6 +19,7 @@ import System.FilePath
 import System.Process (getPid)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Ports
 import Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
 import Test.Sandwich.Util.Process (gracefullyStopProcess)
@@ -41,14 +41,17 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 -- | Run a @kubectl port-forward@ process, making the port available in the 'KubectlPortForwardContext'.
 --
 -- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
--- If this happens, a rerun of the command is needed to resume forwarding
+-- If this happens, a rerun of the command is needed to resume forwarding.
 withKubectlPortForward :: (
-  HasCallStack, MonadCatch m, MonadLogger m, MonadUnliftIO m
-  , HasBaseContextMonad ctx m, HasFile ctx "kubectl"
+  HasCallStack, MonadCatch m, KubectlBasic context m
   )
+  -- | Path to kubeconfig file
   => FilePath
+  -- | Namespace
   -> Text
+  -- | Target name (pod, service, etc.)
   -> Text
+  -- | Target port number
   -> PortNumber
   -> (KubectlPortForwardContext -> m a)
   -> m a
@@ -58,15 +61,19 @@ withKubectlPortForward kubeConfigFile namespace targetName targetPort action = d
 
 -- | Same as 'withKubectlPortForward', but allows you to pass in the @kubectl@ binary path.
 withKubectlPortForward' :: (
-  HasCallStack, MonadCatch m, MonadLogger m, MonadUnliftIO m
-  , HasBaseContextMonad ctx m
+  HasCallStack, MonadCatch m, KubernetesBasic context m
   )
   => FilePath
+  -- | Path to kubeconfig file
   -> FilePath
+  -- | Namespace
   -> Text
+  -- | Callback to check if the proposed local port is acceptable
   -> (PortNumber -> Bool)
   -> Maybe PortNumber
+  -- | Target name (pod, service, etc.)
   -> Text
+  -- | Target port number
   -> PortNumber
   -> (KubectlPortForwardContext -> m a)
   -> m a

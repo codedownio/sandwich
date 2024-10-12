@@ -50,7 +50,6 @@ library:
   - sandwich-contexts-minio
   - containers
   - filepath
-  - hostname
   - http-client
   - kubernetes-client
   - kubernetes-client-core

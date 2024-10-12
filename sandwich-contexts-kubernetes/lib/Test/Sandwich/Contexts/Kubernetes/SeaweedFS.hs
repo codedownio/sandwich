@@ -7,6 +7,12 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
+{-|
+
+This module can be used to install [SeaweedFS](https://github.com/seaweedfs/seaweedfs) deployments on a Kubernetes cluster.
+
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   introduceSeaweedFS
   , withSeaweedFS

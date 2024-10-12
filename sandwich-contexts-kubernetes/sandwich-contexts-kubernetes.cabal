@@ -41,7 +41,6 @@ library
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
       Test.Sandwich.Contexts.Kubernetes.Run
       Test.Sandwich.Contexts.Kubernetes.Types
-      Test.Sandwich.Contexts.Kubernetes.Util
       Test.Sandwich.Contexts.Kubernetes.Util.Aeson
       Test.Sandwich.Contexts.Kubernetes.Util.Container
       Test.Sandwich.Contexts.Kubernetes.Util.Exception
@@ -75,7 +74,6 @@ library
     , containers
     , exceptions
     , filepath
-    , hostname
     , http-client
     , kubernetes-client
     , kubernetes-client-core

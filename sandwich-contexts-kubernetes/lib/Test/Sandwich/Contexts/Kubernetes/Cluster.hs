@@ -52,9 +52,6 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , KubernetesClusterContext(..)
   , KubernetesClusterType(..)
   , HasKubernetesClusterContext
-
-  -- * Util
-  , Util.parseHostnameAndPort
   ) where
 
 import Control.Monad.Catch
@@ -75,8 +72,6 @@ import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.ServiceForwardPor
 
 import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster as Minikube
 import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards as Minikube
-
-import qualified Test.Sandwich.Contexts.Kubernetes.Util as Util
 
 
 -- | Forward a Kubernetes service, so that it can be reached at a local URI.
