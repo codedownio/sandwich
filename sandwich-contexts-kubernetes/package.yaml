@@ -37,7 +37,6 @@ library:
   - Test.Sandwich.Contexts.Kubernetes.Images
   - Test.Sandwich.Contexts.Kubernetes.KataContainers
   - Test.Sandwich.Contexts.Kubernetes.KindCluster
-  - Test.Sandwich.Contexts.Kubernetes.Kubectl
   - Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
   - Test.Sandwich.Contexts.Kubernetes.MinioOperator
   - Test.Sandwich.Contexts.Kubernetes.MinioS3Server

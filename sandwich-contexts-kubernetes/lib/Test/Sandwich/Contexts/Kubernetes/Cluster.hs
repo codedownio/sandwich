@@ -52,6 +52,15 @@ module Test.Sandwich.Contexts.Kubernetes.Cluster (
   , KubernetesClusterContext(..)
   , KubernetesClusterType(..)
   , HasKubernetesClusterContext
+
+  -- * Constraint aliases
+  , KubernetesBasic
+  , KubernetesClusterBasic
+  , KubectlBasic
+  , NixContextBasic
+  , KubernetesBasicWithoutReader
+  , KubernetesClusterBasicWithoutReader
+  , KubectlBasicWithoutReader
   ) where
 
 import Control.Monad.Catch

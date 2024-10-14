@@ -15,9 +15,12 @@ Install [SeaweedFS](https://github.com/seaweedfs/seaweedfs) deployments on a Kub
 
 module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   introduceSeaweedFS
+
+  -- * Bracket-style variants
   , withSeaweedFS
   , withSeaweedFS'
 
+  -- * Types
   , SeaweedFSOptions(..)
   , defaultSeaweedFSOptions
 
@@ -116,7 +119,7 @@ withSeaweedFS' :: forall context m a. (
   => KubernetesClusterContext
   -- | Path to @kubectl@ binary
   -> FilePath
-  -- | Namespce
+  -- | Namespace
   -> Text
   -> SeaweedFSOptions
   -> (SeaweedFSContext -> m a)

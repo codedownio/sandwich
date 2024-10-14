@@ -4,6 +4,10 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+Helper module for working with Kubernetes namespaces.
+-}
+
 module Test.Sandwich.Contexts.Kubernetes.Namespace (
   withKubernetesNamespace
   , withKubernetesNamespace'
@@ -49,7 +53,10 @@ withKubernetesNamespace' namespace = bracket_ (createKubernetesNamespace namespa
 -- | Create a Kubernetes namespace.
 createKubernetesNamespace :: (
   KubectlBasic context m
-  ) => Text -> m ()
+  )
+  -- | Namespace name
+  => Text
+  -> m ()
 createKubernetesNamespace namespace = do
   let args = ["create", "namespace", toString namespace]
   (kubectl, env) <- askKubectlArgs
@@ -59,7 +66,12 @@ createKubernetesNamespace namespace = do
 -- | Destroy a Kubernetes namespace.
 destroyKubernetesNamespace :: (
   KubectlBasic context m
-  ) => Bool -> Text -> m ()
+  )
+  -- | Whether to pass @--force@
+  => Bool
+  -- | Namespace name
+  -> Text
+  -> m ()
 destroyKubernetesNamespace force namespace = do
   let args = ["delete", "namespace", toString namespace]
            <> if force then ["--force"] else []

@@ -40,7 +40,9 @@ loadImageMinikube :: (
   -> Text
   -- | Extra flags to pass to @minikube@
   -> [Text]
+  -- | Image load spec
   -> ImageLoadSpec
+  -- | Returns transformed image name
   -> m Text
 loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
   case imageLoadSpec of

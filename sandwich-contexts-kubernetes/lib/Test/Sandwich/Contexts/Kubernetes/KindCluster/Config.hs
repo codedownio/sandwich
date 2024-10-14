@@ -39,9 +39,8 @@ data ExtraMount = ExtraMount {
   -- default false
   , selinuxRelabel :: Maybe Bool
 
-  -- | Set propagation mode (None, HostToContainer or Bidirectional)
-  -- see https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation
-  -- default None
+  -- | Set propagation mode (None, HostToContainer or Bidirectional).
+  -- See https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation.
   --
   -- WARNING: You very likely do not need this field.
   --

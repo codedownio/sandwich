@@ -22,6 +22,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster (
   , withMinikubeCluster''
 
   -- * Image management
+  -- | These are lower-level and Minikube-specific; prefer working with the functions in "Test.Sandwich.Contexts.Kubernetes.Images".
   , Images.clusterContainsImageMinikube
   , Images.getLoadedImagesMinikube
   , Images.loadImageMinikube
@@ -126,7 +127,7 @@ introduceMinikubeCluster' minikubeBinary minikubeClusterOptions spec =
 
 -- * Implementation
 
--- | Bracket-style variant for introducing a Minikube cluster, using a 'HasFile context "minikube"' constraint.
+-- | Bracket-style variant for introducing a Minikube cluster, using a @HasFile context "minikube"@ constraint.
 withMinikubeCluster :: (
   HasBaseContextMonad context m, HasFile context "minikube"
   , MonadLoggerIO m, MonadUnliftIO m, MonadFail m

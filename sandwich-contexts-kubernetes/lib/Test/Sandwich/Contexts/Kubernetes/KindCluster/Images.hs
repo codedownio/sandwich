@@ -28,18 +28,19 @@ import UnliftIO.Process
 import UnliftIO.Temporary
 
 
+-- | Load an image into a Kind cluster.
 loadImageKind :: (
   HasCallStack, MonadUnliftIO m, MonadLoggerIO m
   )
-  -- | Kind binary
+  -- | Path to @kind@ binary
   => FilePath
   -- | Cluster name
   -> Text
-  -- | Image name
+  -- | Image load spec
   -> ImageLoadSpec
-  -- | Environment variables
+  -- | Extra environment variables
   -> Maybe [(String, String)]
-  -- | Callback with transformed image names (see above)
+  -- | Returns transformed image name
   -> m Text
 loadImageKind kindBinary clusterName imageLoadSpec env = do
   case imageLoadSpec of
@@ -90,9 +91,18 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
+-- | Get the set of loaded images on the given Kind cluster.
 getLoadedImagesKind :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
-  ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> m (Set Text)
+  )
+  => KubernetesClusterContext
+  -- | Driver (should be "docker" or "podman")
+  -> Text
+  -- | Path to @kind@ binary
+  -> FilePath
+  -- | Extra environment variables
+  -> Maybe [(String, String)]
+  -> m (Set Text)
 getLoadedImagesKind kcc driver kindBinary env = do
   chosenNode <- getNodes kcc kindBinary env >>= \case
     (x:_) -> pure x
@@ -116,9 +126,19 @@ getLoadedImagesKind kcc driver kindBinary env = do
     extractRepoTags (A.Object (aesonLookup "repoTags" -> Just (A.Array xs))) = [t | A.String t <- V.toList xs]
     extractRepoTags _ = []
 
+-- | Test if the Kind cluster contains a given image.
 clusterContainsImageKind :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m
-  ) => KubernetesClusterContext -> Text -> FilePath -> Maybe [(String, String)] -> Text -> m Bool
+  )
+  => KubernetesClusterContext
+  -- | Driver (should be "docker" or "podman")
+  -> Text
+  -- | Path to @kind@ binary
+  -> FilePath
+  -- | Extra environment variables
+  -> Maybe [(String, String)]
+  -> Text
+  -> m Bool
 clusterContainsImageKind kcc driver kindBinary env image = do
   imageName <- case isAbsolute (toString image) of
     False -> pure image

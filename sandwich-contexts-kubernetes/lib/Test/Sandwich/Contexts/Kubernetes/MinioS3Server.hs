@@ -43,7 +43,6 @@ import Test.Sandwich.Contexts.Kubernetes.FindImages
 import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.MinIO
 import Test.Sandwich.Contexts.Nix
@@ -117,7 +116,7 @@ withK8SMinioS3Server kcc moc options action = do
   kubectlBinary <- askFile @"kubectl"
   withK8SMinioS3Server' kubectlBinary kcc moc options action
 
--- | Same as 'withK8SMinioS3Server', but allows you to pass in the kubectl and kubectl-minio binaries.
+-- | Same as 'withK8SMinioS3Server', but allows you to pass in the @kubectl@ binary.
 withK8SMinioS3Server' :: forall m context. (
   Typeable context, MonadMask m, MonadFail m, KubernetesBasic context m
   )

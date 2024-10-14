@@ -34,7 +34,6 @@ import Control.Lens
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
 import Data.Aeson (FromJSON)
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -68,14 +67,14 @@ data SourceCheckout =
 
 data KataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout :: SourceCheckout
-  -- | If set, this will overwrite the image in the DaemonSet in kata-deploy.yaml and will set the ImagePullPolicy
-  -- to "IfNotPresent".
-  -- This is useful because it's currently (8/15/2024) set to "quay.io/kata-containers/kata-deploy:latest",
-  -- with "imagePullPolicy: Always". This is not reproducible and also doesn't allow us to cache images.
+  -- | If set, this will overwrite the image in the DaemonSet in @kata-deploy.yaml@ and will set the 'ImagePullPolicy'
+  -- to 'IfNotPresent'.
+  -- This is useful because it's currently (8\/15\/2024) set to @quay.io\/kata-containers\/kata-deploy:latest@,
+  -- with @imagePullPolicy: Always@. This is not reproducible and also doesn't allow us to cache images.
   , kataContainersKataDeployImage :: Maybe Text
   -- | Whether to pull the image using Docker and load it onto the cluster using 'loadImageIfNecessary''.
   , kataContainersPreloadImages :: Bool
-  -- | Whether to label the node(s) with "katacontainers.io/kata-runtime=true", since this seems not to happen
+  -- | Whether to label the node(s) with @katacontainers.io/kata-runtime=true@, since this seems not to happen
   -- automatically with kata-deploy.
   , kataContainersLabelNode :: Bool
   } deriving (Show)
@@ -98,7 +97,7 @@ type ContextWithKataContainers context =
 
 -- | Install Kata Containers on the cluster and introduce a 'KataContainersContext'.
 introduceKataContainers :: (
-  MonadUnliftIO m, MonadMask m, Typeable context, HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
+  MonadMask m, Typeable context, KubernetesClusterBasicWithoutReader context m, HasNixContext context
   )
   -- | Options
   => KataContainersOptions
@@ -108,8 +107,7 @@ introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubec
 
 -- | Bracket-style version of 'introduceKataContainers'.
 withKataContainers :: forall context m a. (
-  HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
-  , HasBaseContextMonad context m, HasKubernetesClusterContext context, HasFile context "kubectl"
+  HasCallStack, Typeable context, MonadFail m, MonadMask m, KubectlBasic context m
   )
   -- | Options
   => KataContainersOptions
@@ -122,8 +120,7 @@ withKataContainers options action = do
 
 -- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withKataContainers' :: forall context m a. (
-  HasCallStack, MonadFail m, MonadMask m, MonadLoggerIO m, MonadUnliftIO m, Typeable context
-  , HasBaseContextMonad context m
+  HasCallStack, Typeable context, MonadFail m, MonadMask m, KubernetesBasic context m
   )
   => KubernetesClusterContext
   -- | Path to @kubectl@ binary

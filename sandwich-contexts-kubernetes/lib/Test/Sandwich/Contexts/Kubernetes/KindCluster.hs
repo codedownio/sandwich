@@ -20,6 +20,7 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   , withKindCluster'
 
   -- * Image management
+  -- | These are lower-level and Kind-specific; prefer working with the functions in "Test.Sandwich.Contexts.Kubernetes.Images".
   , Images.clusterContainsImageKind
   , Images.getLoadedImagesKind
   , Images.loadImageKind
@@ -141,7 +142,7 @@ introduceKindClusterViaEnvironment kindClusterOptions spec =
     introduceBinaryViaEnvironment @"kubectl" $
     introduceWith "introduce kind cluster" kubernetesCluster (void . withKindCluster kindClusterOptions) spec
 
--- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the kind and kubectl binaries.
+-- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the @kind@ and @kubectl@ binaries.
 introduceKindCluster' :: (
   HasBaseContext context, MonadMask m, MonadUnliftIO m
   )
@@ -160,7 +161,7 @@ introduceKindCluster' kindBinary kubectlBinary kindClusterOptions spec =
 
 -- * Implementation
 
--- | Bracket-style variant of 'introduceKindCluster'.
+-- | Bracket-style variant of 'introduceKindCluster''.
 withKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
   , HasBaseContextMonad context m, HasFile context "kind", HasFile context "kubectl"
@@ -174,7 +175,7 @@ withKindCluster opts action = do
   kubectlBinary <- askFile @"kubectl"
   withKindCluster' kindBinary kubectlBinary opts action
 
--- | Same as 'withKindCluster', but allows you to pass in the paths to the kind and kubectl binaries.
+-- | Same as 'withKindCluster', but allows you to pass in the paths to the @kind@ and @kubectl@ binaries.
 withKindCluster' :: (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
   , HasBaseContextMonad context m
