@@ -1,5 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
+{-|
+Helper module to obtain the current display resolution. This is useful for positioning windows or setting up video recording.
+-}
+
+
 module Test.Sandwich.WebDriver.Resolution (
   getResolution
   , getResolutionForDisplay
@@ -18,21 +23,35 @@ import System.Process
 import Text.Regex.TDFA
 
 
--- | Previously we got the screen resolution on Linux using the X11 Haskell library.
+-- | Note: previously we got the screen resolution on Linux using the X11 Haskell library.
+--
 -- This was a troublesome dependency because it wouldn't build on Hackage, forcing us to upload
--- sandwich-webdriver documentation manually.
+-- the documentation manually.
+--
 -- It also caused problems when trying to make the demos easy to run on a clean machine or a Mac.
--- Instead, we implement platform-specific getResolution functions.
--- On Linux, the simplest way seems to be to parse the output of xrandr. This is the approach taken by
--- at least one other library: https://github.com/davidmarkclements/screenres/blob/master/linux.cc
--- The other way to do it would be to load the x11 and/or xinerama libraries like is done here:
--- https://github.com/rr-/screeninfo/blob/master/screeninfo/enumerators/xinerama.py
--- but again, that would require users to install those libraries. xrandr itself seems like an easier
+-- So instead, we now implement platform-specific 'getResolution' functions.
+--
+-- On Linux, the simplest way seems to be to parse the output of @xrandr@. This is the approach taken by
+-- at least one other library called [screenres](https://github.com/davidmarkclements/screenres/blob/master/linux.cc).
+-- The other way to do it would be to load the x11 and/or xinerama libraries like is done in
+-- [screeninfo](https://github.com/rr-/screeninfo/blob/master/screeninfo/enumerators/xinerama.py),
+-- but again, that would require users to install those libraries. Just using @xrandr@ itself seems like an easier
 -- dependency.
-getResolution :: (HasCallStack) => IO (Int, Int, Int, Int)
+getResolution :: (
+  HasCallStack
+  )
+  -- | Returns (x, y, width, height)
+  => IO (Int, Int, Int, Int)
 getResolution = getResolution' Nothing
 
-getResolutionForDisplay :: Int -> IO (Int, Int, Int, Int)
+-- | Get the resolution for a specific display.
+getResolutionForDisplay :: (
+  HasCallStack
+  )
+  -- | Display number
+  => Int
+  -- | Returns (x, y, width, height)
+  -> IO (Int, Int, Int, Int)
 getResolutionForDisplay n = getResolution' (Just [("DISPLAY", ":" <> show n)])
 
 -- | Note: this doesn't pick up display scaling on Ubuntu 20.04.

@@ -55,11 +55,14 @@ obtainChrome (UseChromeAt p) = doesFileExist p >>= \case
 obtainChrome (UseChromeFromNixpkgs nixContext) =
   Right <$> getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
 
--- | Manually obtain a chromedriver binary, according to the 'ChromeDriverToUse' policy.
+-- | Manually obtain a @chromedriver@ binary, according to the 'ChromeDriverToUse' policy.
 obtainChromeDriver :: (
   MonadReader context m, HasBaseContext context
   , MonadUnliftIO m, MonadLogger m
-  ) => ChromeDriverToUse -> m (Either T.Text FilePath)
+  )
+  -- | How to obtain @chromedriver@
+  => ChromeDriverToUse
+  -> m (Either T.Text FilePath)
 obtainChromeDriver (DownloadChromeDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
   unlessM (liftIO $ doesFileExist path) $

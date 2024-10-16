@@ -42,12 +42,15 @@ obtainFirefox (UseFirefoxAt p) = doesFileExist p >>= \case
 obtainFirefox (UseFirefoxFromNixpkgs nixContext) =
   Right <$> getBinaryViaNixPackage' @"firefox" nixContext "firefox"
 
--- | Manually obtain a geckodriver binary, according to the 'GeckoDriverToUse' policy,
+-- | Manually obtain a @geckodriver@ binary, according to the 'GeckoDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
 obtainGeckoDriver :: (
   MonadReader context m, HasBaseContext context
   , MonadUnliftIO m, MonadLogger m
-  ) => GeckoDriverToUse -> m (Either T.Text FilePath)
+  )
+  -- | How to obtain @geckodriver@
+  => GeckoDriverToUse
+  -> m (Either T.Text FilePath)
 obtainGeckoDriver (DownloadGeckoDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
   unlessM (liftIO $ doesFileExist path) $

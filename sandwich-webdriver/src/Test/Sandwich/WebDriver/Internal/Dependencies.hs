@@ -71,7 +71,7 @@ data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
 -- * Download Selenium to @\/tmp\/tools@, reusing the one there if found.
 -- * Use @firefox@ from the PATH as the browser.
 -- * Download a compatible @geckodriver@ to @\/tmp\/tools@, reusing the one there if found.
--- * If applicable, it will also get `xvfb-run`, `fluxbox`, and/or `ffmpeg` from the PATH.
+-- * If applicable, it will also get @xvfb-run@, @fluxbox@, and/or @ffmpeg@ from the PATH.
 --
 -- But, it's easy to customize this behavior. You can define your own 'WebDriverDependencies' and customize
 -- how each of these dependencies are found.

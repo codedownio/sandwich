@@ -4,6 +4,10 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
+{-|
+Introduce [WebDriver](https://www.selenium.dev/documentation/webdriver/) servers and sessions.
+-}
+
 module Test.Sandwich.WebDriver (
   -- * Introducing a WebDriver server
   introduceWebDriver
@@ -35,7 +39,7 @@ module Test.Sandwich.WebDriver (
   , introduceWebDriver'
   , addCommandLineOptionsToWdOptions
 
-  -- * Context types
+  -- * Types
   , webdriver
   , WebDriver
   , HasWebDriverContext
@@ -191,11 +195,11 @@ withSession session (ExampleT readerMonad) = do
 
   ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
--- | Convenience function. 'withSession1' = 'withSession' "session1".
+-- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession1 = withSession "session1"
 
--- | Convenience function. 'withSession2' = 'withSession' "session2".
+-- | Convenience function. @withSession2 = withSession "session2"@.
 withSession2 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession2 = withSession "session2"
 
