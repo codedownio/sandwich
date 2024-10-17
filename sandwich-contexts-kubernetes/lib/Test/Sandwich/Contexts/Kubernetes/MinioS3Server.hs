@@ -38,7 +38,7 @@ import Relude
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Kubernetes.Cluster
+import Test.Sandwich.Contexts.Kubernetes
 import Test.Sandwich.Contexts.Kubernetes.FindImages
 import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.MinioOperator

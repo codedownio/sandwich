@@ -15,7 +15,7 @@ build-type:     Simple
 
 library
   exposed-modules:
-      Test.Sandwich.Contexts.Kubernetes.Cluster
+      Test.Sandwich.Contexts.Kubernetes
       Test.Sandwich.Contexts.Kubernetes.Images
       Test.Sandwich.Contexts.Kubernetes.KataContainers
       Test.Sandwich.Contexts.Kubernetes.KindCluster

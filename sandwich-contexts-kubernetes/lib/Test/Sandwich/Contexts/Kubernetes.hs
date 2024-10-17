@@ -11,7 +11,7 @@ Also contains functions for waiting for pods and services to exist, running comm
 
 -}
 
-module Test.Sandwich.Contexts.Kubernetes.Cluster (
+module Test.Sandwich.Contexts.Kubernetes (
   -- * Kind clusters
   Kind.introduceKindClusterViaNix
   , Kind.introduceKindClusterViaEnvironment
