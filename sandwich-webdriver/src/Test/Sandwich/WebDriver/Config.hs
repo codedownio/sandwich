@@ -8,8 +8,6 @@ module Test.Sandwich.WebDriver.Config (
   , httpManager
   , httpRetryCount
   , saveSeleniumMessageHistory
-  , WhenToSave(..)
-  , RunMode(..)
 
   -- * Accessors for the 'WebDriver' context
   , getWdOptions
@@ -17,39 +15,32 @@ module Test.Sandwich.WebDriver.Config (
   , getDownloadDirectory
   , getWebDriverName
 
-  -- ** Xvfb mode
+  -- * Xvfb mode
   , XvfbConfig
   , defaultXvfbConfig
   , xvfbResolution
   , xvfbStartFluxbox
 
-  -- ** Headless mode
+  -- * Headless mode
   , HeadlessConfig
   , defaultHeadlessConfig
   , headlessResolution
-
-  -- * Dependency obtaining options
-  , SeleniumToUse(..)
-  , BrowserDependenciesSpec(..)
-  , ChromeToUse(..)
-  , ChromeDriverToUse(..)
-  , FirefoxToUse(..)
-  , GeckoDriverToUse(..)
-  , GeckoDriverVersion(..)
-  , XvfbDependenciesSpec(..)
-  , XvfbToUse(..)
-  , FluxboxToUse(..)
-  , FfmpegToUse(..)
-  , BrowserDependencies(..)
 
   -- * Browser capabilities
   , chromeCapabilities
   , headlessChromeCapabilities
   , firefoxCapabilities
   , headlessFirefoxCapabilities
+
+  -- * Types
+  , WhenToSave(..)
+  , RunMode(..)
+  , browserDependencies
+  , BrowserDependenciesSpec(..)
+  , BrowserDependencies(..)
+  , HasBrowserDependencies
   ) where
 
-import Test.Sandwich.WebDriver.Binaries
 import Test.Sandwich.WebDriver.Internal.Capabilities
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types

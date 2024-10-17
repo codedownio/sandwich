@@ -19,7 +19,6 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Class as W
 import qualified Test.WebDriver.Session as W
 import UnliftIO.Async
 
@@ -33,8 +32,6 @@ webdriver = Label
 
 webdriverSession :: Label "webdriverSession" WebDriverSession
 webdriverSession = Label
-
-type WebDriverContext context wd = (HasLabel context "webdriver" WebDriver, W.WebDriver (ExampleT context wd))
 
 type ToolsRoot = FilePath
 
@@ -69,6 +66,8 @@ data WdOptions = WdOptions {
   -- ^ Number of times to retry an HTTP request if it times out.
   }
 
+-- | How to obtain certain binaries "on demand". These may or not be needed based on 'WdOptions', so
+-- they will be obtained as needed.
 data OnDemandOptions = OnDemandOptions {
   -- | How to obtain ffmpeg binary.
   ffmpegToUse :: FfmpegToUse

@@ -7,21 +7,15 @@
 
 module Test.Sandwich.WebDriver.Types (
   -- * Type aliases to make signatures shorter
-  ContextWithWebdriverDeps
+  BaseMonad
+  , ContextWithWebdriverDeps
   , ContextWithBaseDeps
+  , WebDriverMonad
 
-  -- * Constraint synonyms
-  , BaseMonad
-  , BaseMonadContext
+  -- * Context aliases
   , HasBrowserDependencies
   , HasWebDriverContext
   , HasWebDriverSessionContext
-  , WebDriverMonad
-  , WebDriverSessionMonad
-
-  -- * On demand options
-  , OnDemandOptions
-  , defaultOnDemandOptions
 
   -- * The Xvfb session
   , XvfbSession(..)
@@ -49,7 +43,7 @@ import qualified Test.WebDriver.Session as W
 import UnliftIO.Exception as ES
 
 
-instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession) => W.WDSessionState (ExampleT context m) where
+instance (MonadIO m, HasWebDriverSessionContext context) => W.WDSessionState (ExampleT context m) where
   getSession = do
     (_, sessVar) <- getContext webdriverSession
     liftIO $ readIORef sessVar
@@ -58,7 +52,7 @@ instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession) => W.
     liftIO $ writeIORef sessVar sess
 
 -- Implementation copied from that of the WD monad implementation
-instance (MonadIO m, HasLabel context "webdriverSession" WebDriverSession, MonadBaseControl IO m) => W.WebDriver (ExampleT context m) where
+instance (MonadIO m, MonadBaseControl IO m, HasWebDriverSessionContext context) => W.WebDriver (ExampleT context m) where
   doCommand method path args = WI.mkRequest method path args
     >>= WI.sendHTTPRequest
     >>= either throwIO return
@@ -86,7 +80,5 @@ hoistExample :: ExampleT context IO a -> ExampleT (LabelValue "webdriverSession"
 hoistExample (ExampleT r) = ExampleT $ transformContext r
   where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
-type WebDriverMonad m context = (HasCallStack, HasLabel context "webdriver" WebDriver, MonadUnliftIO m, MonadBaseControl IO m)
-type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasLabel context "webdriverSession" WebDriverSession)
-type BaseMonad m = (HasCallStack, MonadUnliftIO m, MonadMask m)
-type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
+type BaseMonad m context = (HasCallStack, MonadUnliftIO m, MonadMask m, HasBaseContext context)
+type WebDriverMonad m context = (HasCallStack, MonadUnliftIO m, HasWebDriverContext context)

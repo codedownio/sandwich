@@ -39,13 +39,19 @@ module Test.Sandwich.WebDriver (
   , introduceWebDriver'
   , addCommandLineOptionsToWdOptions
 
-  -- * Types
+  -- * Context types
+  -- ** WebDriver
   , webdriver
   , WebDriver
   , HasWebDriverContext
+  -- ** WebDriverSession
   , webdriverSession
   , WebDriverSession
   , HasWebDriverSessionContext
+
+  -- * On demand options
+  , OnDemandOptions
+  , defaultOnDemandOptions
 
   -- * Re-exports
   , module Test.Sandwich.WebDriver.Config
@@ -79,7 +85,7 @@ import UnliftIO.MVar
 -- | Introduce a 'WebDriver', using the given 'WebDriverDependencies'.
 -- A good default is 'defaultWebDriverDependencies'.
 introduceWebDriver :: forall context m. (
-  BaseMonadContext m context, HasSomeCommandLineOptions context
+  BaseMonad m context, HasSomeCommandLineOptions context
   )
   -- | How to obtain dependencies
   => WebDriverDependencies
@@ -99,7 +105,7 @@ introduceWebDriver wdd wdOptions = introduceWebDriver' wdd alloc wdOptions
 -- | Introduce a 'WebDriver' using the current 'NixContext'.
 -- This will pull everything required from the configured Nixpkgs snapshot.
 introduceWebDriverViaNix :: forall m context. (
-  BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
+  BaseMonad m context, HasSomeCommandLineOptions context, HasNixContext context
   )
   -- | Options
   => WdOptions
@@ -109,7 +115,7 @@ introduceWebDriverViaNix = introduceWebDriverViaNix' (defaultNodeOptions { nodeO
 
 -- | Same as 'introduceWebDriverViaNix', but allows passing custom 'NodeOptions'.
 introduceWebDriverViaNix' :: forall m context. (
-  BaseMonadContext m context, HasSomeCommandLineOptions context, HasNixContext context
+  BaseMonad m context, HasSomeCommandLineOptions context, HasNixContext context
   )
   => NodeOptions
   -- | Options
@@ -135,7 +141,7 @@ introduceWebDriverViaNix' nodeOptions wdOptions =
 
 -- | Same as 'introduceWebDriver', but with a controllable allocation callback.
 introduceWebDriver' :: forall m context. (
-  BaseMonadContext m context
+  BaseMonad m context
   )
   -- | Dependencies
   => WebDriverDependencies
@@ -150,8 +156,8 @@ introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (
-  BaseMonad m
-  , HasBaseContext context, HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
+  BaseMonad m context
+  , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
   )
   -- | Options
   => WdOptions
@@ -162,7 +168,7 @@ allocateWebDriver wdOptions onDemandOptions = do
   startWebDriver wdOptions onDemandOptions dir
 
 -- | Clean up the given WebDriver.
-cleanupWebDriver :: (BaseMonad m) => WebDriver -> ExampleT context m ()
+cleanupWebDriver :: (BaseMonad m context) => WebDriver -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess

@@ -13,16 +13,16 @@ module Test.Sandwich.WebDriver.Windows (
 import Control.Monad.IO.Class
 import Control.Monad.Reader
 import Data.Maybe
-import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Resolution
+import Test.Sandwich.WebDriver.Types
 import Test.WebDriver
 import qualified Test.WebDriver.Class as W
 
 
 -- | Position the window on the left 50% of the screen.
-setWindowLeftSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
+setWindowLeftSide :: (WebDriverMonad m context, MonadReader context m, W.WebDriver m) => m ()
 setWindowLeftSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -36,7 +36,7 @@ setWindowLeftSide = do
   setWindowSize (round (screenWidth / 2.0), round screenHeight)
 
 -- | Position the window on the right 50% of the screen.
-setWindowRightSide :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
+setWindowRightSide :: (WebDriverMonad m context, MonadReader context m, W.WebDriver m) => m ()
 setWindowRightSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -50,7 +50,7 @@ setWindowRightSide = do
   setWindowSize (round (screenWidth / 2.0), round screenHeight)
 
 -- | Fullscreen the browser window.
-setWindowFullScreen :: (HasCallStack, MonadIO wd, WebDriverContext context wd, MonadReader context wd, W.WebDriver wd) => wd ()
+setWindowFullScreen :: (WebDriverMonad m context, MonadReader context m, W.WebDriver m) => m ()
 setWindowFullScreen = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -69,7 +69,7 @@ getScreenResolution (WebDriver {wdWebDriver=(_, maybeXvfbSession)}) = case maybe
   Nothing -> liftIO getResolution
   Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
 
-getScreenPixelDimensions :: (MonadIO wd, W.WebDriver wd) => Int -> Int -> wd (Double, Double)
+getScreenPixelDimensions :: (MonadIO m, W.WebDriver m) => Int -> Int -> m (Double, Double)
 getScreenPixelDimensions width height = do
   devicePixelRatio <- executeJS [] "return window.devicePixelRatio" >>= \case
     Just (ratio :: Double) -> pure ratio
