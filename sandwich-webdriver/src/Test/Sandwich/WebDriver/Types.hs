@@ -20,21 +20,16 @@ module Test.Sandwich.WebDriver.Types (
   -- * The Xvfb session
   , XvfbSession(..)
   , getXvfbSession
-
-  -- * Misc helpers
-  , hoistExample
   ) where
 
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
-import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver.Class as W
@@ -75,10 +70,6 @@ type ContextWithBaseDeps context =
   :> LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar")
   -- | Base context
   :> context
-
-hoistExample :: ExampleT context IO a -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) IO a
-hoistExample (ExampleT r) = ExampleT $ transformContext r
-  where transformContext = withReaderT (\(_ :> ctx) -> ctx)
 
 type BaseMonad m context = (HasCallStack, MonadUnliftIO m, MonadMask m, HasBaseContext context)
 type WebDriverMonad m context = (HasCallStack, MonadUnliftIO m, HasWebDriverContext context)
