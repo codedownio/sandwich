@@ -29,8 +29,6 @@ library
       Test.Sandwich.WebDriver
       Test.Sandwich.WebDriver.Binaries
       Test.Sandwich.WebDriver.Config
-      Test.Sandwich.WebDriver.Resolution
-      Test.Sandwich.WebDriver.Types
       Test.Sandwich.WebDriver.Video
       Test.Sandwich.WebDriver.Windows
   other-modules:
@@ -59,6 +57,7 @@ library
       Test.Sandwich.WebDriver.Internal.Types.Video
       Test.Sandwich.WebDriver.Internal.Util
       Test.Sandwich.WebDriver.Internal.Video
+      Test.Sandwich.WebDriver.Types
       Paths_sandwich_webdriver
   hs-source-dirs:
       src
@@ -111,14 +110,20 @@ library
     , webdriver
   default-language: Haskell2010
   if os(darwin)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         darwin-src
     frameworks:
         CoreGraphics
   if os(windows)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         windows-src
   if os(linux)
+    other-modules:
+        Test.Sandwich.WebDriver.Resolution
     hs-source-dirs:
         linux-src
     build-depends:

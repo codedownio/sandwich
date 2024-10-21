@@ -18,6 +18,9 @@ module Test.Sandwich.WebDriver.Video (
   , qualityX11VideoOptions
   , defaultAvfoundationOptions
   , defaultGdigrabOptions
+
+  -- * Types
+  , BaseVideoConstraints
   ) where
 
 import Control.Monad.Catch (MonadMask)

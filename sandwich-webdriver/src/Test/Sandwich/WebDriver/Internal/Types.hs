@@ -80,9 +80,10 @@ defaultOnDemandOptions = OnDemandOptions {
   , xvfbToUse = UseXvfbFromPath
   }
 
+-- | Configuration for a headless browser.
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)
-  -- ^ Resolution for the headless browser. Defaults to (1920, 1080)
+  -- ^ Resolution for the headless browser. Defaults to @(1920, 1080)@.
   }
 
 -- | Default headless config.

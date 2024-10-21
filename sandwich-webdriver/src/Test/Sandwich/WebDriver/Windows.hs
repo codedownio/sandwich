@@ -6,8 +6,12 @@ module Test.Sandwich.WebDriver.Windows (
   , setWindowRightSide
   , setWindowFullScreen
 
-  -- * Querying screen info
+  -- * Screen resolution
   , getScreenResolution
+
+  -- * Lower-level
+  , getResolution
+  , getResolutionForDisplay
   ) where
 
 import Control.Monad.IO.Class
@@ -64,6 +68,7 @@ setWindowFullScreen = do
   setWindowSize (round screenWidth, round screenHeight)
 
 -- | Get the screen resolution as (x, y, width, height). (The x and y coordinates may be nonzero in multi-monitor setups.)
+-- This function works with both normal 'RunMode' and Xvfb mode.
 getScreenResolution :: (MonadIO m) => WebDriver -> m (Int, Int, Int, Int)
 getScreenResolution (WebDriver {wdWebDriver=(_, maybeXvfbSession)}) = case maybeXvfbSession of
   Nothing -> liftIO getResolution

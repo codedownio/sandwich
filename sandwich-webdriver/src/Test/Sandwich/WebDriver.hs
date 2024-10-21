@@ -48,6 +48,10 @@ module Test.Sandwich.WebDriver (
   , webdriverSession
   , WebDriverSession
   , HasWebDriverSessionContext
+  -- * Shorthands
+  , BaseMonad
+  , ContextWithWebdriverDeps
+  , WebDriverMonad
 
   -- * On demand options
   , OnDemandOptions
