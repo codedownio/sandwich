@@ -83,7 +83,7 @@ defaultOnDemandOptions = OnDemandOptions {
 -- | Configuration for a headless browser.
 data HeadlessConfig = HeadlessConfig {
   headlessResolution :: Maybe (Int, Int)
-  -- ^ Resolution for the headless browser. Defaults to @(1920, 1080)@.
+  -- ^ Resolution for the headless browser, specified as @(width, height)@. Defaults to @(1920, 1080)@.
   }
 
 -- | Default headless config.
@@ -95,7 +95,7 @@ data XvfbConfig = XvfbConfig {
   -- ^ Resolution for the virtual screen. Defaults to (1920, 1080)
 
   , xvfbStartFluxbox :: Bool
-  -- ^ Whether to start fluxbox window manager to go with the Xvfb session. fluxbox must be on the path
+  -- ^ Whether to start fluxbox window manager to go with the Xvfb session. @fluxbox@ must be on the path.
   }
 
 -- | Default Xvfb settings.

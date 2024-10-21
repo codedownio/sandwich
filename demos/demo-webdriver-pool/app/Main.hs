@@ -24,7 +24,6 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver
-import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Video
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Commands

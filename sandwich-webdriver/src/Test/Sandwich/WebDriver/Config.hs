@@ -1,4 +1,6 @@
 
+-- | Configuration types for WebDriver servers, Xvfb mode, browser capabilities, etc.
+
 module Test.Sandwich.WebDriver.Config (
   -- * Main options
   WdOptions

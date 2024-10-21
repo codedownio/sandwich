@@ -1,14 +1,17 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 
+-- | Functions for recording videos of browser windows.
+
 module Test.Sandwich.WebDriver.Video (
-  startVideoRecording
+  startBrowserVideoRecording
+  , startFullScreenVideoRecording
+
+  -- * Lower-level
+  , startVideoRecording
   , endVideoRecording
 
   -- * Helpers
-  , startFullScreenVideoRecording
-  , startBrowserVideoRecording
-
   , getXvfbSession
 
   -- * Configuration
@@ -18,6 +21,9 @@ module Test.Sandwich.WebDriver.Video (
   , qualityX11VideoOptions
   , defaultAvfoundationOptions
   , defaultGdigrabOptions
+
+  -- * Re-exports
+  , XvfbSession(..)
 
   -- * Types
   , BaseVideoConstraints
@@ -52,7 +58,11 @@ type BaseVideoConstraints context m = (
 -- | Wrapper around 'startVideoRecording' which uses the full screen dimensions.
 startFullScreenVideoRecording :: (
   BaseVideoConstraints context m
-  ) => FilePath -> VideoSettings -> m ProcessHandle
+  )
+  -- | Output path
+  => FilePath
+  -> VideoSettings
+  -> m ProcessHandle
 startFullScreenVideoRecording path videoSettings = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess
@@ -66,16 +76,27 @@ startFullScreenVideoRecording path videoSettings = do
 -- | Wrapper around 'startVideoRecording' which uses WebDriver to find the rectangle corresponding to the browser.
 startBrowserVideoRecording :: (
   BaseVideoConstraints context m, W.WebDriver m
-  ) => FilePath -> VideoSettings -> m ProcessHandle
+  )
+  -- | Output path
+  => FilePath
+  -> VideoSettings
+  -> m ProcessHandle
 startBrowserVideoRecording path videoSettings = do
   (x, y) <- getWindowPos
   (w, h) <- getWindowSize
   startVideoRecording path (w, h, x, y) videoSettings
 
--- | Record video to a given path, for a given rectangle specified as (width, height, x, y).
+-- | Record video to a given path, for a given screen rectangle.
 startVideoRecording :: (
   BaseVideoConstraints context m
-  ) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> m ProcessHandle
+  )
+  -- | Output path
+  => FilePath
+  -- | Rectangle to record, specified as @(width, height, x, y)@
+  -> (Word, Word, Int, Int)
+  -> VideoSettings
+  -- | Returns handle to video process
+  -> m ProcessHandle
 startVideoRecording path (width, height, x, y) vs = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess

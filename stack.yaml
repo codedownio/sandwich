@@ -30,9 +30,9 @@ packages:
 
 - ./demos/demo-basic
 - ./demos/demo-command-line-args
-- ./demos/demo-contexts
 - ./demos/demo-context-dependencies
 - ./demos/demo-context-nested
+- ./demos/demo-contexts
 - ./demos/demo-custom-exceptions
 - ./demos/demo-discover
 - ./demos/demo-fake-smtp-server
@@ -56,8 +56,9 @@ packages:
 - ./demos/demo-timing
 - ./demos/demo-timing-parallel
 - ./demos/demo-tui
-- ./demos/demo-webdriver
 - ./demos/demo-webdriver-landing
+- ./demos/demo-webdriver-nix
+- ./demos/demo-webdriver-normal
 - ./demos/demo-webdriver-pool
 - ./demos/demo-webdriver-positioning
 - ./demos/demo-webdriver-video

@@ -50,6 +50,7 @@ module Test.Sandwich.WebDriver (
   , HasWebDriverSessionContext
   -- * Shorthands
   , BaseMonad
+  , ContextWithBaseDeps
   , ContextWithWebdriverDeps
   , WebDriverMonad
 

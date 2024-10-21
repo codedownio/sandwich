@@ -1,4 +1,4 @@
-name:                demo-webdriver
+name:                demo-webdriver-normal
 version:             0.1.0.0
 license:             BSD3
 
@@ -28,6 +28,6 @@ ghc-options:
 - -with-rtsopts=-N
 
 executables:
-  demo-webdriver:
+  demo-webdriver-normal:
     main: Main.hs
     source-dirs: app

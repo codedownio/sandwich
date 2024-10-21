@@ -1,19 +1,19 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
-name:           demo-webdriver
+name:           demo-webdriver-normal
 version:        0.1.0.0
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 
-executable demo-webdriver
+executable demo-webdriver-normal
   main-is: Main.hs
   other-modules:
-      Paths_demo_webdriver
+      Paths_demo_webdriver_normal
   hs-source-dirs:
       app
   default-extensions:
