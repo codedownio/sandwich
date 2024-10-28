@@ -1,12 +1,12 @@
 
 resolver: lts-22.27
 
-ghc-options:
-  "$locals": >-
-    -fwrite-ide-info
-    -hiedir .hie
-    -dumpdir .ghcdump
-    -Wredundant-constraints
+# ghc-options:
+#   "$locals": >-
+#     -fwrite-ide-info
+#     -hiedir .hie
+#     -dumpdir .ghcdump
+#     -Wredundant-constraints
 
 nix:
   pure: false
