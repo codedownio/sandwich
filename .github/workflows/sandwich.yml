@@ -62,6 +62,7 @@ jobs:
 
     - name: Disable demo-postgres (Windows)
       if: runner.os == 'Windows'
+      run: |
         # Disable demo-postgres since it requires unix sockets
         sed -i 's|, ./demos/demo-postgres|-- , ./demos/demo-postgres|g' cabal.project
         cat cabal.project
