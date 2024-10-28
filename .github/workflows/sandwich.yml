@@ -41,6 +41,27 @@ jobs:
       run: |
         "$env:PGBIN" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        # For postgres context tests/demo
+        brew install libpq postgresql
+        # For older GHCs
+        brew install llvm@13 --quiet # Suppress deprecation warning
+        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
+        echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
+
+    - uses: haskell-actions/setup@v2
+      id: setup-haskell-cabal
+      name: Setup Haskell
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+
+    - name: Disable demo-postgres (Windows)
+      if: runner.os == 'Windows'
         # Disable demo-postgres since it requires unix sockets
         sed -i 's|, ./demos/demo-postgres|-- , ./demos/demo-postgres|g' cabal.project
         cat cabal.project
@@ -57,40 +78,14 @@ jobs:
         sed -i 's|, ./demos/demo-fake-smtp-server|-- , ./demos/demo-fake-smtp-server|g' cabal.project
         cat cabal.project
 
-    - uses: haskell-actions/setup@v2
-      id: setup-haskell-cabal
-      name: Setup Haskell
-      with:
-        ghc-version: ${{ matrix.ghc }}
-        cabal-version: "latest"
-
     - name: Freeze
-      run: |
-        cabal freeze
+      run: cabal freeze
 
     - uses: actions/cache/restore@v4
       id: cache-restore
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew update
-        # For postgres context tests/demo
-        brew install libpq postgresql
-        # For older GHCs
-        brew install llvm@13 --quiet # Suppress deprecation warning
-        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
-        # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
-        echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
-
-    - name: Install dependencies (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        # This needs to be a PowerShell command
-        "$env:PGBIN" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Build
       run: |
