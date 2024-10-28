@@ -112,7 +112,7 @@ import Test.Sandwich.Types.TestTimer
 import UnliftIO.Exception
 
 #ifdef mingw32_HOST_OS
-import System.Win32.Console
+import System.Win32.Console (setConsoleOutputCP)
 #endif
 
 
