@@ -10,10 +10,8 @@ import System.Exit
 import qualified System.Random as R
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Kubernetes
 import Test.Sandwich.Contexts.Kubernetes.Images
-import Test.Sandwich.Contexts.Kubernetes.KindCluster
-import Test.Sandwich.Contexts.Kubernetes.Kubectl
-import Test.Sandwich.Contexts.Kubernetes.MinikubeCluster
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Waits
 import UnliftIO.Exception
