@@ -16,6 +16,7 @@ module Test.Sandwich.WebDriver.Config (
   , getDisplayNumber
   , getDownloadDirectory
   , getWebDriverName
+  , getXvfbSession
 
   -- * Xvfb mode
   , XvfbConfig
@@ -35,12 +36,16 @@ module Test.Sandwich.WebDriver.Config (
   , headlessFirefoxCapabilities
 
   -- * Types
-  , WhenToSave(..)
-  , RunMode(..)
+  -- ** BrowserDependencies
   , browserDependencies
   , BrowserDependenciesSpec(..)
   , BrowserDependencies(..)
   , HasBrowserDependencies
+  -- ** Xvfb
+  , XvfbSession(..)
+  -- ** Miscellaneous
+  , WhenToSave(..)
+  , RunMode(..)
   ) where
 
 import Test.Sandwich.WebDriver.Internal.Capabilities

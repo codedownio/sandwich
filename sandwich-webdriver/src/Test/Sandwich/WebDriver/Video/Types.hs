@@ -1,6 +1,5 @@
 
-module Test.Sandwich.WebDriver.Internal.Types.Video where
-
+module Test.Sandwich.WebDriver.Video.Types where
 
 
 -- | Default options for fast X11 video recording.

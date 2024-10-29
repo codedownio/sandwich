@@ -51,6 +51,7 @@ module Test.Sandwich.WebDriver (
   , webdriverSession
   , WebDriverSession
   , HasWebDriverSessionContext
+
   -- * Shorthands
   -- | These are used to make type signatures shorter.
   , BaseMonad
@@ -89,6 +90,9 @@ import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 import UnliftIO.MVar
+
+-- import Control.Monad.Catch (MonadMask)
+-- import Test.Sandwich.WebDriver.Video (recordVideoInExampleT)
 
 
 -- | Introduce a 'WebDriver', using the given 'WebDriverDependencies'.
@@ -208,14 +212,19 @@ withSession session (ExampleT readerMonad) = do
   -- We could do the same here, but it's not clear that it's needed.
   let f :: m a -> m a = id
 
+  -- recordVideoInExampleT session $
   ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
-withSession1 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
+withSession1 :: (
+  WebDriverMonad m context
+  ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession1 = withSession "session1"
 
 -- | Convenience function. @withSession2 = withSession "session2"@.
-withSession2 :: WebDriverMonad m context => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
+withSession2 :: (
+  WebDriverMonad m context
+  ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession2 = withSession "session2"
 
 -- | Get all existing session names.

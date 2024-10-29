@@ -1,7 +1,10 @@
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
 {-# LANGUAGE CPP #-}
 
-module Test.Sandwich.WebDriver.Internal.Video where
+module Test.Sandwich.WebDriver.Video.Internal (
+  getVideoArgs
+  , videoExtension
+  ) where
 
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
@@ -13,8 +16,8 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.OnDemand
 import Test.Sandwich.WebDriver.Internal.Types
-import Test.Sandwich.WebDriver.Internal.Types.Video
 import Test.Sandwich.WebDriver.Types
+import Test.Sandwich.WebDriver.Video.Types
 
 #ifdef darwin_HOST_OS
 getMacScreenNumber :: IO (Maybe Int)
@@ -28,6 +31,9 @@ import Data.Maybe
 import UnliftIO.Environment
 #endif
 
+
+videoExtension :: String
+videoExtension = ".avi"
 
 getVideoArgs :: (
   MonadUnliftIO m, MonadLoggerIO m, MonadMask m
@@ -51,7 +57,7 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
           & (("XAUTHORITY", xvfbXauthority) :)
           & L.nubBy ((==) `on` fst)
 
-  let videoPath = [i|#{path}.avi|]
+  let videoPath = [i|#{path}#{videoExtension}|]
 
   let cmd = ["-y"
             , "-nostdin"

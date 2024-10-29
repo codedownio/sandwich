@@ -11,8 +11,8 @@ module Test.Sandwich.WebDriver.Video (
   , startVideoRecording
   , endVideoRecording
 
-  -- * Helpers
-  , getXvfbSession
+  -- * Wrap an ExampleT to conditionally record video
+  -- , recordVideoInExampleT
 
   -- * Configuration
   , VideoSettings(..)
@@ -21,9 +21,6 @@ module Test.Sandwich.WebDriver.Video (
   , qualityX11VideoOptions
   , defaultAvfoundationOptions
   , defaultGdigrabOptions
-
-  -- * Re-exports
-  , XvfbSession(..)
 
   -- * Types
   , BaseVideoConstraints
@@ -41,13 +38,17 @@ import System.IO
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
-import Test.Sandwich.WebDriver.Internal.Types.Video
-import Test.Sandwich.WebDriver.Internal.Video
 import Test.Sandwich.WebDriver.Types
+import Test.Sandwich.WebDriver.Video.Internal
+import Test.Sandwich.WebDriver.Video.Types
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Class as W
 import Test.WebDriver.Commands
 import UnliftIO.Exception
+
+-- import Control.Monad.Trans.Control (MonadBaseControl)
+-- import Data.Function
+-- import UnliftIO.Directory
 
 
 type BaseVideoConstraints context m = (
@@ -132,3 +133,43 @@ endVideoRecording p = do
     ExitFailure 255 -> return ()
 
     ExitFailure n -> debug [i|ffmpeg exited with unexpected exit code #{n}'|]
+
+-- * Wrappers
+
+-- recordVideoInExampleT :: (
+--   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
+--   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx, HasSomeCommandLineOptions ctx
+--   ) => String -> ExampleT ctx m a -> ExampleT ctx m a
+-- recordVideoInExampleT browser action = do
+--   getCurrentFolder >>= \case
+--     Nothing -> action
+--     Just folder -> do
+--       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
+--       if | optIndividualVideos -> withVideo folder browser action
+--          | optErrorVideos -> withVideoIfException folder browser action
+--          | otherwise -> action
+
+-- withVideo :: (
+--   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
+--   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx
+--   ) => FilePath -> String -> ExampleT ctx m a -> ExampleT ctx m a
+-- withVideo folder browser action = do
+--   path <- getPathInFolder folder browser
+--   bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
+
+-- withVideoIfException :: (
+--   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
+--   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx
+--   ) => FilePath -> String -> ExampleT ctx m a -> ExampleT ctx m a
+-- withVideoIfException folder browser action = do
+--   path <- getPathInFolder folder browser
+--   tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording) (const action)) >>= \case
+--     Right ret -> removePathForcibly path >> return ret
+--     Left e -> throwIO e
+
+-- getPathInFolder :: (MonadUnliftIO m) => [Char] -> String -> m FilePath
+-- getPathInFolder folder browser = flip fix (0 :: Integer) $ \loop n -> do
+--   let path = folder </> [i|#{browser}_video_#{n}|]
+--   liftIO (doesFileExist (path <> videoExtension)) >>= \case
+--     False -> return path
+--     True -> loop (n + 1)
