@@ -29,7 +29,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logOther)
 import Data.String.Interpolate
-import Data.Text
+import Data.Text (Text)
 import Foreign.C.Error
 import GHC.IO.Exception
 import GHC.Stack
