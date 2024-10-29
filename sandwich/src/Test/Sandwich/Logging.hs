@@ -222,7 +222,7 @@ ignoreSigPipe = C.handle $ \case
 -- Copied from System.Process
 processFailedException :: String -> String -> [String] -> Int -> IO a
 processFailedException fun cmd args exit_code =
-      ioError (mkIOError OtherError (fun ++ ": " ++ cmd ++
-                                     Prelude.concatMap ((' ':) . show) args ++
-                                     " (exit " ++ show exit_code ++ ")")
-                                 Nothing Nothing)
+  ioError (mkIOError OtherError (fun ++ ": " ++ cmd ++
+                                 Prelude.concatMap ((' ':) . show) args ++
+                                 " (exit " ++ show exit_code ++ ")")
+            Nothing Nothing)
