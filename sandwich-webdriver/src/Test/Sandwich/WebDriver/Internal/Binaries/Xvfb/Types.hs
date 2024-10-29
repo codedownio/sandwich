@@ -12,13 +12,13 @@ data XvfbDependenciesSpec = XvfbDependenciesSpec {
   , xvfbDependenciesSpecFluxbox :: Maybe FluxboxToUse
   }
 
--- | How to obtain the @xvfb-run@ binary.
+-- | How to obtain the @Xvfb@ binary.
 data XvfbToUse =
-  -- | Search the PATH for the @xvfb-run@ binary.
+  -- | Search the PATH for the @Xvfb@ binary.
   UseXvfbFromPath
-  -- | Use the @xvfb-run@ at the given path.
+  -- | Use the @Xvfb@ at the given path.
   | UseXvfbAt FilePath
-  -- | Get @xvfb-run@ from Nixpkgs.
+  -- | Get @Xvfb@ from Nixpkgs.
   | UseXvfbFromNixpkgs NixContext
   deriving Show
 

@@ -47,7 +47,7 @@ data RunMode =
   -- ^ Run with a headless browser. Supports screenshots but videos will be black.
   | RunInXvfb XvfbConfig
   -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in their own X11 display.
-  -- xvfb-run script must be installed and on the PATH.
+  -- The @Xvfb@ binary must be installed and on the PATH.
 
 data WdOptions = WdOptions {
   capabilities :: W.Capabilities

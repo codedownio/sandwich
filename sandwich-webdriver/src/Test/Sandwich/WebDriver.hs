@@ -14,11 +14,14 @@ module Test.Sandwich.WebDriver (
   , introduceWebDriverViaNix
   , introduceWebDriverViaNix'
 
-  -- * Specifying how to obtain dependencies
+  -- * Non-Nix dependency fetching
+  -- | When you aren't using Nix, these types specify how to obtain the necessary dependencies.
   , defaultWebDriverDependencies
   , WebDriverDependencies(..)
 
   -- * Running an example in a given session
+  -- | Once you have a 'WebDriver' in context, you can run one or more sessions.
+  -- Each session will open an independent browser instance.
   , withSession
   , withSession1
   , withSession2
@@ -49,6 +52,7 @@ module Test.Sandwich.WebDriver (
   , WebDriverSession
   , HasWebDriverSessionContext
   -- * Shorthands
+  -- | These are used to make type signatures shorter.
   , BaseMonad
   , ContextWithBaseDeps
   , ContextWithWebdriverDeps

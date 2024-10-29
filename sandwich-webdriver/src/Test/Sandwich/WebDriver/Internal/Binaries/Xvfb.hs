@@ -26,8 +26,8 @@ obtainXvfb :: (
   MonadReader context m, HasBaseContext context
   , MonadUnliftIO m, MonadLoggerIO m
   ) => XvfbToUse -> m (Either T.Text FilePath)
-obtainXvfb UseXvfbFromPath = findExecutable "xvfb" >>= \case
-  Nothing -> return $ Left [i|Couldn't find "xvfb" on the PATH.|]
+obtainXvfb UseXvfbFromPath = findExecutable "Xvfb" >>= \case
+  Nothing -> return $ Left [i|Couldn't find "Xvfb" on the PATH.|]
   Just p -> return $ Right p
 obtainXvfb (UseXvfbAt path) = doesFileExist path >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
