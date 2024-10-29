@@ -49,7 +49,7 @@ data WebDriverDependencies = WebDriverDependencies {
   , webDriverDependencySelenium :: SeleniumToUse
   -- | Browser/driver dependencies.
   , webDriverDependencyBrowser :: BrowserDependenciesSpec
-  -- | How to obtain @Xvfb@ (used for the 'RunInXvfb' 'RunMode')
+  -- | How to obtain @Xvfb@ (used for the 'RunInXvfb' 'RunMode').
   , webDriverXvfb :: XvfbDependenciesSpec
   -- | How to obtain @ffmpeg@ (used for video recording).
   , webDriverFfmpeg :: FfmpegToUse
