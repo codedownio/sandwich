@@ -52,9 +52,9 @@ import System.Process
 import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer.Derivation
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Util.Aeson
-import Test.Sandwich.Contexts.Waits
 import UnliftIO.Directory
 import UnliftIO.Exception
 

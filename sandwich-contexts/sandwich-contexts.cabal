@@ -27,6 +27,7 @@ library
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.Files.Types
+      Test.Sandwich.Contexts.HttpWaits
       Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Nix
