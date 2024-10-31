@@ -6,6 +6,12 @@
 * Support GHC 9.8
 * BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`. We also remove `MonadThrow` constraints, relying only on `MonadIO` for throwing exceptions.
 * Adding support for `sandwich-contexts`, which is released with this version.
+* Add more `HasCallStack` to introduce nodes.
+* Add `getContextMaybe`, an optional version of `getContext`.
+* Fix an issue with name collisions of test tree folders.
+* Add `shouldBeSet` to `Test.Sandwich.Expectations`, for testing that lists are equal as sets.
+* Tweak some default visibility thresholds.
+* Improve openFileExplorerFolderPortable on Windows.
 
 ## 0.2.2.0
 
