@@ -12,7 +12,7 @@
 * Add `shouldBeSet` to `Test.Sandwich.Expectations`, for testing that lists are equal as sets.
 * Tweak some default visibility thresholds.
 * Improve openFileExplorerFolderPortable on Windows.
-
+* Add `waitUntil` function in `Test.Sandwich.Waits`.
 ## 0.2.2.0
 
 * Add primed versions of createProcessWithLogging etc. with customizable log level
