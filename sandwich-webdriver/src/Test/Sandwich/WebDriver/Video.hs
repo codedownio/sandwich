@@ -56,6 +56,13 @@ type BaseVideoConstraints context m = (
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
   )
 
+data VideoProcess = VideoProcess {
+  videoProcessProcess :: ProcessHandle
+  , videoProcessCreatedFiles :: [FilePath]
+  }
+-- defaultVideoProcess :: ProcessHandle -> VideoProcess
+-- defaultVideoProcess p = VideoProcess p mempty
+
 -- | Wrapper around 'startVideoRecording' which uses the full screen dimensions.
 startFullScreenVideoRecording :: (
   BaseVideoConstraints context m
@@ -63,7 +70,7 @@ startFullScreenVideoRecording :: (
   -- | Output path
   => FilePath
   -> VideoSettings
-  -> m ProcessHandle
+  -> m VideoProcess
 startFullScreenVideoRecording path videoSettings = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess
@@ -72,7 +79,7 @@ startFullScreenVideoRecording path videoSettings = do
     Nothing -> do
       (_x, _y, w, h) <- getScreenResolution sess
       return (fromIntegral w, fromIntegral h)
-  fst <$> startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings
+  startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings
 
 -- | Wrapper around 'startVideoRecording' which uses WebDriver to find the rectangle corresponding to the browser.
 startBrowserVideoRecording :: (
@@ -81,7 +88,7 @@ startBrowserVideoRecording :: (
   -- | Output path
   => FilePath
   -> VideoSettings
-  -> m (ProcessHandle, [FilePath])
+  -> m VideoProcess
 startBrowserVideoRecording path videoSettings = do
   (x, y) <- getWindowPos
   (w, h) <- getWindowSize
@@ -97,7 +104,7 @@ startVideoRecording :: (
   -> (Word, Word, Int, Int)
   -> VideoSettings
   -- | Returns handle to video process and list of files created
-  -> m (ProcessHandle, [FilePath])
+  -> m VideoProcess
 startVideoRecording path (width, height, x, y) vs = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess
@@ -112,20 +119,20 @@ startVideoRecording path (width, height, x, y) vs = do
   case logToDisk vs of
     False -> do
       p <- createProcessWithLogging cp
-      return (p, [videoPath])
+      return $ VideoProcess p [videoPath]
     True -> do
       let stdoutPath = path <.> "stdout" <.> "log"
       let stderrPath = path <.> "stderr" <.> "log"
       liftIO $ bracket (openFile stdoutPath AppendMode) hClose $ \hout ->
         bracket (openFile stderrPath AppendMode) hClose $ \herr -> do
           (_, _, _, p) <- createProcess (cp { std_out = UseHandle hout, std_err = UseHandle herr })
-          return (p, [videoPath, stdoutPath, stderrPath])
+          return $ VideoProcess p [videoPath, stdoutPath, stderrPath]
 
 -- | Gracefully stop the 'ProcessHandle' returned by 'startVideoRecording'.
 endVideoRecording :: (
   MonadLoggerIO m, MonadUnliftIO m
-  ) => ProcessHandle -> m ()
-endVideoRecording p = do
+  ) => VideoProcess -> m ()
+endVideoRecording (VideoProcess { videoProcessProcess=p }) = do
   catchAny (liftIO $ interruptProcessGroupOf p)
            (\e -> logError [i|Exception in interruptProcessGroupOf in endVideoRecording: #{e}|])
 
@@ -157,7 +164,7 @@ withVideo :: (
   ) => FilePath -> String -> m a -> m a
 withVideo folder browser action = do
   path <- getPathInFolder folder browser
-  bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording . fst) (const action)
+  bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
 
 withVideoIfException :: (
   BaseVideoConstraints context m, W.WebDriver m
@@ -165,8 +172,8 @@ withVideoIfException :: (
 withVideoIfException folder browser action = do
   path <- getPathInFolder folder browser
   tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings)
-                  (endVideoRecording . fst)
-                  (\(_p, pathsToRemove) -> (pathsToRemove, ) <$> action))
+                  endVideoRecording
+                  (\(VideoProcess {..}) -> (videoProcessCreatedFiles, ) <$> action))
     >>= \case
       Right (pathsToRemove, ret) -> do
         info [i|pathsToRemove: #{pathsToRemove}|]
