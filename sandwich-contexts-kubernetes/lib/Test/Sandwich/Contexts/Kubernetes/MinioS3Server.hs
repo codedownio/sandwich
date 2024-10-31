@@ -38,6 +38,7 @@ import Relude
 import System.Exit
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.Kubernetes
 import Test.Sandwich.Contexts.Kubernetes.FindImages
 import Test.Sandwich.Contexts.Kubernetes.Images
@@ -46,7 +47,6 @@ import Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.MinIO
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Waits
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout

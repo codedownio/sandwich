@@ -18,6 +18,7 @@ library
       Test.Sandwich.Contexts.Container
       Test.Sandwich.Contexts.FakeSmtpServer
       Test.Sandwich.Contexts.Files
+      Test.Sandwich.Contexts.HttpWaits
       Test.Sandwich.Contexts.Nix
       Test.Sandwich.Contexts.PostgreSQL
       Test.Sandwich.Contexts.Types.Network
@@ -27,7 +28,6 @@ library
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.Files.Types
-      Test.Sandwich.Contexts.HttpWaits
       Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Nix

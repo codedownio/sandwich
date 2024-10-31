@@ -53,11 +53,11 @@ import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Container (ContainerSystem(..), containerPortToHostPort)
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.MinIO.Util
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Types.Network
 import Test.Sandwich.Contexts.Types.S3
-import Test.Sandwich.Contexts.Waits
 import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
