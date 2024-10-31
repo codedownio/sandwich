@@ -1,6 +1,4 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -67,9 +65,10 @@ module Test.Sandwich.WebDriver (
   , module Test.Sandwich.WebDriver.Config
   ) where
 
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
-import Control.Monad.Logger
 import Control.Monad.Reader
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -78,7 +77,6 @@ import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Internal
 import Test.Sandwich.WebDriver.Binaries
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
@@ -86,13 +84,11 @@ import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Types
+import Test.Sandwich.WebDriver.Video (recordVideoIfConfigured)
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
 import UnliftIO.MVar
-
--- import Control.Monad.Catch (MonadMask)
--- import Test.Sandwich.WebDriver.Video (recordVideoInExampleT)
 
 
 -- | Introduce a 'WebDriver', using the given 'WebDriverDependencies'.
@@ -188,13 +184,14 @@ cleanupWebDriver sess = do
 
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (
-  WebDriverMonad m context
+  MonadMask m, MonadBaseControl IO m
+  , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Session to run
   => Session
   -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
-withSession session (ExampleT readerMonad) = do
+withSession session action = do
   WebDriver {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup session sessionMap of
@@ -210,20 +207,22 @@ withSession session (ExampleT readerMonad) = do
 
   -- Not used for now, but previous libraries have use a finally to grab the final session on exception.
   -- We could do the same here, but it's not clear that it's needed.
-  let f :: m a -> m a = id
+  -- let f :: m a -> m a = id
 
-  -- recordVideoInExampleT session $
-  ExampleT (withReaderT (\ctx -> LabelValue (session, ref) :> ctx) $ mapReaderT (mapLoggingT f) readerMonad)
+  pushContext webdriverSession (session, ref) $
+    recordVideoIfConfigured session action
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: (
-  WebDriverMonad m context
+  MonadMask m, MonadBaseControl IO m
+  , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession1 = withSession "session1"
 
 -- | Convenience function. @withSession2 = withSession "session2"@.
 withSession2 :: (
-  WebDriverMonad m context
+  MonadMask m, MonadBaseControl IO m
+  , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
 withSession2 = withSession "session2"
 

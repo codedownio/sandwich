@@ -12,7 +12,7 @@ module Test.Sandwich.WebDriver.Video (
   , endVideoRecording
 
   -- * Wrap an ExampleT to conditionally record video
-  -- , recordVideoInExampleT
+  , recordVideoIfConfigured
 
   -- * Configuration
   , VideoSettings(..)
@@ -31,6 +31,7 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Reader
+import Data.Function
 import Data.String.Interpolate
 import System.Exit
 import System.FilePath
@@ -44,11 +45,8 @@ import Test.Sandwich.WebDriver.Video.Types
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver.Class as W
 import Test.WebDriver.Commands
+import UnliftIO.Directory
 import UnliftIO.Exception
-
--- import Control.Monad.Trans.Control (MonadBaseControl)
--- import Data.Function
--- import UnliftIO.Directory
 
 
 type BaseVideoConstraints context m = (
@@ -136,40 +134,37 @@ endVideoRecording p = do
 
 -- * Wrappers
 
--- recordVideoInExampleT :: (
---   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
---   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx, HasSomeCommandLineOptions ctx
---   ) => String -> ExampleT ctx m a -> ExampleT ctx m a
--- recordVideoInExampleT browser action = do
---   getCurrentFolder >>= \case
---     Nothing -> action
---     Just folder -> do
---       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
---       if | optIndividualVideos -> withVideo folder browser action
---          | optErrorVideos -> withVideoIfException folder browser action
---          | otherwise -> action
+recordVideoIfConfigured :: (
+  BaseVideoConstraints context m, W.WebDriver m, HasSomeCommandLineOptions context
+  ) => String -> m a -> m a
+recordVideoIfConfigured browser action = do
+  getCurrentFolder >>= \case
+    Nothing -> action
+    Just folder -> do
+      SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
+      if | optIndividualVideos -> withVideo folder browser action
+         | optErrorVideos -> withVideoIfException folder browser action
+         | otherwise -> action
 
--- withVideo :: (
---   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
---   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx
---   ) => FilePath -> String -> ExampleT ctx m a -> ExampleT ctx m a
--- withVideo folder browser action = do
---   path <- getPathInFolder folder browser
---   bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
+withVideo :: (
+  BaseVideoConstraints context m, W.WebDriver m
+  ) => FilePath -> String -> m a -> m a
+withVideo folder browser action = do
+  path <- getPathInFolder folder browser
+  bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
 
--- withVideoIfException :: (
---   MonadUnliftIO m, MonadMask m, MonadBaseControl IO m
---   , HasBaseContext ctx, HasWebDriverContext ctx, HasWebDriverSessionContext ctx
---   ) => FilePath -> String -> ExampleT ctx m a -> ExampleT ctx m a
--- withVideoIfException folder browser action = do
---   path <- getPathInFolder folder browser
---   tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording) (const action)) >>= \case
---     Right ret -> removePathForcibly path >> return ret
---     Left e -> throwIO e
+withVideoIfException :: (
+  BaseVideoConstraints context m, W.WebDriver m
+  ) => FilePath -> String -> m a -> m a
+withVideoIfException folder browser action = do
+  path <- getPathInFolder folder browser
+  tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording) (const action)) >>= \case
+    Right ret -> removePathForcibly path >> return ret
+    Left e -> throwIO e
 
--- getPathInFolder :: (MonadUnliftIO m) => [Char] -> String -> m FilePath
--- getPathInFolder folder browser = flip fix (0 :: Integer) $ \loop n -> do
---   let path = folder </> [i|#{browser}_video_#{n}|]
---   liftIO (doesFileExist (path <> videoExtension)) >>= \case
---     False -> return path
---     True -> loop (n + 1)
+getPathInFolder :: (MonadUnliftIO m) => [Char] -> String -> m FilePath
+getPathInFolder folder browser = flip fix (0 :: Integer) $ \loop n -> do
+  let path = folder </> [i|#{browser}_video_#{n}|]
+  liftIO (doesFileExist (path <> videoExtension)) >>= \case
+    False -> return path
+    True -> loop (n + 1)
