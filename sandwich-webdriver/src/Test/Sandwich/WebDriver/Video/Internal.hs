@@ -11,6 +11,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
+import System.FilePath
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
@@ -33,12 +34,12 @@ import UnliftIO.Environment
 
 
 videoExtension :: String
-videoExtension = ".avi"
+videoExtension = "avi"
 
 getVideoArgs :: (
   MonadUnliftIO m, MonadLoggerIO m, MonadMask m
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
-  ) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m CreateProcess
+  ) => FilePath -> (Word, Word, Int, Int) -> VideoSettings -> Maybe XvfbSession -> m (CreateProcess, FilePath)
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
   WebDriver {wdFfmpeg, wdFfmpegToUse} <- getContext webdriver
   ffmpeg <- getOnDemand wdFfmpeg (obtainFfmpeg wdFfmpegToUse)
@@ -57,7 +58,7 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
           & (("XAUTHORITY", xvfbXauthority) :)
           & L.nubBy ((==) `on` fst)
 
-  let videoPath = [i|#{path}#{videoExtension}|]
+  let videoPath = path <.> videoExtension
 
   let cmd = ["-y"
             , "-nostdin"
@@ -66,7 +67,7 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
             , "-i", [i|#{displayNum}.0+#{x},#{y}|]]
             ++ xcbgrabOptions
             ++ [videoPath]
-  return ((proc ffmpeg cmd) { env = Just env })
+  return ((proc ffmpeg cmd) { env = Just env }, videoPath)
 #endif
 
 #ifdef darwin_HOST_OS
@@ -82,7 +83,7 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
                              ++ avfoundationOptions
                              ++ [videoPath]
         Nothing -> error [i|Not launching ffmpeg since OS X screen number couldn't be determined.|]
-  return ((proc ffmpeg cmd) { env = Nothing })
+  return ((proc ffmpeg cmd) { env = Nothing }, videoPath)
 #endif
 
 #ifdef mingw32_HOST_OS
@@ -96,5 +97,5 @@ getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = 
             ]
             ++ gdigrabOptions
             ++ [videoPath]
-  return ((proc ffmpeg cmd) { env = Nothing })
+  return ((proc ffmpeg cmd) { env = Nothing }, videoPath)
 #endif

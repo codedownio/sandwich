@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | Functions for recording videos of browser windows.
 
@@ -11,7 +12,7 @@ module Test.Sandwich.WebDriver.Video (
   , startVideoRecording
   , endVideoRecording
 
-  -- * Wrap an ExampleT to conditionally record video
+  -- * Wrap a test to conditionally record video
   , recordVideoIfConfigured
 
   -- * Configuration
@@ -26,6 +27,7 @@ module Test.Sandwich.WebDriver.Video (
   , BaseVideoConstraints
   ) where
 
+import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -70,7 +72,7 @@ startFullScreenVideoRecording path videoSettings = do
     Nothing -> do
       (_x, _y, w, h) <- getScreenResolution sess
       return (fromIntegral w, fromIntegral h)
-  startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings
+  fst <$> startVideoRecording path (fromIntegral width, fromIntegral height, 0, 0) videoSettings
 
 -- | Wrapper around 'startVideoRecording' which uses WebDriver to find the rectangle corresponding to the browser.
 startBrowserVideoRecording :: (
@@ -79,7 +81,7 @@ startBrowserVideoRecording :: (
   -- | Output path
   => FilePath
   -> VideoSettings
-  -> m ProcessHandle
+  -> m (ProcessHandle, [FilePath])
 startBrowserVideoRecording path videoSettings = do
   (x, y) <- getWindowPos
   (w, h) <- getWindowSize
@@ -94,13 +96,13 @@ startVideoRecording :: (
   -- | Rectangle to record, specified as @(width, height, x, y)@
   -> (Word, Word, Int, Int)
   -> VideoSettings
-  -- | Returns handle to video process
-  -> m ProcessHandle
+  -- | Returns handle to video process and list of files created
+  -> m (ProcessHandle, [FilePath])
 startVideoRecording path (width, height, x, y) vs = do
   sess <- getContext webdriver
   let maybeXvfbSession = getXvfbSession sess
 
-  cp' <- getVideoArgs path (width, height, x, y) vs maybeXvfbSession
+  (cp', videoPath) <- getVideoArgs path (width, height, x, y) vs maybeXvfbSession
   let cp = cp' { create_group = True }
 
   case cmdspec cp of
@@ -108,12 +110,16 @@ startVideoRecording path (width, height, x, y) vs = do
     RawCommand p args -> debug [i|ffmpeg command: #{p} #{unwords args}|]
 
   case logToDisk vs of
-    False -> createProcessWithLogging cp
+    False -> do
+      p <- createProcessWithLogging cp
+      return (p, [videoPath])
     True -> do
-      liftIO $ bracket (openFile (path <.> "stdout" <.> "log") AppendMode) hClose $ \hout ->
-        bracket (openFile (path <.> "stderr" <.> "log") AppendMode) hClose $ \herr -> do
+      let stdoutPath = path <.> "stdout" <.> "log"
+      let stderrPath = path <.> "stderr" <.> "log"
+      liftIO $ bracket (openFile stdoutPath AppendMode) hClose $ \hout ->
+        bracket (openFile stderrPath AppendMode) hClose $ \herr -> do
           (_, _, _, p) <- createProcess (cp { std_out = UseHandle hout, std_err = UseHandle herr })
-          return p
+          return (p, [videoPath, stdoutPath, stderrPath])
 
 -- | Gracefully stop the 'ProcessHandle' returned by 'startVideoRecording'.
 endVideoRecording :: (
@@ -151,16 +157,22 @@ withVideo :: (
   ) => FilePath -> String -> m a -> m a
 withVideo folder browser action = do
   path <- getPathInFolder folder browser
-  bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
+  bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording . fst) (const action)
 
 withVideoIfException :: (
   BaseVideoConstraints context m, W.WebDriver m
   ) => FilePath -> String -> m a -> m a
 withVideoIfException folder browser action = do
   path <- getPathInFolder folder browser
-  tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings) (endVideoRecording) (const action)) >>= \case
-    Right ret -> removePathForcibly path >> return ret
-    Left e -> throwIO e
+  tryAny (bracket (startBrowserVideoRecording path defaultVideoSettings)
+                  (endVideoRecording . fst)
+                  (\(_p, pathsToRemove) -> (pathsToRemove, ) <$> action))
+    >>= \case
+      Right (pathsToRemove, ret) -> do
+        info [i|pathsToRemove: #{pathsToRemove}|]
+        forM_ pathsToRemove removePathForcibly
+        return ret
+      Left e -> throwIO e
 
 getPathInFolder :: (MonadUnliftIO m) => [Char] -> String -> m FilePath
 getPathInFolder folder browser = flip fix (0 :: Integer) $ \loop n -> do
