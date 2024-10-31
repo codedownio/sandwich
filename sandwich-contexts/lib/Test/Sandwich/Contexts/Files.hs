@@ -74,6 +74,7 @@ module Test.Sandwich.Contexts.Files (
   -- * Types
   , EnvironmentFile(..)
   , HasFile
+  , FileValue
   ) where
 
 import Control.Monad.Catch (MonadMask)

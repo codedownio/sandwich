@@ -11,6 +11,7 @@ module Test.Sandwich.WebDriver.Types (
   , ContextWithWebdriverDeps
   , ContextWithBaseDeps
   , WebDriverMonad
+  , WebDriverSessionMonad
 
   -- * Context aliases
   , HasBrowserDependencies
@@ -25,6 +26,7 @@ module Test.Sandwich.WebDriver.Types (
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import GHC.Stack
@@ -65,11 +67,12 @@ type ContextWithBaseDeps context =
   -- | Browser dependencies
   LabelValue "browserDependencies" BrowserDependencies
   -- | Java
-  :> LabelValue "file-java" (EnvironmentFile "java")
+  :> FileValue "java"
   -- | Selenium
-  :> LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar")
+  :> FileValue "selenium.jar"
   -- | Base context
   :> context
 
 type BaseMonad m context = (HasCallStack, MonadUnliftIO m, MonadMask m, HasBaseContext context)
 type WebDriverMonad m context = (HasCallStack, MonadUnliftIO m, HasWebDriverContext context)
+type WebDriverSessionMonad m context = (WebDriverMonad m context, MonadReader context m, HasWebDriverSessionContext context)

@@ -15,6 +15,8 @@ module Test.Sandwich.Contexts.Files.Types (
   , EnvironmentFile(..)
   , HasFile
   , mkFileLabel
+
+  , FileValue
   ) where
 
 import GHC.TypeLits
@@ -41,3 +43,6 @@ type HasFile context a = HasLabel context (AppendSymbol "file-" a) (EnvironmentF
 
 mkFileLabel :: Label (AppendSymbol "file-" a) (EnvironmentFile a)
 mkFileLabel = Label
+
+-- | Shorthand for 'LabelValue's containing 'EnvironmentFile's.
+type FileValue file = LabelValue (AppendSymbol "file-" file) (EnvironmentFile file)

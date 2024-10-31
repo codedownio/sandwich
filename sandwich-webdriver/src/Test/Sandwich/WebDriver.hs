@@ -56,6 +56,7 @@ module Test.Sandwich.WebDriver (
   , ContextWithBaseDeps
   , ContextWithWebdriverDeps
   , WebDriverMonad
+  , WebDriverSessionMonad
 
   -- * On demand options
   , OnDemandOptions
@@ -216,14 +217,20 @@ withSession session action = do
 withSession1 :: (
   MonadMask m, MonadBaseControl IO m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
-  ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
+  )
+  -- | Wrapped action
+  => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
+  -> ExampleT context m a
 withSession1 = withSession "session1"
 
 -- | Convenience function. @withSession2 = withSession "session2"@.
 withSession2 :: (
   MonadMask m, MonadBaseControl IO m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
-  ) => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a -> ExampleT context m a
+  )
+  -- | Wrapped action
+  => ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
+  -> ExampleT context m a
 withSession2 = withSession "session2"
 
 -- | Get all existing session names.

@@ -6,19 +6,19 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Reader
 import qualified Data.Map as M
 import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Internal.Util
+import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
 
--- | Close the given sessions.
+-- | Close the given session.
 closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => Session -> WebDriver -> m ()
 closeSession session (WebDriver {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
@@ -43,8 +43,7 @@ closeAllSessions = closeAllSessionsExcept []
 
 -- | Close the current session.
 closeCurrentSession :: (
-  HasCallStack, MonadLogger m, MonadUnliftIO m
-  , MonadReader context m, HasLabel context "webdriver" WebDriver, HasLabel context "webdriverSession" WebDriverSession
+  MonadLogger m, WebDriverSessionMonad m context
   ) => m ()
 closeCurrentSession = do
   webDriver <- getContext webdriver

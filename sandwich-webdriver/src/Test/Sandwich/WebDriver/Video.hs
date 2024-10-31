@@ -24,6 +24,8 @@ module Test.Sandwich.WebDriver.Video (
   , defaultGdigrabOptions
 
   -- * Types
+  , VideoProcess
+  , videoProcessProcess
   , BaseVideoConstraints
   ) where
 
@@ -56,7 +58,9 @@ type BaseVideoConstraints context m = (
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
   )
 
+-- | A type representing a live video recording process
 data VideoProcess = VideoProcess {
+  -- | The process handle
   videoProcessProcess :: ProcessHandle
   , videoProcessCreatedFiles :: [FilePath]
   }
@@ -147,9 +151,17 @@ endVideoRecording (VideoProcess { videoProcessProcess=p }) = do
 
 -- * Wrappers
 
+-- | Record video around a given action, if configured to do so in the 'CommandLineWebdriverOptions'.
+--
+-- This can be used to record video around individual tests. It can also keep videos only in case of
+-- exceptions, deleting them on successful runs.
 recordVideoIfConfigured :: (
   BaseVideoConstraints context m, W.WebDriver m, HasSomeCommandLineOptions context
-  ) => String -> m a -> m a
+  )
+  -- | Session name
+  => String
+  -> m a
+  -> m a
 recordVideoIfConfigured browser action = do
   getCurrentFolder >>= \case
     Nothing -> action
