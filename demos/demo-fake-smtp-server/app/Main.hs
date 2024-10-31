@@ -18,7 +18,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Waits
+import Test.Sandwich.Waits
 import UnliftIO.Process
 
 

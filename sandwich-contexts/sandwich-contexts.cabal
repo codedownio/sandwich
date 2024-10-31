@@ -24,7 +24,6 @@ library
       Test.Sandwich.Contexts.Types.Network
       Test.Sandwich.Contexts.Types.S3
       Test.Sandwich.Contexts.Util.Ports
-      Test.Sandwich.Contexts.Waits
   other-modules:
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.Files.Types

@@ -52,7 +52,7 @@ import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Waits
+import Test.Sandwich.Waits
 import UnliftIO.Process
 
 

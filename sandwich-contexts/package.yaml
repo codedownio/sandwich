@@ -42,7 +42,6 @@ library:
   - Test.Sandwich.Contexts.Types.Network
   - Test.Sandwich.Contexts.Types.S3
   - Test.Sandwich.Contexts.Util.Ports
-  - Test.Sandwich.Contexts.Waits
   dependencies:
   - aeson
   - conduit

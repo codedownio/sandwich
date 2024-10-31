@@ -23,7 +23,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Run
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Waits
+import Test.Sandwich.Waits
 import UnliftIO.Process
 
 

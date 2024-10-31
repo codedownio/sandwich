@@ -42,6 +42,7 @@ library
       Test.Sandwich.Internal
       Test.Sandwich.TH
       Test.Sandwich.Util.Process
+      Test.Sandwich.Waits
   other-modules:
       Test.Sandwich.ArgParsing
       Test.Sandwich.Formatters.Common.Count

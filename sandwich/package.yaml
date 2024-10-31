@@ -91,6 +91,7 @@ library:
   - Test.Sandwich.Internal
   - Test.Sandwich.TH
   - Test.Sandwich.Util.Process
+  - Test.Sandwich.Waits
   when:
   - condition: "os(windows)"
     dependencies:

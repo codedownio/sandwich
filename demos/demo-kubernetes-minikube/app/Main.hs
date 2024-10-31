@@ -23,7 +23,7 @@ import Test.Sandwich.Contexts.Kubernetes.MinioOperator
 import Test.Sandwich.Contexts.Kubernetes.MinioS3Server
 import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich.Contexts.Waits
+import Test.Sandwich.Waits
 import UnliftIO.Environment
 import UnliftIO.Process
 

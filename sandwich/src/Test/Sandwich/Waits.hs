@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 
 {-|
@@ -9,21 +10,18 @@ It can be very useful in tests to retry something, with a reasonable backoff pol
 -}
 
 
-module Test.Sandwich.Contexts.Waits (
+module Test.Sandwich.Waits (
   -- * General waits
   waitUntil
   , waitUntil'
   , defaultRetryPolicy
   ) where
 
-import Control.Monad
 import Control.Monad.IO.Unlift
-import Data.Maybe
 import Data.String.Interpolate
 import Data.Time
 import Data.Typeable
 import GHC.Stack
-import Relude
 import System.Timeout (Timeout)
 import Test.Sandwich
 import UnliftIO.Exception
