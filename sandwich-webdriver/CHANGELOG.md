@@ -2,6 +2,19 @@
 
 # Unreleased
 
+# 0.3.0.0
+
+* BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`. We also remove `MonadThrow` constraints, relying only on `MonadIO` for throwing exceptions.
+* Fix window positioning commands to use window.devicePixelRatio.
+* Add support for introducing Selenium dependencies using Nix with `sandwich-contexts`.
+* Improve Haddocks and simplify module structure.
+* Export `getDownloadDirectory` accessor for `WebDriver`.
+* Be able to obtain dependencies like `ffmpeg` and `Xvfb` on demand.
+* Clean up dependencies and fix some warnings on MacOS and Windows.
+* Be able to pass a custom Firefox profile in `Capabilities`.
+* Remove `hoistExample` helper which didn't belong in this package.
+* Support video recording flags `--error-videos`/`--individual-videos`.
+
 # 0.2.3.1
 
 * Binary fetching: don't create the toolsRoot directory unless necessary.

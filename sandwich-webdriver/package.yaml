@@ -1,5 +1,5 @@
 name:                sandwich-webdriver
-version:             0.2.3.1
+version:             0.3.0.0
 github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
@@ -35,8 +35,8 @@ dependencies:
 - random
 - retry
 - safe
-- sandwich >= 0.1.0.3
-- sandwich-contexts
+- sandwich >= 0.3.0.0
+- sandwich-contexts >= 0.3.0.0
 - string-interpolate
 - text
 - time
