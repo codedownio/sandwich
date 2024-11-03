@@ -6,11 +6,12 @@ cabal-version: 1.12
 
 name:           sandwich-contexts
 version:        0.3.0.0
-synopsis:       Sandwich test contexts
-description:    Please see README.md
+synopsis:       Contexts for the Sandwich test library
+description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
 copyright:      2024 Tom McLaughlin
+license:        BSD3
 build-type:     Simple
 
 library
