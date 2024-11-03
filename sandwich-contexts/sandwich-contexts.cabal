@@ -69,7 +69,7 @@ library
     , relude
     , retry
     , safe
-    , sandwich
+    , sandwich >=0.3.0.0
     , streaming-commons
     , string-interpolate
     , temporary
@@ -120,7 +120,7 @@ test-suite tests
     , filepath
     , postgresql-simple
     , relude
-    , sandwich
+    , sandwich >=0.3.0.0
     , sandwich-contexts
     , string-interpolate
     , unliftio
