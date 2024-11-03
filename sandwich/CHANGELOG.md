@@ -5,7 +5,7 @@
 * Make createProcessWithLogging, readCreateProcessWithLogging etc. log with the callstack from the line where they're called (and not an internal line).
 * Support GHC 9.8
 * BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`. We also remove `MonadThrow` constraints, relying only on `MonadIO` for throwing exceptions.
-* Adding support for `sandwich-contexts`, which is released with this version.
+* Add support for `sandwich-contexts`, which is released with this version.
 * Add more `HasCallStack` to introduce nodes.
 * Add `getContextMaybe`, an optional version of `getContext`.
 * Fix an issue with name collisions of test tree folders.
@@ -13,6 +13,7 @@
 * Tweak some default visibility thresholds.
 * Improve openFileExplorerFolderPortable on Windows.
 * Add `waitUntil` function in `Test.Sandwich.Waits`.
+
 ## 0.2.2.0
 
 * Add primed versions of createProcessWithLogging etc. with customizable log level
