@@ -53,7 +53,7 @@ library
   build-depends:
       HTTP
     , aeson
-    , base
+    , base >=4.11 && <5
     , conduit
     , conduit-extra
     , containers
@@ -117,7 +117,7 @@ test-suite tests
   build-tool-depends:
       sandwich:sandwich-discover
   build-depends:
-      base
+      base >=4.11 && <5
     , filepath
     , postgresql-simple
     , relude
