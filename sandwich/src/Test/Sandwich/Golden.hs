@@ -2,6 +2,8 @@
 
 -- This module is based on Test.Hspec.Golden from hspec-golden-0.2.0.0, which is MIT licensed.
 
+-- | Functions for [golden testing](https://ro-che.info/articles/2017-12-04-golden-tests).
+
 module Test.Sandwich.Golden (
   -- * Main test function
   golden
