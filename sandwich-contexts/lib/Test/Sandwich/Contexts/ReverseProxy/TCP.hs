@@ -6,8 +6,6 @@
 
 module Test.Sandwich.Contexts.ReverseProxy.TCP where
 
-#ifndef mingw32_HOST_OS
-
 import Control.Monad.IO.Unlift
 import Data.Conduit
 import qualified Data.Conduit.Network as DCN
@@ -39,5 +37,3 @@ withProxyToUnixSocket socketPath f = do
       concurrently_
         (runConduit $ DCN.appSource appdata .| DCN.appSink appdataServer)
         (runConduit $ DCN.appSource appdataServer .| DCN.appSink appdata)
-
-#endif

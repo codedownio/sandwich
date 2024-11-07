@@ -22,7 +22,6 @@ test process and then run a proxy to forward packets to the Postgres server's Un
 -}
 
 module Test.Sandwich.Contexts.PostgreSQL (
-#ifndef mingw32_HOST_OS
   -- * Raw PostgreSQL via Nix (TCP socket)
   introducePostgresViaNix
   , withPostgresViaNix
@@ -47,10 +46,8 @@ module Test.Sandwich.Contexts.PostgreSQL (
 
   -- * Re-exports
   , NetworkAddress(..)
-#endif
   ) where
 
-#ifndef mingw32_HOST_OS
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -379,5 +376,3 @@ waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p) = do
   -- waitForSimpleQuery pc
 
   return pc
-
-#endif
