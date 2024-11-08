@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -22,11 +23,14 @@ import Data.String.Interpolate
 import Data.Time
 import Data.Typeable
 import GHC.Stack
-import System.Timeout (Timeout)
 import Test.Sandwich
 import UnliftIO.Exception
 import UnliftIO.Retry
 import UnliftIO.Timeout
+
+#if MIN_VERSION_base(4,14,0)
+import System.Timeout (Timeout)
+#endif
 
 
 -- | Keep trying an action up to a timeout while it fails with a 'FailureReason'.
@@ -60,11 +64,15 @@ waitUntil' policy timeInSeconds action = do
       if | (diffUTCTime now startTime) > thresh -> return DontRetry
          | otherwise -> return ConsultPolicy
 
+    -- We can only catch the timeout for base >= 4.14.0.0, since before that the Timeout exception wasn't exported
     rethrowTimeoutExceptionWithCallStack :: (HasCallStack) => m a -> m a
     rethrowTimeoutExceptionWithCallStack = handleSyncOrAsync $ \(e@(SomeException inner)) ->
-      if | Just (_ :: Timeout) <- fromExceptionUnwrap e -> do
-             throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
-         | Just (SyncExceptionWrapper (cast -> Just (SomeException (cast -> Just (SomeAsyncException (cast -> Just (_ :: Timeout))))))) <- cast inner -> do
-             throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
-         | otherwise -> do
-             throwIO e
+      if
+#if !MIN_VERSION_base(4,13,0)
+        | Just (_ :: Timeout) <- fromExceptionUnwrap e -> do
+            throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
+        | Just (SyncExceptionWrapper (cast -> Just (SomeException (cast -> Just (SomeAsyncException (cast -> Just (_ :: Timeout))))))) <- cast inner -> do
+            throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
+#endif
+        | otherwise -> do
+            throwIO e
