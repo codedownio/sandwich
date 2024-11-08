@@ -222,7 +222,7 @@ runInAsync node ctx action = do
                 whenJust baseContextRunRoot $ \runRoot -> do
                   let symlinkBaseName = case runTreeLoc of
                         Nothing -> takeFileName dir
-                        Just loc -> [i|#{srcLocFile loc}:#{srcLocStartLine loc}_#{takeFileName dir}|]
+                        Just loc -> [i|#{srcLocFile loc}_line#{srcLocStartLine loc}_#{takeFileName dir}|]
                   let symlinkPath = errorsDir </> (nodeToFolderName symlinkBaseName 9999999 runTreeId)
 
                   -- Delete the symlink if it's already present. This can happen when re-running
