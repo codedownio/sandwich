@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Test.Sandwich.Formatters.TerminalUI.CrossPlatform (
   openFileExplorerFolderPortable
@@ -19,6 +18,10 @@ openFileExplorerFolderPortable folder = do
   findExecutable "explorer.exe" >>= \case
     Just p -> void $ readCreateProcessWithExitCode (proc p [folder]) ""
     Nothing -> return ()
+#elif darwin_HOST_OS
+openFileExplorerFolderPortable :: String -> IO ()
+openFileExplorerFolderPortable folder =
+  void $ readCreateProcessWithExitCode (proc "open" [folder]) ""
 #else
 openFileExplorerFolderPortable :: String -> IO ()
 openFileExplorerFolderPortable folder =
