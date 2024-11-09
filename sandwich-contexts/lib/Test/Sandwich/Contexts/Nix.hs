@@ -117,15 +117,15 @@ data NixpkgsDerivation =
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
--- | Nixpkgs release 24.05, accessed 6\/10\/2024.
+-- | Nixpkgs release 24.05, accessed 11\/9\/2024.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev release-24.05
 nixpkgsRelease2405 :: NixpkgsDerivation
 nixpkgsRelease2405 = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "869cab745a802b693b45d193b460c9184da671f3"
-  , nixpkgsDerivationSha256 = "sha256-zliqz7ovpxYdKIK+GlWJZxifXsT9A1CHNQhLxV0G1Hc="
+  , nixpkgsDerivationRev = "bb824c634c812feede9d398c000526401028c0e7"
+  , nixpkgsDerivationSha256 = "sha256-xYnWv9kyJyF8rEZ1uJaSek2fmaIowkk/ovE6+MwcP2E="
   , nixpkgsDerivationAllowUnfree = False
   }
 
