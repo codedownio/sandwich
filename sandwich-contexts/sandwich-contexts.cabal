@@ -31,7 +31,6 @@ library
       Test.Sandwich.Contexts.ReverseProxy.TCP
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Nix
-      Test.Sandwich.Contexts.Util.SocketUtil
       Test.Sandwich.Contexts.Util.UUID
       Paths_sandwich_contexts
   hs-source-dirs:
