@@ -68,7 +68,8 @@ import Test.Sandwich.Contexts.Container
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.ReverseProxy.TCP
 import Test.Sandwich.Contexts.Types.Network
-import Test.Sandwich.Contexts.Util.UUID
+import Test.Sandwich.Contexts.Util.UUID (makeUUID)
+import Test.Sandwich.Contexts.UnixSocketPath
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.Exception
@@ -213,67 +214,68 @@ withPostgresUnixSocket postgresBinDir username password database action = do
   let logfileName = baseDir </> "logfile"
 
   -- The Unix socket can't live in the sandwich test tree because it has an absurdly short length
-  -- requirement (107 bytes on Linux). See
+  -- requirement (107 bytes on Linux, 104 bytes on macOS). See
   -- https://unix.stackexchange.com/questions/367008/why-is-socket-path-length-limited-to-a-hundred-chars
-  withSystemTempDirectory "postgres-nix-unix-socks" $ \unixSockDir -> do
-    bracket
-      (do
-          -- Run initdb
-          baseEnv <- getEnvironment
-          let env = ("LC_ALL", "C")
-                  : ("LC_CTYPE", "C")
-                  : baseEnv
-          withTempFile baseDir "pwfile" $ \pwfile h -> do
-            liftIO $ T.hPutStrLn h password
-            hClose h
-            createProcessWithLogging ((proc (postgresBinDir </> "initdb") [dbDirName
-                                                                            , "--username", toString username
-                                                                            , "-A", "md5"
-                                                                            , "--pwfile", pwfile
-                                                                            ]) {
-                                         cwd = Just dir
-                                         , env = Just env
-                                         })
-              >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  withUnixSocketDirectory "postgres-sock" 20 $ \unixSockDir -> bracket
+    (do
+        info [i|Unix sock dir: #{unixSockDir}|]
 
-          -- Turn off the TCP interface; we'll have it listen solely on a Unix socket
-          withFile (dir </> dbDirName </> "postgresql.conf") AppendMode $ \h -> liftIO $ do
-            T.hPutStr h "\n"
-            T.hPutStrLn h [i|listen_addresses=''|]
-
-          -- Run pg_ctl to start the DB
-          createProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
-                                        "-D", dbDirName
-                                        , "-l", logfileName
-                                        , "-o", [i|--unix_socket_directories='#{unixSockDir}'|]
-                                        , "start" , "--wait"
-                                        ]) { cwd = Just dir })
+        -- Run initdb
+        baseEnv <- getEnvironment
+        let env = ("LC_ALL", "C")
+                : ("LC_CTYPE", "C")
+                : baseEnv
+        withTempFile baseDir "pwfile" $ \pwfile h -> do
+          liftIO $ T.hPutStrLn h password
+          hClose h
+          createProcessWithLogging ((proc (postgresBinDir </> "initdb") [dbDirName
+                                                                          , "--username", toString username
+                                                                          , "-A", "md5"
+                                                                          , "--pwfile", pwfile
+                                                                          ]) {
+                                       cwd = Just dir
+                                       , env = Just env
+                                       })
             >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-          -- Create the default db
-          createProcessWithLogging ((proc (postgresBinDir </> "psql") [
-                                        -- "-h", unixSockDir
-                                        -- , "--username", toString postgresNixUsername
-                                        [i|postgresql://#{username}:#{password}@/?host=#{unixSockDir}|]
-                                        , "-c", [i|CREATE DATABASE #{database};|]
-                                        ]) { cwd = Just dir })
-            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+        -- Turn off the TCP interface; we'll have it listen solely on a Unix socket
+        withFile (dir </> dbDirName </> "postgresql.conf") AppendMode $ \h -> liftIO $ do
+          T.hPutStr h "\n"
+          T.hPutStrLn h [i|listen_addresses=''|]
+
+        -- Run pg_ctl to start the DB
+        createProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
+                                      "-D", dbDirName
+                                      , "-l", logfileName
+                                      , "-o", [i|--unix_socket_directories='#{unixSockDir}'|]
+                                      , "start" , "--wait"
+                                      ]) { cwd = Just dir })
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+        -- Create the default db
+        createProcessWithLogging ((proc (postgresBinDir </> "psql") [
+                                      -- "-h", unixSockDir
+                                      -- , "--username", toString postgresNixUsername
+                                      [i|postgresql://#{username}:#{password}@/?host=#{unixSockDir}|]
+                                      , "-c", [i|CREATE DATABASE #{database};|]
+                                      ]) { cwd = Just dir })
+          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 
-          files <- listDirectory unixSockDir
-          filterM ((isSocket <$>) . liftIO . getFileStatus) [unixSockDir </> f | f <- files] >>= \case
-            [f] -> pure f
-            [] -> expectationFailure [i|Couldn't find Unix socket for PostgreSQL server (check output and logfile for errors).|]
-            xs -> expectationFailure [i|Found multiple Unix sockets for PostgreSQL server, not sure which one to use: #{xs}|]
-      )
-      (\_ -> do
-          void $ readCreateProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
-                                                   "-D", dbDirName
-                                                   , "-l", logfileName
-                                                   , "stop" , "--wait"
-                                                   ]) { cwd = Just dir }) ""
-      )
-      (\socketPath -> action socketPath)
+        files <- listDirectory unixSockDir
+        filterM ((isSocket <$>) . liftIO . getFileStatus) [unixSockDir </> f | f <- files] >>= \case
+          [f] -> pure f
+          [] -> expectationFailure [i|Couldn't find Unix socket for PostgreSQL server (check output and logfile for errors).|]
+          xs -> expectationFailure [i|Found multiple Unix sockets for PostgreSQL server, not sure which one to use: #{xs}|]
+    )
+    (\_ -> do
+        void $ readCreateProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
+                                                 "-D", dbDirName
+                                                 , "-l", logfileName
+                                                 , "stop" , "--wait"
+                                                 ]) { cwd = Just dir }) ""
+    )
+    action
 
 -- * Container
 

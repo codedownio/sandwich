@@ -29,6 +29,7 @@ library
       Test.Sandwich.Contexts.FakeSmtpServer.Derivation
       Test.Sandwich.Contexts.Files.Types
       Test.Sandwich.Contexts.ReverseProxy.TCP
+      Test.Sandwich.Contexts.UnixSocketPath
       Test.Sandwich.Contexts.Util.Aeson
       Test.Sandwich.Contexts.Util.Nix
       Test.Sandwich.Contexts.Util.UUID
