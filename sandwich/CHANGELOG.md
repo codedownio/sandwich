@@ -1,5 +1,9 @@
 # Changelog for sandwich
 
+## 0.3.0.1
+
+* Fix openFileExplorerFolderPortable on macOS
+
 ## 0.3.0.0
 
 * Make createProcessWithLogging, readCreateProcessWithLogging etc. log with the callstack from the line where they're called (and not an internal line).

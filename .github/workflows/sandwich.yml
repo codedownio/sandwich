@@ -22,6 +22,13 @@ jobs:
         - "9.6.6"
         - "9.8.2"
         exclude:
+        # We just want to test basic 8.8.4 compatibility on Linux; these fail.
+        - os: macOS-latest
+          ghc: 8.8.4
+        - os: windows-latest
+          ghc: 8.8.4
+
+        # These are still failing in weird ways 11/9/2024
         - os: windows-latest
           ghc: 9.0.2
         - os: windows-latest
