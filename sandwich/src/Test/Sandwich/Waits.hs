@@ -68,7 +68,7 @@ waitUntil' policy timeInSeconds action = do
     rethrowTimeoutExceptionWithCallStack :: (HasCallStack) => m a -> m a
     rethrowTimeoutExceptionWithCallStack = handleSyncOrAsync $ \(e@(SomeException inner)) ->
       if
-#if !MIN_VERSION_base(4,13,0)
+#if MIN_VERSION_base(4,14,0)
         | Just (_ :: Timeout) <- fromExceptionUnwrap e -> do
             throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
         | Just (SyncExceptionWrapper (cast -> Just (SomeException (cast -> Just (SomeAsyncException (cast -> Just (_ :: Timeout))))))) <- cast inner -> do

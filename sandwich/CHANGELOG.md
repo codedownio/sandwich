@@ -1,8 +1,13 @@
 # Changelog for sandwich
 
+## Unreleased
+
+* Re-fix compatibility for base < 4.14.0.0
+
 ## 0.3.0.1
 
 * Fix openFileExplorerFolderPortable on macOS
+* Fix compatibility for base < 4.14.0.0
 
 ## 0.3.0.0
 
