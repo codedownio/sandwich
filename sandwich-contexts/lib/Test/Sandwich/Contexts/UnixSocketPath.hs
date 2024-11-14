@@ -17,7 +17,7 @@ import UnliftIO.Temporary
 -- | The longest allowed path for a Unix socket on the current system.
 maxUnixSocketLength :: Int
 #ifdef mingw32_HOST_OS
-maxUnixSocketLength = Infinity
+maxUnixSocketLength = maxBound
 #elif darwin_host_os
 maxUnixSocketLength = 103 -- macOS: 104 with null terminator
 #else
