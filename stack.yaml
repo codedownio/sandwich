@@ -45,6 +45,7 @@ packages:
 - ./demos/demo-kubernetes-seaweedfs
 - ./demos/demo-landing
 - ./demos/demo-minio
+- ./demos/demo-nix
 - ./demos/demo-nix-binary
 - ./demos/demo-paralleln
 - ./demos/demo-postgres

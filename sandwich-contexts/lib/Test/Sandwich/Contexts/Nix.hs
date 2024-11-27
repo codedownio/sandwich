@@ -42,7 +42,7 @@ module Test.Sandwich.Contexts.Nix (
   , buildNixCallPackageDerivation
   , buildNixCallPackageDerivation'
 
-  -- * Nixpkgs releases
+  -- * Nixpkgs releases #releases#
   , nixpkgsReleaseDefault
   , nixpkgsRelease2405
   , nixpkgsRelease2311

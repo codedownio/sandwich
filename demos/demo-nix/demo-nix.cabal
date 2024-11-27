@@ -1,0 +1,37 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           demo-nix
+version:        0.1.0.0
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+
+executable demo-nix
+  main-is: Main.hs
+  other-modules:
+      Paths_demo_nix
+  hs-source-dirs:
+      app
+  default-extensions:
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+      NamedFieldPuns
+      OverloadedStrings
+      QuasiQuotes
+      RecordWildCards
+      ScopedTypeVariables
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , filepath
+    , sandwich
+    , sandwich-contexts
+    , sandwich-demos
+    , string-interpolate
+    , unliftio
+  default-language: Haskell2010

@@ -1,6 +1,6 @@
 ---
 id: sandwich-quickcheck
-title: QuickCheck integration
+title: QuickCheck
 ---
 
 You can use `sandwich-quickcheck` (provided as a separate package) to easily integrate integrate [QuickCheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html) tests into the test tree.

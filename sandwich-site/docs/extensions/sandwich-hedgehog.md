@@ -1,6 +1,6 @@
 ---
 id: sandwich-hedgehog
-title: Hedgehog integration
+title: Hedgehog
 ---
 
 You can use `sandwich-hedgehog` (provided as a separate package) to easily integrate integrate [Hedgehog](https://hedgehog.qa/) tests into the test tree.

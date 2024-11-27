@@ -30,6 +30,9 @@ const sidebars: SidebarsConfig = {
 
     { label: "Context libraries", type: "category", items: [
       "context-libraries/sandwich-contexts",
+      "context-libraries/sandwich-contexts-docker",
+      "context-libraries/sandwich-contexts-kubernetes",
+      "context-libraries/sandwich-contexts-minio",
     ] },
   ],
 };
