@@ -211,7 +211,7 @@ introduceNixContext'' nodeOptions nixpkgsDerivation = introduce' nodeOptions "In
 -- These packages are mashed together using the Nix @symlinkJoin@ function. Their binaries will generally
 -- be found in "\<environment path\>\/bin".
 introduceNixEnvironment :: (
-  HasBaseContextMonad context m, HasNixContext context
+  HasBaseContext context, HasNixContext context
   , MonadUnliftIO m
   )
   -- | List of package names to include in the Nix environment
@@ -222,7 +222,7 @@ introduceNixEnvironment = introduceNixEnvironment' (defaultNodeOptions { nodeOpt
 
 -- | Same as 'introduceNixEnvironment', but allows passing custom 'NodeOptions'.
 introduceNixEnvironment' :: (
-  HasBaseContextMonad context m, HasNixContext context
+  HasBaseContext context, HasNixContext context
   , MonadUnliftIO m
   )
   -- | Custom 'NodeOptions'
