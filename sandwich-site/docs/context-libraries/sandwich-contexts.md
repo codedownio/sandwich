@@ -27,3 +27,5 @@ This test will log the various binaries that are available, such as `emacs`, `em
 ## File contexts
 
 The [Test.Sandwich.Contexts.Files](https://hackage.haskell.org/package/sandwich-contexts/docs/Test-Sandwich-Contexts-Files.html) module allows you to introduce named files as contexts.
+
+## PostgreSQL contexts

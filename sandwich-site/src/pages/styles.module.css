@@ -19,10 +19,7 @@
 }
 
 .carouselContainer {
-  width: 80%;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 2em;
+
 }
 
 .buttons {
@@ -46,7 +43,6 @@
 .carouselHeading {
   font-size: 1.2em;
   font-weight: bold;
-  color: white;
 }
 
 .section {
