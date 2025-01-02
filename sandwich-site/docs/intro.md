@@ -5,9 +5,44 @@ sidebar_label: Introduction
 slug: /
 ---
 
-import useBaseUrl from '@docusaurus/useBaseUrl';
+import useBaseUrl from "@docusaurus/useBaseUrl";
+import "react-responsive-carousel/lib/styles/carousel.min.css";
+import { Carousel } from "react-responsive-carousel";
 
-Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/). This section will show some of its features.
+import styles from "../src/pages/styles.module.css";
+
+Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/).
+
+Sandwich has a number of powerful features and integrations, such as:
+* Interactive terminal UI interface for viewing test progress and results.
+* Built-in [profiling](/docs/profiling) support.
+* Integrations such as [Hedgehog](/docs/extensions/sandwich-hedgehog), [QuickCheck](/docs/extensions/sandwich-quickcheck), and [Selenium](/docs/extensions/sandwich-webdriver).
+* Context libraries that allow you to introduce things like [databases](/docs/context-libraries/sandwich-contexts#postgresql-contexts), [Docker containers](#TODO), or even full [Kubernetes clusters](/docs/context-libraries/sandwich-contexts-kubernetes).
+
+<div className={styles.carouselContainer}>
+  <Carousel showThumbs={false}
+            dynamicHeight={true}
+            statusFormatter={(current, total) => `${current} of ${total}`}>
+    <div>
+      <div className={styles.carouselHeading}>Terminal UI interface</div>
+      <img src={useBaseUrl("/img/basic.gif")}
+           style={{ paddingBottom: "2.05em" }} />
+    </div>
+    <div>
+      <div className={styles.carouselHeading}>Jump to failure in editor</div>
+      <img src={useBaseUrl("/img/jump_to_error.gif")}
+           style={{ paddingBottom: "2.05em" }} />
+    </div>
+    <div>
+      <div className={styles.carouselHeading}>Slack integration</div>
+      <img src={useBaseUrl("/img/slack.gif")} />
+    </div>
+    <div>
+      <div className={styles.carouselHeading}>Timing and flamegraphs</div>
+      <img src={useBaseUrl("/img/timing_landing.gif")} />
+    </div>
+  </Carousel>
+</div>
 
 ## Basic tests
 
