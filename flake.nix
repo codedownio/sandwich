@@ -1,15 +1,11 @@
 {
   description = "Sandwich";
 
-  inputs.gitignore = {
-    url = "github:hercules-ci/gitignore.nix";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
   inputs.nixpkgsMaster.url = "github:NixOS/nixpkgs/master";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
-  outputs = { self, gitignore, nixpkgs, nixpkgsMaster, flake-utils }:
+  outputs = { self, nixpkgs, nixpkgsMaster, flake-utils }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -29,7 +25,9 @@
           };
 
           devShells.default = pkgs.mkShell {
-            buildInputs = [ pkgs.htop ];
+            buildInputs = with pkgs; [
+              nodejs
+            ];
           };
         });
 }
