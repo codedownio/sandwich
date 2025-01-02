@@ -100,7 +100,7 @@ extra-deps:
   # This branch
   # 1. Takes akshaymankar's fixes from https://github.com/haskell-tls/hs-certificate/pull/113
   # and rebases them on the most recent https://github.com/haskell-tls/hs-certificate master branch
-  # 2. Cherry-picks kazuyamamoto's commit switching the package tocrypton, from here:
+  # 2. Cherry-picks kazuyamamoto's commit switching the package to crypton, from here:
   # https://github.com/kazu-yamamoto/crypton-certificate/commit/c11bbbeec2360ce797c5eb3bd4953cbc5bf1a0d6
   commit: dcd0d5b200e96e90c6daa728585c23be5309a955
   subdirs:
