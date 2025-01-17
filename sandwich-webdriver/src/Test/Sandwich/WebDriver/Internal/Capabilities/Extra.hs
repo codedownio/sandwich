@@ -122,9 +122,11 @@ configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browse
 
     options = HM.insert "prefs" (A.Object prefs) chromeExperimentalOptions
 
-    downloadPrefs = [("profile.default_content_setting_values.automatic_downloads", A.Number 1)
-                    , ("profile.content_settings.exceptions.automatic_downloads.*.setting", A.Number 1)
-                    , ("download.prompt_for_download", A.Bool False)
-                    , ("download.directory_upgrade", A.Bool True)
-                    , ("download.default_directory", A.String (T.pack downloadDir))]
+    downloadPrefs = [
+      ("profile.default_content_setting_values.automatic_downloads", A.Number 1)
+      , ("profile.content_settings.exceptions.automatic_downloads.*.setting", A.Number 1)
+      , ("download.prompt_for_download", A.Bool False)
+      , ("download.directory_upgrade", A.Bool True)
+      , ("download.default_directory", A.String (T.pack downloadDir))
+      ]
 configureDownloadCapabilities _ browser = return browser

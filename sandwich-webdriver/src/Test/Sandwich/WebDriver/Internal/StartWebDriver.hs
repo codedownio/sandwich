@@ -137,7 +137,8 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
 
   -- Final extra capabilities configuration
   capabilities <-
-    configureHeadlessCapabilities wdOptions runMode capabilities'
+    pure capabilities'
+    >>= configureHeadlessCapabilities wdOptions runMode
     >>= configureDownloadCapabilities downloadDir
 
   -- Make the WebDriver
