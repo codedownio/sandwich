@@ -33,5 +33,6 @@ executable demo-nix-derivation
     , sandwich
     , sandwich-contexts
     , string-interpolate
+    , text
     , unliftio
   default-language: Haskell2010

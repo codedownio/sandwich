@@ -9,6 +9,7 @@ dependencies:
 - sandwich
 - sandwich-contexts
 - string-interpolate
+- text
 - unliftio
 
 default-extensions:

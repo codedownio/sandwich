@@ -8,6 +8,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
+import Data.Text
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
@@ -17,20 +18,24 @@ import UnliftIO.Process
 spec :: TopSpec
 spec = describe "Introducing a Nix derivation" $
   introduceNixContext nixpkgsReleaseDefault $
-    introduceFileViaNixDerivation @"firefox" firefoxDerivation $ do
-      it "uses the hello binary" $ do
-        useFirefox
+    introduceFileViaNixDerivation @"ffmpeg" ffmpegDerivation $ do
+      it "uses the ffmpeg binary" $ do
+        useFfmpeg
 
-useFirefox :: (MonadIO m, MonadReader context m, MonadLogger m, HasFile context "firefox") => m ()
-useFirefox = do
-  firefox <- askFile @"firefox"
-  output <- readCreateProcess (proc firefox ["--version"]) ""
-  info [i|Firefox version output: #{output}|]
+useFfmpeg :: (MonadIO m, MonadReader context m, MonadLogger m, HasFile context "ffmpeg") => m ()
+useFfmpeg = do
+  ffmpeg <- askFile @"ffmpeg"
+  output <- readCreateProcess (proc ffmpeg ["-version"]) ""
+  info [i|Ffmpeg version output: #{output}|]
 
-firefoxDerivation = [i|
-{firefox}:
+-- | This demonstrates building an arbitrary callPackage-style Nix derivation. Here, we
+-- take in @ffmpeg@ and change one of its settings.
+ffmpegDerivation :: Text
+ffmpegDerivation = [i|
+{ ffmpeg
+}:
 
-firefox
+ffmpeg.override { withXcb = true; }
 |]
 
 main :: IO ()
