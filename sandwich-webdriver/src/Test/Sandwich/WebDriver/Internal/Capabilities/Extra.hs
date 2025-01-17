@@ -128,5 +128,7 @@ configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browse
       , ("download.prompt_for_download", A.Bool False)
       , ("download.directory_upgrade", A.Bool True)
       , ("download.default_directory", A.String (T.pack downloadDir))
+
+      , ("download_restrictions", A.Number 0)
       ]
 configureDownloadCapabilities _ browser = return browser
