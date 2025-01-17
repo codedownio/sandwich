@@ -6,9 +6,9 @@ module Main where
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.Reader
+import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
-import Test.Sandwich
 import UnliftIO.Process
 
 
@@ -18,7 +18,6 @@ spec = describe "Introducing a Nix binary" $
     introduceBinaryViaNixPackage @"hello" "hello" $ do
       it "uses the hello binary" $ do
         useHello
-
 
 useHello :: (MonadIO m, MonadReader context m, HasFile context "hello") => m ()
 useHello = do
