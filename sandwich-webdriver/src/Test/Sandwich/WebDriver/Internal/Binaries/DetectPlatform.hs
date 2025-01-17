@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform (
   detectPlatform
@@ -9,7 +8,8 @@ import Data.String.Interpolate
 import qualified System.Info as SI
 
 
-data Platform = Linux | OSX | Windows deriving (Show, Eq)
+data Platform = Linux | OSX | Windows
+  deriving (Show, Eq)
 
 detectPlatform :: Platform
 detectPlatform = case SI.os of
