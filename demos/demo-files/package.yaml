@@ -1,0 +1,32 @@
+name:                demo-files
+version:             0.1.0.0
+license:             BSD3
+
+dependencies:
+- base
+- filepath
+- sandwich
+- sandwich-contexts
+- sandwich-demos
+- string-interpolate
+- unliftio
+
+default-extensions:
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+- NamedFieldPuns
+- OverloadedStrings
+- QuasiQuotes
+- RecordWildCards
+- ScopedTypeVariables
+
+ghc-options:
+- -threaded
+- -rtsopts
+- -with-rtsopts=-N
+
+executables:
+  demo-files:
+    main: Main.hs
+    source-dirs: app

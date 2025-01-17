@@ -8,14 +8,14 @@ module Test.Sandwich.Golden (
   -- * Main test function
   golden
 
-  -- * Built-in Goldens.
+  -- * Built-in Goldens
   , goldenText
   , goldenString
   , goldenJSON
   , goldenShowable
   , mkGolden
 
-  -- * Parameters for a 'Golden'.
+  -- * Parameters for a 'Golden'
   , goldenOutput
   , goldenWriteToFile
   , goldenReadFromFile
