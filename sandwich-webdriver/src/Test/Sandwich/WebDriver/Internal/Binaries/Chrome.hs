@@ -45,15 +45,24 @@ obtainChrome :: (
   ) => ChromeToUse -> m (Either T.Text FilePath)
 obtainChrome UseChromeFromPath = do
   findExecutable "google-chrome" >>= \case
-    Just p -> return $ Right p
+    Just p -> do
+      debug [i|Found Chrome at #{p}|]
+      return $ Right p
     Nothing -> findExecutable "google-chrome-stable" >>= \case
-      Just p -> return $ Right p
+      Just p -> do
+        debug [i|Found Chrome at #{p}|]
+        return $ Right p
       Nothing -> expectationFailure [i|Couldn't find either "google-chrome" or "google-chrome-stable" on the PATH|]
 obtainChrome (UseChromeAt p) = doesFileExist p >>= \case
   False -> return $ Left [i|Path '#{p}' didn't exist|]
-  True -> return $ Right p
-obtainChrome (UseChromeFromNixpkgs nixContext) =
-  Right <$> getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
+  True -> do
+    debug [i|Found Chrome at #{p}|]
+    return $ Right p
+obtainChrome (UseChromeFromNixpkgs nixContext) = do
+  debug [i|Building Chrome with Nix...|]
+  ret <- getBinaryViaNixPackage' @"google-chrome-stable" nixContext "google-chrome"
+  debug [i|Built Chrome: #{ret}|]
+  return $ Right ret
 
 -- | Manually obtain a @chromedriver@ binary, according to the 'ChromeDriverToUse' policy.
 obtainChromeDriver :: (
@@ -65,26 +74,39 @@ obtainChromeDriver :: (
   -> m (Either T.Text FilePath)
 obtainChromeDriver (DownloadChromeDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{chromeDriverExecutable}|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath url path
+  doesFileExist path >>= \case
+    True -> do
+      debug [i|chromedriver already existed at #{path}|]
+    False -> do
+      debug [i|Downloading chromedriver from #{url}...|]
+      curlDownloadToPath url path
+      debug [i|Downloaded chromedriver to #{path}|]
   return $ Right path
 obtainChromeDriver (DownloadChromeDriverVersion toolsDir chromeDriverVersion) = runExceptT $ do
   let path = getChromeDriverPath toolsDir chromeDriverVersion
   liftIO (doesFileExist path) >>= \case
-    True -> return path
+    True -> do
+      debug [i|Found chromedriver at #{path}|]
+      return path
     False -> do
-      let downloadPath = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
-      ExceptT $ downloadAndUnzipToPath downloadPath path
+      let downloadUrl = getChromeDriverDownloadUrl chromeDriverVersion detectPlatform
+      debug [i|Downloading chromedriver from #{downloadUrl}...|]
+      ExceptT $ downloadAndUnzipToPath downloadUrl path
+      debug [i|Downloaded chromedriver to #{path}|]
       return path
 obtainChromeDriver (DownloadChromeDriverAutodetect toolsDir chromePath) = runExceptT $ do
   version <- ExceptT $ liftIO $ getChromeDriverVersion chromePath
   ExceptT $ obtainChromeDriver (DownloadChromeDriverVersion toolsDir version)
 obtainChromeDriver (UseChromeDriverAt path) = doesFileExist path >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
-obtainChromeDriver (UseChromeDriverFromNixpkgs nixContext) =
-  Right <$> getBinaryViaNixPackage' @"chromedriver" nixContext "chromedriver"
-
+  True -> do
+    debug [i|Found chromedriver at #{path}|]
+    return $ Right path
+obtainChromeDriver (UseChromeDriverFromNixpkgs nixContext) = do
+  debug [i|Building chromedriver with Nix|]
+  ret <- getBinaryViaNixPackage' @"chromedriver" nixContext "chromedriver"
+  debug [i|Built chromedriver: #{ret}|]
+  return $ Right ret
 
 downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
 downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do

@@ -27,13 +27,19 @@ obtainFfmpeg :: (
   ) => FfmpegToUse -> m (Either T.Text FilePath)
 obtainFfmpeg UseFfmpegFromPath = findExecutable "ffmpeg" >>= \case
   Nothing -> return $ Left [i|Couldn't find "ffmpeg" on the PATH.|]
-  Just p -> return $ Right p
+  Just p -> do
+    debug [i|Found ffmpeg at #{p}|]
+    return $ Right p
 obtainFfmpeg (UseFfmpegAt path) = doesFileExist path >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
-obtainFfmpeg (UseFfmpegFromNixpkgs nixContext) =
-  Right <$> getBinaryViaNixDerivation' @"ffmpeg" nixContext ffmpegDerivation
-
+  True -> do
+    debug [i|Found ffmpeg at #{path}|]
+    return $ Right path
+obtainFfmpeg (UseFfmpegFromNixpkgs nixContext) = do
+  debug [i|Building ffmpeg with Nix...|]
+  ret <- getBinaryViaNixDerivation' @"ffmpeg" nixContext ffmpegDerivation
+  debug [i|Built ffmpeg with Nix: #{ret}|]
+  return $ Right ret
 
 ffmpegDerivation :: T.Text
 ffmpegDerivation = [i|

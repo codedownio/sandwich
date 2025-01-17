@@ -34,13 +34,20 @@ obtainFirefox :: (
   ) => FirefoxToUse -> m (Either T.Text FilePath)
 obtainFirefox UseFirefoxFromPath = do
   findExecutable "firefox" >>= \case
-    Just p -> return $ Right p
+    Just p -> do
+      debug [i|Found firefox: #{p}|]
+      return $ Right p
     Nothing -> expectationFailure [i|Couldn't find "firefox" on the PATH|]
 obtainFirefox (UseFirefoxAt p) = doesFileExist p >>= \case
   False -> return $ Left [i|Path '#{p}' didn't exist|]
-  True -> return $ Right p
-obtainFirefox (UseFirefoxFromNixpkgs nixContext) =
-  Right <$> getBinaryViaNixPackage' @"firefox" nixContext "firefox"
+  True -> do
+    debug [i|Found firefox: #{p}|]
+    return $ Right p
+obtainFirefox (UseFirefoxFromNixpkgs nixContext) = do
+  debug [i|Building Firefox with Nix|]
+  ret <- getBinaryViaNixPackage' @"firefox" nixContext "firefox"
+  debug [i|Built Firefox: #{ret}|]
+  return $ Right ret
 
 -- | Manually obtain a @geckodriver@ binary, according to the 'GeckoDriverToUse' policy,
 -- storing it under the provided 'FilePath' if necessary and returning the exact path.
@@ -53,23 +60,35 @@ obtainGeckoDriver :: (
   -> m (Either T.Text FilePath)
 obtainGeckoDriver (DownloadGeckoDriverFrom toolsDir url) = do
   let path = [i|#{toolsDir}/#{geckoDriverExecutable}|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath url path
+  doesFileExist path >>= \case
+    True -> do
+      debug [i|GeckoDriver already existed at #{path}|]
+    False -> do
+      debug [i|Downloading GeckoDriver from #{url}...|]
+      curlDownloadToPath url path
+      debug [i|Downloaded GeckoDriver to #{path}|]
   return $ Right path
 obtainGeckoDriver (DownloadGeckoDriverVersion toolsDir geckoDriverVersion) = runExceptT $ do
   let path = getGeckoDriverPath toolsDir geckoDriverVersion
-  liftIO (doesFileExist path) >>= \case
-    True -> return path
+  doesFileExist path >>= \case
+    True -> do
+      debug [i|GeckoDriver already existed at #{path}|]
+      return path
     False -> do
-      let downloadPath = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
-      ExceptT $ downloadAndUntarballToPath downloadPath path
+      let downloadUrl = getGeckoDriverDownloadUrl geckoDriverVersion detectPlatform
+      debug [i|Downloading GeckoDriver from #{downloadUrl}|]
+      ExceptT $ downloadAndUntarballToPath downloadUrl path
+      debug [i|Downloaded GeckoDriver to #{path}|]
       return path
 obtainGeckoDriver (DownloadGeckoDriverAutodetect toolsDir) = runExceptT $ do
   version <- ExceptT $ liftIO $ getGeckoDriverVersion Nothing
+  debug [i|Trying to obtain GeckoDriver version #{version} (autodetected)|]
   ExceptT $ obtainGeckoDriver (DownloadGeckoDriverVersion toolsDir version)
 obtainGeckoDriver (UseGeckoDriverAt path) = liftIO (doesFileExist path) >>= \case
   False -> return $ Left [i|Path '#{path}' didn't exist|]
-  True -> return $ Right path
+  True -> do
+    debug [i|Found GeckoDriver at #{path}|]
+    return $ Right path
 obtainGeckoDriver (UseGeckoDriverFromNixpkgs nixContext) = Right <$> getBinaryViaNixPackage' @"geckodriver" nixContext "geckodriver"
 
 
