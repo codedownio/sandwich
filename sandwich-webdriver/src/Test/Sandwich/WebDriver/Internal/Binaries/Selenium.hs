@@ -15,13 +15,13 @@ import qualified Data.List as L
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
-import System.Directory
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Util
+import UnliftIO.Directory
 
 
 type Constraints m = (
@@ -46,24 +46,35 @@ obtainSelenium :: (
   -> m FilePath
 obtainSelenium (DownloadSeleniumFrom toolsDir url) = do
   let path = [i|#{toolsDir}/selenium-server-standalone.jar|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath url path
+  doesFileExist path >>= \case
+    True -> do
+      debug [i|Selenium already existed at #{path}|]
+    False -> do
+      debug [i|Downloading Selenium from #{url} to #{path}|]
+      curlDownloadToPath url path
   return path
 obtainSelenium (DownloadSeleniumDefault toolsDir) = do
   let path = [i|#{toolsDir}/selenium-server-standalone-3.141.59.jar|]
-  unlessM (liftIO $ doesFileExist path) $
-    curlDownloadToPath defaultSeleniumJarUrl path
+  doesFileExist path >>= \case
+    True -> do
+      debug [i|Selenium already existed at #{path}|]
+    False -> do
+      debug [i|Downloading Selenium from #{defaultSeleniumJarUrl} to #{path}|]
+      curlDownloadToPath defaultSeleniumJarUrl path
   return path
 obtainSelenium (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
   False -> expectationFailure [i|Path '#{path}' didn't exist|]
-  True -> return path
+  True -> do
+    debug [i|Found Selenium at #{path}|]
+    return path
 obtainSelenium (UseSeleniumFromNixpkgs nixContext) = do
-  buildNixSymlinkJoin' nixContext ["selenium-server-standalone"] >>=
+  debug [i|Building selenium-server-standalone with Nix...|]
+  ret <- buildNixSymlinkJoin' nixContext ["selenium-server-standalone"] >>=
     liftIO . findFirstFile (return . (".jar" `L.isSuffixOf`))
-
+  debug [i|Got Selenium: #{ret}|]
+  return ret
 
 -- * Lower level helpers
-
 
 downloadSeleniumIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
 downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
