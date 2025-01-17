@@ -87,18 +87,18 @@ data Result = Success
   deriving (Show, Eq)
 
 data ExtraTimingInfo = ExtraTimingInfo {
-  setupTime :: Maybe NominalDiffTime
-  , teardownTime :: Maybe NominalDiffTime
+  setupFinishTime :: Maybe UTCTime
+  , teardownStartTime :: Maybe UTCTime
   }
 
 emptyExtraTimingInfo :: ExtraTimingInfo
 emptyExtraTimingInfo = ExtraTimingInfo Nothing Nothing
 
-mkSetupTimingInfo :: NominalDiffTime -> ExtraTimingInfo
-mkSetupTimingInfo dt = ExtraTimingInfo (Just dt) Nothing
+mkSetupTimingInfo :: UTCTime -> ExtraTimingInfo
+mkSetupTimingInfo setupFinishTime = ExtraTimingInfo (Just setupFinishTime) Nothing
 
-mkTeardownTimingInfo :: NominalDiffTime -> ExtraTimingInfo
-mkTeardownTimingInfo dt = ExtraTimingInfo Nothing (Just dt)
+mkTeardownTimingInfo :: UTCTime -> ExtraTimingInfo
+mkTeardownTimingInfo teardownStartTime = ExtraTimingInfo Nothing (Just teardownStartTime)
 
 data ShowEqBox = forall s. (Show s, Eq s) => SEB s
 instance Show ShowEqBox where show (SEB x) = show x

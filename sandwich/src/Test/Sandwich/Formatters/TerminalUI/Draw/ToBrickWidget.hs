@@ -5,7 +5,6 @@ module Test.Sandwich.Formatters.TerminalUI.Draw.ToBrickWidget where
 
 import Brick
 import Brick.Widgets.Border
-import UnliftIO.Exception
 import Control.Monad.Reader
 import qualified Data.List as L
 import Data.Maybe
@@ -20,6 +19,7 @@ import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Show.Pretty as P
+import UnliftIO.Exception
 
 
 class ToBrickWidget a where
@@ -28,10 +28,10 @@ class ToBrickWidget a where
 instance ToBrickWidget Status where
   toBrickWidget (NotStarted {}) = return $ strWrap "Not started."
   toBrickWidget (Running {statusStartTime}) = return $ strWrap [i|Started at #{statusStartTime}.|]
-  toBrickWidget (Done startTime endTime setupTime teardownTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}.#{setupTeardownInfo}|])
+  toBrickWidget (Done startTime setupFinishTime teardownStartTime endTime Success) = return $ strWrap ([i|Succeeded in #{showTimeDiff startTime endTime}.#{setupTeardownInfo}|])
     where
-      setupInfo :: Maybe T.Text = (\t -> [i|Setup: #{formatNominalDiffTime t}.|]) <$> setupTime
-      teardownInfo :: Maybe T.Text = (\t -> [i|Teardown: #{formatNominalDiffTime t}.|]) <$> teardownTime
+      setupInfo :: Maybe T.Text = (\t -> [i|Setup: #{formatNominalDiffTime t}.|]) <$> (flip diffUTCTime startTime <$> setupFinishTime)
+      teardownInfo :: Maybe T.Text = (\t -> [i|Teardown: #{formatNominalDiffTime t}.|]) <$> (diffUTCTime endTime <$> teardownStartTime)
       setupTeardownInfo = case catMaybes [setupInfo, teardownInfo] of
         [] -> ""
         xs -> " (" <> T.intercalate " " xs <> ")"

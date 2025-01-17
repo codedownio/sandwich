@@ -76,8 +76,8 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
                       , str "]"]
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
-          Running {..} -> Just $ getRunTimes app statusStartTime (app ^. appCurrentTime) statusSetupTime Nothing True
-          Done {..} -> Just $ getRunTimes app statusStartTime statusEndTime statusSetupTime statusTeardownTime False
+          Running {..} -> Just $ getRunTimes app statusStartTime statusSetupFinishTime statusTeardownStartTime (app ^. appCurrentTime) True
+          Done {..} -> Just $ getRunTimes app statusStartTime statusSetupFinishTime statusTeardownStartTime statusEndTime False
           _ -> Nothing
       ]
 

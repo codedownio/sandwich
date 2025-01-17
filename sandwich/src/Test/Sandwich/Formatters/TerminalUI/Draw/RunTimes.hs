@@ -1,5 +1,8 @@
+{-# LANGUAGE MultiWayIf #-}
 
-module Test.Sandwich.Formatters.TerminalUI.Draw.RunTimes (getRunTimes) where
+module Test.Sandwich.Formatters.TerminalUI.Draw.RunTimes (
+  getRunTimes
+  ) where
 
 import Brick
 import Data.Maybe
@@ -16,20 +19,36 @@ minGray, maxGray :: Int
 minGray = 50
 maxGray = 255
 
-getRunTimes :: AppState -> UTCTime -> UTCTime -> Maybe NominalDiffTime -> Maybe NominalDiffTime -> Bool -> Widget n
-getRunTimes app startTime endTime statusSetupTime statusTeardownTime showEllipses = raw setupWork <+> raw actualWork <+> raw teardownWork
+data Mode =
+  NothingRunning
+  | SetupRunning
+  | WorkRunning
+  | TeardownRunning
+  deriving (Eq)
+
+getRunTimes :: AppState -> UTCTime -> Maybe UTCTime -> Maybe UTCTime -> UTCTime -> Bool -> Widget n
+getRunTimes app startTime statusSetupFinishTime statusTeardownStartTime endTime showEllipses = raw setupWork <+> raw actualWork <+> raw teardownWork
   where
     totalElapsed = diffUTCTime (app ^. appCurrentTime) (app ^. appStartTime)
 
-    actualWorkTime = (diffUTCTime endTime startTime) - (fromMaybe 0 statusSetupTime) - (fromMaybe 0 statusTeardownTime)
+    setupTime = diffUTCTime <$> statusSetupFinishTime <*> pure startTime
+    teardownTime = diffUTCTime <$> pure endTime <*> statusTeardownStartTime
 
-    setupWork = maybe mempty (\dt -> V.string (getAttr totalElapsed dt) [i|(#{formatNominalDiffTime dt}) + |]) statusSetupTime
-    actualWork = V.string (getAttr totalElapsed actualWorkTime) (formatNominalDiffTime actualWorkTime <> (if showEllipses then "..." else ""))
-    teardownWork = maybe mempty (\dt -> V.string (getAttr totalElapsed dt) [i| + (#{formatNominalDiffTime dt})|]) statusTeardownTime
+    actualWorkTime = (diffUTCTime endTime startTime) - (fromMaybe 0 setupTime) - (fromMaybe 0 teardownTime)
 
-getAttr :: NominalDiffTime -> NominalDiffTime -> V.Attr
-getAttr totalElapsed dt = V.Attr {
-  V.attrStyle = V.Default
+    mode = if
+      | not showEllipses -> NothingRunning
+      | isJust statusTeardownStartTime -> TeardownRunning
+      | isJust statusSetupFinishTime -> WorkRunning
+      | otherwise -> SetupRunning
+
+    setupWork = maybe mempty (\dt -> V.string (getAttr totalElapsed dt (mode == SetupRunning)) [i|(#{formatNominalDiffTime dt}) + |]) setupTime
+    actualWork = V.string (getAttr totalElapsed actualWorkTime (mode == WorkRunning)) (formatNominalDiffTime actualWorkTime)
+    teardownWork = maybe mempty (\dt -> V.string (getAttr totalElapsed dt (mode == TeardownRunning)) [i| + (#{formatNominalDiffTime dt})|]) teardownTime
+
+getAttr :: NominalDiffTime -> NominalDiffTime -> Bool -> V.Attr
+getAttr totalElapsed dt bold = V.Attr {
+  V.attrStyle = if bold then (V.SetTo V.bold) else V.Default
   , V.attrForeColor = V.SetTo $ grayAt $ getLevel (realToFrac totalElapsed) (realToFrac dt)
   , V.attrBackColor = V.Default
   , V.attrURL = V.Default
