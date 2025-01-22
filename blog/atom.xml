@@ -1,17 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://github.com/codedownio/sandwich/blog</id>
+    <id>https://codedownio.github.io/sandwich/blog</id>
     <title>Sandwich Blog</title>
-    <updated>2021-07-19T00:00:00.000Z</updated>
+    <updated>2022-07-19T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://github.com/codedownio/sandwich/blog"/>
+    <link rel="alternate" href="https://codedownio.github.io/sandwich/blog"/>
     <subtitle>Sandwich Blog</subtitle>
-    <icon>https://github.com/codedownio/sandwich/img/favicon.ico</icon>
+    <icon>https://codedownio.github.io/sandwich/img/favicon.ico</icon>
+    <entry>
+        <title type="html"><![CDATA[Sandwich's First Birthday]]></title>
+        <id>https://codedownio.github.io/sandwich/blog/sandwich-year-one</id>
+        <link href="https://codedownio.github.io/sandwich/blog/sandwich-year-one"/>
+        <updated>2022-07-19T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[It's been one year since the first release of Sandwich, and there are a handful of new features to announce.]]></summary>
+        <content type="html"><![CDATA[<p>It's been one year since the first release of Sandwich, and there are a handful of new features to announce.</p>
+<h2 class="anchor anchorWithStickyNavbar_ft1v" id="hedgehog-support">Hedgehog support<a href="https://codedownio.github.io/sandwich/blog/sandwich-year-one#hedgehog-support" class="hash-link" aria-label="Direct link to Hedgehog support" title="Direct link to Hedgehog support">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_ft1v" id="golden-testing-support">Golden testing support<a href="https://codedownio.github.io/sandwich/blog/sandwich-year-one#golden-testing-support" class="hash-link" aria-label="Direct link to Golden testing support" title="Direct link to Golden testing support">​</a></h2>
+<h2 class="anchor anchorWithStickyNavbar_ft1v" id="markdown-summaries">Markdown summaries<a href="https://codedownio.github.io/sandwich/blog/sandwich-year-one#markdown-summaries" class="hash-link" aria-label="Direct link to Markdown summaries" title="Direct link to Markdown summaries">​</a></h2>]]></content>
+        <author>
+            <name>Tom McLaughlin</name>
+            <uri>https://github.com/thomasjm</uri>
+        </author>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Introducing Sandwich]]></title>
-        <id>introducing-sandwich</id>
-        <link href="https://github.com/codedownio/sandwich/sandwich/blog/introducing-sandwich"/>
+        <id>https://codedownio.github.io/sandwich/blog/introducing-sandwich</id>
+        <link href="https://codedownio.github.io/sandwich/blog/introducing-sandwich"/>
         <updated>2021-07-19T00:00:00.000Z</updated>
         <summary type="html"><![CDATA[It's been a little over a year since I made the first commit on a new test framework. At the time I was working with a large and complex test suite, starting and stopping lots of Docker containers of different kinds and running Selenium tests against them. Several pieces of this infrastructure had dependencies on other pieces, and they needed to be started up and torn down gracefully, especially when one piece had a problem. It was essential to be able to quickly diagnose why some component was freezing and hanging the tests.]]></summary>
+        <content type="html"><![CDATA[<p>It's been a little over a year since I made the first commit on a new test framework. At the time I was working with a large and complex test suite, starting and stopping lots of Docker containers of different kinds and running Selenium tests against them. Several pieces of this infrastructure had dependencies on other pieces, and they needed to be started up and torn down gracefully, especially when one piece had a problem. It was essential to be able to quickly diagnose why some component was freezing and hanging the tests.</p>
+<p>But why write a new test framework? Working with existing frameworks, I found myself wanting several things:</p>
+<ul>
+<li>
+<p><strong>More visibility into and control over parallelism.</strong> I wanted to be able to easily see how many threads were running and what they were doing. This led to creating the terminal UI interface, and other reporting tools like the Slack integration and test timing capabilities.</p>
+</li>
+<li>
+<p><strong>More logging and tracing capabilities.</strong> So I integrated <code>MonadLogger</code> capabilities into the test tree and created an on-disk representation where test logs and artifacts could be organized.</p>
+</li>
+<li>
+<p><strong>Easier management of contexts.</strong> I had some <a href="https://codedownio.github.io/sandwich/docs/contexts" target="_blank" rel="noopener noreferrer">ideas</a> about how to use type-level nonsense to manage contexts in the test tree in such a way that they're keyed by a certain label, which tests can retrieve when needed. Also, it's a small thing, but I wanted access to a full monad transformer stack in an introduce node (Hspec hooks just use IO).</p>
+</li>
+<li>
+<p><strong>Better UX for complex test trees.</strong> When you have a lot of test tree nodes devoted to starting and stopping dependencies, timing things, and other bookkeeping, it can be hard to see the actual tests in the output. This was solved with the creation of <a href="https://codedownio.github.io/sandwich/docs/node_options#visibility-thresholds" target="_blank" rel="noopener noreferrer">visibility thresholds</a>.</p>
+</li>
+<li>
+<p><strong>Pervasive CallStack support.</strong> Every Sandwich formatter uses <code>HasCallStack</code> to report the exact source locations of test failures. There's even a feature in the terminal interface where you can jump to test and failure locations in your editor with a single keystroke.</p>
+</li>
+<li>
+<p><strong>Integrations</strong> with certain things I use heavily, namely Selenium. I had built up a fair amount of machinery for running Selenium tests, and it made sense to integrate it with the test suite.</p>
+</li>
+</ul>
+<p>Undoubtedly I could have gotten a lot of this by continuing to work with Hspec or Tasty, which are both great tools. Was it worth it? Personally I've been using it happily for a while now, but you be the judge :)</p>
+<hr>
+<p>About the name: while designing this I was thinking about how to expose the <a href="https://hackage.haskell.org/package/base-4.15.0.0/docs/Control-Exception.html#v:bracket" target="_blank" rel="noopener noreferrer">bracket</a> pattern in a test node such as <a href="http://hackage.haskell.org/package/sandwich/docs/Test-Sandwich.html#v:introduceWith" target="_blank" rel="noopener noreferrer">introduceWith</a>. Around the same time, California opened up outdoor dining for the first time during the Covid lockdowns, and I had a really good sandwich on a beautiful day outside. Maybe because it was the first respite in a while from my own cooking, but that sandwich stuck in my mind (along with the image of "sandwiching" test tree nodes between setup and teardown functions).</p>]]></content>
+        <author>
+            <name>Tom McLaughlin</name>
+            <uri>https://github.com/thomasjm</uri>
+        </author>
     </entry>
 </feed>

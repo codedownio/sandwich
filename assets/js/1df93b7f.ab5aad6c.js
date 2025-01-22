@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunksandwich_site=self.webpackChunksandwich_site||[]).push([[583],{1191:(s,e,t)=>{t.r(e),t.d(e,{default:()=>a});t(758);var n=t(5557),c=t(8902),i=t(6070);const a=function(){const{siteConfig:s}=(0,c.A)();return(0,i.jsx)(n.rd,{to:s.baseUrl+"docs"})}}}]);
