@@ -91,10 +91,13 @@ html[data-theme='dark'] .sectionLink {
 
 .indexCtasGitHubButtonWrapper {
   display: flex;
+  align-items: left;
+  justify-content: left;
+  width: 100%;
+  margin-bottom: 1em;
 }
 
 .indexCtasGitHubButton {
   border: none;
-  margin-left: 24px;
   overflow: hidden;
 }

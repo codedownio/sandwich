@@ -11,6 +11,17 @@ import { Carousel } from "react-responsive-carousel";
 
 import styles from "../src/pages/styles.module.css";
 
+<div className={styles.buttons}>
+    <span className={styles.indexCtasGitHubButtonWrapper}>
+        <iframe className={styles.indexCtasGitHubButton}
+                src="https://ghbtns.com/github-btn.html?user=codedownio&amp;repo=sandwich&amp;type=star&amp;count=true&amp;size=large"
+                width={160}
+                height={30}
+                title="GitHub Stars" />
+    </span>
+</div>
+
+
 Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/). It has a number of powerful features and integrations, such as:
 * Interactive terminal UI interface for viewing test progress and results.
 * Built-in [profiling](/docs/profiling) support.
