@@ -24,7 +24,7 @@ import styles from "../src/pages/styles.module.css";
 
 Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in replacement for [Hspec](http://hspec.github.io/). It has a number of powerful features and integrations, such as:
 * Interactive terminal UI interface for viewing test progress and results.
-* Built-in [profiling](/docs/profiling) support.
+* Built-in [profiling](/docs/timing) support.
 * Integrations such as [Hedgehog](/docs/extensions/sandwich-hedgehog), [QuickCheck](/docs/extensions/sandwich-quickcheck), and [Selenium](/docs/extensions/sandwich-webdriver).
 * Context libraries that allow you to introduce things like [databases](/docs/context-libraries/sandwich-contexts#postgresql-contexts), [Docker containers](#TODO), or even full [Kubernetes clusters](/docs/context-libraries/sandwich-contexts-kubernetes).
 
