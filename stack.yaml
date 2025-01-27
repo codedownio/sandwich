@@ -13,6 +13,7 @@ nix:
   packages:
   - pcre
   - pkg-config
+  - postgresql
   - zlib
 
 packages:
