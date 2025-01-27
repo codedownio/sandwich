@@ -29,7 +29,7 @@ spec = describe "Introducing a fake SMTP server" $
       FakeSmtpServer {..} <- getContext fakeSmtpServer
       info [i|Got fake SMTP server on port: #{fakeSmtpServerSmtpPort}|]
 
-      sendSampleEmail "localhost" fakeSmtpServerSmtpPort
+      sendSampleEmail fakeSmtpServerHostname fakeSmtpServerSmtpPort
       waitUntil 60 $ do
         fakeSmtpServerGetEmails >>= \case
           [x] -> debug [i|Got email: #{x}|]

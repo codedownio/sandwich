@@ -44,7 +44,7 @@ import qualified Data.Aeson.TH as A
 import Data.String.Interpolate
 import GHC.TypeLits
 import Network.HTTP.Client
-import Network.Socket (PortNumber)
+import Network.Socket (HostName, PortNumber)
 import Relude
 import System.FilePath
 import System.IO
@@ -90,8 +90,10 @@ data EmailInfo = EmailInfo {
 $(A.deriveJSON (A.defaultOptions { A.fieldLabelModifier = dropNAndCamelCase (length ("emailInfo" :: String)) }) ''EmailInfo)
 
 data FakeSmtpServer = FakeSmtpServer {
+  -- | The hostname of the fake SMTP server.
+  fakeSmtpServerHostname :: HostName
   -- | The port on which the fake SMTP server is running.
-  fakeSmtpServerSmtpPort :: PortNumber
+  , fakeSmtpServerSmtpPort :: PortNumber
   -- | Callback to retrieve the emails the server has received.
   , fakeSmtpServerGetEmails :: forall m. (MonadLoggerIO m, MonadUnliftIO m, MonadThrow m) => m [EmailInfo]
   }
@@ -181,6 +183,7 @@ withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
               void $ liftIO (interruptProcessGroupOf p >> waitForProcess p)
           )
           (\_ -> do
+              let hostname = "localhost"
               httpPort <- waitForPortFile 120.0 httpPortFile
               smtpPort <- waitForPortFile 120.0 smtpPortFile
 
@@ -188,10 +191,14 @@ withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
                     Just (username, password) -> [i|#{username}:#{password}@|] :: Text
                     Nothing -> ""
 
-              waitUntilStatusCodeWithTimeout (2, 0, 0) (1_000_000 * 60 * 2) YesVerify [i|http://#{authPart}localhost:#{httpPort}/api/emails|]
+              waitUntilStatusCodeWithTimeout (2, 0, 0) (1_000_000 * 60 * 2) YesVerify [i|http://#{authPart}#{hostname}:#{httpPort}/api/emails|]
 
               manager <- liftIO $ newManager defaultManagerSettings
-              void $ action $ FakeSmtpServer smtpPort (getEmails manager authPart httpPort)
+              void $ action $ FakeSmtpServer {
+                fakeSmtpServerHostname = hostname
+                , fakeSmtpServerSmtpPort = smtpPort
+                , fakeSmtpServerGetEmails = getEmails manager authPart httpPort
+                }
           )
 
 
