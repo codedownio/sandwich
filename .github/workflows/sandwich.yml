@@ -54,9 +54,9 @@ jobs:
         brew update
         # For postgres context tests/demo
         brew install libpq postgresql
-        # For older GHCs
-        brew install llvm@13 --quiet # Suppress deprecation warning
-        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
+        # For older GHCs. NOTE: llvm@13 disabled on 12/31/2024.
+        # brew install llvm@13 --quiet # Suppress deprecation warning
+        # echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
         # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
