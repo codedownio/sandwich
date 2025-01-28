@@ -7,7 +7,7 @@ The [sandwich-contexts](https://hackage.haskell.org/package/sandwich-contexts) p
 
 This package is mainly concerned with introducing external files and binaries that your tests might need. It also contains some miscellaneous other contexts that don't require any special dependencies.
 
-Other context packages have been split out to address specific needs, such as [sandwich-contexts-docker](./sandwich-contexts-docker), [sandwich-contexts-kubernetes](./sandwich-contexts-kubernetes), and , [sandwich-contexts-minio](./sandwich-contexts-minio).
+Other context packages have been split out to address specific needs, such as [sandwich-contexts-kubernetes](./sandwich-contexts-kubernetes) and [sandwich-contexts-minio](./sandwich-contexts-minio).
 
 ## Nix contexts
 
@@ -100,13 +100,3 @@ This brings together a robust solution for using external binaries:
 * The test function `useHello` is decoupled from the introduction method, via the `HasFile context "hello"` constraint.
 
 By the way, you can browse all the available Nix packages at [search.nixos.org](https://search.nixos.org/packages).
-
-## PostgreSQL contexts
-
-The [Test.Sandwich.Contexts.PostgreSQL](https://hackage.haskell.org/package/sandwich-contexts/docs/Test-Sandwich-Contexts-PostgreSQL.html) module provides tools for introducing PostgreSQL databases, either via a container (Docker or Podman) or via a raw process (typically obtaining the binary from Nix).
-
-The container method is traditional, but the raw method can be nice because it tends to leave less junk on the system such as container images, networks, and volumes.
-
-A note about raw processes and random TCP ports: starting a Postgres process on a randomly chosen port is tricky, because Postgres currently lacks a setting for choosing its own port and reporting it back to us. So, the only way to start it on a random TCP port is to first manually find a free port on the system and then start Postgres with it. Since this procedure is inherently racy, it can cause failures if your tests are starting lots of Postgres instances (or other network-using processes) in parallel. This module takes a different approach: it starts the Postgres instance on a Unix socket, which can never fail. You can connect to it via the Unix socket directly if you like. If you use the TCP-based methods like introducePostgresViaNix, they will open a TCP socket inside the test process and then run a proxy to forward packets to the Postgres server's Unix socket.
-
-Synopsis

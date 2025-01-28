@@ -32,7 +32,7 @@ const sidebars: SidebarsConfig = {
       "context-libraries/sandwich-contexts",
       "context-libraries/sandwich-contexts-postgresql",
       "context-libraries/sandwich-contexts-smtp",
-      "context-libraries/sandwich-contexts-docker",
+      // "context-libraries/sandwich-contexts-docker",
       "context-libraries/sandwich-contexts-kubernetes",
       "context-libraries/sandwich-contexts-minio",
     ] },
