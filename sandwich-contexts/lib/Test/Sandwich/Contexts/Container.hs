@@ -6,7 +6,10 @@ Helper module for working with containers.
 -}
 
 module Test.Sandwich.Contexts.Container (
-  ContainerSystem (..)
+  ContainerOptions (..)
+  , defaultContainerOptions
+
+  , ContainerSystem (..)
   , waitForHealth
 
   -- * Container/host conversions
@@ -36,8 +39,23 @@ import qualified Text.Show
 import UnliftIO.Process
 
 
+-- | Type to represent generic options for launching containers.
+data ContainerOptions = ContainerOptions {
+  containerOptionsSystem :: ContainerSystem
+  , containerOptionsName :: Maybe Text
+  }
+  deriving (Show, Eq)
+
+defaultContainerOptions :: ContainerOptions
+defaultContainerOptions = ContainerOptions {
+  containerOptionsSystem = ContainerSystemPodman
+  , containerOptionsName = Nothing
+  }
+
 -- | Type to represent which container system we're using.
-data ContainerSystem = ContainerSystemDocker | ContainerSystemPodman
+data ContainerSystem =
+  ContainerSystemDocker
+  | ContainerSystemPodman
   deriving (Eq)
 
 instance Show ContainerSystem where

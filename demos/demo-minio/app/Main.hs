@@ -10,6 +10,7 @@ import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import Test.Sandwich
+import Test.Sandwich.Contexts.Container
 import Test.Sandwich.Contexts.FakeSmtpServer
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.MinIO
@@ -26,7 +27,7 @@ spec = describe "Introducing MinIO" $ do
         info [i|Got S3 server: #{server}|]
 
   describe "Via container" $
-    introduceMinIOViaContainer defaultMinIOContextOptions $ do
+    introduceMinIOViaContainer defaultMinIOContextOptions defaultContainerOptions $ do
       it "prints the MinIO server info" $ do
         server <- getContext testS3Server
         info [i|Got S3 server: #{server}|]
