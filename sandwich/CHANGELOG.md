@@ -2,7 +2,15 @@
 
 ## Unreleased
 
+## 0.3.0.3
+
+* Add 'ContainerOptions' type to `Test.Sandwich.Contexts.Container`
+* Improve display of setup/work/teardown in TUI
+
+## 0.3.0.2
+
 * Re-fix compatibility for base < 4.14.0.0
+* windows: fix Infinity -> maxBound for an Int
 
 ## 0.3.0.1
 
