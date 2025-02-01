@@ -61,7 +61,7 @@ import System.Exit
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
-import Test.Sandwich.Contexts.Container (ContainerSystem(..), containerPortToHostPort)
+import Test.Sandwich.Contexts.Container (ContainerOptions(..), containerPortToHostPort)
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.MinIO.Util
@@ -86,8 +86,6 @@ testS3ServerConnectInfo testServ@(TestS3Server {..}) =
 data MinIOContextOptions = MinIOContextOptions {
   minioContextBucket :: Maybe Text
   , minioContextLabels :: Map Text Text
-  , minioContextContainerName :: Maybe Text
-  , minioContextContainerSystem :: ContainerSystem
   -- | Maximum time to wait in microseconds before seeing an "API:" message during startup
   , minioContextStartupTimeout :: Int
   } deriving (Show, Eq)
@@ -95,8 +93,6 @@ defaultMinIOContextOptions :: MinIOContextOptions
 defaultMinIOContextOptions = MinIOContextOptions {
   minioContextBucket = Just "bucket1"
   , minioContextLabels = mempty
-  , minioContextContainerName = Nothing
-  , minioContextContainerSystem = ContainerSystemPodman
   , minioContextStartupTimeout = 60_000_000
   }
 
@@ -225,10 +221,11 @@ introduceMinIOViaContainer :: (
   )
   -- | Options
   => MinIOContextOptions
+  -> ContainerOptions
   -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
   -> SpecFree context m ()
-introduceMinIOViaContainer options = introduceWith "MinIO S3 server (via container)" testS3Server $ \action -> do
-  withMinIOViaContainer options action
+introduceMinIOViaContainer options containerOptions = introduceWith "MinIO S3 server (via container)" testS3Server $ \action -> do
+  withMinIOViaContainer options containerOptions action
 
 -- | Bracket-style variant of 'introduceMinIOViaContainer'.
 withMinIOViaContainer :: (
@@ -237,9 +234,10 @@ withMinIOViaContainer :: (
   )
   -- | Options
   => MinIOContextOptions
+  -> ContainerOptions
   -> (TestS3Server -> m [Result])
   -> m ()
-withMinIOViaContainer (MinIOContextOptions {..}) action = do
+withMinIOViaContainer (MinIOContextOptions {..}) (ContainerOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withMinIOViaContainer must be run with a current directory."
     Just x -> return x
@@ -251,7 +249,7 @@ withMinIOViaContainer (MinIOContextOptions {..}) action = do
   let innerPort = 9000 :: PortNumber
 
   uuid <- makeUUID
-  let containerName = fromMaybe ("test-s3-" <> uuid) minioContextContainerName
+  let containerName = fromMaybe ("test-s3-" <> uuid) containerOptionsName
 
   let labelArgs = case minioContextLabels of
         x | M.null x -> []
@@ -260,7 +258,7 @@ withMinIOViaContainer (MinIOContextOptions {..}) action = do
   bracket (do
               uid <- liftIO getCurrentUID
 
-              let cp = proc (show minioContextContainerSystem) $ [
+              let cp = proc (show containerOptionsSystem) $ [
                     "run"
                     , "-d"
                     , "-p", [i|#{innerPort}|]
@@ -279,14 +277,14 @@ withMinIOViaContainer (MinIOContextOptions {..}) action = do
               createProcessWithLogging cp
           )
           (\_ -> do
-              void $ liftIO $ readCreateProcess (shell [i|#{minioContextContainerSystem} rm -f --volumes #{containerName}|]) ""
+              void $ liftIO $ readCreateProcess (shell [i|#{containerOptionsSystem} rm -f --volumes #{containerName}|]) ""
           )
           (\p -> do
               waitForProcess p >>= \case
                 ExitSuccess -> return ()
                 ExitFailure n -> expectationFailure [i|Failed to start MinIO container (exit code #{n})|]
 
-              localPort <- containerPortToHostPort minioContextContainerSystem containerName innerPort
+              localPort <- containerPortToHostPort containerOptionsSystem containerName innerPort
 
               let server = TestS3Server {
                     testS3ServerAddress = NetworkAddressTCP "127.0.0.1" localPort
