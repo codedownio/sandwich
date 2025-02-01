@@ -1,16 +1,26 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
+{-|
+
+[MinIO](https://min.io/) is a popular S3-compatible object storage system. This module provides some tools to introduce it, either as a raw binary or via a container system.
+
+The MinIO server will be introduced as a generic 'TestS3Server'. This gives you the ability to easily swap out different S3-compatible stores in your tests.
+
+-}
+
 module Test.Sandwich.Contexts.MinIO (
   -- * Introducing MinIO
   introduceMinIOViaNix
-  , withMinIOViaBinary
+  , introduceMinIOViaBinary
   , introduceMinIOViaContainer
-  , withMinIOContainer
-  , withMinIO'
+
+  -- * Lower-level versions
+  , withMinIOViaBinary
+  , withMinIOViaBinary'
+  , withMinIOViaContainer
 
   -- * Helpers for constructing connections
   , testS3ServerEndpoint
@@ -103,7 +113,18 @@ introduceMinIOViaNix :: (
 introduceMinIOViaNix options = introduceBinaryViaNixPackage @"minio" "minio" .
   introduceWith "MinIO S3 server (via Nix binary)" testS3Server (withMinIOViaBinary options)
 
--- | Bracket-style variant of introduceMinIOViaBinary
+-- | Introduce a MinIO server, assuming the binary is already available as a 'HasFile' context.
+introduceMinIOViaBinary :: (
+  HasBaseContext context, HasFile context "minio", MonadMask m, MonadUnliftIO m
+  )
+  -- | Options
+  => MinIOContextOptions
+  -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
+  -> SpecFree context m ()
+introduceMinIOViaBinary options =
+  introduceWith "MinIO S3 server (via Nix binary)" testS3Server (withMinIOViaBinary options)
+
+-- | Bracket-style variant of 'introduceMinIOViaBinary'.
 withMinIOViaBinary :: (
   HasBaseContextMonad context m, HasFile context "minio"
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
@@ -114,18 +135,19 @@ withMinIOViaBinary :: (
   -> m ()
 withMinIOViaBinary options action = do
   minioPath <- askFile @"minio"
-  withMinIO' minioPath options action
+  withMinIOViaBinary' minioPath options action
 
-withMinIO' :: (
+-- | Introduce a MinIO server by manually providing the path to the binary.
+withMinIOViaBinary' :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
   )
-  -- | Path to the minio binary
+  -- | Path to the @minio@ binary
   => FilePath
   -> MinIOContextOptions
   -> (TestS3Server -> m [Result])
   -> m ()
-withMinIO' minioPath (MinIOContextOptions {..}) action = do
+withMinIOViaBinary' minioPath (MinIOContextOptions {..}) action = do
   dir <- getCurrentFolder >>= \case
     Nothing -> expectationFailure "withMinIOViaBinary must be run with a current directory."
     Just x -> return x
@@ -206,16 +228,20 @@ introduceMinIOViaContainer :: (
   -> SpecFree (LabelValue "testS3Server" TestS3Server :> context) m ()
   -> SpecFree context m ()
 introduceMinIOViaContainer options = introduceWith "MinIO S3 server (via container)" testS3Server $ \action -> do
-  withMinIOContainer options action
+  withMinIOViaContainer options action
 
 -- | Bracket-style variant of 'introduceMinIOViaContainer'.
-withMinIOContainer :: (
+withMinIOViaContainer :: (
   HasBaseContextMonad context m
   , MonadLoggerIO m, MonadMask m, MonadUnliftIO m
-  ) => MinIOContextOptions -> (TestS3Server -> m [Result]) -> m ()
-withMinIOContainer (MinIOContextOptions {..}) action = do
+  )
+  -- | Options
+  => MinIOContextOptions
+  -> (TestS3Server -> m [Result])
+  -> m ()
+withMinIOViaContainer (MinIOContextOptions {..}) action = do
   folder <- getCurrentFolder >>= \case
-    Nothing -> expectationFailure "withMinIOContainer must be run with a current directory."
+    Nothing -> expectationFailure "withMinIOViaContainer must be run with a current directory."
     Just x -> return x
 
   let mockDir = folder </> "mock_root"
