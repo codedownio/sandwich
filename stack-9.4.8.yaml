@@ -23,7 +23,7 @@ extra-deps:
 - vty-6.1
 - vty-crossplatform-0.4.0.0
 - vty-unix-0.2.0.0
-- vty-windows-0.2.0.0
+- vty-windows-0.2.0.3
 
 ## For sandwich-contexts
 

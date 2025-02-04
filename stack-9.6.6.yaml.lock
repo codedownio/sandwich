@@ -5,47 +5,12 @@
 
 packages:
 - completed:
-    hackage: brick-2.1.1@sha256:ff36d64f1027eac17a14a83de053067413accb58b79e5002dce2a79cb8a3dcb3,17385
-    pantry-tree:
-      sha256: c70beaff3ad9126bc2a9a57649ef63becd534b7eb6b015092cb28437fe3f916d
-      size: 4671
-  original:
-    hackage: brick-2.1.1
-- completed:
-    hackage: vty-6.1@sha256:524d124223c02373260ebc409ddd622fbe97cacd1ea0ee98476b5992bddbc4f3,3661
-    pantry-tree:
-      sha256: 4ed3b229066617a0f3429b7b7dadc8e01d14111ac675801053cd35fbb6ee3f14
-      size: 2104
-  original:
-    hackage: vty-6.1
-- completed:
-    hackage: vty-crossplatform-0.4.0.0@sha256:50593f91ad16777d921138475a8d2784d538fd206addd30664c620278d6c8544,3172
-    pantry-tree:
-      sha256: ff010cf0ab3f48c43432268a00113e051599285d6ed60cfada7f53e44dbe00f8
-      size: 582
-  original:
-    hackage: vty-crossplatform-0.4.0.0
-- completed:
-    hackage: vty-unix-0.2.0.0@sha256:2af3d0bdae3c4b7b7e567ee374efe32c7439fabdf9096465ce011a6c6736e9ae,2932
-    pantry-tree:
-      sha256: 0e3dd52406c263fd4b54d03123e71423d1ef6939fb8c179745486243c519fdf7
-      size: 1926
-  original:
-    hackage: vty-unix-0.2.0.0
-- completed:
     hackage: vty-windows-0.2.0.3@sha256:0c010b1086a725046a8bb08bb1e6bfdfdb3cfe1c72d6fa77c37306ef9ec774d8,2844
     pantry-tree:
       sha256: 958fd0386c589130177c841df63368ff191eb296f9ed2fd050de10e266c354eb
       size: 2160
   original:
     hackage: vty-windows-0.2.0.3
-- completed:
-    hackage: text-zipper-0.13@sha256:e1a48d69c9324ed3784bc39d5ded84d63ea3115b32a018ddf76158ed9d58dc0a,1472
-    pantry-tree:
-      sha256: c8e30137f3b5aae8b21ada32551f5d879bdf56165c0b42548fb1832011a60c57
-      size: 604
-  original:
-    hackage: text-zipper-0.13@sha256:e1a48d69c9324ed3784bc39d5ded84d63ea3115b32a018ddf76158ed9d58dc0a,1472
 - completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
@@ -120,16 +85,9 @@ packages:
     commit: dcd0d5b200e96e90c6daa728585c23be5309a955
     git: https://github.com/codedownio/hs-certificate
     subdir: x509-validation
-- completed:
-    hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
-    pantry-tree:
-      sha256: 85f438e6d328fc2e464c8914a08089ff312044b96ac155a25747512e440e0a12
-      size: 23275
-  original:
-    hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
 snapshots:
 - completed:
-    sha256: 5a59b2a405b3aba3c00188453be172b85893cab8ebc352b1ef58b0eae5d248a2
-    size: 650475
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml
-  original: lts-20.26
+    sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
+    size: 720271
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
+  original: lts-22.43

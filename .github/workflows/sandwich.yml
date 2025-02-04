@@ -139,10 +139,12 @@ jobs:
           yaml: "stack-9.2.8.yaml"
         - ghc: "9.4.8"
           yaml: "stack-9.4.8.yaml"
-        - ghc: "9.6.5"
-          yaml: "stack.yaml"
-        - ghc: "9.8.2"
-          yaml: "stack-9.8.2.yaml"
+        - ghc: "9.6.6"
+          yaml: "stack-9.6.6.yaml"
+        - ghc: "9.8.4"
+          yaml: "stack-9.8.4.yaml"
+        # - ghc: "9.10.1"
+        #   yaml: "stack.yaml"
 
     steps:
     - uses: actions/checkout@v4

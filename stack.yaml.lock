@@ -5,12 +5,19 @@
 
 packages:
 - completed:
-    hackage: vty-windows-0.2.0.0@sha256:91a11bab7bb79f8ee0d4a8166824ed855251cbac101eed3fdf607ad519a13557,2815
+    hackage: vty-windows-0.2.0.3@sha256:0c010b1086a725046a8bb08bb1e6bfdfdb3cfe1c72d6fa77c37306ef9ec774d8,2844
     pantry-tree:
-      sha256: 50d343eb4df5d1901b1773baeaff8ae7c6a88204d0997430e26f0dc50a1a63eb
+      sha256: 958fd0386c589130177c841df63368ff191eb296f9ed2fd050de10e266c354eb
       size: 2160
   original:
-    hackage: vty-windows-0.2.0.0
+    hackage: vty-windows-0.2.0.3
+- completed:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    pantry-tree:
+      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
+      size: 1632
+  original:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
 - completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
@@ -87,7 +94,7 @@ packages:
     subdir: x509-validation
 snapshots:
 - completed:
-    sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
-    size: 720271
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
-  original: lts-22.43
+    sha256: a1b6c372b9194401b72c7c707b257215a4bed0649b8114c778d9fa17db15a4cb
+    size: 650398
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/2/4.yaml
+  original: nightly-2025-02-04

@@ -1,5 +1,5 @@
 
-resolver: nightly-2024-09-19
+resolver: lts-23.7
 
 nix:
   pure: false
