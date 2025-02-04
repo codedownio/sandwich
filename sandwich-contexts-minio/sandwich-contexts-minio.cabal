@@ -11,6 +11,7 @@ description:    Please see README.md
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
 copyright:      2024 Tom McLaughlin
+license:        BSD3
 build-type:     Simple
 
 library
@@ -37,7 +38,7 @@ library
   ghc-options: -Wunused-packages -Wall
   build-depends:
       aeson
-    , base
+    , base >=4.11 && <5
     , containers
     , exceptions
     , filepath
