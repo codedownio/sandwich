@@ -70,7 +70,7 @@ library
   ghc-options: -Wunused-packages -Wall -Wredundant-constraints
   build-depends:
       aeson
-    , base
+    , base >=4.11 && <5
     , bytestring
     , containers
     , exceptions
@@ -124,7 +124,7 @@ test-suite sandwich-contexts-kubernetes-test
       NumericUnderscores
   ghc-options: -Wunused-packages -Wall -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base
+      base >=4.11 && <5
     , exceptions
     , random
     , relude
