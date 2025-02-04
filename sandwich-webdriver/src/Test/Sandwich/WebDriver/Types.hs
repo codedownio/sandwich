@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.WebDriver.Types (
-  -- * Type aliases to make signatures shorter
+  -- * Type aliases to make signatures shorter.
   BaseMonad
   , ContextWithWebdriverDeps
   , ContextWithBaseDeps
