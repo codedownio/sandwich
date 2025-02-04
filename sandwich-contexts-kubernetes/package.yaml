@@ -1,6 +1,7 @@
 name: sandwich-contexts-kubernetes
 version: 0.1.0.0
-synopsis: CodeDown test contexts
+synopsis: Sandwich test contexts for Kubernetes
+license: BSD3
 description: Please see README.md
 author: Tom McLaughlin
 maintainer: tom@codedown.io

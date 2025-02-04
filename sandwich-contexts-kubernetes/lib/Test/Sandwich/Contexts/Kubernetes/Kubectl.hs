@@ -40,7 +40,7 @@ askKubectlEnvironment :: (
   )
   -- | Kubernetes cluster context
   => KubernetesClusterContext
-  -- | Returns the @kubectl@ binary and environment variables.
+  -- | Returns the @kubectl@ environment variables.
   -> m [(String, String)]
 askKubectlEnvironment (KubernetesClusterContext {..}) = do
   baseEnv <- getEnvironment

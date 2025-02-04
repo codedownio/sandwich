@@ -23,6 +23,7 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
 
   -- * Types
   , KataContainersOptions(..)
+  , SourceCheckout(..)
   , defaultKataContainersOptions
 
   , kataContainers

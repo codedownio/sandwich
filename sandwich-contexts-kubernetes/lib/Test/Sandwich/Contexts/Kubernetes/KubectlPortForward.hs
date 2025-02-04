@@ -41,7 +41,7 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 -- | Run a @kubectl port-forward@ process, making the port available in the 'KubectlPortForwardContext'.
 --
 -- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
--- If this happens, a rerun of the command is needed to resume forwarding.
+-- If this happens, a rerun of the command is needed to resume port forwarding.
 withKubectlPortForward :: (
   HasCallStack, MonadCatch m, KubectlBasic context m
   )

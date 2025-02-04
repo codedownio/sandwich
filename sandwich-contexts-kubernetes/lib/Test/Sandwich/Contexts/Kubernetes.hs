@@ -5,9 +5,9 @@
 
 {-|
 
-Create Kubernetes clusters with either Kind or Minikube, obtaining the relevant binary from either the current PATH or from Nix.
+Create Kubernetes clusters with either [kind](https://kind.sigs.k8s.io/) or [Minikube](https://kubernetes.io/docs/tutorials/hello-minikube/), obtaining the relevant binary from either the current PATH or from Nix.
 
-Also contains functions for waiting for pods and services to exist, running commands with Kubectl, logging, service forwarding, and port forwarding.
+Also contains functions for waiting for pods and services to exist, running commands with [kubectl](https://kubernetes.io/docs/reference/kubectl/), logging, service forwarding, and port forwarding.
 
 -}
 

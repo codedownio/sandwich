@@ -32,7 +32,7 @@ data KubectlLogsContext = KubectlLogsContext {
 -- | Run a @kubectl logs@ process, placing the logs in a file in the current test node directory.
 --
 -- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
--- If this happens, a rerun of the command is needed to resume forwarding
+-- If this happens, a rerun of the command is needed to resume log forwarding.
 withKubectlLogs :: (
   MonadLogger m, MonadFail m, MonadUnliftIO m
   , HasBaseContextMonad ctx m, HasFile ctx "kubectl"

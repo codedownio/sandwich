@@ -20,11 +20,11 @@ import Relude
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 
 
--- | Find all image references in a chunk of YAML containing multiple sections
+-- | Find all image references in a chunk of YAML containing multiple sections.
 findAllImages :: Text -> [Text]
 findAllImages = Relude.concatMap findAllImages' . T.splitOn "---\n"
 
--- | Find all image references in a single chunk of YAML
+-- | Find all image references in a single chunk of YAML.
 findAllImages' :: Text -> [Text]
 findAllImages' (decode -> Right x@(V1Pod {v1PodKind=(Just "Pod")})) = maybe [] imagesFromPodSpec (v1PodSpec x)
 findAllImages' (decode -> Right x@(V1Deployment {v1DeploymentKind=(Just "Deployment")})) = maybe [] imagesFromPodSpec maybePodSpec
