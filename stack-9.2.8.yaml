@@ -66,3 +66,7 @@ extra-deps:
   - x509-validation
 
 - crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
+
+# For Unix socket support on Windows
+- conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
+- streaming-commons-0.2.3.0@sha256:68d5f3daa6caa7cc7d659094a03d543021df5ec4737b67e63ffa4541ac0aae10,4841

@@ -85,6 +85,20 @@ packages:
     commit: dcd0d5b200e96e90c6daa728585c23be5309a955
     git: https://github.com/codedownio/hs-certificate
     subdir: x509-validation
+- completed:
+    hackage: conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
+    pantry-tree:
+      sha256: 9a42e80dbc11c7c776371352a3e0061fabb1236e6201ec8fbe7222d4b8373a7d
+      size: 2332
+  original:
+    hackage: conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
+- completed:
+    hackage: streaming-commons-0.2.3.0@sha256:68d5f3daa6caa7cc7d659094a03d543021df5ec4737b67e63ffa4541ac0aae10,4841
+    pantry-tree:
+      sha256: 66a00daed951de5a26118dac7e34c72ee32f33ddcd3a50981d80b4dd244992b4
+      size: 2374
+  original:
+    hackage: streaming-commons-0.2.3.0@sha256:68d5f3daa6caa7cc7d659094a03d543021df5ec4737b67e63ffa4541ac0aae10,4841
 snapshots:
 - completed:
     sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
