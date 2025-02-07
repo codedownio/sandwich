@@ -96,6 +96,8 @@ data PostgresNixOptions = PostgresNixOptions {
   -- | Postgres default database. The @postgres@ database is always created, but you
   -- can create an additional one here. Defaults to @test@.
   , postgresNixDatabase :: Text
+  -- | Extra lines to append to `postgresql.conf`
+  , postgresNixConfExtraLines :: [Text]
   }
 defaultPostgresNixOptions :: PostgresNixOptions
 defaultPostgresNixOptions = PostgresNixOptions {
@@ -103,6 +105,7 @@ defaultPostgresNixOptions = PostgresNixOptions {
   , postgresNixUsername = "postgres"
   , postgresNixPassword = "postgres"
   , postgresNixDatabase = "test"
+  , postgresNixConfExtraLines = []
   }
 
 data PostgresContext = PostgresContext {
@@ -189,7 +192,7 @@ withPostgresUnixSocketViaNix :: (
   -> m a
 withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
   postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin [postgresNixPostgres]
-  withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase action
+  withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase postgresNixConfExtraLines action
 
 -- | The lowest-level raw process version.
 withPostgresUnixSocket :: (
@@ -204,10 +207,12 @@ withPostgresUnixSocket :: (
   -> Text
   -- | Database
   -> Text
+  -- | Extra postgresql.conf lines
+  -> [Text]
   -- | Action callback
   -> (FilePath -> m a)
   -> m a
-withPostgresUnixSocket postgresBinDir username password database action = do
+withPostgresUnixSocket postgresBinDir username password database extraLines action = do
   Just dir <- getCurrentFolder
   baseDir <- liftIO $ createTempDirectory dir "postgres-nix"
   let dbDirName = baseDir </> "db"
@@ -242,6 +247,10 @@ withPostgresUnixSocket postgresBinDir username password database action = do
         withFile (dir </> dbDirName </> "postgresql.conf") AppendMode $ \h -> liftIO $ do
           T.hPutStr h "\n"
           T.hPutStrLn h [i|listen_addresses=''|]
+
+          forM_ extraLines $ \line -> do
+            T.hPutStr h "\n"
+            T.hPutStrLn h line
 
         -- Run pg_ctl to start the DB
         createProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
