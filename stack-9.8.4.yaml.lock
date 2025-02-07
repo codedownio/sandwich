@@ -29,31 +29,31 @@ packages:
     git: https://github.com/codedownio/docker-engine.git
     subdir: v1.44
 - completed:
-    commit: a747f6fdc62d34c684709740422497d3c088f8d9
-    git: https://github.com/codedownio/kubernetes-client-haskell.git
-    name: kubernetes-client-core
+    commit: 1ceea12f82e71e36b4a2c9ff31cd50950758419f
+    git: https://github.com/codedownio/kubernetes-api.git
+    name: kubernetes-api
     pantry-tree:
-      sha256: d807cb64b68b4211e9f793be63eb4b01cd3325ef0b36d750dd35fe09a875ac38
-      size: 6710
-    subdir: kubernetes-1.27
+      sha256: 6fd1f53cb7ac4e2604a160c34c17824fe07b2ab3ec1ab7cd721292882341e9c0
+      size: 6649
+    subdir: kubernetes-api-1.27
     version: 1.27.0
   original:
-    commit: a747f6fdc62d34c684709740422497d3c088f8d9
-    git: https://github.com/codedownio/kubernetes-client-haskell.git
-    subdir: kubernetes-1.27
+    commit: 1ceea12f82e71e36b4a2c9ff31cd50950758419f
+    git: https://github.com/codedownio/kubernetes-api.git
+    subdir: kubernetes-api-1.27
 - completed:
-    commit: a747f6fdc62d34c684709740422497d3c088f8d9
-    git: https://github.com/codedownio/kubernetes-client-haskell.git
-    name: kubernetes-client
+    commit: 1ceea12f82e71e36b4a2c9ff31cd50950758419f
+    git: https://github.com/codedownio/kubernetes-api.git
+    name: kubernetes-api-client
     pantry-tree:
-      sha256: 3550efb761185ee38e939bd88ad32564d17a0939f2a8983cd82d57e7c98a91a0
-      size: 2125
-    subdir: kubernetes-client
+      sha256: 86dbb1eafdc523bc981d835d4db15cba0c880da13cd4ef95f3710093d290f665
+      size: 2129
+    subdir: kubernetes-api-client
     version: 0.5.0.0
   original:
-    commit: a747f6fdc62d34c684709740422497d3c088f8d9
-    git: https://github.com/codedownio/kubernetes-client-haskell.git
-    subdir: kubernetes-client
+    commit: 1ceea12f82e71e36b4a2c9ff31cd50950758419f
+    git: https://github.com/codedownio/kubernetes-api.git
+    subdir: kubernetes-api-client
 - completed:
     commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client

@@ -51,8 +51,8 @@ library:
   - containers
   - filepath
   - http-client
-  - kubernetes-client
-  - kubernetes-client-core
+  - kubernetes-api
+  - kubernetes-api-client
   - lens
   - lens-aeson
   - minio-hs
