@@ -5,15 +5,29 @@
 
 packages:
 - completed:
-    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    hackage: vty-windows-0.2.0.3@sha256:0c010b1086a725046a8bb08bb1e6bfdfdb3cfe1c72d6fa77c37306ef9ec774d8,2844
+    pantry-tree:
+      sha256: 958fd0386c589130177c841df63368ff191eb296f9ed2fd050de10e266c354eb
+      size: 2160
+  original:
+    hackage: vty-windows-0.2.0.3
+- completed:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    pantry-tree:
+      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
+      size: 1632
+  original:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+- completed:
+    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
     name: minio-hs
     pantry-tree:
-      sha256: 6487e6cdf336fda12f9f4e88fb8edc17b3fd32e3f837b5a143237c3d80498929
+      sha256: 62258fb7a35375b89bc1926d5ee21038a723a040a2b826b6dc6c1a474bc94462
       size: 4744
     version: 1.7.0
   original:
-    commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
 - completed:
     commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
@@ -55,15 +69,15 @@ packages:
     git: https://github.com/codedownio/kubernetes-api.git
     subdir: kubernetes-api-client
 - completed:
-    commit: b70757b85751525cba41316ea9af132d9a43cfaf
+    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
     git: https://github.com/codedownio/haskell-oidc-client
     name: oidc-client
     pantry-tree:
-      sha256: b389011ec2b8e7422a56c82833075ddf0152f613044f7acdd1f51a1346d2f7ca
-      size: 1901
+      sha256: d2f194f36144d7da1608fe2060d59e1d64341758fa9adf3473ff6c3d6da345e3
+      size: 1846
     version: 0.8.0.0
   original:
-    commit: b70757b85751525cba41316ea9af132d9a43cfaf
+    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
     git: https://github.com/codedownio/haskell-oidc-client
 - completed:
     commit: dcd0d5b200e96e90c6daa728585c23be5309a955
@@ -78,16 +92,9 @@ packages:
     commit: dcd0d5b200e96e90c6daa728585c23be5309a955
     git: https://github.com/codedownio/hs-certificate
     subdir: x509-validation
-- completed:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
-    pantry-tree:
-      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
-      size: 1632
-  original:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
 snapshots:
 - completed:
-    sha256: 4ef79c30b9efcf07335cb3de532983a7ac4c5a4180bc17f6212a86b09ce2ff75
-    size: 680777
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/7.yaml
-  original: lts-23.7
+    sha256: a1b6c372b9194401b72c7c707b257215a4bed0649b8114c778d9fa17db15a4cb
+    size: 650398
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/2/4.yaml
+  original: nightly-2025-02-04
