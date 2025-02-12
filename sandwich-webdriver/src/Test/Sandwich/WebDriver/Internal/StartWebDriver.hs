@@ -13,7 +13,7 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Reader
+import Control.Monad.Reader (MonadReader)
 import Control.Retry
 import Data.Default
 import Data.Function (fix)

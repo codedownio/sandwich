@@ -8,4 +8,4 @@ import Test.Sandwich
 tests :: TopSpec
 tests = do
   it "works" $ do
-    2 `shouldBe` 2
+    (2 :: Int) `shouldBe` 2

@@ -34,8 +34,8 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logError)
-import Control.Monad.Reader
-import Data.Function
+import Control.Monad.Reader (MonadReader)
+import Data.Function (fix)
 import Data.String.Interpolate
 import System.Exit
 import System.FilePath
