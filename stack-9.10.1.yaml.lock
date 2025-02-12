@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: vty-windows-0.2.0.3@sha256:0c010b1086a725046a8bb08bb1e6bfdfdb3cfe1c72d6fa77c37306ef9ec774d8,2844
-    pantry-tree:
-      sha256: 958fd0386c589130177c841df63368ff191eb296f9ed2fd050de10e266c354eb
-      size: 2160
-  original:
-    hackage: vty-windows-0.2.0.3
-- completed:
     hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
     pantry-tree:
       sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
@@ -57,29 +50,16 @@ packages:
   original:
     hackage: kubernetes-api-client-0.6.0.0
 - completed:
-    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+    commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client
     name: oidc-client
     pantry-tree:
-      sha256: d2f194f36144d7da1608fe2060d59e1d64341758fa9adf3473ff6c3d6da345e3
-      size: 1846
+      sha256: b389011ec2b8e7422a56c82833075ddf0152f613044f7acdd1f51a1346d2f7ca
+      size: 1901
     version: 0.8.0.0
   original:
-    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+    commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client
-- completed:
-    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
-    git: https://github.com/codedownio/hs-certificate
-    name: crypton-x509-validation
-    pantry-tree:
-      sha256: a33d18d3ebc3011afac3a2fb39b1492b3c4687d332eb33ffcb4557bced4ce8a6
-      size: 639
-    subdir: x509-validation
-    version: 1.6.12
-  original:
-    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
-    git: https://github.com/codedownio/hs-certificate
-    subdir: x509-validation
 snapshots:
 - completed:
     sha256: a1b6c372b9194401b72c7c707b257215a4bed0649b8114c778d9fa17db15a4cb

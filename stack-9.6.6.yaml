@@ -52,19 +52,6 @@ extra-deps:
   # codedown-jan-2024-ghc96
   commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
 
-# https://github.com/kubernetes-client/haskell/issues/64
-# https://github.com/channable/vaultenv/issues/99
-- git: https://github.com/codedownio/hs-certificate
-  # codedown-feb-2024
-  # This branch
-  # 1. Takes akshaymankar's fixes from https://github.com/haskell-tls/hs-certificate/pull/113
-  # and rebases them on the most recent https://github.com/haskell-tls/hs-certificate master branch
-  # 2. Cherry-picks kazuyamamoto's commit switching the package to crypton, from here:
-  # https://github.com/kazu-yamamoto/crypton-certificate/commit/c11bbbeec2360ce797c5eb3bd4953cbc5bf1a0d6
-  commit: dcd0d5b200e96e90c6daa728585c23be5309a955
-  subdirs:
-  - x509-validation
-
 # For Unix socket support on Windows
 - conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
 - streaming-commons-0.2.3.0@sha256:68d5f3daa6caa7cc7d659094a03d543021df5ec4737b67e63ffa4541ac0aae10,4841

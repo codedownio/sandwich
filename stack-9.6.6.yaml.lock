@@ -61,19 +61,6 @@ packages:
     commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
     git: https://github.com/codedownio/haskell-oidc-client
 - completed:
-    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
-    git: https://github.com/codedownio/hs-certificate
-    name: crypton-x509-validation
-    pantry-tree:
-      sha256: a33d18d3ebc3011afac3a2fb39b1492b3c4687d332eb33ffcb4557bced4ce8a6
-      size: 639
-    subdir: x509-validation
-    version: 1.6.12
-  original:
-    commit: dcd0d5b200e96e90c6daa728585c23be5309a955
-    git: https://github.com/codedownio/hs-certificate
-    subdir: x509-validation
-- completed:
     hackage: conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
     pantry-tree:
       sha256: 9a42e80dbc11c7c776371352a3e0061fabb1236e6201ec8fbe7222d4b8373a7d
