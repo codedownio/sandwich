@@ -11,7 +11,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
-import System.FilePath
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
@@ -29,6 +28,7 @@ getMacScreenNumber = return $ Just 0 -- TODO
 import Data.Function ((&), on)
 import qualified Data.List as L
 import Data.Maybe
+import System.FilePath ((<.>))
 import UnliftIO.Environment
 #endif
 
