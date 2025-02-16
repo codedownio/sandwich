@@ -30,6 +30,9 @@ module Test.Sandwich.QuickCheck (
   , modifyMaxDiscardRatio
   , modifyMaxSize
   , modifyMaxShrinks
+
+  -- * Types
+  , HasQuickCheckContext
   ) where
 
 import Control.Monad.Free
