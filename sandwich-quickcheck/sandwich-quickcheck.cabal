@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 133b78c0daac18c826d3897da7af63fb1deb8a1a3f17ebb4b454e1b4600c9aaa
+-- hash: 30990c5e07266e7f70b53b532a5114f3aa920235b0d9e3ed40bdda6371c141e4
 
 name:           sandwich-quickcheck
-version:        0.1.0.7
+version:        0.2.0.0
 synopsis:       Sandwich integration with QuickCheck
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-quickcheck documentation>.
 category:       Testing
@@ -49,7 +49,6 @@ library
     , sandwich >=0.1.0.4
     , text
     , unliftio
-    , unliftio-core
   default-language: Haskell2010
 
 test-suite sandwich-quickcheck-test
@@ -76,5 +75,4 @@ test-suite sandwich-quickcheck-test
     , sandwich >=0.1.0.4
     , text
     , unliftio
-    , unliftio-core
   default-language: Haskell2010

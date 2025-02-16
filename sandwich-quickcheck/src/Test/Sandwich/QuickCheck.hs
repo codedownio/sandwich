@@ -37,7 +37,6 @@ module Test.Sandwich.QuickCheck (
 
 import Control.Monad.Free
 import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import Data.Maybe
 import qualified Data.Text as T
 import GHC.Stack
@@ -95,7 +94,7 @@ introduceQuickCheckCommandLineOptions'' msg args = introduce msg quickCheckConte
 
 
 -- | Similar to 'it'. Runs the given prop with QuickCheck using the currently introduced 'Args'. Throws an appropriate exception on failure.
-prop :: (HasCallStack, HasQuickCheckContext context, MonadUnliftIO m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
+prop :: (HasCallStack, HasQuickCheckContext context, MonadIO m, Testable prop) => String -> prop -> Free (SpecCommand context m) ()
 prop msg p = it msg $ do
   QuickCheckContext args <- getContext quickCheckContext
   liftIO (quickCheckWithResult (args { QC.chatty = False }) p) >>= \case
