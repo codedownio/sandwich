@@ -1,5 +1,7 @@
 # Changelog for sandwich-quickcheck
 
+## Unreleased
+
 ## 0.2.0.0
 
 * Don't use MonadBaseControl anymore
