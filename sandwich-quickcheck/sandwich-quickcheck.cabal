@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 30990c5e07266e7f70b53b532a5114f3aa920235b0d9e3ed40bdda6371c141e4
+-- hash: 40d1ce983b1eb830c952dc625f9797925e149442f7b080d45c58a63c6e322278
 
 name:           sandwich-quickcheck
 version:        0.2.0.0
@@ -15,7 +15,7 @@ homepage:       https://codedownio.github.io/sandwich
 bug-reports:    https://github.com/codedownio/sandwich/issues
 author:         Tom McLaughlin
 maintainer:     tom@codedown.io
-copyright:      2024 Tom McLaughlin
+copyright:      2025 Tom McLaughlin
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
