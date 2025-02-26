@@ -14,7 +14,6 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
@@ -38,7 +37,7 @@ webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
 type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
 
 introduceWebDriverPool :: forall m context. (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  MonadUnliftIO m, MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, HasBrowserDependencies context, HasFile context "java", HasFile context "selenium.jar"
   ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduceWith "Introduce webdriver pool" webDriverPool $ \action -> do
