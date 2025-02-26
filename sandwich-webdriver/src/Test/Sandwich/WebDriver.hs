@@ -70,7 +70,6 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -191,7 +190,7 @@ cleanupWebDriver sess = do
 
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Session to run
@@ -221,7 +220,7 @@ withSession session action = do
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Wrapped action
@@ -231,7 +230,7 @@ withSession1 = withSession "session1"
 
 -- | Convenience function. @withSession2 = withSession "session2"@.
 withSession2 :: (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Wrapped action

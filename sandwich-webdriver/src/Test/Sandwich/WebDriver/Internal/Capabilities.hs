@@ -11,7 +11,7 @@ module Test.Sandwich.WebDriver.Internal.Capabilities (
   , getDefaultFirefoxProfile
   ) where
 
-import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import Data.Default
 import Data.Function ((&))
@@ -48,7 +48,7 @@ headlessChromeCapabilities maybeChromePath = def {
 
 -- * Firefox
 
-getDefaultFirefoxProfile :: MonadBaseControl IO m => FilePath -> m (FF.PreparedProfile FF.Firefox)
+getDefaultFirefoxProfile :: MonadIO m => FilePath -> m (FF.PreparedProfile FF.Firefox)
 getDefaultFirefoxProfile downloadDir = do
   FF.defaultProfile
     & FF.addPref "browser.download.folderList" (2 :: Int)
