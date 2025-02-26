@@ -19,19 +19,25 @@ packages:
 - ./sandwich-webdriver
 
 extra-deps:
-## For sandwich-contexts
+# For sandwich-webdriver
+
+- git: https://github.com/haskell-webdriver/haskell-webdriver
+  # main branch
+  commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+
+# For sandwich-contexts
 
 - git: https://github.com/codedownio/minio-hs
   commit: 1e63a0ec44fff374799b25a0a02c041eab664c4f
 
-## For sandwich-contexts-docker
+# For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-engine.git
   commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
   subdirs:
   - v1.44
 
-## For sandwich-contexts-kubernetes
+# For sandwich-contexts-kubernetes
 
 - kubernetes-api-130.0.0
 - kubernetes-api-client-0.6.0.0

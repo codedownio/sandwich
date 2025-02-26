@@ -47,6 +47,24 @@ packages:
   original:
     hackage: text-zipper-0.13@sha256:e1a48d69c9324ed3784bc39d5ded84d63ea3115b32a018ddf76158ed9d58dc0a,1472
 - completed:
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+    name: webdriver
+    pantry-tree:
+      sha256: fc40a8b0538d13921f01763e2ac39d781fdf93419c00d44d71656b7f08226e89
+      size: 3211
+    version: 0.12.0.1
+  original:
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+- completed:
+    hackage: attoparsec-aeson-2.2.2.0@sha256:02dc3cc4d217a364471da7ce0f47be39e5b1449e7768134e5f2926d87a21448d,1590
+    pantry-tree:
+      sha256: e218cf2c1290f8f718a5501f23383d7de2b226800314ba61539b260e078d3c5f
+      size: 404
+  original:
+    hackage: attoparsec-aeson-2.2.2.0@sha256:02dc3cc4d217a364471da7ce0f47be39e5b1449e7768134e5f2926d87a21448d,1590
+- completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
     name: minio-hs

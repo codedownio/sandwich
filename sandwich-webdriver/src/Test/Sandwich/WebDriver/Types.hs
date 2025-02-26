@@ -23,11 +23,10 @@ module Test.Sandwich.WebDriver.Types (
   , getXvfbSession
   ) where
 
-import Control.Monad.Catch (MonadMask)
+import Control.Monad.Catch (MonadCatch, MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.IORef
 import GHC.Stack
 import Test.Sandwich
@@ -49,7 +48,9 @@ instance (MonadIO m, HasWebDriverSessionContext context) => W.WDSessionState (Ex
     liftIO $ writeIORef sessVar sess
 
 -- Implementation copied from that of the WD monad implementation
-instance (MonadIO m, MonadBaseControl IO m, HasWebDriverSessionContext context) => W.WebDriver (ExampleT context m) where
+instance (
+  MonadIO m, MonadCatch m, HasWebDriverSessionContext context
+  ) => W.WebDriver (ExampleT context m) where
   doCommand method path args = WI.mkRequest method path args
     >>= WI.sendHTTPRequest
     >>= either throwIO return
