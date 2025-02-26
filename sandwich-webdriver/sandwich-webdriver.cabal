@@ -87,6 +87,7 @@ library
     , http-client
     , http-client-tls
     , http-conduit
+    , http-types
     , microlens
     , microlens-aeson
     , monad-control
@@ -172,6 +173,7 @@ test-suite sandwich-webdriver-test
     , http-client
     , http-client-tls
     , http-conduit
+    , http-types
     , microlens
     , microlens-aeson
     , monad-control
