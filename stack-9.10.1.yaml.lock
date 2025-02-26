@@ -5,12 +5,16 @@
 
 packages:
 - completed:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+    name: webdriver
     pantry-tree:
-      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
-      size: 1632
+      sha256: fc40a8b0538d13921f01763e2ac39d781fdf93419c00d44d71656b7f08226e89
+      size: 3211
+    version: 0.12.0.1
   original:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
 - completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
@@ -60,6 +64,13 @@ packages:
   original:
     commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client
+- completed:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    pantry-tree:
+      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
+      size: 1632
+  original:
+    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
 snapshots:
 - completed:
     sha256: 0bff5f3f5548516a7c86cea95d47672383cef34dac97ba28d750a52ddfcdf54a

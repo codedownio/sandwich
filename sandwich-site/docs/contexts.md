@@ -55,7 +55,7 @@ introduceDatabase = introduceWith "Introduce database" database $ \action ->
           (void . action)
 ```
 
-Inside the test, we can use `getContext` to get the context and do things with it. 
+Inside the test, we can use `getContext` to get the context and do things with it.
 
 ```haskell
 contextsDemo :: TopSpec
@@ -89,13 +89,13 @@ Now that we have the spec type, we can start writing specs. You can imagine thes
 -- In DatabaseTest1.hs
 databaseTest1 :: DatabaseSpec
 databaseTest1 = do
-  it "uses the database 1" $ getContext database >>= \db -> 
+  it "uses the database 1" $ getContext database >>= \db ->
     info [i|Got database: '#{db}'|]
 
 -- In DatabaseTest2.hs
 databaseTest2 :: DatabaseSpec
 databaseTest2 = do
-  it "uses the database 2" $ getContext database >>= \db -> 
+  it "uses the database 2" $ getContext database >>= \db ->
     info [i|Got database: '#{db}'|]
 ```
 
@@ -155,7 +155,7 @@ contextNestedDepsDemo = describe "Nested dependencies" $ do
 Note that it's usually easiest to let GHC infer the type signature of `introduceServer`. If you do need to write out the type signature, it can be a little bit verbose since it needs to use the underlying context constructors and put appropriate constraints on the base monad. For this example, the signature for this example might look like this:
 
 ```haskell
-introduceServer :: (HasDatabase context, MonadIO m, MonadBaseControl IO m)
+introduceServer :: (HasDatabase context, MonadIO m)
   => SpecFree (LabelValue "server" Server :> context) m () -> SpecFree context m ()
 ```
 

@@ -12,6 +12,17 @@ packages:
   original:
     hackage: vty-windows-0.2.0.3
 - completed:
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+    name: webdriver
+    pantry-tree:
+      sha256: fc40a8b0538d13921f01763e2ac39d781fdf93419c00d44d71656b7f08226e89
+      size: 3211
+    version: 0.12.0.1
+  original:
+    commit: e41212960587b6f681b6c2aa118c3dfb3cd31524
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+- completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs
     name: minio-hs
