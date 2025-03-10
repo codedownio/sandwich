@@ -25,10 +25,12 @@ module Test.Sandwich.Contexts.PostgreSQL (
   -- * Raw PostgreSQL via Nix (TCP socket)
   introducePostgresViaNix
   , withPostgresViaNix
+  , withPostgresViaNix'
 
   -- * Raw PostgreSQL via Nix (Unix socket)
   , introducePostgresUnixSocketViaNix
   , withPostgresUnixSocketViaNix
+  , withPostgresUnixSocketViaNix'
 
   -- * Containerized PostgreSQL
   , introducePostgresViaContainer
@@ -65,8 +67,8 @@ import Test.Sandwich.Contexts.Container
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.ReverseProxy.TCP
 import Test.Sandwich.Contexts.Types.Network
-import Test.Sandwich.Contexts.Util.UUID (makeUUID)
 import Test.Sandwich.Contexts.UnixSocketPath
+import Test.Sandwich.Contexts.Util.UUID (makeUUID)
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.Exception
@@ -146,8 +148,23 @@ withPostgresViaNix :: (
   => PostgresNixOptions
   -> (PostgresContext -> m a)
   -> m a
-withPostgresViaNix opts@(PostgresNixOptions {..}) action = do
-  withPostgresUnixSocketViaNix opts $ \unixSocket ->
+withPostgresViaNix opts action = do
+  nc <- getContext nixContext
+  withPostgresViaNix' nc opts action
+
+-- | Lower-level variant of 'withPostgresViaNix'.
+withPostgresViaNix' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadMask m, MonadFail m, MonadLogger m
+  )
+  -- | Nix context
+  => NixContext
+  -- | Options
+  -> PostgresNixOptions
+  -> (PostgresContext -> m a)
+  -> m a
+withPostgresViaNix' nc opts@(PostgresNixOptions {..}) action = do
+  withPostgresUnixSocketViaNix' nc opts $ \unixSocket ->
     withProxyToUnixSocket unixSocket $ \port ->
       action $ PostgresContext {
         postgresUsername = postgresNixUsername
@@ -189,6 +206,20 @@ withPostgresUnixSocketViaNix :: (
   -> m a
 withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
   postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin [postgresNixPostgres]
+  withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase postgresNixConfExtraLines action
+
+-- | Lower-level variant of 'withPostgresUnixSocket'.
+withPostgresUnixSocketViaNix' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadFail m, MonadMask m, MonadLogger m
+  )
+  -- | Options
+  => NixContext
+  -> PostgresNixOptions
+  -> (FilePath -> m a)
+  -> m a
+withPostgresUnixSocketViaNix' nc (PostgresNixOptions {..}) action = do
+  postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin' nc [postgresNixPostgres]
   withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase postgresNixConfExtraLines action
 
 -- | The lowest-level raw process version.
