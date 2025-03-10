@@ -31,6 +31,8 @@ module Test.Sandwich.Contexts.Nix (
   introduceNixContext
   , introduceNixContext'
   , introduceNixContext''
+  , makeNixContext
+  , makeNixContext'
 
   -- * Nix environments
   , introduceNixEnvironment
@@ -176,14 +178,7 @@ introduceNixContext' :: (
   -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceNixContext' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext getNixContext (const $ return ())
-  where
-    getNixContext = findExecutable "nix" >>= \case
-      Nothing -> expectationFailure [i|Couldn't find "nix" binary when introducing Nix context. A Nix binary and store must already be available in the environment.|]
-      Just p -> do
-        -- TODO: make sure the Nixpkgs derivation works
-        buildCache <- newMVar mempty
-        pure (NixContext p nixpkgsDerivation buildCache)
+introduceNixContext' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext (makeNixContext nixpkgsDerivation) (const $ return ())
 
 -- | Same as 'introduceNixContext'', but allows specifying the Nix binary via 'HasFile'.
 introduceNixContext'' :: (
@@ -199,13 +194,23 @@ introduceNixContext'' :: (
   -> SpecFree (LabelValue "nixContext" NixContext :> context) m ()
   -- | Parent spec
   -> SpecFree context m ()
-introduceNixContext'' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext getNixContext (const $ return ())
-  where
-    getNixContext = do
-      nix <- askFile @"nix"
-      -- TODO: make sure the Nixpkgs derivation works
-      buildCache <- newMVar mempty
-      pure (NixContext nix nixpkgsDerivation buildCache)
+introduceNixContext'' nodeOptions nixpkgsDerivation = introduce' nodeOptions "Introduce Nix context" nixContext (makeNixContext' nixpkgsDerivation) (const $ return ())
+
+-- | Build a 'NixContext' directly. Throws an exception if the @nix@ binary is not found.
+makeNixContext :: (MonadIO m) => NixpkgsDerivation -> m NixContext
+makeNixContext nixpkgsDerivation = findExecutable "nix" >>= \case
+  Nothing -> expectationFailure [i|Couldn't find "nix" binary when introducing Nix context. A Nix binary and store must already be available in the environment.|]
+  Just p -> do
+    -- TODO: make sure the Nixpkgs derivation works
+    buildCache <- newMVar mempty
+    pure (NixContext p nixpkgsDerivation buildCache)
+
+-- | Build a 'NixContext' directly, specifying the Nix binary via 'HasFile'.
+makeNixContext' :: (MonadIO m, MonadReader ctx m, HasFile ctx "nix") => NixpkgsDerivation -> m NixContext
+makeNixContext' nixpkgsDerivation = do
+  nix <- askFile @"nix"
+  buildCache <- newMVar mempty
+  pure (NixContext nix nixpkgsDerivation buildCache)
 
 -- | Introduce a Nix environment containing the given list of packages, using the current 'NixContext'.
 -- These packages are mashed together using the Nix @symlinkJoin@ function. Their binaries will generally
