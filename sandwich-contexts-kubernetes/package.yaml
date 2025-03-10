@@ -5,7 +5,7 @@ license: BSD3
 description: Please see README.md
 author: Tom McLaughlin
 maintainer: tom@codedown.io
-copyright: 2024 Tom McLaughlin
+copyright: 2025 Tom McLaughlin
 dependencies:
 - base >= 4.11 && < 5
 - exceptions

@@ -5,7 +5,7 @@ license: BSD3
 description: Please see the <https://codedownio.github.io/sandwich documentation>.
 author: Tom McLaughlin
 maintainer: tom@codedown.io
-copyright: 2024 Tom McLaughlin
+copyright: 2025 Tom McLaughlin
 
 extra-source-files:
 - CHANGELOG.md
