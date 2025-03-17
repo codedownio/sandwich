@@ -10,6 +10,7 @@ import Control.Monad.Logger
 import Control.Retry
 import Data.Maybe
 import Data.String.Interpolate
+import System.Posix.Signals (signalProcess, sigKILL)
 import System.Process
 import Test.Sandwich.Logging
 
@@ -33,13 +34,20 @@ gracefullyWaitForProcess p gracePeriodUs = do
   waitForExit >>= \case
     Just _ -> return ()
     Nothing -> do
-      pid <- liftIO $ getPid p
-      warn [i|(#{pid}) Process didn't stop after #{gracePeriodUs}us; trying to interrupt|]
+      liftIO (getPid p) >>= \case
+        Nothing -> return ()
+        Just pid -> do
+          warn [i|(#{pid}) Process didn't stop after #{gracePeriodUs}us; trying to interrupt|]
 
-      liftIO $ interruptProcessGroupOf p
-      waitForExit >>= \case
-        Just _ -> return ()
-        Nothing -> void $ do
-          warn [i|(#{pid}) Process didn't stop after a further #{gracePeriodUs}us; going to kill|]
-          liftIO $ terminateProcess p
-          liftIO $ waitForProcess p
+          liftIO $ interruptProcessGroupOf p
+          waitForExit >>= \case
+            Just _ -> return ()
+            Nothing -> void $ do
+              warn [i|(#{pid}) Process didn't stop after another sigINT and a further #{gracePeriodUs}us; going to terminate|]
+              liftIO $ terminateProcess p
+
+              waitForExit >>= \case
+                Just _ -> return ()
+                Nothing -> do
+                  warn [i|(#{pid}) Process didn't stop after sigTERM and a further #{gracePeriodUs}us; going to kill|]
+                  liftIO $ signalProcess sigKILL pid
