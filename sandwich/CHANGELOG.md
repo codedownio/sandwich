@@ -2,20 +2,22 @@
 
 ## Unreleased
 
+* Ultimately use sigKILL in Sandwich.Util.Process.gracefullyWaitForProcess if sigINT and sigTERM don't work.
+
 ## 0.3.0.3
 
-* Add 'ContainerOptions' type to `Test.Sandwich.Contexts.Container`
-* Improve display of setup/work/teardown in TUI
+* Add 'ContainerOptions' type to `Test.Sandwich.Contexts.Container`.
+* Improve display of setup/work/teardown in TUI.
 
 ## 0.3.0.2
 
-* Re-fix compatibility for base < 4.14.0.0
-* windows: fix Infinity -> maxBound for an Int
+* Re-fix compatibility for base < 4.14.0.0.
+* windows: fix Infinity -> maxBound for an Int.
 
 ## 0.3.0.1
 
-* Fix openFileExplorerFolderPortable on macOS
-* Fix compatibility for base < 4.14.0.0
+* Fix openFileExplorerFolderPortable on macOS.
+* Fix compatibility for base < 4.14.0.0.
 
 ## 0.3.0.0
 
