@@ -161,7 +161,9 @@ gatherShorthands = gatherShorthands' []
       where newShorthand = getShorthand taken x
 
     getShorthand :: [T.Text] -> NodeModuleInfo -> T.Text
-    getShorthand taken nmi = head $ filter (\x -> x `notElem` taken && x `notElem` takenMainOptions) $ getCandidates nmi
+    getShorthand taken nmi = case filter (\x -> x `notElem` taken && x `notElem` takenMainOptions) $ getCandidates nmi of
+      [] -> "unknown"
+      (x:_) -> x
 
     getCandidates :: NodeModuleInfo -> [T.Text]
     getCandidates (NodeModuleInfo {nodeModuleInfoModuleName=modName}) = candidates
