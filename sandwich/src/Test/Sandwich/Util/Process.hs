@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 
 module Test.Sandwich.Util.Process (
   gracefullyStopProcess
@@ -10,9 +11,12 @@ import Control.Monad.Logger
 import Control.Retry
 import Data.Maybe
 import Data.String.Interpolate
-import System.Posix.Signals (signalProcess, sigKILL)
 import System.Process
 import Test.Sandwich.Logging
+
+#ifndef mingw32_HOST_OS
+import System.Posix.Signals (signalProcess, sigKILL)
+#endif
 
 
 -- | Interrupt a process and wait for it to terminate.
@@ -46,8 +50,10 @@ gracefullyWaitForProcess p gracePeriodUs = do
               warn [i|(#{pid}) Process didn't stop after another sigINT and a further #{gracePeriodUs}us; going to terminate|]
               liftIO $ terminateProcess p
 
+#ifndef mingw32_HOST_OS
               waitForExit >>= \case
                 Just _ -> return ()
                 Nothing -> do
                   warn [i|(#{pid}) Process didn't stop after sigTERM and a further #{gracePeriodUs}us; going to kill|]
                   liftIO $ signalProcess sigKILL pid
+#endif
