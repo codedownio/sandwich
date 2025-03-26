@@ -85,6 +85,7 @@ import GHC.IO.Encoding
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.Environment
+import System.Exit
 import System.FilePath
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
@@ -118,7 +119,9 @@ import System.Win32.Console (setConsoleOutputCP)
 
 -- | Run the spec with the given 'Options'.
 runSandwich :: Options -> CoreSpec -> IO ()
-runSandwich options spec = void $ runSandwich' Nothing options spec
+runSandwich options spec = do
+  (_exitReason, failures) <- runSandwich' Nothing options spec
+  when (0 < failures) $ exitFailure
 
 -- | Run the spec, configuring the options from the command line.
 runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
