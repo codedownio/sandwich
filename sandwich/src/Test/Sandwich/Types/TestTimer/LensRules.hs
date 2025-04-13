@@ -1,10 +1,9 @@
-
 module Test.Sandwich.Types.TestTimer.LensRules (
   testTimerLensRules
   ) where
 
 import Data.Char (toLower, toUpper)
-import Language.Haskell.TH
+import "template-haskell" Language.Haskell.TH
 import Lens.Micro
 import Lens.Micro.TH
 

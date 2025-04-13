@@ -22,8 +22,8 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
+import "template-haskell" Language.Haskell.TH
+import "template-haskell" Language.Haskell.TH.Syntax
 import Safe
 import System.Directory
 import System.FilePath as F
