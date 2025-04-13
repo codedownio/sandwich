@@ -24,3 +24,6 @@ tests = describe "Selenium tests 2" $ do
     findElem (ByCSS [i|input[type="submit"]|]) >>= click
 
     liftIO $ threadDelay 5000000
+
+main :: IO ()
+main = putStrLn "Test"

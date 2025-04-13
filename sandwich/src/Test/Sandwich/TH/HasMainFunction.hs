@@ -1,59 +1,108 @@
-{-# LANGUAGE MultiWayIf #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Test.Sandwich.TH.HasMainFunction (
   fileHasMainFunction
   , ShouldWarnOnParseError(..)
   ) where
 
+import Control.Applicative
 import Control.Monad
+import Data.Attoparsec.Text
+import Data.Char (isAlphaNum, isAlpha, isSpace)
 import Data.String.Interpolate
-import Language.Haskell.Exts hiding (name)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import Language.Haskell.TH (Q, runIO, reportWarning)
-
--- import Debug.Trace
 
 
 data ShouldWarnOnParseError = WarnOnParseError | NoWarnOnParseError
   deriving (Eq)
 
--- | Use haskell-src-exts to determine if a give Haskell file has an exported main function
--- Parse with all extensions enabled, which will hopefully parse anything
 fileHasMainFunction :: FilePath -> ShouldWarnOnParseError -> Q Bool
-fileHasMainFunction path shouldWarnOnParseError = runIO (parseFileWithExts [x | x@(EnableExtension _) <- knownExtensions] path) >>= \case
-  x@(ParseFailed {}) -> do
-    when (shouldWarnOnParseError == WarnOnParseError) $
-      reportWarning [i|Failed to parse #{path}: #{x}|]
-    return False
-  ParseOk (Module _ (Just moduleHead) _ _ decls) -> do
-    -- traceM [i|Sucessfully parsed #{path}: #{moduleHead}|]
-    case moduleHead of
-      ModuleHead _ _ _ (Just (ExportSpecList _ (any isMainFunction -> True))) -> do
-        -- traceM [i|FOUND MAIN FUNCTION FOR #{path}|]
-        return True
-      ModuleHead _ _ _ Nothing -> do
-        -- traceM [i|LOOKING FOR DECLS: #{decls}|]
-        return $ any isMainDecl decls
-      _ -> return False
-  ParseOk _ -> do
-    reportWarning [i|Successfully parsed #{path} but no module head found|]
-    return False
+fileHasMainFunction filePath shouldWarnOnParseError = do
+  t <- runIO $ T.readFile filePath
+  case fileHasMainFunction' t of
+    Left err -> do
+      when (shouldWarnOnParseError == WarnOnParseError) $
+        reportWarning [i|Failed to parse #{filePath}: #{err}|]
+      return False
+    Right x -> return x
 
-isMainFunction :: ExportSpec l -> Bool
-isMainFunction (EVar _ name) = isMainFunctionQName name
-isMainFunction _ = False
+fileHasMainFunction' :: T.Text -> Either String Bool
+fileHasMainFunction' source = case parseOnly parser (stripComments source) of
+  Right result -> Right $ checkForMain result
+  Left err -> Left err
+  where
+    parser = do
+      modDecl <- parseModule
+      decls <- parseTopLevelDeclarations
+      return (modDecl, decls)
 
-isMainFunctionQName :: QName l -> Bool
-isMainFunctionQName (Qual _ _ name) = isMainFunctionName name
-isMainFunctionQName (UnQual _ name) = isMainFunctionName name
-isMainFunctionQName _ = False
+    checkForMain (modDecl, decls) = case modDecl of
+      Just (_, exports) -> "main" `elem` exports
+      Nothing -> "main" `elem` decls
 
-isMainFunctionName :: Name l -> Bool
-isMainFunctionName (Ident _ "main") = True
-isMainFunctionName (Symbol _ "main") = True
-isMainFunctionName _ = False
+stripComments :: T.Text -> T.Text
+stripComments = removeLineComments . removeBlockComments
+  where
+    removeLineComments = T.unlines . map stripLineComment . T.lines
+    stripLineComment line =
+      case T.breakOn "--" line of
+        (code, comment) | T.null comment -> code
+                        | otherwise      -> code
 
-isMainDecl :: Decl l -> Bool
-isMainDecl (PatBind _ (PVar _ (Ident _ "main")) _ _) = True
--- isMainDecl decl = trace [i|Looking at decl: #{decl}|] False
-isMainDecl _ = False
+    removeBlockComments text = case T.breakOn "{-" text of
+      (before, after)
+        | T.null after -> before
+        | otherwise    ->
+            case T.breakOn "-}" (T.drop 2 after) of
+              (_, afterEnd)
+                | T.null afterEnd -> before
+                | otherwise       -> removeBlockComments (T.append before (T.drop 2 afterEnd))
+
+parseModule :: Parser (Maybe (T.Text, [T.Text]))
+parseModule = do
+  _ <- many' (skipSpace *> (satisfy (not . isAlpha)))
+  _ <- skipSpace
+  moduleStr <- string "module" <|> return ""
+  if moduleStr == "module"
+    then do
+      skipSpace
+      moduleName <- parseIdentifier
+      skipSpace
+      exports <- option [] $ parens parseExports
+      return $ Just (moduleName, exports)
+    else return Nothing
+
+-- | Parse a list of exported identifiers
+parseExports :: Parser [T.Text]
+parseExports = sepBy' parseExportItem (skipSpace *> char ',' <* skipSpace)
+
+-- | Parse a single export item (could be a function, type, etc.)
+parseExportItem :: Parser T.Text
+parseExportItem = do
+  item <- parseIdentifier
+  -- Ignore type constructors or other details
+  _ <- option "" (parens $ many' $ notChar ')')
+  return item
+
+parens :: Parser a -> Parser a
+parens p = char '(' *> p <* char ')'
+
+parseIdentifier :: Parser T.Text
+parseIdentifier = do
+  first <- satisfy (\c -> isAlpha c || c == '_')
+  rest <- many' (satisfy (\c -> isAlphaNum c || c == '_' || c == '\''))
+  return $ T.pack (first : rest)
+
+parseTopLevelDeclarations :: Parser [T.Text]
+parseTopLevelDeclarations = many' $ do
+  skipSpace
+  name <- parseIdentifier
+  skipSpace
+  _ <- many' (satisfy (\c -> c == ':' || c == '-' || c == '>' || isSpace c))
+  skipSpace
+  _ <- char '='
+  skipMany $ notChar '\n'
+  endOfLine <|> endOfInput
+  return name

@@ -114,6 +114,7 @@ library
       aeson
     , ansi-terminal
     , async
+    , attoparsec
     , base >=4.11 && <5
     , brick
     , bytestring
@@ -124,7 +125,6 @@ library
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -177,6 +177,7 @@ executable sandwich-demo
       aeson
     , ansi-terminal
     , async
+    , attoparsec
     , base >=4.11 && <5
     , brick
     , bytestring
@@ -187,7 +188,6 @@ executable sandwich-demo
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -238,6 +238,7 @@ executable sandwich-discover
       aeson
     , ansi-terminal
     , async
+    , attoparsec
     , base >=4.11 && <5
     , brick
     , bytestring
@@ -248,7 +249,6 @@ executable sandwich-discover
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -304,6 +304,7 @@ executable sandwich-test
       aeson
     , ansi-terminal
     , async
+    , attoparsec
     , base >=4.11 && <5
     , brick
     , bytestring
@@ -314,7 +315,6 @@ executable sandwich-test
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -371,6 +371,7 @@ test-suite sandwich-test-suite
       aeson
     , ansi-terminal
     , async
+    , attoparsec
     , base >=4.11 && <5
     , brick
     , bytestring
@@ -381,7 +382,6 @@ test-suite sandwich-test-suite
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control

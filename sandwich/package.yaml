@@ -29,6 +29,7 @@ dependencies:
 - aeson
 - ansi-terminal
 - async
+- attoparsec
 - base >= 4.11 && < 5
 - brick
 - colour
@@ -63,7 +64,6 @@ dependencies:
 
 # For spec discovery. Move to its own package?
 - template-haskell
-- haskell-src-exts
 
 when:
 - condition: "!os(windows)"
