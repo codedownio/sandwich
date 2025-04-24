@@ -359,7 +359,7 @@ runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr maybeOutputPath = d
                  , "--extra-experimental-features", "nix-command"
                  , "--expr", toString expr
                  , "--json"
-                 ] <> (case maybeOutputPath of Nothing -> []; Just p -> ["-o", p])
+                 ] <> (case maybeOutputPath of Nothing -> ["--no-link"]; Just p -> ["-o", p])
                 )) { env = maybeEnv }
     ) ""
 

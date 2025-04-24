@@ -129,10 +129,13 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
 
   NixContext {..} <- getContext nixContext
 
-  let cp = proc nixContextNixBinary ["build", "--impure"
-                                    , "--extra-experimental-features", "nix-command"
-                                    , "--expr", seaweedFsOperatorDerivation
-                                    , "--json"]
+  let cp = proc nixContextNixBinary [
+        "build", "--impure"
+        , "--extra-experimental-features", "nix-command"
+        , "--expr", seaweedFsOperatorDerivation
+        , "--no-link"
+        , "--json"
+        ]
 
   operatorJson <- withFile "/dev/null" WriteMode $ \hNull ->
     readCreateProcess (cp { std_err = UseHandle hNull }) ""

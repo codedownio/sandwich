@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Add `postgresNixConfExtraLines` to `PostgresNixOptions`, to be able to add extra lines to `postgresql.conf`.
+* sandwich-contexts: use --no-link to avoid unnecessary result symlinks
 
 ## 0.3.0.1
 
