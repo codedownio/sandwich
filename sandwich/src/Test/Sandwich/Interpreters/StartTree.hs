@@ -12,6 +12,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Reader
 import Data.IORef
@@ -52,7 +53,7 @@ startTree node@(RunNodeBefore {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    (timed (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|]))) >>= \case
+    (timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (setup)") (runExampleM runNodeBefore ctx runTreeLogs (Just [i|Exception in before '#{runTreeLabel}' handler|]))) >>= \case
       (result@(Failure fr@(Pending {})), _setupStartTime, setupFinishTime) -> do
         markAllChildrenWithResult runNodeChildren ctx (Failure fr)
         return (result, mkSetupTimingInfo setupFinishTime)
@@ -74,7 +75,8 @@ startTree node@(RunNodeAfter {..}) ctx' = do
     result <- liftIO $ newIORef (Success, emptyExtraTimingInfo)
     finally (void $ runNodesSequentially runNodeChildren ctx)
             (do
-                (ret, teardownStartTime, _teardownFinishTime) <- timed (runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|]))
+                (ret, teardownStartTime, _teardownFinishTime) <- timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (teardown)") $
+                  runExampleM runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])
                 writeIORef result (ret, mkTeardownTimingInfo teardownStartTime)
             )
     liftIO $ readIORef result
@@ -86,13 +88,16 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
     bracket (do
                 let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
                 flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
-                  timed (runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])))
+                  timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (setup)") $
+                    runExampleM' runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])
+            )
             (\(ret, setupStartTime, setupFinishTime) -> case ret of
                 Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupStartTime)
                 Right intro -> do
                   teardownStartTime <- getCurrentTime
                   addTeardownStartTimeToStatus runTreeStatus teardownStartTime
-                  ret' <- runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
+                  (ret', _, _) <- timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (teardown)") $
+                    runExampleM (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
                   writeIORef result (ret', ExtraTimingInfo (Just setupFinishTime) (Just teardownStartTime))
             )
             (\(ret, _setupStartTime, setupFinishTime) -> do
@@ -125,24 +130,38 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
                 _ -> Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
             beginningCleanupVar <- liftIO $ newIORef Nothing
+
+            -- Record a start event in the test timing, if configured
+            let tt = if runTreeRecordTime then getTestTimer (getBaseContext ctx) else NullTestTimer
+            let setupLabel = runTreeLabel <> " (setup)"
+            let teardownLabel = runTreeLabel <> " (teardown)"
+            handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
+
             results <- runNodeIntroduceAction $ \intro -> do
+              -- Record the end event in the test timing
+              -- TODO: do we need to deal with exceptions here and in teardown? I think we we fail to emit the
+              -- end event, the time profile won't be viewable.
+              handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
 
-              results <- liftIO $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctx)
+              (results, _, _) <- timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (body)") $
+                liftIO $ runNodesSequentially runNodeChildrenAugmented (LabelValue intro :> ctx)
 
               teardownStartTime <- liftIO getCurrentTime
               addTeardownStartTimeToStatus runTreeStatus teardownStartTime
-              liftIO $ writeIORef beginningCleanupVar (Just teardownStartTime)
 
+              liftIO $ writeIORef beginningCleanupVar (Just teardownStartTime)
+              handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
               liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupFinishTime)
               return results
 
             liftIO (readIORef beginningCleanupVar) >>= \case
               Nothing -> return ()
-              Just teardownStartTime ->
-                liftIO $ modifyIORef' didRunWrappedAction $
-                  \(ret, timingInfo) -> (ret, timingInfo { teardownStartTime = Just teardownStartTime })
+              Just teardownStartTime -> do
+                handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
+                liftIO $ modifyIORef' didRunWrappedAction $ \(ret, timingInfo) ->
+                  (ret, timingInfo { teardownStartTime = Just teardownStartTime })
 
             return results
 
@@ -198,9 +217,7 @@ runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context 
 runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
-  let timerFn = case runTreeRecordTime of
-        True -> timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel)
-        _ -> id
+  let timerFn = if runTreeRecordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel) else id
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
   myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
@@ -372,9 +389,11 @@ recordExceptionInStatus status e = do
     Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime endTime ret
     _ -> Done endTime Nothing Nothing endTime ret
 
-timed :: (MonadIO m) => m a -> m (a, UTCTime, UTCTime)
-timed action = do
+timed :: (MonadUnliftIO m) => Bool -> BaseContext -> String -> m a -> m (a, UTCTime, UTCTime)
+timed recordTime bc@(BaseContext {..}) label action = do
+  let timerFn = if recordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack label) else id
+
   startTime <- liftIO getCurrentTime
-  ret <- action
+  ret <- timerFn action
   endTime <- liftIO getCurrentTime
   pure (ret, startTime, endTime)

@@ -3,9 +3,21 @@
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Test.Sandwich.TestTimer where
+module Test.Sandwich.TestTimer (
+  timeAction
+  , timeAction'
+  , timeActionByProfile
 
-import Control.Concurrent
+  , handleStartEvent
+  , handleEndEvent
+
+  , withTimingProfile
+  , withTimingProfile'
+
+  , newSpeedScopeTestTimer
+  , finalizeSpeedScopeTestTimer
+  ) where
+
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -17,6 +29,7 @@ import qualified Data.Sequence as S
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Time
 import Data.Time.Clock.POSIX
 import Lens.Micro
 import System.Directory
@@ -26,6 +39,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
+import UnliftIO.Concurrent
 import UnliftIO.Exception
 
 
@@ -76,9 +90,11 @@ withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer p
 -- * Core
 
 timingNodeOptions :: NodeOptions
-timingNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False
-                                       , nodeOptionsCreateFolder = False
-                                       , nodeOptionsVisibilityThreshold = systemVisibilityThreshold }
+timingNodeOptions = defaultNodeOptions {
+  nodeOptionsRecordTime = False
+  , nodeOptionsCreateFolder = False
+  , nodeOptionsVisibilityThreshold = systemVisibilityThreshold
+  }
 
 newSpeedScopeTestTimer :: FilePath -> Bool -> IO TestTimer
 newSpeedScopeTestTimer path writeRawTimings = do
@@ -103,38 +119,59 @@ finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
 timeAction' :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
 timeAction' (SpeedScopeTestTimer {..}) profileName eventName = bracket_
-  (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
-    now <- getPOSIXTime
-    handleStartEvent file now
-  )
-  (liftIO $ modifyMVar_ testTimerSpeedScopeFile $ \file -> do
-    now <- getPOSIXTime
-    handleEndEvent file now
-  )
-  where
-    handleStartEvent file time = do
-      whenJust testTimerHandle $ \h -> T.hPutStrLn h [i|#{time} START #{show profileName} #{eventName}|]
-      return $ handleSpeedScopeEvent file time SpeedScopeEventTypeOpen
+  (modifyMVar_ testTimerSpeedScopeFile $ \file -> liftIO getPOSIXTime >>= handleStartEvent' testTimerHandle profileName eventName file)
+  (modifyMVar_ testTimerSpeedScopeFile $ \file -> liftIO getPOSIXTime >>= handleEndEvent' testTimerHandle profileName eventName file)
 
-    handleEndEvent file time = do
-      whenJust testTimerHandle $ \h -> T.hPutStrLn h [i|#{time} END #{show profileName} #{eventName}|]
-      return $ handleSpeedScopeEvent file time SpeedScopeEventTypeClose
+handleStartEvent :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m ()
+handleStartEvent NullTestTimer _profileName _eventName = return ()
+handleStartEvent (SpeedScopeTestTimer {..}) profileName eventName =
+  modifyMVar_ testTimerSpeedScopeFile $ \file ->
+    liftIO getPOSIXTime >>= handleStartEvent' testTimerHandle profileName eventName file
 
-    -- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
-    -- so we don't have to do O(N) L.length and S.findIndexL
-    handleSpeedScopeEvent :: SpeedScopeFile -> POSIXTime -> SpeedScopeEventType -> SpeedScopeFile
-    handleSpeedScopeEvent initialFile time eventType = flip execState initialFile $ do
-      frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
-        Just j -> return j
-        Nothing -> do
-          modify' $ over (shared . frames) (S.|> (SpeedScopeFrame eventName))
-          return $ S.length $ f ^. shared . frames
+handleStartEvent' :: (MonadIO m)
+  => Maybe Handle
+  -> T.Text
+  -> T.Text
+  -> SpeedScopeFile
+  -> NominalDiffTime
+  -> m SpeedScopeFile
+handleStartEvent' maybeHandle profileName eventName file time = do
+  whenJust maybeHandle $ \h -> liftIO $ T.hPutStrLn h [i|#{time} START #{show profileName} #{eventName}|]
+  return $ handleSpeedScopeEvent file time profileName eventName SpeedScopeEventTypeOpen
 
-      profileIndex <- get >>= \f -> case L.findIndex ((== profileName) . (^. name)) (f ^. profiles) of
-        Just j -> return j
-        Nothing -> do
-          modify' $ over profiles (\x -> x <> [newProfile profileName time])
-          return $ L.length (f ^. profiles)
+handleEndEvent :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m ()
+handleEndEvent NullTestTimer _profileName _eventName = return ()
+handleEndEvent (SpeedScopeTestTimer {..}) profileName eventName =
+  modifyMVar_ testTimerSpeedScopeFile $ \file ->
+    liftIO getPOSIXTime >>= handleEndEvent' testTimerHandle profileName eventName file
 
-      modify' $ over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent eventType frameID time))
-              . over (profiles . ix profileIndex . endValue) (max time)
+handleEndEvent' :: (MonadIO m)
+  => Maybe Handle
+  -> T.Text
+  -> T.Text
+  -> SpeedScopeFile
+  -> NominalDiffTime
+  -> m SpeedScopeFile
+handleEndEvent' maybeHandle profileName eventName file time = do
+  whenJust maybeHandle $ \h -> liftIO $ T.hPutStrLn h [i|#{time} END #{show profileName} #{eventName}|]
+  return $ handleSpeedScopeEvent file time profileName eventName SpeedScopeEventTypeClose
+
+
+-- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
+-- so we don't have to do O(N) L.length and S.findIndexL
+handleSpeedScopeEvent :: SpeedScopeFile -> POSIXTime -> T.Text -> T.Text -> SpeedScopeEventType -> SpeedScopeFile
+handleSpeedScopeEvent initialFile time profileName eventName eventType = flip execState initialFile $ do
+  frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of
+    Just j -> return j
+    Nothing -> do
+      modify' $ over (shared . frames) (S.|> (SpeedScopeFrame eventName))
+      return $ S.length $ f ^. shared . frames
+
+  profileIndex <- get >>= \f -> case L.findIndex ((== profileName) . (^. name)) (f ^. profiles) of
+    Just j -> return j
+    Nothing -> do
+      modify' $ over profiles (\x -> x <> [newProfile profileName time])
+      return $ L.length (f ^. profiles)
+
+  modify' $ over (profiles . ix profileIndex . events) (S.|> (SpeedScopeEvent eventType frameID time))
+          . over (profiles . ix profileIndex . endValue) (max time)
