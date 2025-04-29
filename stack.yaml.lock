@@ -62,7 +62,7 @@ packages:
     hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
 snapshots:
 - completed:
-    sha256: 1964d439d2a152be4238053f3f997a09fb348391984daab86d724975ef9a423f
-    size: 683814
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/23/14.yaml
-  original: lts-23.14
+    sha256: 0bff5f3f5548516a7c86cea95d47672383cef34dac97ba28d750a52ddfcdf54a
+    size: 682020
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/4/24.yaml
+  original: nightly-2025-04-24
