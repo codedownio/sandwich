@@ -132,16 +132,17 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
             beginningCleanupVar <- liftIO $ newIORef Nothing
 
             -- Record a start event in the test timing, if configured
-            let tt = if runTreeRecordTime then getTestTimer (getBaseContext ctx) else NullTestTimer
-            let setupLabel = runTreeLabel <> " (setup)"
-            let teardownLabel = runTreeLabel <> " (teardown)"
-            handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
+            -- TODO: how to do this? The speedscope viewer crashes if you don't properly nest events
+            -- let tt = if runTreeRecordTime then getTestTimer (getBaseContext ctx) else NullTestTimer
+            -- let setupLabel = runTreeLabel <> " (setup)"
+            -- let teardownLabel = runTreeLabel <> " (teardown)"
+            -- handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
 
             results <- runNodeIntroduceAction $ \intro -> do
               -- Record the end event in the test timing
               -- TODO: do we need to deal with exceptions here and in teardown? I think we we fail to emit the
               -- end event, the time profile won't be viewable.
-              handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
+              -- handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
 
@@ -152,14 +153,14 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
               addTeardownStartTimeToStatus runTreeStatus teardownStartTime
 
               liftIO $ writeIORef beginningCleanupVar (Just teardownStartTime)
-              handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
+              -- handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
               liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupFinishTime)
               return results
 
             liftIO (readIORef beginningCleanupVar) >>= \case
               Nothing -> return ()
               Just teardownStartTime -> do
-                handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
+                -- handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
                 liftIO $ modifyIORef' didRunWrappedAction $ \(ret, timingInfo) ->
                   (ret, timingInfo { teardownStartTime = Just teardownStartTime })
 
