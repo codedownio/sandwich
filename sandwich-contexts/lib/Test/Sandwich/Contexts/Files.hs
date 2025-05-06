@@ -155,43 +155,44 @@ type NixPackageName = Text
 -- It's recommended to use this with -XTypeApplications.
 introduceFileViaNixPackage :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) =>
-    -- | Nix package name which contains the desired file.
-    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
-    NixPackageName
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix package name which contains the desired file.
+  -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+  => NixPackageName
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixPackage name = introduceFileViaNixPackage' @a name (defaultFindFile (symbolVal (Proxy @a)))
 
 -- | Same as 'introduceFileViaNixPackage', but allows you to customize the search callback.
 introduceFileViaNixPackage' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) =>
-    -- | Nix package name which contains the desired file.
-    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
-    NixPackageName
-    -- | Callback to find the desired file within the Nix derivation path.
-    -- It will be passed the derivation path, and should return the file. For example,
-    -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
-    -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
-    -> (FilePath -> IO FilePath)
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix package name which contains the desired file.
+  -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+  => NixPackageName
+  -- | Callback to find the desired file within the Nix derivation path.
+  -- It will be passed the derivation path, and should return the file. For example,
+  -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
+  -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
+  -> (FilePath -> IO FilePath)
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixPackage' = introduceFileViaNixPackage'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceFileViaNixPackage'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixPackage'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => NodeOptions
-    -- | Nix package name which contains the desired file.
-    -> NixPackageName
-    -- | Callback to find the desired file within the Nix derivation path.
-    -- It will be passed the derivation path, and should return the file. For example,
-    -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
-    -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
-    -> (FilePath -> IO FilePath)
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix package name which contains the desired file.
+  => NodeOptions
+  -> NixPackageName
+  -- | Callback to find the desired file within the Nix derivation path.
+  -- It will be passed the derivation path, and should return the file. For example,
+  -- tryFindFile "\/nix\/store\/...selenium-server-standalone-3.141.59" may return
+  -- "\/nix\/store\/...selenium-server-standalone-3.141.59\/share\/lib\/selenium-server-standalone-3.141.59\/selenium-server-standalone-3.141.59.jar".
+  -> (FilePath -> IO FilePath)
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixPackage'' nodeOptions packageName tryFindFile = introduce' nodeOptions [i|#{binaryName} (file via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
@@ -203,37 +204,38 @@ introduceFileViaNixPackage'' nodeOptions packageName tryFindFile = introduce' no
 getFileViaNixPackage :: forall context m. (
   HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m
-  ) =>
-    -- | Nix package name which contains the desired file.
-    NixPackageName
-    -- | Callback to find the desired file, as in 'introduceFileViaNixPackage'.
-    -> (FilePath -> IO FilePath)
-    -> m FilePath
+  )
+  -- | Nix package name which contains the desired file.
+  => NixPackageName
+  -- | Callback to find the desired file, as in 'introduceFileViaNixPackage'.
+  -> (FilePath -> IO FilePath)
+  -> m FilePath
 getFileViaNixPackage packageName tryFindFile = buildNixSymlinkJoin [packageName] >>= liftIO . tryFindFile
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
 introduceBinaryViaNixPackage :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) =>
-    -- | Nix package name which contains the desired binary.
-    -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
-    -- For example, you can use the "hello" binary from the "hello" package like this:
-    --
-    -- introduceBinaryViaNixPackage' @"hello" "hello"
-    NixPackageName
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix package name which contains the desired binary.
+  -- This package will be evaluated using the configured Nixpkgs version of the 'NixContext'.
+  -- For example, you can use the "hello" binary from the "hello" package like this:
+  --
+  -- introduceBinaryViaNixPackage' @"hello" "hello"
+  => NixPackageName
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceBinaryViaNixPackage = introduceBinaryViaNixPackage' @a (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceBinaryViaNixPackage', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixPackage' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
-  ) => NodeOptions
-    -- | Nix package name which contains the desired binary.
-    -> NixPackageName
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix package name which contains the desired binary.
+  => NodeOptions
+  -> NixPackageName
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceBinaryViaNixPackage' nodeOptions packageName = introduce' nodeOptions [i|#{binaryName} (binary via Nix package #{packageName})|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
@@ -245,10 +247,10 @@ introduceBinaryViaNixPackage' nodeOptions packageName = introduce' nodeOptions [
 getBinaryViaNixPackage :: forall a context m. (
   HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m, KnownSymbol a
-  ) =>
-    -- | Nix package name which contains the desired binary.
-    NixPackageName
-    -> m FilePath
+  )
+  -- | Nix package name which contains the desired binary.
+  => NixPackageName
+  -> m FilePath
 getBinaryViaNixPackage packageName = do
   unEnvironmentFile <$> (buildNixSymlinkJoin [packageName] >>= tryFindBinary (symbolVal (Proxy @a)))
 
@@ -256,12 +258,12 @@ getBinaryViaNixPackage packageName = do
 getBinaryViaNixPackage' :: forall a context m. (
   HasBaseContext context, MonadReader context m
   , MonadLogger m, MonadUnliftIO m, KnownSymbol a
-  ) =>
-    -- | 'NixContext' to use.
-    NixContext
-    -- | Nix package name which contains the desired binary.
-    -> NixPackageName
-    -> m FilePath
+  )
+  -- | 'NixContext' to use.
+  => NixContext
+  -- | Nix package name which contains the desired binary.
+  -> NixPackageName
+  -> m FilePath
 getBinaryViaNixPackage' nc packageName = do
   unEnvironmentFile <$> (buildNixSymlinkJoin' nc [packageName] >>= tryFindBinary (symbolVal (Proxy @a)))
 
@@ -269,21 +271,22 @@ getBinaryViaNixPackage' nc packageName = do
 -- It's recommended to use this with -XTypeApplications.
 introduceBinaryViaNixDerivation :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
-  ) =>
-    -- | Nix derivation as a string.
-    Text
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix derivation as a string.
+  => Text
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceBinaryViaNixDerivation = introduceBinaryViaNixDerivation' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceBinaryViaNixDerivation', but allows passing custom 'NodeOptions'.
 introduceBinaryViaNixDerivation' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
-  ) => NodeOptions
-    -- | Nix derivation as a string.
-    -> Text
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix derivation as a string.
+  => NodeOptions
+  -> Text
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceBinaryViaNixDerivation' nodeOptions derivation = introduce' nodeOptions [i|#{binaryName} (binary via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
@@ -295,10 +298,10 @@ introduceBinaryViaNixDerivation' nodeOptions derivation = introduce' nodeOptions
 getBinaryViaNixDerivation :: forall a context m. (
   HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m, MonadMask m, KnownSymbol a
-  ) =>
-    -- | Nix derivation as a string.
-    Text
-    -> m FilePath
+  )
+  -- | Nix derivation as a string.
+  => Text
+  -> m FilePath
 getBinaryViaNixDerivation derivation =
   unEnvironmentFile <$> (buildNixCallPackageDerivation derivation >>= tryFindBinary (symbolVal (Proxy @a)))
 
@@ -319,35 +322,36 @@ getBinaryViaNixDerivation' nc derivation =
 -- It's recommended to use this with -XTypeApplications.
 introduceFileViaNixDerivation :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
-  ) =>
-    -- | Nix derivation as a string.
-    Text
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix derivation as a string.
+  => Text
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixDerivation derivation = introduceFileViaNixDerivation' @a derivation (defaultFindFile (symbolVal (Proxy @a)))
 
 -- | Same as 'introduceFileViaNixDerivation', but allows configuring the file finding callback.
 introduceFileViaNixDerivation' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
-  ) =>
-    -- | Nix derivation as a string.
-    Text
-    -- | Callback to find the desired file.
-    -> (FilePath -> IO FilePath)
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix derivation as a string.
+  => Text
+  -- | Callback to find the desired file.
+  -> (FilePath -> IO FilePath)
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixDerivation' = introduceFileViaNixDerivation'' (defaultNodeOptions { nodeOptionsVisibilityThreshold = defaultFileContextVisibilityThreshold })
 
 -- | Same as 'introduceFileViaNixDerivation'', but allows passing custom 'NodeOptions'.
 introduceFileViaNixDerivation'' :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m, KnownSymbol a
-  ) => NodeOptions
-    -- | Nix derivation as a string.
-    -> Text
-    -- | Callback to find the desired file.
-    -> (FilePath -> IO FilePath)
-    -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
-    -> SpecFree context m ()
+  )
+  -- | Nix derivation as a string.
+  => NodeOptions
+  -> Text
+  -- | Callback to find the desired file.
+  -> (FilePath -> IO FilePath)
+  -> SpecFree (LabelValue (AppendSymbol "file-" a) (EnvironmentFile a) :> context) m ()
+  -> SpecFree context m ()
 introduceFileViaNixDerivation'' nodeOptions derivation tryFindFile = introduce' nodeOptions [i|#{binaryName} (file via Nix derivation)|] (mkFileLabel @a) alloc (const $ return ())
   where
     binaryName :: String
@@ -359,12 +363,12 @@ introduceFileViaNixDerivation'' nodeOptions derivation tryFindFile = introduce' 
 getFileViaNixDerivation :: forall context m. (
   HasBaseContextMonad context m, HasNixContext context
   , MonadUnliftIO m, MonadLoggerIO m, MonadMask m
-  ) =>
-    -- | Nix derivation as a string.
-    Text
-    -- | Callback to find the desired file.
-    -> (FilePath -> IO FilePath)
-    -> m FilePath
+  )
+  -- | Nix derivation as a string.
+  => Text
+  -- | Callback to find the desired file.
+  -> (FilePath -> IO FilePath)
+  -> m FilePath
 getFileViaNixDerivation derivation tryFindFile = buildNixCallPackageDerivation derivation >>= liftIO . tryFindFile
 
 
