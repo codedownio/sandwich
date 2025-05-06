@@ -31,6 +31,17 @@ import Test.Sandwich.Types.Spec
 import UnliftIO.Exception
 
 
+-- * Types
+
+parallelSemaphore :: Label "parallelSemaphore" QSem
+parallelSemaphore = Label
+
+type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
+
+defaultParallelNodeOptions :: NodeOptions
+defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
+
+-- * Functions
 
 -- | Wrapper around 'parallel'. Introduces a semaphore to limit the parallelism to N threads.
 parallelN :: (
@@ -47,11 +58,7 @@ parallelN' :: (
   -> Int
   -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
   -> SpecFree context m ()
-parallelN' nodeOptions n children = introduce "Introduce parallel semaphore" parallelSemaphore (liftIO $ newQSem n) (const $ return ()) $
-  parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
-  where claimRunSlot f = do
-          s <- getContext parallelSemaphore
-          bracket_ (liftIO $ waitQSem s) (liftIO $ signalQSem s) (void f)
+parallelN' nodeOptions n = parallelN'' nodeOptions (liftIO $ newQSem n)
 
 -- | Same as 'parallelN', but extracts the semaphore size from the command line options.
 parallelNFromArgs :: forall context a m. (
@@ -72,21 +79,20 @@ parallelNFromArgs' :: forall context a m. (
   -> (CommandLineOptions a -> Int)
   -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
   -> SpecFree context m ()
-parallelNFromArgs' nodeOptions getParallelism children = introduce "Introduce parallel semaphore" parallelSemaphore getQSem (const $ return ()) $
+parallelNFromArgs' nodeOptions getParallelism = parallelN'' nodeOptions f
+  where
+    f = (getParallelism <$> getContext commandLineOptions) >>= liftIO . newQSem
+
+parallelN'' :: (
+  MonadUnliftIO m
+  )
+  => NodeOptions
+  -> ExampleT context m QSem
+  -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
+  -> SpecFree context m ()
+parallelN'' nodeOptions makeQSem children = introduce "Introduce parallel semaphore" parallelSemaphore makeQSem (const $ return ()) $
   parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
   where
-    getQSem = do
-      n <- getParallelism <$> getContext commandLineOptions
-      liftIO $ newQSem n
-
     claimRunSlot f = do
       s <- getContext parallelSemaphore
       bracket_ (liftIO $ waitQSem s) (liftIO $ signalQSem s) (void f)
-
-parallelSemaphore :: Label "parallelSemaphore" QSem
-parallelSemaphore = Label
-
-type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
-
-defaultParallelNodeOptions :: NodeOptions
-defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
