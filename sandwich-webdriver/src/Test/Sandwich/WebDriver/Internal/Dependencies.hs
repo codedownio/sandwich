@@ -26,6 +26,7 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
 import System.FilePath
+import System.Info (os)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
@@ -144,8 +145,8 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       let useFirefox = case os of
             "darwin" -> do
               -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
-              firefox <- unEnvironmentFile <$> (buildNixSymlinkJoin ["firefox-bin"] >>= defaultFindFile "firefox")
-              BrowserDependenciesFirefox firefox <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+              firefox <- buildNixSymlinkJoin ["firefox-bin"] >>= (liftIO . defaultFindFile "firefox")
+              BrowserDependenciesFirefox firefox <$> getBinaryViaNixPackage @"geckodriver" "geckodriver"
             _ -> BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
                                             <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
 
