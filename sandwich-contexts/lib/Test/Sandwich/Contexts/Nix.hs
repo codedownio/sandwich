@@ -46,6 +46,8 @@ module Test.Sandwich.Contexts.Nix (
 
   -- * Nixpkgs releases #releases#
   , nixpkgsReleaseDefault
+  , nixpkgsMaster
+  , nixpkgsRelease2411
   , nixpkgsRelease2405
   , nixpkgsRelease2311
 
@@ -118,6 +120,30 @@ data NixpkgsDerivation =
     -- Useful when you want to use packages with unfree licenses, like @google-chrome@.
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
+
+-- | Nixpkgs master, accessed 5\/5\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev master
+nixpkgsMaster :: NixpkgsDerivation
+nixpkgsMaster = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "5a837cb8662b841d5e3f491791aa1c389f68b25e"
+  , nixpkgsDerivationSha256 = "sha256-/LHyhxNwop/1lyg9kclGHBpyBadLFZda4z0QOzERUKY="
+  , nixpkgsDerivationAllowUnfree = False
+  }
+
+-- | Nixpkgs release 24.11, accessed 5\/5\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev release-24.05
+nixpkgsRelease2411 :: NixpkgsDerivation
+nixpkgsRelease2411 = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "c6aca34d2ca2ce9e20b722f54e684cda64b275c2"
+  , nixpkgsDerivationSha256 = "sha256-U3VKPi5D2oLBFzaMI0jJLJp8J64ZLjz+EwodUS//QWc="
+  , nixpkgsDerivationAllowUnfree = False
+  }
 
 -- | Nixpkgs release 24.05, accessed 11\/9\/2024.
 -- You can compute updated values for this release (or others) by running
