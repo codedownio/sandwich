@@ -141,8 +141,13 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       let useChrome = BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
                                                 <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
 
-      let useFirefox = BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
-                                                  <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+      let useFirefox = case os of
+            "darwin" -> do
+              -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
+              firefox <- unEnvironmentFile <$> (buildNixSymlinkJoin ["firefox-bin"] >>= defaultFindFile "firefox")
+              BrowserDependenciesFirefox firefox <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+            _ -> BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
+                                            <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
 
       deps <- case optFirefox of
         Just UseChrome -> useChrome
