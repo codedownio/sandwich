@@ -204,7 +204,7 @@ startTree node@(RunNodeDescribe {..}) ctx' = do
 startTree node@(RunNodeParallel {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeChildren ctx) >>= \case
+    ((L.length . L.filter isFailure) <$> runNodesConcurrently runNodeCommon runNodeChildren ctx) >>= \case
       0 -> return (Success, emptyExtraTimingInfo)
       n -> return (Failure (ChildrenFailed Nothing n), emptyExtraTimingInfo)
 startTree node@(RunNodeIt {..}) ctx' = do
@@ -284,19 +284,32 @@ runInAsync node ctx action = do
   liftIO $ putMVar mvar ()
   return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
 
--- | Run a list of children sequentially, cancelling everything on async exception TODO
+-- | Run a list of children sequentially, cancelling everything on async exception
 runNodesSequentially :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
 runNodesSequentially children ctx =
   flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
     forM (L.filter (shouldRunChild ctx) children) $ \child ->
       startTree child ctx >>= wait
 
--- | Run a list of children sequentially, cancelling everything on async exception TODO
-runNodesConcurrently :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
-runNodesConcurrently children ctx =
+-- | Run a list of children concurrently, cancelling everything on async exception
+runNodesConcurrently :: forall context. HasBaseContext context => RunNodeCommon -> [RunNode context] -> context -> IO [Result]
+runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) children ctx =
   flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
-    mapM wait =<< sequence [startTree child ctx
-                           | child <- L.filter (shouldRunChild ctx) children]
+    mapM wait =<< sequence [startTree child (modifyTimingProfile ix ctx)
+                           | (child, ix) <- L.zip runnableChildren [0..]]
+  where
+    runnableChildren = L.filter (shouldRunChild ctx) children
+
+    leftPadWithZeros :: Int -> String
+    leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
+
+    modifyTimingProfile :: Int -> context -> context
+    modifyTimingProfile n = flip modifyBaseContext (modifyTimingProfile' n)
+
+    modifyTimingProfile' :: Int -> BaseContext -> BaseContext
+    modifyTimingProfile' n bc@(BaseContext {..}) = bc {
+      baseContextTestTimerProfile = baseContextTestTimerProfile <> [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
+      }
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithResult children baseContext status = do
