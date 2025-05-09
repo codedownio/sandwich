@@ -18,7 +18,6 @@ tests = $(getSpecFromFolder defaultGetSpecFromFolderOptions)
 -- testsPooled = $(getSpecFromFolder $ defaultGetSpecFromFolderOptions {
 --   getSpecCombiner = 'describeParallel
 --   , getSpecIndividualSpecHooks = 'poolify
---   , getSpecWarnOnParseError = NoWarnOnParseError
 --   })
 
 -- main :: IO ()
