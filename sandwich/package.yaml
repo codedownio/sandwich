@@ -20,6 +20,7 @@ default-extensions:
 - NamedFieldPuns
 - NumericUnderscores
 - OverloadedStrings
+- PackageImports
 - QuasiQuotes
 - RecordWildCards
 - ScopedTypeVariables
@@ -62,8 +63,10 @@ dependencies:
 - vty-crossplatform
 
 # For spec discovery. Move to its own package?
-- template-haskell
+- ghc-lib
+- ghc-lib-parser
 - haskell-src-exts
+- template-haskell
 
 when:
 - condition: "!os(windows)"
