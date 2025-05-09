@@ -27,7 +27,6 @@ import Language.Haskell.TH.Syntax
 import Safe
 import System.Directory
 import System.FilePath as F
-import Test.Sandwich.TH.HasMainFunction
 import Test.Sandwich.TH.ModuleMap
 import Test.Sandwich.Types.Spec hiding (location)
 
@@ -41,12 +40,18 @@ data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
   , getSpecWarnOnParseError :: ShouldWarnOnParseError
   }
 
+{-# DEPRECATED getSpecWarnOnParseError "Not used anymore." #-}
+
 defaultGetSpecFromFolderOptions :: GetSpecFromFolderOptions
 defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions {
   getSpecCombiner = 'describe
   , getSpecIndividualSpecHooks = 'constId
   , getSpecWarnOnParseError = WarnOnParseError
   }
+
+{-# DEPRECATED ShouldWarnOnParseError "Not used anymore." #-}
+data ShouldWarnOnParseError = WarnOnParseError | NoWarnOnParseError
+  deriving (Eq)
 
 getSpecFromFolder :: GetSpecFromFolderOptions -> Q Exp
 getSpecFromFolder getSpecFromFolderOptions = do
@@ -86,10 +91,7 @@ getSpecFromFolder' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderO
                reportError [i|Couldn't find module #{fullyQualifiedModule} in #{reverseModuleMap}|]
                return Nothing
              Just importedName -> do
-               maybeMainFunction <- fileHasMainFunction (folder </> item) getSpecWarnOnParseError >>= \case
-                 True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
-                 False -> [e|Nothing|]
-
+               maybeMainFunction <- getMaybeMainFunction importedName
                alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) fullyQualifiedModule $(return maybeMainFunction)) })|]
 
                Just <$> [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
@@ -103,14 +105,22 @@ getSpecFromFolder' folder reverseModuleMap modulePrefix gsfo@(GetSpecFromFolderO
                     & T.unpack
   maybeMainFunction <- case M.lookup currentModule reverseModuleMap of
     Nothing -> [e|Nothing|]
-    Just importedName -> fileHasMainFunction (folder <> ".hs") getSpecWarnOnParseError >>= \case
-      True -> [e|Just $(varE $ mkName $ importedName <> ".main")|]
-      False -> [e|Nothing|]
+    Just importedName -> getMaybeMainFunction importedName
   alterNodeOptionsFn <- [e|(\x -> x { nodeOptionsModuleInfo = Just ($(conE 'NodeModuleInfo) currentModule $(return maybeMainFunction)) })|]
   [e|$(varE 'alterTopLevelNodeOptions) $(return alterNodeOptionsFn)
      $ $(varE getSpecCombiner) $(stringE $ mangleFolderName folder) (L.foldl (>>) (pure ()) $(listE $ fmap return specs))|]
 
 -- * Util
+
+-- | Detect if a main function is present in the given module by trying to reify it,
+-- using 'recover' to handle exceptions.
+-- We could also look at the actual reified value to see if it looks like a function,
+-- but that's probably overkill.
+getMaybeMainFunction :: String -> Q Exp
+getMaybeMainFunction importedName = do
+  let mainName = mkName (importedName <> ".main")
+  recover [e|Nothing|]
+          (reify mainName >> [e|Just $(varE mainName)|])
 
 mangleFolderName :: String -> String
 mangleFolderName = T.unpack . wordify . T.pack . takeBaseName
