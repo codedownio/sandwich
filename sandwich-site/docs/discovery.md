@@ -119,7 +119,7 @@ You can always run individual test subtrees by simply passing `--filter "some fi
 
 Sometimes you want to include a `main` function in an individual test module. These main functions can be convenient when you want to iterate on a single test module within a GHCi session, for example.
 
-Sandwich can discover the presence of these `main` functions and give you the ability to run them using the individual module flag. It does this using some [magic](https://hackage.haskell.org/package/haskell-src-exts).
+Sandwich can discover the presence of these `main` functions and give you the ability to run them using the individual module flag.
 
 If this has happened, Sandwich will indicate it by putting an asterisk next to the module name. For example, if `UnitTests2.hs` had its own main function inside, you would see the following.
 
