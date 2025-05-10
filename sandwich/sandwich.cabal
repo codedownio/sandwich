@@ -86,7 +86,6 @@ library
       Test.Sandwich.Shutdown
       Test.Sandwich.Signals
       Test.Sandwich.TestTimer
-      Test.Sandwich.TH.HasMainFunction
       Test.Sandwich.TH.ModuleMap
       Test.Sandwich.Types.ArgParsing
       Test.Sandwich.Types.General
@@ -124,7 +123,6 @@ library
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -187,7 +185,6 @@ executable sandwich-demo
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -248,7 +245,6 @@ executable sandwich-discover
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -314,7 +310,6 @@ executable sandwich-test
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
@@ -381,7 +376,6 @@ test-suite sandwich-test-suite
     , exceptions
     , filepath
     , free
-    , haskell-src-exts
     , microlens
     , microlens-th
     , monad-control
