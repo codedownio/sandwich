@@ -19,8 +19,11 @@ import Test.Sandwich.WebDriver
 import Test.WebDriver.Commands
 
 
+-- 5/5/2025: we use nixpkgsMaster here because support for Firefox on macOS finally landed recently as firefox-bin.
+-- Once a Nixpkgs release contains firefox-bin, we can switch to that.
+
 simple :: TopSpecWithOptions
-simple = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
+simple = introduceNixContext (nixpkgsMaster { nixpkgsDerivationAllowUnfree = True }) $
   introduceWebDriverViaNix defaultWdOptions $ do
     it "opens Google and searches" $ withSession1 $ do
       openPage [i|https://www.google.com|]

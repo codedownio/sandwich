@@ -120,7 +120,7 @@ jobs:
       run: cabal test sandwich-quickcheck
 
     - name: Test (sandwich-webdriver)
-      run: cabal test sandwich-webdriver
+      run: cabal test sandwich-webdriver --test-option="--headless"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
