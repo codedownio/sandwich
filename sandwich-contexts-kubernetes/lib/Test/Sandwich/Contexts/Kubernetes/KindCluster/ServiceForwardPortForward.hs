@@ -11,7 +11,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.List as L
 import Data.String.Interpolate
-import Data.Text as T
+import qualified Data.Text as T
 import Network.URI
 import Relude hiding (withFile)
 import Safe

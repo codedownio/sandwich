@@ -1,5 +1,6 @@
 
 resolver: nightly-2025-04-24
+compiler: ghc-9.12.1
 
 nix:
   pure: false
@@ -76,7 +77,11 @@ extra-deps:
 ## For sandwich-contexts-kubernetes
 
 - kubernetes-api-130.0.0
-- kubernetes-api-client-0.6.0.0
+- git: https://github.com/codedownio/kubernetes-api.git
+  commit: 7258e1dd1c4a2e4cf482da42f04577cde62bccb5
+  subdirs:
+  - kubernetes-api-client
+# - kubernetes-api-client-0.6.0.0
 
 - git: https://github.com/codedownio/haskell-oidc-client
   # codedown-jun-2024-ghc98

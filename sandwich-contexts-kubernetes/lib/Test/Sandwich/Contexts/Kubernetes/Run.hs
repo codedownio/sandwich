@@ -1,25 +1,24 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Run where
 
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Control.Monad
 import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.String.Interpolate
-import Data.Text as T
 import Kubernetes.OpenAPI.Client as Kubernetes
 import Kubernetes.OpenAPI.Core as Kubernetes
 import Kubernetes.OpenAPI.MimeTypes
 import Network.HTTP.Client
 import Relude
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Exception
 
 

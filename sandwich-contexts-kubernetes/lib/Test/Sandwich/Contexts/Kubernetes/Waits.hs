@@ -12,7 +12,7 @@ import Control.Monad.Logger
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.String.Interpolate
-import Data.Text as T
+import qualified Data.Text as T
 import Kubernetes.OpenAPI.API.CoreV1 as Kubernetes
 import Kubernetes.OpenAPI.Core as Kubernetes
 import Kubernetes.OpenAPI.MimeTypes

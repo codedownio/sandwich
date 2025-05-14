@@ -36,12 +36,18 @@ packages:
   original:
     hackage: kubernetes-api-130.0.0
 - completed:
-    hackage: kubernetes-api-client-0.6.0.0@sha256:a985d7dd69040a1e34577f34a3e22640a7fc320a3cc18f7c6c482aec0d3cf869,5622
+    commit: 7258e1dd1c4a2e4cf482da42f04577cde62bccb5
+    git: https://github.com/codedownio/kubernetes-api.git
+    name: kubernetes-api-client
     pantry-tree:
-      sha256: 5bbf42b52da6fc63b52c88228e7a557630666491c63fe37354864db298a3e13b
-      size: 2026
+      sha256: 404fdc7014d831c8c7b7f740e950d69328890af59f7dd829cdb5d8f6d589e841
+      size: 2180
+    subdir: kubernetes-api-client
+    version: 0.6.0.0
   original:
-    hackage: kubernetes-api-client-0.6.0.0
+    commit: 7258e1dd1c4a2e4cf482da42f04577cde62bccb5
+    git: https://github.com/codedownio/kubernetes-api.git
+    subdir: kubernetes-api-client
 - completed:
     commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client
