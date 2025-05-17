@@ -343,7 +343,9 @@ appEvent s (VtyEvent e) =
     V.EvKey c [] | c `elem` [V.KEsc, exitKey] -> do
       -- Cancel everything and wait for cleanups
       liftIO $ putStrLn "Canceling all tree nodes"
-      liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
+      liftIO $ forM_ (s ^. appRunTreeBase) $ \node -> do
+        liftIO $ putStrLn [i|Canceling node: #{runTreeLabel (runNodeCommon node)}|]
+        cancelNode node
       liftIO $ putStrLn "Waiting for all tree nodes"
       forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
       liftIO $ putStrLn "Halting TUI app"
