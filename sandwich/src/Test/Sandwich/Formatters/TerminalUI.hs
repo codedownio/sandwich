@@ -31,7 +31,6 @@ import Brick.Widgets.List
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
@@ -67,6 +66,7 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
+import UnliftIO.Exception
 
 
 instance Formatter TerminalUIFormatter where
@@ -342,9 +342,13 @@ appEvent s (VtyEvent e) =
       & appShowVisibilityThresholds %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey] -> do
       -- Cancel everything and wait for cleanups
+      liftIO $ putStrLn "Canceling all tree nodes"
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)
+      liftIO $ putStrLn "Waiting for all tree nodes"
       forM_ (s ^. appRunTreeBase) (liftIO . waitForTree)
+      liftIO $ putStrLn "Halting TUI app"
       doHalt s
+      liftIO $ putStrLn "DONE halting TUI app"
     V.EvKey c [] | c == debugKey -> continue (s & appLogLevel ?~ LevelDebug)
     V.EvKey c [] | c == infoKey -> continue (s & appLogLevel ?~ LevelInfo)
     V.EvKey c [] | c == warnKey -> continue (s & appLogLevel ?~ LevelWarn)

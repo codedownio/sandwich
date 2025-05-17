@@ -232,15 +232,19 @@ runSandwich' maybeCommandLineOptions options spec' = do
   _ <- installHandler sigTERM shutdown
 
   -- Wait for the tree to finish
+  putStrLn [i|Sandwich.hs: waiting for tree|]
   mapM_ waitForTree rts
 
   -- Wait for all formatters to finish
+  putStrLn [i|Sandwich.hs: waiting for all formatters|]
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
+  putStrLn [i|Sandwich.hs: gathering lefts|]
   let failures = lefts finalResults
   unless (null failures) $
     putStrLn [i|Some formatters failed: '#{failures}'|]
 
   -- Run finalizeFormatter method on formatters
+  putStrLn [i|Sandwich.hs: running finalizeFormatter one all formatters|]
   forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
@@ -248,9 +252,12 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
     loggingFn $ finalizeFormatter f rts baseContext
 
+  putStrLn [i|Sandwich.hs: fixing run tree to count failures|]
   fixedTree <- atomically $ mapM fixRunTree rts
   let failed = countWhere isFailedItBlock fixedTree
+  putStrLn [i|Sandwich.hs: reading exitReasonRef|]
   exitReason <- readIORef exitReasonRef
+  putStrLn [i|Sandwich.hs: returning exitReason and failure count #{failed}|]
   return (exitReason, failed)
 
 
