@@ -306,11 +306,13 @@ withPostgresUnixSocket postgresBinDir username password database extraLines acti
           xs -> expectationFailure [i|Found multiple Unix sockets for PostgreSQL server, not sure which one to use: #{xs}|]
     )
     (\_ -> do
+        info "Calling pg_ctl stop --wait"
         void $ readCreateProcessWithLogging ((proc (postgresBinDir </> "pg_ctl") [
                                                  "-D", dbDirName
                                                  , "-l", logfileName
                                                  , "stop" , "--wait"
                                                  ]) { cwd = Just dir }) ""
+        info "Done with pg_ctl stop --wait"
     )
     action
 
