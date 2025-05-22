@@ -113,8 +113,14 @@ newSpeedScopeTestTimer path writeRawTimings = do
 finalizeSpeedScopeTestTimer :: TestTimer -> IO ()
 finalizeSpeedScopeTestTimer NullTestTimer = return ()
 finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
+  putStrLn "finalizeSpeedScopeTestTimer 1"
   whenJust testTimerHandle hClose
-  readMVar testTimerSpeedScopeFile >>= BL.writeFile (testTimerBasePath </> "speedscope.json") . A.encode
+  putStrLn "finalizeSpeedScopeTestTimer 2"
+  contents <- readMVar testTimerSpeedScopeFile
+  putStrLn [i|finalizeSpeedScopeTestTimer 3|]
+  putStrLn [i|finalizeSpeedScopeTestTimer 3: #{fmap (S.length . _events) (contents ^. profiles)}|]
+  BL.writeFile (testTimerBasePath </> "speedscope.json") $ A.encode contents
+  putStrLn "finalizeSpeedScopeTestTimer 4"
 
 timeAction' :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
