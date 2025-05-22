@@ -17,6 +17,7 @@ import Relude
 import Test.Sandwich (expectationFailure)
 import UnliftIO.Async
 import UnliftIO.Exception
+import UnliftIO.Timeout
 
 
 withProxyToUnixSocket :: MonadUnliftIO m => FilePath -> (PortNumber -> m a) -> m a
@@ -29,8 +30,11 @@ withProxyToUnixSocket socketPath f = do
                SockAddrInet6 port _ _ _ -> putMVar portVar port
                x -> expectationFailure [i|withProxyToUnixSocket: expected to bind a TCP socket, but got other addr: #{x}|]
            )
-  withAsync (liftIO $ DCN.runTCPServer ss app `onException` (putMVar portVar 0)) $ \_ ->
-    readMVar portVar >>= f
+  withAsync (liftIO $ DCN.runTCPServer ss app `onException` (tryPutMVar portVar (-1))) $ \_ ->
+    timeout 60_000_000 (readMVar portVar) >>= \case
+      Nothing -> expectationFailure [i|withProxyToUnixSocket: didn't get port within 60s|]
+      Just (-1) -> expectationFailure [i|withProxyToUnixSocket: TCP server threw exception|]
+      Just port -> f port
 
   where
     app appdata = DCNU.runUnixClient (DCNU.clientSettings socketPath) $ \appdataServer ->
