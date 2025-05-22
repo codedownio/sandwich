@@ -27,6 +27,14 @@
           devShells.default = pkgs.mkShell {
             buildInputs = with pkgs; [
               nodejs
+
+              gmp
+
+              ncurses
+              pcre
+              pkg-config
+              postgresql
+              zlib
             ];
           };
         });
