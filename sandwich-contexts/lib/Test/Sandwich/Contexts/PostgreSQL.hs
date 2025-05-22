@@ -164,8 +164,11 @@ withPostgresViaNix' :: (
   -> (PostgresContext -> m a)
   -> m a
 withPostgresViaNix' nc opts@(PostgresNixOptions {..}) action = do
-  withPostgresUnixSocketViaNix' nc opts $ \unixSocket ->
+  flip finally (info "DONE WITH withPostgresUnixSocketViaNix'") $
+    withPostgresUnixSocketViaNix' nc opts $ \unixSocket ->
+    flip finally (info "DONE WITH withProxyToUnixSocket") $
     withProxyToUnixSocket unixSocket $ \port ->
+    flip finally (info "DONE WITH inner part of withProxyToUnixSocket") $
       action $ PostgresContext {
         postgresUsername = postgresNixUsername
         , postgresPassword = postgresNixPassword
