@@ -185,7 +185,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
 
   let destroy (_, finalYaml) = do
         info [i|-------------------------- DESTROYING --------------------------|]
-        createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
+        createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"]) { env = Just env }) (toString finalYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 
