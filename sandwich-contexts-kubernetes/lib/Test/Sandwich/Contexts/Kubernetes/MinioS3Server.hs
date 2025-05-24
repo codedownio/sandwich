@@ -21,6 +21,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   -- * Types
   , MinioS3ServerOptions(..)
   , defaultMinioS3ServerOptions
+  , NetworkPolicies(..)
 
   -- * Re-exports
   , testS3Server
@@ -56,13 +57,21 @@ data MinioS3ServerOptions = MinioS3ServerOptions {
   minioS3ServerNamespace :: Text
   , minioS3ServerKustomizationDir :: KustomizationDir
   , minioS3ServerPreloadImages :: Bool
+  , minioS3ServerNetworkPolicies :: Maybe NetworkPolicies
   }
 defaultMinioS3ServerOptions :: Text -> MinioS3ServerOptions
 defaultMinioS3ServerOptions namespace = MinioS3ServerOptions {
   minioS3ServerNamespace = namespace
   , minioS3ServerKustomizationDir = KustomizationDirUrl "https://github.com/minio/operator/examples/kustomization/base?ref=v6.0.1"
   , minioS3ServerPreloadImages = True
+  , minioS3ServerNetworkPolicies = Nothing
   }
+
+data NetworkPolicies = NetworkPolicies {
+  networkPoliciesNames :: [String]
+  , networkPoliciesAllYaml :: String
+  }
+  deriving (Show, Eq)
 
 data KustomizationDir =
   -- | URL Kustomize dir to be downloaded
@@ -182,13 +191,13 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
 
   -- Create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
   let createNetworkPolicy = do
-        let (policyName, discoverPodPolicyName, yaml) = networkPolicy deploymentName
+        let NetworkPolicies policyNames yaml = fromMaybe (defaultNetworkPolicies deploymentName) minioS3ServerNetworkPolicies
         createProcessWithLoggingAndStdin ((proc kubectlBinary ["create", "--namespace", toString minioS3ServerNamespace, "-f", "-"]) { env = Just env, delegate_ctlc = True }) yaml
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-        pure (policyName, discoverPodPolicyName)
-  let destroyNetworkPolicy (policyName, discoverPodPolicyName) = do
-        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", policyName, "--namespace", toString minioS3ServerNamespace]
-        runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", discoverPodPolicyName, "--namespace", toString minioS3ServerNamespace]
+        pure policyNames
+  let destroyNetworkPolicy policyNames = do
+        forM_ policyNames $ \name ->
+          runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", name, "--namespace", toString minioS3ServerNamespace]
 
   bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \((username, password), _) -> do
     do
@@ -237,9 +246,14 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
       void $ action testServ
 
 
-networkPolicy :: Text -> (String, String, String)
-networkPolicy deploymentName = (policyName, discoverPodPolicyName, yaml)
+defaultNetworkPolicies :: Text -> NetworkPolicies
+defaultNetworkPolicies deploymentName = NetworkPolicies allPolicyNames yaml
   where
+    allPolicyNames = [
+      policyName
+      , discoverPodPolicyName
+      ]
+
     policyName = "minio-allow"
     discoverPodPolicyName = "discover-pod-allow"
 
