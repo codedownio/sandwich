@@ -1,6 +1,6 @@
 
 resolver: nightly-2025-04-24
-compiler: ghc-9.12.1
+compiler: ghc-9.12.2
 
 nix:
   pure: false
