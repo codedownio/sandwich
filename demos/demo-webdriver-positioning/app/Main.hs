@@ -20,8 +20,8 @@ positioning = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllo
       openPage "http://www.google.com"
       setWindowLeftSide
 
-    it "opens Yahoo" $ withSession2 $ do
-      openPage "http://www.yahoo.com"
+    it "opens xkcd" $ withSession2 $ do
+      openPage "http://www.xkcd.com"
       setWindowRightSide
 
     it "pauses" $ do
