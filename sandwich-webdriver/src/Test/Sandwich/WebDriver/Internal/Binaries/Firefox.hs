@@ -18,8 +18,10 @@ import Control.Monad.Reader
 import Control.Monad.Trans.Except
 import Data.String.Interpolate
 import qualified Data.Text as T
+import System.Info
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
 import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Detect
@@ -45,6 +47,12 @@ obtainFirefox (UseFirefoxAt p) = doesFileExist p >>= \case
     return $ Right p
 obtainFirefox (UseFirefoxFromNixpkgs nixContext) = do
   debug [i|Building Firefox with Nix|]
+  -- ret <- case os of
+  --   "darwin" ->
+  --     -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
+  --     buildNixSymlinkJoin' nixContext ["firefox-bin"] >>= (liftIO . defaultFindFile "firefox")
+  --   _ ->
+  --     getBinaryViaNixPackage' @"firefox" nixContext "firefox"
   ret <- getBinaryViaNixPackage' @"firefox" nixContext "firefox"
   debug [i|Built Firefox: #{ret}|]
   return $ Right ret
