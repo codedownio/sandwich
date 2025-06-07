@@ -66,6 +66,7 @@ module Test.Sandwich.Contexts.Files (
   -- * Helpers for file-finding callbacks
   , defaultFindFile
   , findFirstFile
+  , findFirstFileInDirs
 
   -- * Low-level
   , mkFileLabel
@@ -85,6 +86,7 @@ import Data.String.Interpolate
 import GHC.TypeLits
 import Relude
 import System.FilePath
+import System.Info (os)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Nix
@@ -214,6 +216,10 @@ getFileViaNixPackage packageName tryFindFile = buildNixSymlinkJoin [packageName]
 
 -- | Introduce a given 'EnvironmentFile' from the 'NixContext' in scope.
 -- It's recommended to use this with -XTypeApplications.
+--
+-- This will search for an executable file with the given name in the "bin" directory of the Nix output.
+-- On MacOS, it will also recursively search the "Applications" directory. This makes it seamless when you
+-- want to work with a derivation like "firefox", which is bundled as an application on macOS.
 introduceBinaryViaNixPackage :: forall a context m. (
   HasBaseContext context, HasNixContext context, MonadUnliftIO m, KnownSymbol a
   )
@@ -372,11 +378,23 @@ getFileViaNixDerivation :: forall context m. (
 getFileViaNixDerivation derivation tryFindFile = buildNixCallPackageDerivation derivation >>= liftIO . tryFindFile
 
 
+-- | Default binary search function used in 'getBinaryViaNixPackage' etc.
 tryFindBinary :: (MonadIO m) => String -> FilePath -> m (EnvironmentFile a)
-tryFindBinary binaryName env = do
-  findExecutablesInDirectories [env </> "bin"] binaryName >>= \case
-    (x:_) -> return $ EnvironmentFile x
-    _ -> expectationFailure [i|Couldn't find binary '#{binaryName}' in #{env </> "bin"}|]
+tryFindBinary binaryName env = case os of
+  "darwin" -> do
+    dirsToSearch <- filterM doesDirectoryExist [env </> "bin", env </> "Applications"]
+    let predicate x = andM [(isExecutable x), (return (takeFileName x == binaryName))]
+    -- We use own own implementation here because we want to recursively search under "Applications"
+    EnvironmentFile <$> liftIO (findFirstFileInDirs predicate dirsToSearch)
+    where
+      isExecutable :: FilePath -> IO Bool
+      isExecutable path = executable <$> getPermissions path
+  _ -> do
+    -- This is the implementation from System.Directory, which is *not* recursive and is more performant
+    -- than 'findFirstFile' because it doesn't list directories.
+    findExecutablesInDirectories [env </> "bin"] binaryName >>= \case
+      (x:_) -> return $ EnvironmentFile x
+      _ -> expectationFailure [i|Couldn't find binary '#{binaryName}' in #{env </> "bin"}|]
 
 -- | Find a file whose name exactly matches a string, using 'findFirstFile'.
 -- This calls 'takeFileName', so it only matches against the name, not the relative path.
@@ -387,9 +405,15 @@ defaultFindFile name = findFirstFile (\x -> return (takeFileName x == name))
 -- Note that the callback receives the full relative path to the file from the root dir.
 -- Throws using 'expectationFailure' when the file is not found.
 findFirstFile :: (FilePath -> IO Bool) -> FilePath -> IO FilePath
-findFirstFile predicate dir = runExceptT (go dir) >>= \case
+findFirstFile predicate dir = findFirstFileInDirs predicate [dir]
+
+-- | Find the first file under the given directory (recursively) which matches the predicate.
+-- Note that the callback receives the full relative path to the file from the root dir.
+-- Throws using 'expectationFailure' when the file is not found.
+findFirstFileInDirs :: (FilePath -> IO Bool) -> [FilePath] -> IO FilePath
+findFirstFileInDirs predicate dirs = runExceptT (sequence_ (fmap go dirs)) >>= \case
   Left x -> return x
-  Right () -> expectationFailure [i|Couldn't find file in '#{dir}'|]
+  Right () -> expectationFailure [i|Couldn't find file matching predicate in '#{dirs}'|]
   where
     go :: FilePath -> ExceptT FilePath IO ()
     go currentDir = do
