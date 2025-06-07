@@ -26,7 +26,6 @@ import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.String.Interpolate
 import System.FilePath
-import System.Info (os)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix

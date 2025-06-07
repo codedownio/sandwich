@@ -18,10 +18,8 @@ import Control.Monad.Reader
 import Control.Monad.Trans.Except
 import Data.String.Interpolate
 import qualified Data.Text as T
-import System.Info
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Internal.Binaries.Common
 import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import Test.Sandwich.WebDriver.Internal.Binaries.Firefox.Detect
