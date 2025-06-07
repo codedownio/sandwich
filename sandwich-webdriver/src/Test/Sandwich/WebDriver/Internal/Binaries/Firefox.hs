@@ -48,7 +48,7 @@ obtainFirefox (UseFirefoxFromNixpkgs nixContext) = do
   -- ret <- case os of
   --   "darwin" ->
   --     -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
-  --     buildNixSymlinkJoin' nixContext ["firefox-bin"] >>= (liftIO . defaultFindFile "firefox")
+  --     buildNixPackage' nixContext "firefox-bin" >>= (liftIO . defaultFindFile "firefox")
   --   _ ->
   --     getBinaryViaNixPackage' @"firefox" nixContext "firefox"
   ret <- getBinaryViaNixPackage' @"firefox" nixContext "firefox"

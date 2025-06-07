@@ -3,18 +3,18 @@ module Test.Sandwich.Contexts.Util.Nix (
   withWritableBinaryCache
   ) where
 
-import Control.Monad.Catch (MonadMask)
+import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.String.Interpolate
 import Relude
 import System.FilePath
-import System.IO.Temp
 import Test.Sandwich.Logging
 import UnliftIO.Directory
 import UnliftIO.Process
+import UnliftIO.Temporary
 
 
-withWritableBinaryCache :: (MonadIO m, MonadMask m, MonadLogger m) => Maybe FilePath -> (Maybe FilePath -> m a) -> m a
+withWritableBinaryCache :: (MonadUnliftIO m, MonadLogger m) => Maybe FilePath -> (Maybe FilePath -> m a) -> m a
 withWritableBinaryCache Nothing action = action Nothing
 withWritableBinaryCache (Just readOnlyPath) action =
   withSystemTempDirectory "writable-binary-cache" $ \dir -> do

@@ -21,7 +21,6 @@ module Test.Sandwich.Contexts.HttpWaits (
 
 import Control.Concurrent
 import Control.Monad
-import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Maybe
@@ -46,7 +45,7 @@ import Data.Default (def)
 timePerRequest :: Int
 timePerRequest = 10_000_000
 
-type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m, MonadThrow m)
+type WaitConstraints m = (HasCallStack, MonadLogger m, MonadUnliftIO m)
 
 -- | Whether to verify certificates or not when connecting to an HTTPS endpoint.
 data VerifyCerts = YesVerify | NoVerify
@@ -70,7 +69,9 @@ tlsNoVerifySettings = mkManagerSettings tlsSettings Nothing
 waitUntilStatusCode :: (WaitConstraints m) => (Int, Int, Int) -> VerifyCerts -> String -> m ()
 waitUntilStatusCode code verifyCerts url = do
   debug [i|Beginning waitUntilStatusCode request to #{url}|]
-  req <- parseRequest url
+  req <- case parseRequest url of
+    Left err -> expectationFailure [i|Couldn't parse URL: #{url}: #{err}|]
+    Right x -> pure x
   man <- liftIO $ newManager (if verifyCerts == YesVerify then tlsManagerSettings else tlsNoVerifySettings)
   timeout timePerRequest (handleException $ (Right <$>) $ httpLbs req man) >>= \case
     Just (Right resp)

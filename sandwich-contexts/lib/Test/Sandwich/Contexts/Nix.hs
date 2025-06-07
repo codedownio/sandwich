@@ -37,6 +37,8 @@ module Test.Sandwich.Contexts.Nix (
   -- * Nix environments
   , introduceNixEnvironment
   , introduceNixEnvironment'
+  , buildNixPackage
+  , buildNixPackage'
   , buildNixSymlinkJoin
   , buildNixSymlinkJoin'
   , buildNixExpression
@@ -65,7 +67,7 @@ module Test.Sandwich.Contexts.Nix (
   , defaultFileContextVisibilityThreshold
   ) where
 
-import Control.Monad.Catch (MonadMask, MonadThrow)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Aeson as A
@@ -76,7 +78,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import Relude
 import System.FilePath
-import System.IO.Temp
+import System.IO.Temp (createTempDirectory)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Util.Aeson
@@ -86,6 +88,7 @@ import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.MVar (modifyMVar)
 import UnliftIO.Process
+import UnliftIO.Temporary
 
 -- * Types
 
@@ -277,6 +280,32 @@ introduceNixEnvironment' :: (
   -> SpecFree context m ()
 introduceNixEnvironment' nodeOptions packageNames = introduce' nodeOptions "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
 
+-- | Build a single Nix package name from Nixpkgs
+buildNixPackage :: (
+  HasBaseContextMonad context m, HasNixContext context
+  , MonadUnliftIO m, MonadLogger m
+  )
+  -- | Package name.
+  => Text
+  -> m FilePath
+buildNixPackage packageName = do
+  nc <- getContext nixContext
+  buildNixPackage' nc packageName
+
+-- | Lower-level version of 'buildNixCallPackageDerivation'
+buildNixPackage' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLogger m
+  )
+  -- | Nix context.
+  => NixContext
+  -- | Package name.
+  -> Text
+  -> m FilePath
+buildNixPackage' nc packageName = buildNixCallPackageDerivation' nc expr
+  where
+    expr = [i|{ pkgs }: pkgs."#{packageName}"|]
+
 -- | Build a Nix environment, as in 'introduceNixEnvironment'.
 buildNixSymlinkJoin :: (
   HasBaseContextMonad context m, HasNixContext context
@@ -306,7 +335,7 @@ buildNixSymlinkJoin' nc@(NixContext {..}) packageNames = do
 -- "{ git, gcc, stdenv, ... }: stdenv.mkDerivation {...}"
 buildNixCallPackageDerivation :: (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLogger m, MonadMask m
+  , MonadUnliftIO m, MonadLogger m
   )
   -- | Nix derivation
   => Text
@@ -316,9 +345,9 @@ buildNixCallPackageDerivation derivation = do
   buildNixCallPackageDerivation' nc derivation
 
 -- | Lower-level version of 'buildNixCallPackageDerivation'
-buildNixCallPackageDerivation' :: (
+buildNixCallPackageDerivation' :: forall context m. (
   HasBaseContextMonad context m
-  , MonadUnliftIO m, MonadLogger m, MonadMask m
+  , MonadUnliftIO m, MonadLogger m
   )
   -- | Nix context.
   => NixContext
@@ -342,6 +371,7 @@ buildNixCallPackageDerivation' nc@(NixContext {..}) derivation = do
         return (M.insert derivation asy m, asy)
     )
   where
+    withDerivationPath :: Maybe FilePath -> (FilePath -> m a) -> m a
     withDerivationPath (Just nixExpressionDir) action = action (nixExpressionDir </> "default.nix")
     withDerivationPath Nothing action = withSystemTempDirectory "nix-expression" $ \dir -> action (dir </> "default.nix")
 
@@ -429,8 +459,8 @@ in
 pkgs.symlinkJoin { name = "test-contexts-environment"; paths = with pkgs; [#{T.intercalate " " packageNames}]; }
 |]
 
-renderCallPackageDerivation :: NixpkgsDerivation -> FilePath -> Text
-renderCallPackageDerivation (NixpkgsDerivationFetchFromGitHub {..}) derivationPath = [i|
+renderDerivationWithPkgs :: NixpkgsDerivation -> Text -> Text
+renderDerivationWithPkgs (NixpkgsDerivationFetchFromGitHub {..}) expr = [i|
 \# Use the ambient <nixpkgs> channel to bootstrap
 with {
   inherit (import (<nixpkgs>) {})
@@ -448,5 +478,11 @@ let
   pkgs = import nixpkgs {};
 in
 
-pkgs.callPackage #{show derivationPath :: String} {}
+#{expr}
 |]
+
+renderCallPackageDerivation :: NixpkgsDerivation -> FilePath -> Text
+renderCallPackageDerivation nixpkgsDerivation derivationPath =
+  renderDerivationWithPkgs nixpkgsDerivation expr
+  where
+    expr = [i|pkgs.callPackage #{show derivationPath :: String} {}|]

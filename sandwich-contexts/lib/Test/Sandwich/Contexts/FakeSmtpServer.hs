@@ -34,7 +34,6 @@ module Test.Sandwich.Contexts.FakeSmtpServer (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -95,7 +94,7 @@ data FakeSmtpServer = FakeSmtpServer {
   -- | The port on which the fake SMTP server is running.
   , fakeSmtpServerSmtpPort :: PortNumber
   -- | Callback to retrieve the emails the server has received.
-  , fakeSmtpServerGetEmails :: forall m. (MonadLoggerIO m, MonadUnliftIO m, MonadThrow m) => m [EmailInfo]
+  , fakeSmtpServerGetEmails :: forall m. (MonadLoggerIO m, MonadUnliftIO m) => m [EmailInfo]
   }
 
 fakeSmtpServer :: Label "fakeSmtpServer" FakeSmtpServer
@@ -103,7 +102,7 @@ fakeSmtpServer = Label
 
 -- * Functions
 
-type BaseMonad context m = (HasBaseContext context, MonadMask m, MonadUnliftIO m)
+type BaseMonad context m = (HasBaseContext context, MonadUnliftIO m)
 
 type FakeSmtpServerContext context =
   LabelValue "fakeSmtpServer" FakeSmtpServer
@@ -215,7 +214,7 @@ waitForPortFile timeoutSeconds path = do
       Just n -> pure n
 
 getEmails :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadThrow m
+  MonadLoggerIO m, MonadUnliftIO m
   ) => Manager -> Text -> PortNumber -> m [EmailInfo]
 getEmails manager authPart httpPort = do
   req <- liftIO $ parseRequest [i|http://#{authPart}localhost:#{httpPort}/api/emails|]

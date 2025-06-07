@@ -101,16 +101,20 @@ browserDependencies = Label
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
 
 getBrowserDependencies :: (
-  MonadUnliftIO m, MonadLogger m
-  , MonadReader context m, HasBaseContext context
+  MonadReader context m, HasBaseContext context
+  , MonadUnliftIO m, MonadLogger m
   ) => BrowserDependenciesSpec -> m BrowserDependencies
 getBrowserDependencies BrowserDependenciesSpecChrome {..} = do
   chrome <- exceptionOnLeft $ obtainChrome browserDependenciesSpecChromeChrome
   chromeDriver <- exceptionOnLeft $ obtainChromeDriver browserDependenciesSpecChromeChromeDriver
+  info [i|chrome: #{chrome}|]
+  info [i|chromedriver: #{chromeDriver}|]
   return $ BrowserDependenciesChrome chrome chromeDriver
 getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
   firefox <- exceptionOnLeft $ obtainFirefox browserDependenciesSpecFirefoxFirefox
   geckoDriver <- exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver
+  info [i|firefox: #{firefox}|]
+  info [i|geckodriver: #{geckoDriver}|]
   return $ BrowserDependenciesFirefox firefox geckoDriver
 
 -- | Introduce 'BrowserDependencies' via Nix, using the command line options.
@@ -144,7 +148,7 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       -- let useFirefox = case os of
       --       "darwin" -> do
       --         -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
-      --         firefox <- buildNixSymlinkJoin ["firefox-bin"] >>= (liftIO . defaultFindFile "firefox")
+      --         firefox <- buildNixPackage "firefox-bin" >>= (liftIO . defaultFindFile "firefox")
       --         BrowserDependenciesFirefox firefox <$> getBinaryViaNixPackage @"geckodriver" "geckodriver"
       --       _ -> BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
       --                                       <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
@@ -157,7 +161,7 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
         Just UseFirefox -> useFirefox
         Nothing -> useChrome
 
-      debug [i|Got browser dependencies: #{deps}|]
+      info [i|Got browser dependencies: #{deps}|]
 
       return deps
 
