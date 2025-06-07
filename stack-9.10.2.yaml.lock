@@ -43,12 +43,12 @@ packages:
   original:
     hackage: kubernetes-api-130.0.0
 - completed:
-    hackage: kubernetes-api-client-0.6.0.0@sha256:a985d7dd69040a1e34577f34a3e22640a7fc320a3cc18f7c6c482aec0d3cf869,5622
+    hackage: kubernetes-api-client-0.6.0.1@sha256:a26f861138ba85a3aea53ba7c4d13a8f06794f60725caab2aa812b7275cf0b82,5622
     pantry-tree:
-      sha256: 5bbf42b52da6fc63b52c88228e7a557630666491c63fe37354864db298a3e13b
+      sha256: 4f5cdfa64432b0210c9e49797d1acae1a77a650849a1a2373d3375e1c6a02ab1
       size: 2026
   original:
-    hackage: kubernetes-api-client-0.6.0.0
+    hackage: kubernetes-api-client-0.6.0.1
 - completed:
     commit: b70757b85751525cba41316ea9af132d9a43cfaf
     git: https://github.com/codedownio/haskell-oidc-client
@@ -62,7 +62,7 @@ packages:
     git: https://github.com/codedownio/haskell-oidc-client
 snapshots:
 - completed:
-    sha256: 0bff5f3f5548516a7c86cea95d47672383cef34dac97ba28d750a52ddfcdf54a
-    size: 682020
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/4/24.yaml
-  original: nightly-2025-04-24
+    sha256: e9b93acfb8aaf8ae4869050506553a963a8adba95748cd60356f9ffe64f03345
+    size: 712232
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/5/28.yaml
+  original: nightly-2025-05-28
