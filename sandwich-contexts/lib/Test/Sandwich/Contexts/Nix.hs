@@ -135,7 +135,7 @@ nixpkgsMaster = NixpkgsDerivationFetchFromGitHub {
 
 -- | Nixpkgs release 24.11, accessed 5\/5\/2025.
 -- You can compute updated values for this release (or others) by running
--- nix-prefetch-github NixOS nixpkgs --rev release-24.05
+-- nix-prefetch-github NixOS nixpkgs --rev release-24.11
 nixpkgsRelease2411 :: NixpkgsDerivation
 nixpkgsRelease2411 = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
