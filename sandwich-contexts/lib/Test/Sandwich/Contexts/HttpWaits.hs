@@ -95,12 +95,3 @@ waitUntilStatusCodeWithTimeout code timeInMicroseconds verifyCerts url = do
   maybeSuccess <- timeout timeInMicroseconds $ waitUntilStatusCode code verifyCerts url
   when (isNothing maybeSuccess) $
     expectationFailure [i|Failed to connect to URL "#{url}" in waitUntilStatusCodeWithTimeout'...|]
-
-
-#if !MIN_VERSION_time(1,9,1)
-secondsToNominalDiffTime :: Pico -> NominalDiffTime
-secondsToNominalDiffTime = realToFrac
-
-nominalDiffTimeToSeconds :: NominalDiffTime -> Pico
-nominalDiffTimeToSeconds = realToFrac
-#endif
