@@ -7,7 +7,6 @@
 module Test.Sandwich.Contexts.Kubernetes.Run where
 
 import Control.Monad
-import Control.Monad.Catch (MonadMask, MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -22,7 +21,7 @@ import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Exception
 
 
-type Constraints context m = (MonadIO m, MonadThrow m, MonadUnliftIO m, MonadLogger m, MonadMask m, MonadReader context m)
+type Constraints context m = (MonadIO m, MonadUnliftIO m, MonadLogger m, MonadReader context m)
 
 instance Exception MimeError
 

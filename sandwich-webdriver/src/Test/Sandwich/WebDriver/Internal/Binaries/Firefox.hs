@@ -45,6 +45,12 @@ obtainFirefox (UseFirefoxAt p) = doesFileExist p >>= \case
     return $ Right p
 obtainFirefox (UseFirefoxFromNixpkgs nixContext) = do
   debug [i|Building Firefox with Nix|]
+  -- ret <- case os of
+  --   "darwin" ->
+  --     -- The only Firefox version that currently works on Darwin as of 5/5/2025 is firefox-bin
+  --     buildNixPackage' nixContext "firefox-bin" >>= (liftIO . defaultFindFile "firefox")
+  --   _ ->
+  --     getBinaryViaNixPackage' @"firefox" nixContext "firefox"
   ret <- getBinaryViaNixPackage' @"firefox" nixContext "firefox"
   debug [i|Built Firefox: #{ret}|]
   return $ Right ret

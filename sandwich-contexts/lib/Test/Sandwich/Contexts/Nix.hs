@@ -37,6 +37,8 @@ module Test.Sandwich.Contexts.Nix (
   -- * Nix environments
   , introduceNixEnvironment
   , introduceNixEnvironment'
+  , buildNixPackage
+  , buildNixPackage'
   , buildNixSymlinkJoin
   , buildNixSymlinkJoin'
   , buildNixExpression
@@ -46,6 +48,9 @@ module Test.Sandwich.Contexts.Nix (
 
   -- * Nixpkgs releases #releases#
   , nixpkgsReleaseDefault
+  , nixpkgsMaster
+  , nixpkgsRelease2505
+  , nixpkgsRelease2411
   , nixpkgsRelease2405
   , nixpkgsRelease2311
 
@@ -62,7 +67,7 @@ module Test.Sandwich.Contexts.Nix (
   , defaultFileContextVisibilityThreshold
   ) where
 
-import Control.Monad.Catch (MonadMask, MonadThrow)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.Aeson as A
@@ -73,7 +78,7 @@ import qualified Data.Text.IO as T
 import qualified Data.Vector as V
 import Relude
 import System.FilePath
-import System.IO.Temp
+import System.IO.Temp (createTempDirectory)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Util.Aeson
@@ -83,6 +88,7 @@ import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.MVar (modifyMVar)
 import UnliftIO.Process
+import UnliftIO.Temporary
 
 -- * Types
 
@@ -118,6 +124,42 @@ data NixpkgsDerivation =
     -- Useful when you want to use packages with unfree licenses, like @google-chrome@.
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
+
+-- | Nixpkgs master, accessed 6\/6\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev master
+nixpkgsMaster :: NixpkgsDerivation
+nixpkgsMaster = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "067a39e41a125985e061199452c900b0305f4c42"
+  , nixpkgsDerivationSha256 = "sha256-N57WqGFUUDJ7QVR4YPRttp4YuTA4oN/KdXHY4OEXGFk="
+  , nixpkgsDerivationAllowUnfree = False
+  }
+
+-- | Nixpkgs release 25.05, accessed 6\/6\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev release-25.05
+nixpkgsRelease2505 :: NixpkgsDerivation
+nixpkgsRelease2505 = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "8217c6edf391991f07ecacf3d31ba6eb01d733b1"
+  , nixpkgsDerivationSha256 = "sha256-aaeXPG9zVvi+aKTp0dMUYOeMuhDXQejRPh2CfK23nf8="
+  , nixpkgsDerivationAllowUnfree = False
+  }
+
+-- | Nixpkgs release 24.11, accessed 6\/6\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev release-24.11
+nixpkgsRelease2411 :: NixpkgsDerivation
+nixpkgsRelease2411 = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "5908ad2494520214a309e74d5c3f33623a593ecd"
+  , nixpkgsDerivationSha256 = "sha256-0q80SLtfhrtZAzLGpwAQjqaTE+HAwmOjoX4Q3M5mB/s="
+  , nixpkgsDerivationAllowUnfree = False
+  }
 
 -- | Nixpkgs release 24.05, accessed 11\/9\/2024.
 -- You can compute updated values for this release (or others) by running
@@ -238,6 +280,32 @@ introduceNixEnvironment' :: (
   -> SpecFree context m ()
 introduceNixEnvironment' nodeOptions packageNames = introduce' nodeOptions "Introduce Nix environment" nixEnvironment (buildNixSymlinkJoin packageNames) (const $ return ())
 
+-- | Build a single Nix package name from Nixpkgs
+buildNixPackage :: (
+  HasBaseContextMonad context m, HasNixContext context
+  , MonadUnliftIO m, MonadLogger m
+  )
+  -- | Package name.
+  => Text
+  -> m FilePath
+buildNixPackage packageName = do
+  nc <- getContext nixContext
+  buildNixPackage' nc packageName
+
+-- | Lower-level version of 'buildNixCallPackageDerivation'
+buildNixPackage' :: (
+  HasBaseContextMonad context m
+  , MonadUnliftIO m, MonadLogger m
+  )
+  -- | Nix context.
+  => NixContext
+  -- | Package name.
+  -> Text
+  -> m FilePath
+buildNixPackage' nc packageName = buildNixCallPackageDerivation' nc expr
+  where
+    expr = [i|{ pkgs }: pkgs."#{packageName}"|]
+
 -- | Build a Nix environment, as in 'introduceNixEnvironment'.
 buildNixSymlinkJoin :: (
   HasBaseContextMonad context m, HasNixContext context
@@ -267,7 +335,7 @@ buildNixSymlinkJoin' nc@(NixContext {..}) packageNames = do
 -- "{ git, gcc, stdenv, ... }: stdenv.mkDerivation {...}"
 buildNixCallPackageDerivation :: (
   HasBaseContextMonad context m, HasNixContext context
-  , MonadUnliftIO m, MonadLogger m, MonadMask m
+  , MonadUnliftIO m, MonadLogger m
   )
   -- | Nix derivation
   => Text
@@ -277,9 +345,9 @@ buildNixCallPackageDerivation derivation = do
   buildNixCallPackageDerivation' nc derivation
 
 -- | Lower-level version of 'buildNixCallPackageDerivation'
-buildNixCallPackageDerivation' :: (
+buildNixCallPackageDerivation' :: forall context m. (
   HasBaseContextMonad context m
-  , MonadUnliftIO m, MonadLogger m, MonadMask m
+  , MonadUnliftIO m, MonadLogger m
   )
   -- | Nix context.
   => NixContext
@@ -303,6 +371,7 @@ buildNixCallPackageDerivation' nc@(NixContext {..}) derivation = do
         return (M.insert derivation asy m, asy)
     )
   where
+    withDerivationPath :: Maybe FilePath -> (FilePath -> m a) -> m a
     withDerivationPath (Just nixExpressionDir) action = action (nixExpressionDir </> "default.nix")
     withDerivationPath Nothing action = withSystemTempDirectory "nix-expression" $ \dir -> action (dir </> "default.nix")
 
@@ -390,8 +459,8 @@ in
 pkgs.symlinkJoin { name = "test-contexts-environment"; paths = with pkgs; [#{T.intercalate " " packageNames}]; }
 |]
 
-renderCallPackageDerivation :: NixpkgsDerivation -> FilePath -> Text
-renderCallPackageDerivation (NixpkgsDerivationFetchFromGitHub {..}) derivationPath = [i|
+renderDerivationWithPkgs :: NixpkgsDerivation -> Text -> Text
+renderDerivationWithPkgs (NixpkgsDerivationFetchFromGitHub {..}) expr = [i|
 \# Use the ambient <nixpkgs> channel to bootstrap
 with {
   inherit (import (<nixpkgs>) {})
@@ -409,5 +478,11 @@ let
   pkgs = import nixpkgs {};
 in
 
-pkgs.callPackage #{show derivationPath :: String} {}
+#{expr}
 |]
+
+renderCallPackageDerivation :: NixpkgsDerivation -> FilePath -> Text
+renderCallPackageDerivation nixpkgsDerivation derivationPath =
+  renderDerivationWithPkgs nixpkgsDerivation expr
+  where
+    expr = [i|pkgs.callPackage #{show derivationPath :: String} {}|]

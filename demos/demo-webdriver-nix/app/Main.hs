@@ -20,7 +20,7 @@ import Test.WebDriver.Commands
 
 
 simple :: TopSpecWithOptions
-simple = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
+simple = introduceNixContext (nixpkgsRelease2505 { nixpkgsDerivationAllowUnfree = True }) $
   introduceWebDriverViaNix defaultWdOptions $ do
     it "opens Google and searches" $ withSession1 $ do
       openPage [i|https://www.google.com|]

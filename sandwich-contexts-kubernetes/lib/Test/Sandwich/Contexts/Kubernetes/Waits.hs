@@ -1,12 +1,11 @@
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.Waits where
 
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.List as L
@@ -32,7 +31,7 @@ import UnliftIO.Process
 -- * They each have at least one IP address
 -- * They each have an empty set of "not ready addresses"
 waitForServiceEndpointsToExist :: (
-  MonadUnliftIO m, MonadLogger m, MonadMask m
+  MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context
   )
   -- | Namespace
@@ -66,7 +65,7 @@ waitForServiceEndpointsToExist namespace serviceName timeInSeconds = do
 
 
 listEndpoints :: (
-  MonadUnliftIO m, MonadLogger m, MonadMask m
+  MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context
   ) => Text -> Map Text Text -> m [V1Endpoints]
 listEndpoints namespace labels =
@@ -77,7 +76,7 @@ listEndpoints namespace labels =
 
 -- | Wait for a set of pods to exist, specified by a set of labels.
 waitForPodsToExist :: (
-  MonadUnliftIO m, MonadLogger m, MonadMask m
+  MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context
   )
   -- | Namespace
@@ -98,7 +97,7 @@ waitForPodsToExist namespace labels timeInSeconds maybeDesiredCount = do
 
 -- | List the pods matching a set of labels.
 listPods :: (
-  MonadUnliftIO m, MonadLogger m, MonadMask m
+  MonadUnliftIO m, MonadLogger m
   , MonadReader context m, HasKubernetesClusterContext context
   ) => Text -> Map Text Text -> m [V1Pod]
 listPods namespace labels =

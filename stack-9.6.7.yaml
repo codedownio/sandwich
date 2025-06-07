@@ -1,5 +1,5 @@
 
-resolver: nightly-2025-04-24
+resolver: lts-22.44
 
 # ghc-options:
 #   "$locals": >-
@@ -28,7 +28,7 @@ packages:
 - ./sandwich-webdriver
 
 extra-deps:
-- HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+- vty-windows-0.2.0.3
 
 ## For sandwich-contexts
 
@@ -46,8 +46,12 @@ extra-deps:
 ## For sandwich-contexts-kubernetes
 
 - kubernetes-api-130.0.0
-- kubernetes-api-client-0.6.0.0
+- kubernetes-api-client-0.6.0.1
 
 - git: https://github.com/codedownio/haskell-oidc-client
-  # codedown-jun-2024-ghc98
-  commit: b70757b85751525cba41316ea9af132d9a43cfaf
+  # codedown-jan-2024-ghc96
+  commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+
+# For Unix socket support on Windows
+- conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338
+- streaming-commons-0.2.3.0@sha256:68d5f3daa6caa7cc7d659094a03d543021df5ec4737b67e63ffa4541ac0aae10,4841

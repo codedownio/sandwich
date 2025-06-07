@@ -30,7 +30,6 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Data.String.Interpolate
 import Data.Text as T
@@ -85,7 +84,7 @@ data KustomizationDir =
 -- | Introduce a MinIO server on a Kubernetes cluster.
 -- Must have a 'minioOperator' context.
 introduceK8SMinioS3Server :: (
-  MonadMask m, Typeable context, KubectlBasicWithoutReader context m, HasMinioOperatorContext context
+  Typeable context, KubectlBasicWithoutReader context m, HasMinioOperatorContext context
   )
   -- | Options
   => MinioS3ServerOptions
@@ -99,7 +98,7 @@ introduceK8SMinioS3Server options = do
 
 -- | Same as 'introduceK8SMinioS3Server', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SMinioS3Server' :: (
-  MonadMask m, Typeable context, KubectlBasic context m, HasMinioOperatorContext context
+  Typeable context, KubectlBasic context m, HasMinioOperatorContext context
   )
   => KubernetesClusterContext
   -- | Options
@@ -113,7 +112,7 @@ introduceK8SMinioS3Server' kubernetesClusterContext options =
 
 -- | Bracket-style variant of 'introduceK8SMinioS3Server'.
 withK8SMinioS3Server :: (
-  Typeable context, MonadMask m, MonadFail m, KubernetesBasic context m, HasFile context "kubectl"
+  Typeable context, MonadFail m, KubernetesBasic context m, HasFile context "kubectl"
   )
   => KubernetesClusterContext
   -> MinioOperatorContext
@@ -127,7 +126,7 @@ withK8SMinioS3Server kcc moc options action = do
 
 -- | Same as 'withK8SMinioS3Server', but allows you to pass in the @kubectl@ binary.
 withK8SMinioS3Server' :: forall m context. (
-  Typeable context, MonadMask m, MonadFail m, KubernetesBasic context m
+  Typeable context, MonadFail m, KubernetesBasic context m
   )
   -- | Path to kubectl binary
   => FilePath

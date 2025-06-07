@@ -205,7 +205,7 @@ withPostgresUnixSocketViaNix :: (
   -> (FilePath -> m a)
   -> m a
 withPostgresUnixSocketViaNix (PostgresNixOptions {..}) action = do
-  postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin [postgresNixPostgres]
+  postgresBinDir <- (</> "bin") <$> buildNixPackage postgresNixPostgres
   withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase postgresNixConfExtraLines action
 
 -- | Lower-level variant of 'withPostgresUnixSocket'.
@@ -219,7 +219,7 @@ withPostgresUnixSocketViaNix' :: (
   -> (FilePath -> m a)
   -> m a
 withPostgresUnixSocketViaNix' nc (PostgresNixOptions {..}) action = do
-  postgresBinDir <- (</> "bin") <$> buildNixSymlinkJoin' nc [postgresNixPostgres]
+  postgresBinDir <- (</> "bin") <$> buildNixPackage' nc postgresNixPostgres
   withPostgresUnixSocket postgresBinDir postgresNixUsername postgresNixPassword postgresNixDatabase postgresNixConfExtraLines action
 
 -- | The lowest-level raw process version.

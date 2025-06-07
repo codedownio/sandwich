@@ -70,7 +70,6 @@ library:
   - string-interpolate
   - temporary
   - text
-  - time
   - transformers
   - unix-compat
   - unliftio-core
