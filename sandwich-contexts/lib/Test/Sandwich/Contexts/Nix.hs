@@ -47,6 +47,7 @@ module Test.Sandwich.Contexts.Nix (
   -- * Nixpkgs releases #releases#
   , nixpkgsReleaseDefault
   , nixpkgsMaster
+  , nixpkgsRelease2505
   , nixpkgsRelease2411
   , nixpkgsRelease2405
   , nixpkgsRelease2311
@@ -121,27 +122,39 @@ data NixpkgsDerivation =
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
--- | Nixpkgs master, accessed 5\/5\/2025.
+-- | Nixpkgs master, accessed 6\/6\/2025.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev master
 nixpkgsMaster :: NixpkgsDerivation
 nixpkgsMaster = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "5a837cb8662b841d5e3f491791aa1c389f68b25e"
-  , nixpkgsDerivationSha256 = "sha256-/LHyhxNwop/1lyg9kclGHBpyBadLFZda4z0QOzERUKY="
+  , nixpkgsDerivationRev = "067a39e41a125985e061199452c900b0305f4c42"
+  , nixpkgsDerivationSha256 = "sha256-N57WqGFUUDJ7QVR4YPRttp4YuTA4oN/KdXHY4OEXGFk="
   , nixpkgsDerivationAllowUnfree = False
   }
 
--- | Nixpkgs release 24.11, accessed 5\/5\/2025.
+-- | Nixpkgs release 25.05, accessed 6\/6\/2025.
+-- You can compute updated values for this release (or others) by running
+-- nix-prefetch-github NixOS nixpkgs --rev release-25.05
+nixpkgsRelease2505 :: NixpkgsDerivation
+nixpkgsRelease2505 = NixpkgsDerivationFetchFromGitHub {
+  nixpkgsDerivationOwner = "NixOS"
+  , nixpkgsDerivationRepo = "nixpkgs"
+  , nixpkgsDerivationRev = "8217c6edf391991f07ecacf3d31ba6eb01d733b1"
+  , nixpkgsDerivationSha256 = "sha256-aaeXPG9zVvi+aKTp0dMUYOeMuhDXQejRPh2CfK23nf8="
+  , nixpkgsDerivationAllowUnfree = False
+  }
+
+-- | Nixpkgs release 24.11, accessed 6\/6\/2025.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev release-24.11
 nixpkgsRelease2411 :: NixpkgsDerivation
 nixpkgsRelease2411 = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "c6aca34d2ca2ce9e20b722f54e684cda64b275c2"
-  , nixpkgsDerivationSha256 = "sha256-U3VKPi5D2oLBFzaMI0jJLJp8J64ZLjz+EwodUS//QWc="
+  , nixpkgsDerivationRev = "5908ad2494520214a309e74d5c3f33623a593ecd"
+  , nixpkgsDerivationSha256 = "sha256-0q80SLtfhrtZAzLGpwAQjqaTE+HAwmOjoX4Q3M5mB/s="
   , nixpkgsDerivationAllowUnfree = False
   }
 
