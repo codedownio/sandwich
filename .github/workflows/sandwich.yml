@@ -214,13 +214,6 @@ jobs:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
 
-    - name: List local dirs
-      if: always()
-      run: |
-        echo AAAAAAAAAAAAAAAAA
-        ls -lh sandwich-webdriver
-        echo BBBBBBBBBBBBBBBBB
-
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
