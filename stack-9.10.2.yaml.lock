@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    hackage: HaskellNet-0.6.2@sha256:afc178bd40f0e8d8368bef8308881f73985ccbe3ce8f4c68ba5d7db3ca18cc36,2478
     pantry-tree:
-      sha256: 5b75b705d3d7c7220e7e8f8e36631ac9969f5c30fb0a6ebd604c95a7dc8e4c31
-      size: 1632
+      sha256: 6c69d25f62ce5ecb49b87546d052b67fa8e548f7c161dd87274c696c563f9314
+      size: 1689
   original:
-    hackage: HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+    hackage: HaskellNet-0.6.2
 - completed:
     commit: 2fae6ae212a346acf400847d0b6cc647045822d1
     git: https://github.com/codedownio/minio-hs

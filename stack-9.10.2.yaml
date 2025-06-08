@@ -28,7 +28,7 @@ packages:
 - ./sandwich-webdriver
 
 extra-deps:
-- HaskellNet-0.6.1.2@sha256:a880046501c8b035002ac2dbf597e6d416552bd04b499719997a67407602afc8,2583
+- HaskellNet-0.6.2
 
 ## For sandwich-contexts
 
