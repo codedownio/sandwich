@@ -110,7 +110,7 @@ jobs:
 
     - name: Test (sandwich-webdriver)
       if: runner.os != 'Windows'
-      run: cabal test sandwich-webdriver --test-option="--headless --chrome-no-sandbox"
+      run: cabal test sandwich-webdriver --test-option="--headless" --test-option="--chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
