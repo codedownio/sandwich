@@ -129,6 +129,15 @@ jobs:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          test_runs
+        retention-days: 14
+
   stack:
     name: stack / ghc ${{ matrix.ghc }}
     runs-on: ubuntu-latest
@@ -140,8 +149,8 @@ jobs:
           yaml: "stack-9.2.8.yaml"
         - ghc: "9.4.8"
           yaml: "stack-9.4.8.yaml"
-        - ghc: "9.6.6"
-          yaml: "stack-9.6.6.yaml"
+        - ghc: "9.6.7"
+          yaml: "stack-9.6.7.yaml"
         - ghc: "9.8.4"
           yaml: "stack-9.8.4.yaml"
         - ghc: "9.10.2"
@@ -215,6 +224,13 @@ jobs:
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
+    - name: List local dirs
+      if: always()
+      run: |
+        echo AAAAAAAAAAAAAAAAA
+        ls -lh
+        echo BBBBBBBBBBBBBBBBB
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
