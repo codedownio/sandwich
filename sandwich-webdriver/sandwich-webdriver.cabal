@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -100,6 +100,7 @@ library
     , sandwich >=0.3.0.0
     , sandwich-contexts >=0.3.0.0
     , string-interpolate
+    , temporary
     , text
     , time
     , transformers
@@ -136,8 +137,6 @@ library
         Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
     hs-source-dirs:
         unix-src
-    build-depends:
-        temporary
 
 test-suite sandwich-webdriver-test
   type: exitcode-stdio-1.0
@@ -186,6 +185,7 @@ test-suite sandwich-webdriver-test
     , sandwich-contexts >=0.3.0.0
     , sandwich-webdriver
     , string-interpolate
+    , temporary
     , text
     , time
     , transformers
