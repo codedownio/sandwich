@@ -247,4 +247,5 @@ addCommandLineOptionsToWdOptions (SomeCommandLineOptions (CommandLineOptions {op
     Just Headless -> RunHeadless defaultHeadlessConfig
     Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
     Just Current -> Normal
+  , chromeNoSandbox = optChromeNoSandbox
   }

@@ -156,7 +156,7 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       let useFirefox = BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
                                                   <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
 
-      deps <- case optFirefox of
+      deps <- case optBrowserToUse of
         Just UseChrome -> useChrome
         Just UseFirefox -> useFirefox
         Nothing -> useChrome
