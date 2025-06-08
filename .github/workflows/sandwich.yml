@@ -215,3 +215,12 @@ jobs:
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          test_runs
+        retention-days: 14
