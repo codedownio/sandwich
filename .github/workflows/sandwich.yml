@@ -110,7 +110,7 @@ jobs:
 
     - name: Test (sandwich-webdriver)
       if: runner.os != 'Windows'
-      run: cabal test sandwich-webdriver --test-option="--headless" --ta="--chrome-no-sandbox"
+      run: cabal test sandwich-webdriver --test-option="--headless --chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
@@ -206,7 +206,7 @@ jobs:
 
     - name: Test (sandwich-webdriver)
       if: always() && runner.os != 'Windows'
-      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc --ta="--chrome-no-sandbox"
+      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
