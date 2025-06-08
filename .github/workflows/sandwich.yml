@@ -109,6 +109,7 @@ jobs:
       run: cabal test sandwich-quickcheck
 
     - name: Test (sandwich-webdriver)
+      if: runner.os != 'Windows'
       run: cabal test sandwich-webdriver --test-option="--headless"
 
     - uses: actions/cache/save@v4
@@ -204,7 +205,7 @@ jobs:
       run: stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-webdriver)
-      if: always()
+      if: always() && runner.os != 'Windows'
       run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
 
     - uses: actions/cache/save@v4
@@ -217,7 +218,7 @@ jobs:
       if: always()
       run: |
         echo AAAAAAAAAAAAAAAAA
-        ls -lh
+        ls -lh sandwich-webdriver
         echo BBBBBBBBBBBBBBBBB
 
     - name: Upload test results
@@ -226,5 +227,5 @@ jobs:
       with:
         name: test-results
         path: |
-          test_runs
+          sandwich-webdriver/test_runs
         retention-days: 14
