@@ -29,19 +29,31 @@ packages:
     git: https://github.com/codedownio/docker-engine.git
     subdir: v1.44
 - completed:
-    hackage: kubernetes-api-130.0.0@sha256:aa2d91343a2639efbb3cbb1256ba7eaa43d3476e6e35a50770ecb4b19bf8c114,5635
+    commit: 40a7f4361de2fd8f23630de1955c615421c38d66
+    git: https://github.com/codedownio/kubernetes-api.git
+    name: kubernetes-api
     pantry-tree:
-      sha256: a94bf97a25641331d46db1e4243aaf11e8b193f7f6dcd890cb6364ad5ec3c320
-      size: 6518
+      sha256: 4668a02438c682ed10c51e7f85b2d4ac5fbfd4e09506d6e37bb8b5718dbea017
+      size: 7015
+    subdir: kubernetes-api-1.30
+    version: 130.0.0
   original:
-    hackage: kubernetes-api-130.0.0
+    commit: 40a7f4361de2fd8f23630de1955c615421c38d66
+    git: https://github.com/codedownio/kubernetes-api.git
+    subdir: kubernetes-api-1.30
 - completed:
-    hackage: kubernetes-api-client-0.6.0.1@sha256:a26f861138ba85a3aea53ba7c4d13a8f06794f60725caab2aa812b7275cf0b82,5622
+    commit: 40a7f4361de2fd8f23630de1955c615421c38d66
+    git: https://github.com/codedownio/kubernetes-api.git
+    name: kubernetes-api-client
     pantry-tree:
-      sha256: 4f5cdfa64432b0210c9e49797d1acae1a77a650849a1a2373d3375e1c6a02ab1
-      size: 2026
+      sha256: b431e0b5f2198d7bfb5efdddaf22790b2b2554e6dc6b03e90f2375ab7501a3b7
+      size: 2181
+    subdir: kubernetes-api-client
+    version: 0.6.1.0
   original:
-    hackage: kubernetes-api-client-0.6.0.1
+    commit: 40a7f4361de2fd8f23630de1955c615421c38d66
+    git: https://github.com/codedownio/kubernetes-api.git
+    subdir: kubernetes-api-client
 - completed:
     commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
     git: https://github.com/krdlab/haskell-oidc-client

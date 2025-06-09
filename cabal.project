@@ -63,3 +63,15 @@ source-repository-package
     type: git
     location: https://github.com/codedownio/minio-hs
     tag: 1e63a0ec44fff374799b25a0a02c041eab664c4f
+
+source-repository-package
+    type: git
+    location: https://github.com/codedownio/kubernetes-api.git
+    tag: 40a7f4361de2fd8f23630de1955c615421c38d66
+    subdir: kubernetes-api-1.30
+
+source-repository-package
+    type: git
+    location: https://github.com/codedownio/kubernetes-api.git
+    tag: 40a7f4361de2fd8f23630de1955c615421c38d66
+    subdir: kubernetes-api-client
