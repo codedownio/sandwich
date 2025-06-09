@@ -59,6 +59,8 @@ library
     , conduit
     , conduit-extra >=1.3.7
     , containers
+    , crypton-connection
+    , data-default
     , exceptions
     , filepath
     , http-client
@@ -83,13 +85,6 @@ library
     , unliftio-core
     , vector
   default-language: Haskell2010
-  if impl(ghc >= 9.6)
-    build-depends:
-        crypton-connection
-      , data-default
-  if impl(ghc < 9.6)
-    build-depends:
-        connection
 
 test-suite tests
   type: exitcode-stdio-1.0
