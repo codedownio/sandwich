@@ -51,7 +51,7 @@ packages:
 -- source-repository-package
 --     type: git
 --     location: https://github.com/codedownio/docker-engine.git
---     tag: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+--     tag: 58535cd46712dff421f2148e438c49c2700ea20e
 --     subdir: v1.44
 
 source-repository-package

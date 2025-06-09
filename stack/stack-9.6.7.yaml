@@ -17,29 +17,28 @@ nix:
   - zlib
 
 packages:
-- ./sandwich
-- ./sandwich-contexts
-- ./sandwich-contexts-docker
-- ./sandwich-contexts-kubernetes
-- ./sandwich-contexts-minio
-- ./sandwich-hedgehog
-- ./sandwich-quickcheck
-- ./sandwich-slack
-- ./sandwich-webdriver
+- ../sandwich
+- ../sandwich-contexts
+- ../sandwich-contexts-docker
+- ../sandwich-contexts-kubernetes
+- ../sandwich-contexts-minio
+- ../sandwich-hedgehog
+- ../sandwich-quickcheck
+- ../sandwich-slack
+- ../sandwich-webdriver
 
 extra-deps:
 - vty-windows-0.2.0.3
 
 ## For sandwich-contexts
 
-- git: https://github.com/codedownio/minio-hs
-  # branch: codedown-jul-2024-tolerant
-  commit: 2fae6ae212a346acf400847d0b6cc647045822d1
+- git: https://github.com/minio/minio-hs
+  commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
 
 ## For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-engine.git
-  commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+  commit: 58535cd46712dff421f2148e438c49c2700ea20e
   subdirs:
   - v1.44
 
@@ -48,9 +47,8 @@ extra-deps:
 - kubernetes-api-130.0.0
 - kubernetes-api-client-0.6.0.1
 
-- git: https://github.com/codedownio/haskell-oidc-client
-  # codedown-jan-2024-ghc96
-  commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+- git: https://github.com/krdlab/haskell-oidc-client
+  commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
 
 # For Unix socket support on Windows
 - conduit-extra-1.3.7@sha256:41666ef19ef54e207e9bd27eb8860f1a9745371f0f912db6cb44dade6da89ad9,4338

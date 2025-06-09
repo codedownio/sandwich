@@ -134,16 +134,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ghc: "9.2.8"
-          yaml: "stack-9.2.8.yaml"
-        - ghc: "9.4.8"
-          yaml: "stack-9.4.8.yaml"
+        # - ghc: "9.2.8"
+        #   yaml: "stack-9.2.8.yaml"
+        # - ghc: "9.4.8"
+        #   yaml: "stack-9.4.8.yaml"
         - ghc: "9.6.7"
-          yaml: "stack-9.6.7.yaml"
+          yaml: "stack/stack-9.6.7.yaml"
         - ghc: "9.8.4"
-          yaml: "stack-9.8.4.yaml"
+          yaml: "stack/stack-9.8.4.yaml"
         - ghc: "9.10.2"
-          yaml: "stack-9.10.2.yaml"
+          yaml: "stack/stack-9.10.2.yaml"
 
     steps:
     - uses: actions/checkout@v4

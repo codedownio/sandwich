@@ -47,27 +47,34 @@ packages:
   original:
     hackage: text-zipper-0.13@sha256:e1a48d69c9324ed3784bc39d5ded84d63ea3115b32a018ddf76158ed9d58dc0a,1472
 - completed:
-    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
-    git: https://github.com/codedownio/minio-hs
+    hackage: crypton-connection-0.4.4@sha256:eeb05a19d2c16991b0e10e3bfb70cbd4fcec47178fd0c92a9b3c87368e520b9c,1510
+    pantry-tree:
+      sha256: d1ed16d7d1cf93a17d5b8c2c9cbce9dbd262676f9d9b27ef5bb7801190facddb
+      size: 464
+  original:
+    hackage: crypton-connection-0.4.4@sha256:eeb05a19d2c16991b0e10e3bfb70cbd4fcec47178fd0c92a9b3c87368e520b9c,1510
+- completed:
+    commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
+    git: https://github.com/minio/minio-hs
     name: minio-hs
     pantry-tree:
-      sha256: 62258fb7a35375b89bc1926d5ee21038a723a040a2b826b6dc6c1a474bc94462
+      sha256: b40b79fedd757eac8825f89eafc5ee13f3991898e407cb3d1c9b5a3b15bffdfc
       size: 4744
     version: 1.7.0
   original:
-    commit: 2fae6ae212a346acf400847d0b6cc647045822d1
-    git: https://github.com/codedownio/minio-hs
+    commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
+    git: https://github.com/minio/minio-hs
 - completed:
-    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    commit: 58535cd46712dff421f2148e438c49c2700ea20e
     git: https://github.com/codedownio/docker-engine.git
     name: docker-engine
     pantry-tree:
-      sha256: 040cc87fbb2b6d61c03ffef104e9e2b8a4185c17b63ba0dd1590c518d4543d40
+      sha256: cc9ed672084a86834dff2ff143002e988142864b51bd620ea8d4180e6f1041b8
       size: 2451
     subdir: v1.44
-    version: 0.144.0
+    version: 144.0.0
   original:
-    commit: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
+    commit: 58535cd46712dff421f2148e438c49c2700ea20e
     git: https://github.com/codedownio/docker-engine.git
     subdir: v1.44
 - completed:
@@ -85,16 +92,16 @@ packages:
   original:
     hackage: kubernetes-api-client-0.6.0.1
 - completed:
-    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
-    git: https://github.com/codedownio/haskell-oidc-client
+    commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
+    git: https://github.com/krdlab/haskell-oidc-client
     name: oidc-client
     pantry-tree:
-      sha256: d2f194f36144d7da1608fe2060d59e1d64341758fa9adf3473ff6c3d6da345e3
+      sha256: 1ba8f7b134dffd636721d4cebc4c52721b8cb628bc332eed3088443cd2cc969c
       size: 1846
     version: 0.8.0.0
   original:
-    commit: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
-    git: https://github.com/codedownio/haskell-oidc-client
+    commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
+    git: https://github.com/krdlab/haskell-oidc-client
 - completed:
     hackage: crypton-0.34@sha256:9e4b50d79d1fba681befa08151db7223d2b4bb72564853e8530e614105d53a1a,14577
     pantry-tree:
