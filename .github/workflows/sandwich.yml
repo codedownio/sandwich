@@ -182,11 +182,11 @@ jobs:
         # - ghc: "9.4.8"
         #   yaml: "stack-9.4.8.yaml"
         - ghc: "9.6.7"
-          yaml: "stack/stack-9.6.7.yaml"
+          yaml: "stack-9.6.7.yaml"
         - ghc: "9.8.4"
-          yaml: "stack/stack-9.8.4.yaml"
+          yaml: "stack-9.8.4.yaml"
         - ghc: "9.10.2"
-          yaml: "stack/stack-9.10.2.yaml"
+          yaml: "stack-9.10.2.yaml"
 
     steps:
     - uses: actions/checkout@v4
@@ -217,39 +217,39 @@ jobs:
 
     - name: Build
       run: |
-        stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml stack/${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test (sandwich)
       if: always()
-      run: stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts)
       if: always()
-      run: stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
+      run: stack test sandwich-contexts --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta --debug
 
     - name: Test (sandwich-contexts-docker)
       if: always()
-      run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-docker --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     # - name: Test (sandwich-contexts-kubernetes)
     #   if: always()
-    #   run: stack test sandwich-contexts-kubernetes --stack-yaml ${{matrix.yaml}} --system-ghc
+    #   run: stack test sandwich-contexts-kubernetes --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts-minio)
       if: always()
-      run: stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-minio --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-hedgehog)
       if: always()
-      run: stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-hedgehog --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-quickcheck)
       if: always()
-      run: stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-quickcheck --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-webdriver)
       if: always() && runner.os != 'Windows'
-      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox"
+      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
