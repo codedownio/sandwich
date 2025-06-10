@@ -64,6 +64,9 @@ data WdOptions = WdOptions {
 
   , httpRetryCount :: Int
   -- ^ Number of times to retry an HTTP request if it times out.
+
+  , chromeNoSandbox :: Bool
+  -- ^ Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix).
   }
 
 -- | How to obtain certain binaries "on demand". These may or not be needed based on 'WdOptions', so
@@ -111,6 +114,7 @@ defaultWdOptions = WdOptions {
   , runMode = Normal
   , httpManager = Nothing
   , httpRetryCount = 0
+  , chromeNoSandbox = False
   }
 
 data OnDemand a =

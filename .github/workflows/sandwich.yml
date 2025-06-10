@@ -5,6 +5,49 @@ on:
   push:
 
 jobs:
+  dev:
+    name: dev stack
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: cachix/install-nix-action@v27
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
+
+    - uses: haskell-actions/setup@v2
+      name: Setup Haskell Stack
+      with:
+        ghc-version: "9.12.2"
+        enable-stack: true
+        stack-version: "latest"
+
+    - uses: actions/cache/restore@v4
+      name: Cache restore ~/.stack
+      id: cache-restore
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
+    - name: apt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxss-dev
+
+    - name: Build
+      run: |
+        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+
+    - uses: actions/cache/save@v4
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
   cabal:
     name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
@@ -19,8 +62,9 @@ jobs:
         - "9.0.2"
         - "9.2.8"
         - "9.4.8"
-        - "9.6.6"
-        - "9.8.2"
+        - "9.6.7"
+        - "9.8.4"
+        - "9.10.2"
         exclude:
         # We just want to test basic 8.8.4 compatibility on Linux; these fail.
         - os: macOS-latest
@@ -78,18 +122,6 @@ jobs:
         sed -i 's|, ./demos/demo-postgres|-- , ./demos/demo-postgres|g' cabal.project
         cat cabal.project
 
-    # Because the HaskellNet dependency doesn't work yet with GHC 9.8
-    - name: Disable demo-fake-smtp-server for GHC 9.8.x
-      if: ${{ matrix.ghc == '9.8.2' && runner.os == 'macOS' }}
-      run: |
-        sed -i '.bak' 's|, ./demos/demo-fake-smtp-server|--, ./demos/demo-fake-smtp-server|g' cabal.project
-        cat cabal.project
-    - name: Disable demo-fake-smtp-server for GHC 9.8.x
-      if: ${{ matrix.ghc == '9.8.2' && runner.os != 'macOS' }}
-      run: |
-        sed -i 's|, ./demos/demo-fake-smtp-server|-- , ./demos/demo-fake-smtp-server|g' cabal.project
-        cat cabal.project
-
     - name: Freeze
       run: cabal freeze
 
@@ -120,13 +152,23 @@ jobs:
       run: cabal test sandwich-quickcheck
 
     - name: Test (sandwich-webdriver)
-      run: cabal test sandwich-webdriver
+      if: runner.os != 'Windows'
+      run: cabal test sandwich-webdriver --test-option="--headless" --test-option="--chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-cabal-${{ runner.os }}-${{ matrix.ghc }}
+        path: |
+          test_runs
+        retention-days: 14
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -135,16 +177,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - ghc: "9.2.8"
-          yaml: "stack-9.2.8.yaml"
-        - ghc: "9.4.8"
-          yaml: "stack-9.4.8.yaml"
-        - ghc: "9.6.6"
-          yaml: "stack-9.6.6.yaml"
+        # - ghc: "9.2.8"
+        #   yaml: "stack-9.2.8.yaml"
+        # - ghc: "9.4.8"
+        #   yaml: "stack-9.4.8.yaml"
+        - ghc: "9.6.7"
+          yaml: "stack-9.6.7.yaml"
         - ghc: "9.8.4"
           yaml: "stack-9.8.4.yaml"
-        # - ghc: "9.10.1"
-        #   yaml: "stack.yaml"
+        - ghc: "9.10.2"
+          yaml: "stack-9.10.2.yaml"
 
     steps:
     - uses: actions/checkout@v4
@@ -175,42 +217,51 @@ jobs:
 
     - name: Build
       run: |
-        stack build --stack-yaml ${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml stack/${{matrix.yaml}} --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test (sandwich)
       if: always()
-      run: stack test sandwich --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts)
       if: always()
-      run: stack test sandwich-contexts --stack-yaml ${{matrix.yaml}} --system-ghc --ta --debug
+      run: stack test sandwich-contexts --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta --debug
 
     - name: Test (sandwich-contexts-docker)
       if: always()
-      run: stack test sandwich-contexts-docker --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-docker --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     # - name: Test (sandwich-contexts-kubernetes)
     #   if: always()
-    #   run: stack test sandwich-contexts-kubernetes --stack-yaml ${{matrix.yaml}} --system-ghc
+    #   run: stack test sandwich-contexts-kubernetes --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-contexts-minio)
       if: always()
-      run: stack test sandwich-contexts-minio --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-contexts-minio --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-hedgehog)
       if: always()
-      run: stack test sandwich-hedgehog --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-hedgehog --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-quickcheck)
       if: always()
-      run: stack test sandwich-quickcheck --stack-yaml ${{matrix.yaml}} --system-ghc
+      run: stack test sandwich-quickcheck --stack-yaml stack/${{matrix.yaml}} --system-ghc
 
     - name: Test (sandwich-webdriver)
-      if: always()
-      run: stack test sandwich-webdriver --stack-yaml ${{matrix.yaml}} --system-ghc
+      if: always() && runner.os != 'Windows'
+      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-stack-${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}
+        path: |
+          sandwich-webdriver/test_runs
+        retention-days: 14

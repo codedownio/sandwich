@@ -2,7 +2,7 @@
 packages:
     ./sandwich/
   , ./sandwich-contexts/
-  , ./sandwich-contexts-docker/
+  -- , ./sandwich-contexts-docker/
   , ./sandwich-contexts-kubernetes/
   , ./sandwich-contexts-minio/
   , ./sandwich-hedgehog/
@@ -18,6 +18,7 @@ packages:
   , ./demos/demo-custom-exceptions/
   , ./demos/demo-discover/
   , ./demos/demo-fake-smtp-server/
+  , ./demos/demo-files/
   , ./demos/demo-golden/
   , ./demos/demo-hedgehog/
   , ./demos/demo-kubernetes-kata/
@@ -27,7 +28,9 @@ packages:
   , ./demos/demo-kubernetes-seaweedfs/
   , ./demos/demo-landing/
   , ./demos/demo-minio/
+  , ./demos/demo-nix/
   , ./demos/demo-nix-binary/
+  , ./demos/demo-nix-derivation/
   , ./demos/demo-paralleln/
   , ./demos/demo-postgres/
   , ./demos/demo-processes/
@@ -45,24 +48,30 @@ packages:
   , ./demos/demo-webdriver-positioning/
   , ./demos/demo-webdriver-video/
 
-source-repository-package
-    type: git
-    location: https://github.com/codedownio/docker-engine.git
-    tag: ba5ebd823ed843a556cd8c24a5a0086a3f6e5a6c
-    subdir: v1.44
+-- source-repository-package
+--     type: git
+--     location: https://github.com/codedownio/docker-engine.git
+--     tag: 58535cd46712dff421f2148e438c49c2700ea20e
+--     subdir: v1.44
 
 source-repository-package
     type: git
-    location: https://github.com/codedownio/haskell-oidc-client
-    tag: 4c122412e80c45bd28d03ead16f1a153bd53fcf4
+    location: https://github.com/krdlab/haskell-oidc-client
+    tag: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
 
 source-repository-package
     type: git
-    location: https://github.com/codedownio/hs-certificate
-    tag: dcd0d5b200e96e90c6daa728585c23be5309a955
-    subdir: x509-validation
+    location: https://github.com/minio/minio-hs
+    tag: 3e665784228cba7261560c104b8f1d928e7b5bd4
 
-source-repository-package
-    type: git
-    location: https://github.com/codedownio/minio-hs
-    tag: 2fae6ae212a346acf400847d0b6cc647045822d1
+-- source-repository-package
+--     type: git
+--     location: https://github.com/codedownio/kubernetes-api.git
+--     tag: 40a7f4361de2fd8f23630de1955c615421c38d66
+--     subdir: kubernetes-api-1.30
+
+-- source-repository-package
+--     type: git
+--     location: https://github.com/codedownio/kubernetes-api.git
+--     tag: 8cad5a0b723bc7e86bb6f94896db6a2c647b3848
+--     subdir: kubernetes-api-client

@@ -10,7 +10,6 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch ( MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.List as L
@@ -26,7 +25,7 @@ import UnliftIO.Process
 
 
 setUpKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadMask m
+  MonadLoggerIO m, MonadUnliftIO m
   ) => KubernetesClusterContext -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m ()
 setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary environmentToUse driver = do
   baseEnv <- maybe getEnvironment return environmentToUse

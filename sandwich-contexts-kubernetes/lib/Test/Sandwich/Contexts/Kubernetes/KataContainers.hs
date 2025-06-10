@@ -33,7 +33,6 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
 
 import Control.Lens
 import Control.Monad
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Data.Aeson (FromJSON)
 import Data.String.Interpolate
@@ -98,7 +97,7 @@ type ContextWithKataContainers context =
 
 -- | Install Kata Containers on the cluster and introduce a 'KataContainersContext'.
 introduceKataContainers :: (
-  MonadMask m, Typeable context, KubernetesClusterBasicWithoutReader context m, HasNixContext context
+  Typeable context, KubernetesClusterBasicWithoutReader context m, HasNixContext context
   )
   -- | Options
   => KataContainersOptions
@@ -108,7 +107,7 @@ introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubec
 
 -- | Bracket-style version of 'introduceKataContainers'.
 withKataContainers :: forall context m a. (
-  HasCallStack, Typeable context, MonadFail m, MonadMask m, KubectlBasic context m
+  HasCallStack, Typeable context, MonadFail m, KubectlBasic context m
   )
   -- | Options
   => KataContainersOptions
@@ -121,7 +120,7 @@ withKataContainers options action = do
 
 -- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withKataContainers' :: forall context m a. (
-  HasCallStack, Typeable context, MonadFail m, MonadMask m, KubernetesBasic context m
+  HasCallStack, Typeable context, MonadFail m, KubernetesBasic context m
   )
   => KubernetesClusterContext
   -- | Path to @kubectl@ binary

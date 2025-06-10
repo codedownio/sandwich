@@ -8,7 +8,6 @@ module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
 import Control.Retry
 import Data.String.Interpolate
@@ -43,7 +42,7 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 -- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
 -- If this happens, a rerun of the command is needed to resume port forwarding.
 withKubectlPortForward :: (
-  HasCallStack, MonadCatch m, KubectlBasic context m
+  HasCallStack, KubectlBasic context m
   )
   -- | Path to kubeconfig file
   => FilePath
@@ -61,7 +60,7 @@ withKubectlPortForward kubeConfigFile namespace targetName targetPort action = d
 
 -- | Same as 'withKubectlPortForward', but allows you to pass in the @kubectl@ binary path.
 withKubectlPortForward' :: (
-  HasCallStack, MonadCatch m, KubernetesBasic context m
+  HasCallStack, KubernetesBasic context m
   )
   => FilePath
   -- | Path to kubeconfig file
@@ -94,7 +93,6 @@ withKubectlPortForward' kubectlBinary kubeConfigFile namespace isAcceptablePort 
   let logPath = dir </> toString (T.replace "/" "_" targetName) <.> "port-forwarding.log"
 
   withFile logPath WriteMode $ \h -> do
-
     let restarterThread = forever $ do
           bracket (createProcess ((proc kubectlBinary args) {
                                      std_out = UseHandle h

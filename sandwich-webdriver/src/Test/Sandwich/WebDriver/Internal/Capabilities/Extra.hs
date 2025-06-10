@@ -5,6 +5,9 @@
 module Test.Sandwich.WebDriver.Internal.Capabilities.Extra (
   configureHeadlessCapabilities
   , configureDownloadCapabilities
+
+  , configureChromeUserDataDir
+  , configureChromeNoSandbox
   ) where
 
 import Control.Monad.Catch (MonadMask)
@@ -21,6 +24,7 @@ import qualified Data.Vector as V
 import GHC.Stack
 import Lens.Micro
 import Lens.Micro.Aeson
+import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Detect (detectChromeVersion)
 import Test.Sandwich.WebDriver.Internal.Binaries.Chrome.Types (ChromeVersion(..))
@@ -130,3 +134,29 @@ configureDownloadCapabilities downloadDir caps@(W.Capabilities {W.browser=browse
       , ("download.default_directory", A.String (T.pack downloadDir))
       ]
 configureDownloadCapabilities _ browser = return browser
+
+-- | chromedriver >= 131 started showing the following error:
+-- "session not created: probably user data directory is already in use, please specify a unique value for --user-data-dir argument, or don't use --user-data-dir".
+--
+-- This is a regression of some kind, but a fix is to explicitly pass a distinct user data dir.
+configureChromeUserDataDir :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => W.Capabilities -> m W.Capabilities
+configureChromeUserDataDir caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
+  Just dir <- getCurrentFolder
+  userDataDir <- liftIO $ createTempDirectory dir "chrome-user-data-dir"
+  let arg = [i|--user-data-dir=#{userDataDir}|]
+  let browser' = browser { W.chromeOptions = arg:chromeOptions }
+  return (caps { W.browser = browser' })
+configureChromeUserDataDir caps = return caps
+
+
+-- | This is to make it possible to use Chrome installed by Nix, avoiding errors like this:
+--
+-- [76593:76593:0608/101002.800744:FATAL:setuid_sandbox_host.cc(163)] The SUID sandbox helper binary was found,
+-- but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure
+-- that /nix/store/6sshf2mnzfy72sqr7k9f2mi36ccczr9a-google-chrome-130.0.6723.91/share/google/chrome/chrome-sandbox
+-- is owned by root and has mode 4755.
+configureChromeNoSandbox :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => WdOptions -> W.Capabilities -> m W.Capabilities
+configureChromeNoSandbox (WdOptions {chromeNoSandbox=True}) caps@(W.Capabilities {W.browser=browser@(W.Chrome {..})}) = do
+  let browser' = browser { W.chromeOptions = "--no-sandbox":chromeOptions }
+  return (caps { W.browser = browser' })
+configureChromeNoSandbox _ caps = return caps

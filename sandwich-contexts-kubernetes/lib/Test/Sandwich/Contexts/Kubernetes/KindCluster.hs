@@ -40,7 +40,6 @@ module Test.Sandwich.Contexts.Kubernetes.KindCluster (
   ) where
 
 import Control.Monad
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Data.String.Interpolate
@@ -116,7 +115,7 @@ type KindContext context = LabelValue "kubernetesCluster" KubernetesClusterConte
 
 -- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the @kind@ and @kubectl@ binaries from the Nix context.
 introduceKindClusterViaNix :: (
-  HasBaseContext context, MonadUnliftIO m, MonadMask m, HasNixContext context
+  HasBaseContext context, MonadUnliftIO m, HasNixContext context
   )
   -- | Options
   => KindClusterOptions
@@ -131,7 +130,7 @@ introduceKindClusterViaNix kindClusterOptions spec =
 
 -- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), deriving the @kind@ and @kubectl@ binaries from the PATH.
 introduceKindClusterViaEnvironment :: (
-  HasBaseContext context, MonadMask m, MonadUnliftIO m
+  HasBaseContext context, MonadUnliftIO m
   )
   -- | Options
   => KindClusterOptions
@@ -144,7 +143,7 @@ introduceKindClusterViaEnvironment kindClusterOptions spec =
 
 -- | Introduce a Kubernetes cluster using [kind](https://kind.sigs.k8s.io/), passing in the @kind@ and @kubectl@ binaries.
 introduceKindCluster' :: (
-  HasBaseContext context, MonadMask m, MonadUnliftIO m
+  HasBaseContext context, MonadUnliftIO m
   )
   -- | Path to kind binary
   => FilePath
@@ -163,7 +162,7 @@ introduceKindCluster' kindBinary kubectlBinary kindClusterOptions spec =
 
 -- | Bracket-style variant of 'introduceKindCluster''.
 withKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m, HasFile context "kind", HasFile context "kubectl"
   )
   -- | Options
@@ -177,7 +176,7 @@ withKindCluster opts action = do
 
 -- | Same as 'withKindCluster', but allows you to pass in the paths to the @kind@ and @kubectl@ binaries.
 withKindCluster' :: (
-  MonadLoggerIO m, MonadUnliftIO m, MonadMask m, MonadFail m
+  MonadLoggerIO m, MonadUnliftIO m, MonadFail m
   , HasBaseContextMonad context m
   )
   -- | Path to the kind binary

@@ -38,6 +38,7 @@ dependencies:
 - sandwich >= 0.3.0.0
 - sandwich-contexts >= 0.3.0.0
 - string-interpolate
+- temporary
 - text
 - time
 - transformers
@@ -74,8 +75,6 @@ library:
   when:
   - condition: "!os(windows)"
     source-dirs: unix-src
-    dependencies:
-    - temporary
 
 when:
 - condition: os(darwin)

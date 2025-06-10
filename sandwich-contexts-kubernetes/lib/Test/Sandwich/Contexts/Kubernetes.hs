@@ -63,7 +63,6 @@ module Test.Sandwich.Contexts.Kubernetes (
   , KubectlBasicWithoutReader
   ) where
 
-import Control.Monad.Catch
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Network.URI
@@ -85,7 +84,7 @@ import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards as M
 
 -- | Forward a Kubernetes service, so that it can be reached at a local URI.
 withForwardKubernetesService :: (
-  MonadMask m, KubectlBasic context m
+  KubectlBasic context m
   )
   -- | Namespace
   => Text
@@ -101,7 +100,7 @@ withForwardKubernetesService namespace serviceName action = do
 
 -- | Same as 'withForwardKubernetesService', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary.
 withForwardKubernetesService' :: (
-  MonadLoggerIO m, MonadMask m, MonadUnliftIO m
+  MonadLoggerIO m, MonadUnliftIO m
   , HasBaseContextMonad context m
   )
   -- | Kubernetes cluster context

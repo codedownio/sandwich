@@ -52,7 +52,7 @@ library:
   - filepath
   - http-client
   - kubernetes-api
-  - kubernetes-api-client
+  - kubernetes-api-client >= 0.6.1.1
   - lens
   - lens-aeson
   - minio-hs

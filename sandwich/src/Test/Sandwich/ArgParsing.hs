@@ -129,6 +129,9 @@ logLevel =
 commandLineWebdriverOptions :: (forall f a. Mod f a) -> Parser CommandLineWebdriverOptions
 commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
   <$> optional (browserToUse maybeInternal)
+
+  <*> flag False True (long "chrome-no-sandbox" <> help "Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix)" <> maybeInternal)
+
   <*> optional (display maybeInternal)
   <*> flag False True (long "fluxbox" <> help "Launch fluxbox as window manager when using Xvfb" <> maybeInternal)
   <*> flag False True (long "individual-videos" <> help "Record individual videos of each test (requires ffmpeg and Xvfb)" <> maybeInternal)

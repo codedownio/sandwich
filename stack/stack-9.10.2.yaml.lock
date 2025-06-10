@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: HaskellNet-0.6.2@sha256:afc178bd40f0e8d8368bef8308881f73985ccbe3ce8f4c68ba5d7db3ca18cc36,2478
+    pantry-tree:
+      sha256: 6c69d25f62ce5ecb49b87546d052b67fa8e548f7c161dd87274c696c563f9314
+      size: 1689
+  original:
+    hackage: HaskellNet-0.6.2
+- completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
     name: minio-hs
@@ -36,12 +43,12 @@ packages:
   original:
     hackage: kubernetes-api-130.0.0
 - completed:
-    hackage: kubernetes-api-client-0.6.1.0@sha256:f86b284b564102b0efb84e13bbc20048194e30e14834676d8ce724cfd3f0ad4c,5034
+    hackage: kubernetes-api-client-0.6.0.1@sha256:a26f861138ba85a3aea53ba7c4d13a8f06794f60725caab2aa812b7275cf0b82,5622
     pantry-tree:
-      sha256: 35778cb752b419a66e9c8019f0b0ede37ce86c124094e743ba44896b74a4b355
+      sha256: 4f5cdfa64432b0210c9e49797d1acae1a77a650849a1a2373d3375e1c6a02ab1
       size: 2026
   original:
-    hackage: kubernetes-api-client-0.6.1.0
+    hackage: kubernetes-api-client-0.6.0.1
 - completed:
     commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
     git: https://github.com/krdlab/haskell-oidc-client
@@ -53,16 +60,9 @@ packages:
   original:
     commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
     git: https://github.com/krdlab/haskell-oidc-client
-- completed:
-    hackage: HaskellNet-0.6.2@sha256:afc178bd40f0e8d8368bef8308881f73985ccbe3ce8f4c68ba5d7db3ca18cc36,2478
-    pantry-tree:
-      sha256: 6c69d25f62ce5ecb49b87546d052b67fa8e548f7c161dd87274c696c563f9314
-      size: 1689
-  original:
-    hackage: HaskellNet-0.6.2
 snapshots:
 - completed:
-    sha256: 0bff5f3f5548516a7c86cea95d47672383cef34dac97ba28d750a52ddfcdf54a
-    size: 682020
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/4/24.yaml
-  original: nightly-2025-04-24
+    sha256: e9b93acfb8aaf8ae4869050506553a963a8adba95748cd60356f9ffe64f03345
+    size: 712232
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/5/28.yaml
+  original: nightly-2025-05-28
