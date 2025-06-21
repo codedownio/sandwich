@@ -2,7 +2,14 @@
 
 ## Unreleased
 
+* Improve display of setup/work/teardown in TUI.
 * Ultimately use sigKILL in Sandwich.Util.Process.gracefullyWaitForProcess if sigINT and sigTERM don't work.
+* Exit with failure status when tests fail (#103).
+* More work on test timing around setup/teardown.
+* Decided not to do test timing on introduceWith for now since it can mess up timing frame nesting.
+* Generate separate test timer profiles when a parallel node runs.
+* Get rid of `haskell-src-exts` usage and mark getSpecWarnOnParseError as deprecated.
+* Add gracefullyStopProcess', gracefullyWaitForProcess'.
 
 ## 0.3.0.3
 

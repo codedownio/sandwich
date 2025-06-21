@@ -2,6 +2,11 @@
 
 # Unreleased
 
+* Add more debugging statements to binary fetching.
+* Fix getResolutionForDisplay on macOS.
+* Pass --user-data-dir to chrome.
+* Be able to pass --chrome-no-sandbox.
+
 # 0.3.0.0
 
 * BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`. We also remove `MonadThrow` constraints, relying only on `MonadIO` for throwing exceptions.

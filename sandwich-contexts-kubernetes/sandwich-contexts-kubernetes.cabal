@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -77,7 +77,7 @@ library
     , filepath
     , http-client
     , kubernetes-api
-    , kubernetes-api-client
+    , kubernetes-api-client >=0.6.1.1
     , lens
     , lens-aeson
     , minio-hs
