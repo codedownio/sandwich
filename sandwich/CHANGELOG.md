@@ -1,6 +1,6 @@
 # Changelog for sandwich
 
-## Unreleased
+## 0.3.0.4
 
 * Improve display of setup/work/teardown in TUI.
 * Ultimately use sigKILL in Sandwich.Util.Process.gracefullyWaitForProcess if sigINT and sigTERM don't work.

@@ -1,6 +1,6 @@
 # Changelog for sandwich-contexts
 
-## Unreleased
+## 0.3.0.3
 
 * Use --no-link in Nix builds to avoid unnecessary result symlinks.
 * Make withProxyToUnixSocket more robust with a timeout.

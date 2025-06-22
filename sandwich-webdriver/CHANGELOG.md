@@ -1,6 +1,6 @@
 # Changelog for sandwich-webdriver
 
-# Unreleased
+# 0.3.0.1
 
 * Add more debugging statements to binary fetching.
 * Fix getResolutionForDisplay on macOS.

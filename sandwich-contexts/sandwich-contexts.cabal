@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-contexts
-version:        0.3.0.2
+version:        0.3.0.3
 synopsis:       Contexts for the Sandwich test library
 description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 author:         Tom McLaughlin

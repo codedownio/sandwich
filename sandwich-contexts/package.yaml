@@ -1,5 +1,5 @@
 name: sandwich-contexts
-version: 0.3.0.2
+version: 0.3.0.3
 synopsis: Contexts for the Sandwich test library
 license: BSD3
 description: Please see the <https://codedownio.github.io/sandwich documentation>.

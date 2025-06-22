@@ -1,6 +1,6 @@
 # Changelog for sandwich-contexts-kubernetes
 
-## Unreleased
+## 0.1.1.0
 
 * Switch to `kubernetes-api` and `kubernetes-api-client`.
 * Fix compatibility with text-2.1.2.
