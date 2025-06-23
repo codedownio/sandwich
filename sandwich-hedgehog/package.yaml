@@ -11,7 +11,7 @@ synopsis:            Sandwich integration with Hedgehog
 description:         Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-hedgehog documentation>.
 
 extra-source-files:
-- ChangeLog.md
+- CHANGELOG.md
 
 dependencies:
 - base < 5

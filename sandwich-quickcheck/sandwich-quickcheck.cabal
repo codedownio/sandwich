@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 40d1ce983b1eb830c952dc625f9797925e149442f7b080d45c58a63c6e322278
+-- hash: 9b5614231d7fea3701026d0ca8f9d63d685919c9c54e03c76bfb45e3a73566fc
 
 name:           sandwich-quickcheck
 version:        0.2.0.0
@@ -20,7 +20,7 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    ChangeLog.md
+    CHANGELOG.md
 
 source-repository head
   type: git
