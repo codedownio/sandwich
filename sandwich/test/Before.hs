@@ -2,13 +2,13 @@
 
 module Before where
 
-import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import qualified Data.List as L
 import GHC.Stack
 import Test.Sandwich
 import TestUtil
+import UnliftIO.Exception
 
 
 tests :: MonadIO m => WriterT [SomeException] m ()
@@ -16,6 +16,7 @@ tests = do
   run beforeExceptionSafety
   run beforeExceptionSafetyNested
 
+main :: IO ()
 main = mainWith tests
 
 -- * Tests

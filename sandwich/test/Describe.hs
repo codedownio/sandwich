@@ -2,19 +2,20 @@
 
 module Describe where
 
-import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.String.Interpolate
 import GHC.Stack
 import Test.Sandwich
 import TestUtil
+import UnliftIO.Exception
 
 
 tests :: MonadIO m => WriterT [SomeException] m ()
 tests = do
   run describeFailsWhenChildFails
 
+main :: IO ()
 main = mainWith tests
 
 -- * Tests

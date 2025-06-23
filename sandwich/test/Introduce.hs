@@ -6,13 +6,13 @@ module Introduce where
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import Data.Foldable
 import GHC.Stack
 import Test.Sandwich
 import Test.Sandwich.Internal
+import UnliftIO.Exception
 
 import TestUtil
 
@@ -23,6 +23,7 @@ tests = do
   run introduceFailsOnCleanUpException
   run introduceCleansUpOnCancelDuringTest
 
+main :: IO ()
 main = mainWith tests
 
 -- * Tests
@@ -63,7 +64,9 @@ introduceCleansUpOnCancelDuringTest = do
       liftIO $ putMVar mvar ()
       liftIO $ threadDelay 999999999999999
 
-  let [topNode@(RunNodeIntroduce {runNodeChildrenAugmented=[RunNodeIt {}]})] = rts
+  topNode <- case rts of
+    [x@(RunNodeIntroduce {runNodeChildrenAugmented=[RunNodeIt {}]})] -> pure x
+    _ -> error "Unexpected rts"
 
   -- Wait until we get into the actual test example, then cancel the top level async
   takeMVar mvar
