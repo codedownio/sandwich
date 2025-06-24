@@ -32,6 +32,11 @@ isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatu
 isFailedItBlock (RunNodeIt {runNodeCommon=(RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})}) = True
 isFailedItBlock _ = False
 
+isFailedNonItBlock (RunNodeIt {}) = False
+isFailedNonItBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})) = False
+isFailedNonItBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})) = True
+isFailedNonItBlock _ = False
+
 isFailedBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure (Pending {}))})})) = False
 isFailedBlock (runNodeCommon -> (RunNodeCommonWithStatus {runTreeStatus=(Done {statusResult=(Failure {})})})) = True
 isFailedBlock _ = False

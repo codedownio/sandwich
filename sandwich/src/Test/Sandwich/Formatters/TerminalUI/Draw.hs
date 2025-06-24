@@ -131,6 +131,7 @@ borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [
     countWidgets =
       (if totalSucceededTests > 0 then [[withAttr successAttr $ str $ show totalSucceededTests, str " succeeded"]] else mempty)
       <> (if totalFailedTests > 0 then [[withAttr failureAttr $ str $ show totalFailedTests, str " failed"]] else mempty)
+      <> (if totalFailedInteriorNodes > 0 then [[withAttr failureAttr $ str $ show totalFailedInteriorNodes, str " failed non-test nodes"]] else mempty)
       <> (if totalPendingTests > 0 then [[withAttr pendingAttr $ str $ show totalPendingTests, str " pending"]] else mempty)
       <> (if totalRunningTests > 0 then [[withAttr runningAttr $ str $ show totalRunningTests, str " running"]] else mempty)
       <> (if totalNotStartedTests > 0 then [[str $ show totalNotStartedTests, str " not started"]] else mempty)
@@ -139,6 +140,7 @@ borderWithCounts app = hBorderWithLabel $ padLeftRight 1 $ hBox (L.intercalate [
     totalSucceededTests = countWhere isSuccessItBlock (app ^. appRunTree)
     totalPendingTests = countWhere isPendingItBlock (app ^. appRunTree)
     totalFailedTests = countWhere isFailedItBlock (app ^. appRunTree)
+    totalFailedInteriorNodes = countWhere isFailedNonItBlock (app ^. appRunTree)
     totalRunningTests = countWhere isRunningItBlock (app ^. appRunTree)
     totalNotStartedTests = countWhere isNotStartedItBlock (app ^. appRunTree)
 

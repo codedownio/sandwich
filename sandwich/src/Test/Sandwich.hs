@@ -120,8 +120,8 @@ import System.Win32.Console (setConsoleOutputCP)
 -- | Run the spec with the given 'Options'.
 runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = do
-  (_exitReason, failures) <- runSandwich' Nothing options spec
-  when (0 < failures) $ exitFailure
+  (_exitReason, _itNodeFailures, totalFailures) <- runSandwich' Nothing options spec
+  when (0 < totalFailures) $ exitFailure
 
 -- | Run the spec, configuring the options from the command line.
 runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
@@ -181,11 +181,13 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
                baseArgs <- getArgs
                withArgs (baseArgs L.\\ (fmap T.unpack individualTestFlagStrings)) $
                  tryAny x >>= \case
-                   Left _ -> return (NormalExit, 1)
-                   Right _ -> return (NormalExit, 0)
+                   Left _ -> return (NormalExit, 1, 1)
+                   Right _ -> return (NormalExit, 0, 0)
 
--- | Run the spec with optional custom 'CommandLineOptions'. When finished, return the exit reason and number of failures.
-runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int)
+-- | Run the spec with optional custom 'CommandLineOptions'. When finished, return the exit reason,
+-- the number of "it" nodes which failed, and the total failed nodes (which includes "it" nodes, and
+-- may also include other nodes like "introduce" nodes).
+runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
 
@@ -249,9 +251,11 @@ runSandwich' maybeCommandLineOptions options spec' = do
     loggingFn $ finalizeFormatter f rts baseContext
 
   fixedTree <- atomically $ mapM fixRunTree rts
-  let failed = countWhere isFailedItBlock fixedTree
+
   exitReason <- readIORef exitReasonRef
-  return (exitReason, failed)
+  let failedItBlocks = countWhere isFailedItBlock fixedTree
+  let failedBlocks = countWhere isFailedBlock fixedTree
+  return (exitReason, failedItBlocks, failedBlocks)
 
 
 -- | Count the it nodes
