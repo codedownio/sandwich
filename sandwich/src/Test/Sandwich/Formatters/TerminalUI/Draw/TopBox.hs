@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
@@ -25,7 +26,7 @@ topBox app = hBox [columnPadding settingsColumn
   where
     settingsColumn = keybindingBox [keyIndicator (L.intersperse '/' [unKChar nextKey, unKChar previousKey, '↑', '↓']) "Navigate"
                                    , keyIndicatorHasSelected app (showKeys toggleKeys) "Open/close node"
-                                   , keyIndicatorHasSelectedOpen app "Control-v/Meta-v" "Scroll node"
+                                   , keyIndicatorHasSelectedOpen app scrollNodeLabel "Scroll node"
                                    , keyIndicatorHasSelected app (unKChar closeNodeKey : '/' : [unKChar openNodeKey]) "Fold/unfold node"
                                    , keyIndicator "Meta + [0-9]" "Unfold top # nodes"
                                    , keyIndicator (unKChar nextFailureKey : '/' : [unKChar previousFailureKey]) "Next/previous failure"
@@ -114,6 +115,13 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str "Log level"]
 
                                        , keyIndicator "q" "Exit"]
+
+scrollNodeLabel :: String
+#ifdef darwin_HOST_OS
+scrollNodeLabel = "Control-PgUp/PgDown"
+#else
+scrollNodeLabel = "Control-v/Meta-v"
+#endif
 
 visibilityThresholdWidget app = hBox $
   [withAttr hotkeyMessageAttr $ str "Visibility threshold ("]

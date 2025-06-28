@@ -31,7 +31,6 @@ import Brick.Widgets.List
 import Control.Concurrent
 import Control.Concurrent.Async
 import Control.Concurrent.STM
-import UnliftIO.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
@@ -67,6 +66,7 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
+import UnliftIO.Exception
 
 
 instance Formatter TerminalUIFormatter where
@@ -250,6 +250,13 @@ appEvent s (VtyEvent e) =
     V.EvKey (V.KChar 'n') [V.MCtrl] -> withScroll s $ \vp -> vScrollBy vp 1
     V.EvKey (V.KChar 'v') [V.MMeta] -> withScroll s $ \vp -> vScrollPage vp Up
     V.EvKey (V.KChar 'v') [V.MCtrl] -> withScroll s $ \vp -> vScrollPage vp Down
+
+#ifdef darwin_HOST_OS
+    -- This seems okay on macOS, and is a good fallback since Meta+v doesn't seem to work
+    V.EvKey (V.KPageUp) [V.MCtrl] -> withScroll s $ \vp -> vScrollPage vp Up
+    V.EvKey (V.KPageDown) [V.MCtrl] -> withScroll s $ \vp -> vScrollPage vp Down
+#endif
+
     V.EvKey V.KHome [V.MCtrl] -> withScroll s $ \vp -> vScrollToBeginning vp
     V.EvKey V.KEnd [V.MCtrl] -> withScroll s $ \vp -> vScrollToEnd vp
 
