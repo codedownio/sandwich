@@ -96,6 +96,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
     port <- findFreePortOrException
 
     liftIO $ hSetBuffering hRead LineBuffering
+    -- It's possible we don't need to set this on hWrite, but only on hRead
     liftIO $ hSetBuffering hWrite LineBuffering
 
     let allArgs = driverArgs <> ["-jar", seleniumPath
