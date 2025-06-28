@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import GHC.Stack
 import System.Directory
 import System.FilePath
-import System.IO (hClose, hGetLine)
+import System.IO (BufferMode(..), hClose, hGetLine, hSetBuffering)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports (findFreePortOrException)
@@ -94,6 +94,9 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
 
     (hRead, hWrite) <- createPipe
     port <- findFreePortOrException
+
+    liftIO $ hSetBuffering hRead LineBuffering
+    liftIO $ hSetBuffering hWrite LineBuffering
 
     let allArgs = driverArgs <> ["-jar", seleniumPath
                                 , "-port", show port]
