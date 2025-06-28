@@ -136,6 +136,8 @@ data WebDriver = WebDriver {
 
   , wdXvfbToUse :: XvfbToUse
   , wdXvfb :: MVar (OnDemand FilePath)
+
+  , wdLogAsync :: Async ()
   }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]

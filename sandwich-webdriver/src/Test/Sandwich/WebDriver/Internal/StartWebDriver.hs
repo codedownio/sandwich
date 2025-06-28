@@ -135,8 +135,8 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
           expectationFailure (T.unpack msg)
         Just () -> return (port, hRead, p)
 
-  -- TODO: save this in the WebDriver to tear it down later?
-  _logAsync <- async $ forever (liftIO (hGetLine hRead) >>= (debug . T.pack))
+  logAsync <- async $ forever $ do
+    T.pack <$> liftIO (hGetLine hRead) >>= debug
 
   -- Final extra capabilities configuration
   capabilities <-
@@ -166,17 +166,21 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
             <*> pure xvfbToUse
             <*> pure xvfbOnDemand
 
+            <*> pure logAsync
+
 
 stopWebDriver :: Constraints m => WebDriver -> m ()
-stopWebDriver (WebDriver {wdWebDriver=(h, maybeXvfbSession)}) = do
+stopWebDriver (WebDriver {wdWebDriver=(p, maybeXvfbSession), wdLogAsync}) = do
   -- | TODO: expose this as an option
   let gracePeriod :: Int
-      gracePeriod = 30000000
+      gracePeriod = 30_000_000
 
-  gracefullyStopProcess h gracePeriod
+  gracefullyStopProcess p gracePeriod
 
   whenJust maybeXvfbSession $ \(XvfbSession {..}) -> do
-    whenJust xvfbFluxboxProcess $ \p -> do
-      gracefullyStopProcess p gracePeriod
+    whenJust xvfbFluxboxProcess $ \p' -> do
+      gracefullyStopProcess p' gracePeriod
 
     gracefullyStopProcess xvfbProcess gracePeriod
+
+  cancel wdLogAsync
