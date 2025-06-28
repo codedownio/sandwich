@@ -66,6 +66,7 @@ module Test.Sandwich.WebDriver (
   , module Test.Sandwich.WebDriver.Config
   ) where
 
+import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
@@ -89,6 +90,7 @@ import Test.Sandwich.WebDriver.Video (recordVideoIfConfigured)
 import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Config as W
 import qualified Test.WebDriver.Session as W
+import UnliftIO.Exception (bracket)
 import UnliftIO.MVar
 
 
@@ -136,7 +138,10 @@ introduceWebDriverViaNix' nodeOptions wdOptions =
   introduceFileViaNixPackage'' @"selenium.jar" nodeOptions "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
   . introduceBinaryViaNixPackage' @"java" nodeOptions "jre"
   . introduceBrowserDependenciesViaNix' nodeOptions
-  . introduce "Introduce WebDriver session" webdriver alloc cleanupWebDriver
+  -- We use 'introduceWith' here because the alloc function will start an Async to read the logs from the Selenium
+  -- process and log them. If we were to use 'introduce', the test_logs.txt file would be closed after the allocate section
+  -- and the write handle would become invalid.
+  . introduceWith "Introduce WebDriver session" webdriver (\action -> bracket alloc cleanupWebDriver (void . action))
   where
     alloc = do
       clo <- getSomeCommandLineOptions
@@ -162,7 +167,8 @@ introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
   introduce "Introduce selenium.jar" (mkFileLabel @"selenium.jar") ((EnvironmentFile <$>) $ obtainSelenium webDriverDependencySelenium) (const $ return ())
   . (case webDriverDependencyJava of Nothing -> introduceBinaryViaEnvironment @"java"; Just p -> introduceFile @"java" p)
   . introduce "Introduce browser dependencies" browserDependencies (getBrowserDependencies webDriverDependencyBrowser) (const $ return ())
-  . introduce "Introduce WebDriver session" webdriver (alloc wdOptions) cleanupWebDriver
+  -- We use 'introduceWith' deliberately here instead of 'introduce'. See comment on above.
+  . introduceWith "Introduce WebDriver session" webdriver (\action -> bracket (alloc wdOptions) cleanupWebDriver (void . action))
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (
