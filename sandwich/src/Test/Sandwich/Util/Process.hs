@@ -48,9 +48,14 @@ gracefullyStopProcess' p gracePeriodUs = do
 gracefullyWaitForProcess :: (MonadIO m, MonadLogger m) => ProcessHandle -> Int -> m ()
 gracefullyWaitForProcess p gracePeriodUs = void $ gracefullyWaitForProcess' p gracePeriodUs
 
--- | Wait for a process to terminate. If it doesn't terminate within 'gracePeriodUs' microseconds,
--- send it an interrupt signal and wait for another 'gracePeriodUs' microseconds.
--- After this time elapses send a terminate signal and wait for the process to die.
+-- | Wait for a process to terminate.
+--
+-- If it doesn't terminate within 'gracePeriodUs' microseconds, send it an
+-- interrupt signal and wait for another 'gracePeriodUs' microseconds.
+--
+-- If it doesn't die by this time, send a terminate signal and wait again.
+--
+-- If it still isn't dead, send a kill signal.
 gracefullyWaitForProcess' :: (MonadIO m, MonadLogger m) => ProcessHandle -> Int -> m StopProcessResult
 gracefullyWaitForProcess' p gracePeriodUs = do
   let waitForExit = do
