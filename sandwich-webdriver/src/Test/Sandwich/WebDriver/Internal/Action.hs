@@ -19,8 +19,8 @@ import UnliftIO.Exception
 
 
 -- | Close the given session.
-closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => Session -> WebDriver -> m ()
-closeSession session (WebDriver {wdSessionMap}) = do
+closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => Session -> WebDriverContext -> m ()
+closeSession session (WebDriverContext {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
     case M.lookup session sessionMap of
       Nothing -> return (sessionMap, Nothing)
@@ -29,8 +29,8 @@ closeSession session (WebDriver {wdSessionMap}) = do
   whenJust toClose $ \sess -> liftIO $ W.runWD sess W.closeSession
 
 -- | Close all sessions except those listed.
-closeAllSessionsExcept :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => [Session] -> WebDriver -> m ()
-closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
+closeAllSessionsExcept :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => [Session] -> WebDriverContext -> m ()
+closeAllSessionsExcept toKeep (WebDriverContext {wdSessionMap}) = do
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
 
   forM_ (M.toList toClose) $ \(name, sess) ->
@@ -38,7 +38,7 @@ closeAllSessionsExcept toKeep (WebDriver {wdSessionMap}) = do
           (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
 
 -- | Close all sessions.
-closeAllSessions :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => WebDriver -> m ()
+closeAllSessions :: (HasCallStack, MonadLogger m, MonadUnliftIO m) => WebDriverContext -> m ()
 closeAllSessions = closeAllSessionsExcept []
 
 -- | Close the current session.

@@ -24,7 +24,9 @@ module Test.Sandwich.WebDriver.Internal.Dependencies (
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
+import Data.Maybe
 import Data.String.Interpolate
+import Lens.Micro
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
@@ -35,7 +37,7 @@ import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import Test.Sandwich.WebDriver.Internal.Util
-import qualified Test.WebDriver as W
+import qualified Test.WebDriver.Capabilities as WC
 
 
 -- * All dependencies
@@ -172,9 +174,9 @@ fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext bro
           -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
           -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
           ]
-    let capabilities' = capabilities'' {
-          W.browser = W.firefox { W.ffBinary = Just browserDependenciesFirefoxFirefox }
-          }
+    let capabilities' = capabilities''
+          & over WC.capabilitiesMozFirefoxOptions (Just . fromMaybe WC.defaultFirefoxOptions)
+          & set (WC.capabilitiesMozFirefoxOptions . _Just . WC.firefoxOptionsBinary) (Just browserDependenciesFirefoxFirefox)
     return (args, capabilities')
   BrowserDependenciesChrome {..} -> do
     let args = [
@@ -182,7 +184,7 @@ fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext bro
           , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
           , [i|-Dwebdriver.chrome.verboseLogging=true|]
           ]
-    let capabilities' = capabilities'' {
-          W.browser = W.chrome { W.chromeBinary = Just browserDependenciesChromeChrome }
-          }
+    let capabilities' = capabilities''
+          & over WC.capabilitiesGoogChromeOptions (Just . fromMaybe WC.defaultChromeOptions)
+          & set (WC.capabilitiesGoogChromeOptions . _Just . WC.chromeOptionsBinary) (Just browserDependenciesChromeChrome)
     return (args, capabilities')

@@ -47,8 +47,7 @@ import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Video.Internal
 import Test.Sandwich.WebDriver.Video.Types
 import Test.Sandwich.WebDriver.Windows
-import Test.WebDriver.Class as W
-import Test.WebDriver.Commands
+import Test.WebDriver
 import UnliftIO.Directory
 import UnliftIO.Exception
 
@@ -87,15 +86,14 @@ startFullScreenVideoRecording path videoSettings = do
 
 -- | Wrapper around 'startVideoRecording' which uses WebDriver to find the rectangle corresponding to the browser.
 startBrowserVideoRecording :: (
-  BaseVideoConstraints context m, W.WebDriver m
+  BaseVideoConstraints context m, WebDriver m
   )
   -- | Output path
   => FilePath
   -> VideoSettings
   -> m VideoProcess
 startBrowserVideoRecording path videoSettings = do
-  (x, y) <- getWindowPos
-  (w, h) <- getWindowSize
+  Rect x y w h <- getWindowRect
   startVideoRecording path (w, h, x, y) videoSettings
 
 -- | Record video to a given path, for a given screen rectangle.
@@ -105,7 +103,7 @@ startVideoRecording :: (
   -- | Output path
   => FilePath
   -- | Rectangle to record, specified as @(width, height, x, y)@
-  -> (Word, Word, Int, Int)
+  -> (Float, Float, Float, Float)
   -> VideoSettings
   -- | Returns handle to video process and list of files created
   -> m VideoProcess
@@ -156,7 +154,7 @@ endVideoRecording (VideoProcess { videoProcessProcess=p }) = do
 -- This can be used to record video around individual tests. It can also keep videos only in case of
 -- exceptions, deleting them on successful runs.
 recordVideoIfConfigured :: (
-  BaseVideoConstraints context m, W.WebDriver m, HasSomeCommandLineOptions context
+  BaseVideoConstraints context m, WebDriver m, HasSomeCommandLineOptions context
   )
   -- | Session name
   => String
@@ -172,14 +170,14 @@ recordVideoIfConfigured browser action = do
          | otherwise -> action
 
 withVideo :: (
-  BaseVideoConstraints context m, W.WebDriver m
+  BaseVideoConstraints context m, WebDriver m
   ) => FilePath -> String -> m a -> m a
 withVideo folder browser action = do
   path <- getPathInFolder folder browser
   bracket (startBrowserVideoRecording path defaultVideoSettings) endVideoRecording (const action)
 
 withVideoIfException :: (
-  BaseVideoConstraints context m, W.WebDriver m
+  BaseVideoConstraints context m, WebDriver m
   ) => FilePath -> String -> m a -> m a
 withVideoIfException folder browser action = do
   path <- getPathInFolder folder browser

@@ -43,7 +43,7 @@ module Test.Sandwich.WebDriver (
   -- * Context types
   -- ** WebDriver
   , webdriver
-  , WebDriver
+  , WebDriverContext
   , HasWebDriverContext
   -- ** WebDriverSession
   , webdriverSession
@@ -87,8 +87,7 @@ import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Video (recordVideoIfConfigured)
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Config as W
-import qualified Test.WebDriver.Session as W
+import qualified Test.WebDriver.Types as WT
 import UnliftIO.Exception (bracket)
 import UnliftIO.MVar
 
@@ -159,7 +158,7 @@ introduceWebDriver' :: forall m context. (
   )
   -- | Dependencies
   => WebDriverDependencies
-  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WebDriver)
+  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WebDriverContext)
   -> WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
 introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
@@ -177,13 +176,13 @@ allocateWebDriver :: (
   -- | Options
   => WdOptions
   -> OnDemandOptions
-  -> ExampleT context m WebDriver
+  -> ExampleT context m WebDriverContext
 allocateWebDriver wdOptions onDemandOptions = do
   dir <- fromMaybe "/tmp" <$> getCurrentFolder
   startWebDriver wdOptions onDemandOptions dir
 
 -- | Clean up the given WebDriver.
-cleanupWebDriver :: (BaseMonad m context) => WebDriver -> ExampleT context m ()
+cleanupWebDriver :: (BaseMonad m context) => WebDriverContext -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
@@ -198,15 +197,15 @@ withSession :: forall m context a. (
   -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
 withSession session action = do
-  WebDriver {..} <- getContext webdriver
+  WebDriverContext {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup session sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
       debug [i|Creating session '#{session}'|]
-      sess'' <- liftIO $ W.mkSession wdConfig
-      let sess' = sess'' { W.wdSessHistUpdate = W.unlimitedHistory }
-      sess <- liftIO $ W.runWD sess' $ W.createSession $ W.wdCapabilities wdConfig
+      sess'' <- liftIO $ WT.mkSession wdConfig
+      let sess' = sess'' { WT.wdSessHistUpdate = W.unlimitedHistory }
+      sess <- liftIO $ W.runWD sess' $ W.createSession $ WT._wdCapabilities wdConfig
       return (M.insert session sess sessionMap, sess)
 
   ref <- liftIO $ newIORef sess
@@ -241,7 +240,7 @@ withSession2 = withSession "session2"
 -- | Get all existing session names.
 getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
 getSessions = do
-  WebDriver {..} <- getContext webdriver
+  WebDriverContext {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
 
 -- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.

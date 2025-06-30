@@ -8,7 +8,6 @@ module Test.Sandwich.WebDriver.Internal.Types where
 
 import Control.Concurrent.MVar
 import Control.Exception
-import Data.Default
 import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
@@ -19,7 +18,7 @@ import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Session as W
+import qualified Test.WebDriver.Types as W
 import UnliftIO.Async
 
 
@@ -27,7 +26,7 @@ import UnliftIO.Async
 type Session = String
 
 -- * Labels
-webdriver :: Label "webdriver" WebDriver
+webdriver :: Label "webdriver" WebDriverContext
 webdriver = Label
 
 webdriverSession :: Label "webdriverSession" WebDriverSession
@@ -109,7 +108,7 @@ defaultXvfbConfig = XvfbConfig Nothing False
 -- You should start with this and modify it using the accessors.
 defaultWdOptions :: WdOptions
 defaultWdOptions = WdOptions {
-  capabilities = def
+  capabilities = W.defaultCaps
   , saveSeleniumMessageHistory = OnException
   , runMode = Normal
   , httpManager = Nothing
@@ -123,7 +122,7 @@ data OnDemand a =
   | OnDemandReady a
   | OnDemandErrored Text
 
-data WebDriver = WebDriver {
+data WebDriverContext = WebDriverContext {
   wdName :: String
   , wdWebDriver :: (ProcessHandle, Maybe XvfbSession)
   , wdOptions :: WdOptions
@@ -156,28 +155,28 @@ data XvfbSession = XvfbSession {
 type WebDriverSession = (Session, IORef W.WDSession)
 
 -- | Get the 'WdOptions' associated with the 'WebDriver'.
-getWdOptions :: WebDriver -> WdOptions
+getWdOptions :: WebDriverContext -> WdOptions
 getWdOptions = wdOptions
 
 -- | Get the X11 display number associated with the 'WebDriver'.
 -- Only present if running in 'RunInXvfb' mode.
-getDisplayNumber :: WebDriver -> Maybe Int
-getDisplayNumber (WebDriver {wdWebDriver=(_, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
+getDisplayNumber :: WebDriverContext -> Maybe Int
+getDisplayNumber (WebDriverContext {wdWebDriver=(_, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
 getDisplayNumber _ = Nothing
 
 -- | Get the Xvfb session associated with the 'WebDriver', if present.
-getXvfbSession :: WebDriver -> Maybe XvfbSession
-getXvfbSession (WebDriver {wdWebDriver=(_, Just sess)}) = Just sess
+getXvfbSession :: WebDriverContext -> Maybe XvfbSession
+getXvfbSession (WebDriverContext {wdWebDriver=(_, Just sess)}) = Just sess
 getXvfbSession _ = Nothing
 
 -- | Get the configured download directory for the 'WebDriver'.
-getDownloadDirectory :: WebDriver -> FilePath
+getDownloadDirectory :: WebDriverContext -> FilePath
 getDownloadDirectory = wdDownloadDir
 
 -- | Get the name of the 'WebDriver'.
 -- This corresponds to the folder that will be created to hold the log files for the 'WebDriver'.
-getWebDriverName :: WebDriver -> String
-getWebDriverName (WebDriver {wdName}) = wdName
+getWebDriverName :: WebDriverContext -> String
+getWebDriverName (WebDriverContext {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]

@@ -5,6 +5,17 @@
 
 packages:
 - completed:
+    commit: 6b800fcb042eb02fc79bb7571e21766953adf1fe
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+    name: webdriver
+    pantry-tree:
+      sha256: 4921a97d4d8323303707a1ce473a37aa3979eb0fe9865cf2e925d82ffbd00b6b
+      size: 5988
+    version: 0.12.0.1
+  original:
+    commit: 6b800fcb042eb02fc79bb7571e21766953adf1fe
+    git: https://github.com/haskell-webdriver/haskell-webdriver
+- completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
     name: minio-hs
