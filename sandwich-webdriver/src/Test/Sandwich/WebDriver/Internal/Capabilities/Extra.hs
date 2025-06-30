@@ -68,7 +68,6 @@ configureHeadlessChromeCapabilities _wdOptions (RunHeadless (HeadlessConfig {..}
 configureHeadlessChromeCapabilities _ _ browser = return browser
 
 -- | Add headless configuration to the Firefox capabilities
-
 configureHeadlessFirefoxCapabilities :: (Constraints m) => WdOptions -> RunMode -> W.Capabilities -> m W.Capabilities
 configureHeadlessFirefoxCapabilities _ (RunHeadless (HeadlessConfig {})) caps@(W.Capabilities {_capabilitiesMozFirefoxOptions=(Just firefoxOptions)}) =
   return (caps { W._capabilitiesMozFirefoxOptions = Just finalFirefoxOptions })
