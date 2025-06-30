@@ -39,9 +39,9 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
-import qualified Test.WebDriver.Class as W
+import qualified Test.WebDriver as W
 import qualified Test.WebDriver.Internal as WI
-import qualified Test.WebDriver.Session as W
+import qualified Test.WebDriver.Types as W
 import UnliftIO.Exception as ES
 
 
@@ -76,11 +76,11 @@ instance (
       showRequestBody (HC.RequestBodyBS bytes) = bytes
       showRequestBody _ = "<request body>"
 
-type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
+type HasWebDriverContext context = HasLabel context "webdriver" WebDriverContext
 type HasWebDriverSessionContext context = HasLabel context "webdriverSession" WebDriverSession
 
 type ContextWithWebdriverDeps context =
-  LabelValue "webdriver" WebDriver
+  LabelValue "webdriver" WebDriverContext
   :> ContextWithBaseDeps context
 
 type ContextWithBaseDeps context =

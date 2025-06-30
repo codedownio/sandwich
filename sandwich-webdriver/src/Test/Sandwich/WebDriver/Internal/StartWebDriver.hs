@@ -51,7 +51,7 @@ type Constraints m = (
 startWebDriver :: (
   Constraints m, MonadReader context m, HasBaseContext context
   , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
-  ) => WdOptions -> OnDemandOptions -> FilePath -> m WebDriver
+  ) => WdOptions -> OnDemandOptions -> FilePath -> m WebDriverContext
 startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemandOptions {..}) runRoot = do
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
@@ -143,35 +143,39 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
   capabilities <-
     pure capabilities'
     >>= configureChromeNoSandbox wdOptions
-    -- >>= configureChromeUserDataDir
-    >>= configureHeadlessCapabilities wdOptions runMode
-    >>= configureDownloadCapabilities downloadDir
+    >>= configureChromeUserDataDir
+    >>= configureHeadlessChromeCapabilities wdOptions runMode
+    >>= configureHeadlessFirefoxCapabilities wdOptions runMode
+    >>= configureChromeDownloadCapabilities downloadDir
+    >>= configureFirefoxDownloadCapabilities downloadDir
 
   -- Make the WebDriver
-  WebDriver <$> pure (T.unpack webdriverName)
-            <*> pure (p, maybeXvfbSession)
-            <*> pure (wdOptions {
-                       capabilities = capabilities
-                     })
-            <*> liftIO (newMVar mempty)
-            <*> pure (def { W.wdPort = fromIntegral port
-                          , W.wdCapabilities = capabilities
-                          , W.wdHTTPManager = httpManager
-                          , W.wdHTTPRetryCount = httpRetryCount
-                          })
-            <*> pure downloadDir
+  WebDriverContext
+    <$> pure (T.unpack webdriverName)
+    <*> pure (p, maybeXvfbSession)
+    <*> pure (wdOptions {
+               capabilities = capabilities
+             })
+    <*> liftIO (newMVar mempty)
+    <*> pure (def { W._wdPort = fromIntegral port
+                  , W._wdCapabilities = capabilities
+                  , W._wdHTTPManager = httpManager
+                  , W._wdHTTPRetryCount = httpRetryCount
+                  -- , W._wdBasePath = undefined
+                  })
+    <*> pure downloadDir
 
-            <*> pure ffmpegToUse
-            <*> newMVar OnDemandNotStarted
+    <*> pure ffmpegToUse
+    <*> newMVar OnDemandNotStarted
 
-            <*> pure xvfbToUse
-            <*> pure xvfbOnDemand
+    <*> pure xvfbToUse
+    <*> pure xvfbOnDemand
 
-            <*> pure logAsync
+    <*> pure logAsync
 
 
-stopWebDriver :: Constraints m => WebDriver -> m ()
-stopWebDriver (WebDriver {wdWebDriver=(p, maybeXvfbSession), wdLogAsync}) = do
+stopWebDriver :: Constraints m => WebDriverContext -> m ()
+stopWebDriver (WebDriverContext {wdWebDriver=(p, maybeXvfbSession), wdLogAsync}) = do
   -- | TODO: expose this as an option
   let gracePeriod :: Int
       gracePeriod = 30_000_000
