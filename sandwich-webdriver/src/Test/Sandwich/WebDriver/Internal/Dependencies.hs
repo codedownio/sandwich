@@ -171,8 +171,6 @@ fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext bro
   BrowserDependenciesFirefox {..} -> do
     let args = [
           [i|-Dwebdriver.gecko.driver=#{browserDependenciesFirefoxGeckodriver}|]
-          -- , [i|-Dwebdriver.gecko.logfile=#{webdriverRoot </> "geckodriver.log"}|]
-          -- , [i|-Dwebdriver.gecko.verboseLogging=true|]
           ]
     let capabilities' = capabilities''
           & over WC.capabilitiesMozFirefoxOptions (Just . fromMaybe WC.defaultFirefoxOptions)

@@ -36,7 +36,6 @@ import GHC.Stack
 import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
 import Test.Sandwich
-import Test.Sandwich.Contexts.Files
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver as W
@@ -86,10 +85,6 @@ type ContextWithWebdriverDeps context =
 type ContextWithBaseDeps context =
   -- | Browser dependencies
   LabelValue "browserDependencies" BrowserDependencies
-  -- | Java
-  :> FileValue "java"
-  -- | Selenium
-  :> FileValue "selenium.jar"
   -- | Base context
   :> context
 
