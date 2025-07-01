@@ -114,6 +114,9 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                    | GotException { failureCallStack :: Maybe CallStack
                                   , failureMessage :: Maybe String
                                   , failureException :: SomeExceptionWithEq }
+                   | AllocateException { failureCallStack :: Maybe CallStack
+                                       , failureMessage :: Maybe String
+                                       , failureException :: SomeExceptionWithEq }
                    | Pending { failureCallStack :: Maybe CallStack
                              , failurePendingMessage :: Maybe String }
                    | GetContextException { failureCallStack :: Maybe CallStack

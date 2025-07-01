@@ -37,6 +37,7 @@ import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
+import UnliftIO.STM
 
 
 data FailureReportFormatter = FailureReportFormatter {
@@ -83,15 +84,20 @@ printFailureReport frf@(FailureReportFormatter {..}) rts _bc = do
 
 runWithIndentation :: FailureReportFormatter -> M.Map Int (T.Text, Int) -> RunNode context -> ReaderT (PrintFormatter, Int, Handle) IO ()
 runWithIndentation frf@(FailureReportFormatter {..}) idToLabel node = do
-  let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
+  result <- liftIO $ waitForTree node
 
   case node of
     RunNodeIt {} -> return ()
     RunNodeIntroduce {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
-    RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
+    RunNodeIntroduceWith {..} -> do
+      readTVarIO (runTreeStatus runNodeCommon) >>= \case
+        Done { statusResult=(Failure fr) } -> pYellowLn "AAAAAAAA"
+        _ -> return ()
+
+      forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
     _ -> forM_ (runNodeChildren node) (runWithIndentation frf idToLabel)
 
-  result <- liftIO $ waitForTree node
+  let common@(RunNodeCommonWithStatus {..}) = runNodeCommon node
 
   -- Print the failure reason
   case result of

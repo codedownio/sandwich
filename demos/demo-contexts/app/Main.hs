@@ -15,24 +15,27 @@ data DatabaseContext = MySQLDatabaseContext | SqliteDatabaseContext
 
 database = Label :: Label "database" DatabaseContext
 
-introduceDatabase = introduceWith "Introduce database" database $ \action ->
+-- introduceDatabaseAllocFailure = introduceWith "Introduce database" database $ \action ->
+--   bracket (debug "Spinning up DB..." >> expectationFailure "Alloc failure" >> return MySQLDatabaseContext)
+--           (\db -> debug "Tearing down DB..." >> return ())
+--           (void . action)
+
+introduceDatabaseCleanupFailure = introduceWith "Introduce database" database $ \action ->
   bracket (debug "Spinning up DB..." >> return MySQLDatabaseContext)
-          (\db -> debug "Tearing down DB..." >> return ())
+          (\db -> do
+              debug "Tearing down DB..."
+              expectationFailure "Cleanup failure"
+          )
           (void . action)
 
 contextsDemo :: TopSpec
 contextsDemo = describe "Contexts" $ do
-  introduceDatabase $ do
-    it "Uses the database" $ do
-      db <- getContext database
-      info [i|Got database: '#{db}'|]
+  -- introduceDatabaseAllocFailure $ do
+  introduceDatabaseCleanupFailure $ do
+    it "Uses the database 1" $ getContext database >>= \db -> info [i|Got database: '#{db}'|]
+    it "Uses the database 2" $ getContext database >>= \db -> info [i|Got database: '#{db}'|]
+    it "Uses the database 3" $ getContext database >>= \db -> info [i|Got database: '#{db}'|]
 
-      maybeDb <- getContextMaybe database
-      info [i|Got database from getContextMaybe: #{maybeDb}|]
-
-  it "Uses a maybe database" $ do
-    maybeDb <- getContextMaybe database
-    info [i|Got database from getContextMaybe: #{maybeDb}|]
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

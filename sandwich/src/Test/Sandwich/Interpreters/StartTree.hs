@@ -417,6 +417,18 @@ recordExceptionInStatus status e = do
     Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime endTime ret
     _ -> Done endTime Nothing Nothing endTime ret
 
+recordAllocationExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()
+recordAllocationExceptionInStatus status e = do
+  endTime <- liftIO getCurrentTime
+  let ret = case fromException e of
+        Just (e' :: SomeAsyncException) -> Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e'))
+        _ -> case fromException e of
+          Just (e' :: FailureReason) -> Failure e'
+          _ -> Failure (AllocateException Nothing Nothing (SomeExceptionWithEq e))
+  liftIO $ atomically $ modifyTVar status $ \case
+    Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime endTime ret
+    _ -> Done endTime Nothing Nothing endTime ret
+
 timed :: (MonadUnliftIO m) => Bool -> BaseContext -> String -> m a -> m (a, UTCTime, UTCTime)
 timed recordTime bc@(BaseContext {..}) label action = do
   let timerFn = if recordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack label) else id
