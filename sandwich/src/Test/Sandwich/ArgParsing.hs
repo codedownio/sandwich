@@ -266,7 +266,9 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
 
   let options = baseOptions {
     optionsTestArtifactsDirectory = case optFixedRoot of
-      Nothing -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
+      Nothing -> case optionsTestArtifactsDirectory baseOptions of
+        TestArtifactsNone -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
+        existing -> existing
       Just path -> TestArtifactsFixedDirectory path
     , optionsPruneTree = case optTreePrune of
         [] -> Nothing
