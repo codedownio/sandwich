@@ -166,7 +166,7 @@ startWebDriver driverType wdOptions@(WdOptions {capabilities=capabilities'', ..}
   capabilities <-
     pure capabilities'
     >>= configureChromeNoSandbox wdOptions
-    >>= configureChromeUserDataDir
+    -- >>= configureChromeUserDataDir
     >>= configureHeadlessChromeCapabilities wdOptions runMode
     >>= configureHeadlessFirefoxCapabilities wdOptions runMode
     >>= configureChromeDownloadCapabilities downloadDir
