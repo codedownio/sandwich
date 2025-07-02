@@ -41,7 +41,9 @@ chromeCapabilities maybeChromePath = defaultCaps {
     }
   }
   where
-    A.Object prefs = loggingPrefs
+    prefs = case loggingPrefs of
+      A.Object x -> x
+      _ -> error "Impossible"
 
 -- | Default capabilities for headless Chrome.
 headlessChromeCapabilities :: Maybe FilePath -> Capabilities

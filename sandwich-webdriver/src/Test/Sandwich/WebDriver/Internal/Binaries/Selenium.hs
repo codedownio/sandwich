@@ -67,9 +67,9 @@ obtainSelenium (UseSeleniumAt path) = liftIO (doesFileExist path) >>= \case
   True -> do
     debug [i|Found Selenium at #{path}|]
     return path
-obtainSelenium (UseSeleniumFromNixpkgs nixContext) = do
+obtainSelenium (UseSeleniumFromNixpkgs nc) = do
   debug [i|Building selenium-server-standalone with Nix...|]
-  ret <- buildNixSymlinkJoin' nixContext ["selenium-server-standalone"] >>=
+  ret <- buildNixSymlinkJoin' nc ["selenium-server-standalone"] >>=
     liftIO . findFirstFile (return . (".jar" `L.isSuffixOf`))
   debug [i|Got Selenium: #{ret}|]
   return ret

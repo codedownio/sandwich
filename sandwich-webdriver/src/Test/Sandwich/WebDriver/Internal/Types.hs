@@ -77,6 +77,7 @@ data OnDemandOptions = OnDemandOptions {
   -- | How to obtain Xvfb binary.
   , xvfbToUse :: XvfbToUse
   }
+defaultOnDemandOptions :: OnDemandOptions
 defaultOnDemandOptions = OnDemandOptions {
   ffmpegToUse = UseFfmpegFromPath
   , xvfbToUse = UseXvfbFromPath

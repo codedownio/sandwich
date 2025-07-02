@@ -6,7 +6,6 @@ module Test.Sandwich.WebDriver.Video.Internal (
   , videoExtension
   ) where
 
-import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
@@ -37,7 +36,7 @@ videoExtension :: String
 videoExtension = "avi"
 
 getVideoArgs :: (
-  MonadUnliftIO m, MonadLoggerIO m, MonadMask m
+  MonadUnliftIO m, MonadLoggerIO m
   , MonadReader context m, HasBaseContext context, HasWebDriverContext context
   ) => FilePath -> (Float, Float, Float, Float) -> VideoSettings -> Maybe XvfbSession -> m (CreateProcess, FilePath)
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do

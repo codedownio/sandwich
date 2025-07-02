@@ -81,6 +81,7 @@ configureHeadlessFirefoxCapabilities _ _ browser = return browser
 
 -- | Configure download capabilities to set the download directory and disable prompts
 -- (since you can't test download prompts using Selenium)
+configureChromeDownloadCapabilities :: Monad m => String -> Capabilities -> m Capabilities
 configureChromeDownloadCapabilities downloadDir caps@(W.Capabilities {_capabilitiesGoogChromeOptions=(Just chromeOptions)}) =
   return $ caps { W._capabilitiesGoogChromeOptions=(Just finalChromeOptions) }
   where
@@ -148,7 +149,7 @@ configureChromeUserDataDir caps = return caps
 -- but is not configured correctly. Rather than run without sandboxing I'm aborting now. You need to make sure
 -- that /nix/store/6sshf2mnzfy72sqr7k9f2mi36ccczr9a-google-chrome-130.0.6723.91/share/google/chrome/chrome-sandbox
 -- is owned by root and has mode 4755.
-configureChromeNoSandbox :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => WdOptions -> W.Capabilities -> m W.Capabilities
+configureChromeNoSandbox :: (Constraints m) => WdOptions -> W.Capabilities -> m W.Capabilities
 configureChromeNoSandbox (WdOptions {chromeNoSandbox=True}) caps@(W.Capabilities {_capabilitiesGoogChromeOptions=(Just chromeOptions)}) = do
   let arg = "--no-sandbox"
   let finalChromeOptions = chromeOptions

@@ -14,18 +14,19 @@ import Test.WebDriver.Commands
 
 
 positioning :: TopSpecWithOptions
-positioning = introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $ introduceWebDriverViaNix defaultWdOptions $ do
-  describe "two windows side by side" $ do
-    it "opens Google" $ withSession1 $ do
-      openPage "http://www.google.com"
-      setWindowLeftSide
+positioning = introduceNixContext (nixpkgsMaster { nixpkgsDerivationAllowUnfree = True }) $
+  introduceWebDriverViaNix defaultWdOptions $ do
+    describe "two windows side by side" $ do
+      it "opens Google" $ withSession1 $ do
+        openPage "http://www.google.com"
+        setWindowLeftSide
 
-    it "opens xkcd" $ withSession2 $ do
-      openPage "http://www.xkcd.com"
-      setWindowRightSide
+      it "opens xkcd" $ withSession2 $ do
+        openPage "http://www.xkcd.com"
+        setWindowRightSide
 
-    it "pauses" $ do
-      liftIO $ threadDelay 5000000
+      it "pauses" $ do
+        liftIO $ threadDelay 5000000
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

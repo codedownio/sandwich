@@ -70,7 +70,7 @@ getScreenResolution (WebDriverContext {wdWebDriver=(_, maybeXvfbSession)}) = cas
   Nothing -> liftIO getResolution
   Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
 
-getScreenPixelDimensions :: (MonadIO m, WebDriver m) => Int -> Int -> m (Double, Double)
+getScreenPixelDimensions :: (WebDriver m) => Int -> Int -> m (Double, Double)
 getScreenPixelDimensions width height = do
   devicePixelRatio <- executeJS [] "return window.devicePixelRatio" >>= \case
     Just (ratio :: Double) -> pure ratio
