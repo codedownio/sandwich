@@ -77,6 +77,7 @@ data BrowserDependenciesSpec = BrowserDependenciesSpecChrome {
 --
 -- But, it's easy to customize this behavior. You can define your own 'WebDriverDependencies' and customize
 -- how each of these dependencies are found.
+defaultWebDriverDependencies :: WebDriverDependencies
 defaultWebDriverDependencies = WebDriverDependencies {
   webDriverDependencyJava = Nothing
   , webDriverDependencySelenium = DownloadSeleniumDefault "/tmp/tools"
@@ -167,6 +168,9 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
 
       return deps
 
+fillInCapabilitiesAndGetDriverArgs :: (
+  HasBrowserDependencies ctx, MonadReader ctx m
+  ) => FilePath -> WC.Capabilities -> m ([String], WC.Capabilities)
 fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext browserDependencies >>= \case
   BrowserDependenciesFirefox {..} -> do
     let args = [
