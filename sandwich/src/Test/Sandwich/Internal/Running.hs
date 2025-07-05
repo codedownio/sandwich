@@ -58,17 +58,17 @@ runSandwichTree options spec = do
   return rts
 
 -- | For 0 repeats, repeat until a failure
-runWithRepeat :: Int -> Int -> IO (ExitReason, Int) -> IO ()
+runWithRepeat :: Int -> Int -> IO (ExitReason, Int, Int) -> IO ()
 runWithRepeat 0 totalTests action = do
-  (_, numFailures) <- action
-  if | numFailures == 0 -> runWithRepeat 0 totalTests action
+  (_, _itNodeFailures, totalFailures) <- action
+  if | totalFailures == 0 -> runWithRepeat 0 totalTests action
      | otherwise -> exitFailure
 -- | For 1 repeat, run once and return
 runWithRepeat n totalTests action = do
   (successes, total) <- (flip execStateT (0 :: Int, 0 :: Int)) $ flip fix (n - 1) $ \loop n' -> do
-    (exitReason, numFailures) <- liftIO action
+    (exitReason, _itNodeFailures, totalFailures) <- liftIO action
 
-    modify $ \(successes, total) -> (successes + (if numFailures == 0 then 1 else 0), total + 1)
+    modify $ \(successes, total) -> (successes + (if totalFailures == 0 then 1 else 0), total + 1)
 
     if | exitReason == SignalExit -> return ()
        | n' > 0 -> loop (n' - 1)

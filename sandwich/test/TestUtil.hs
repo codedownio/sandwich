@@ -33,14 +33,18 @@ mainWith tests = do
 -- * Values
 
 data FakeDatabase = FakeDatabase deriving Show
-fakeDatabaseLabel = Label :: Label "fakeDatabase" FakeDatabase
+fakeDatabaseLabel :: Label "fakeDatabase" FakeDatabase
+fakeDatabaseLabel = Label
 
+someUserError :: IOError
 someUserError = userError "Oh no"
+
+someUserErrorWrapped :: SomeExceptionWithEq
 someUserErrorWrapped = SomeExceptionWithEq $ SomeException $ userError "Oh no"
 
 -- * Helpers
 
-run :: MonadIO m => IO () -> WriterT [SomeException] m ()
+run :: (HasCallStack, MonadIO m) => IO () -> WriterT [SomeException] m ()
 run test = (liftIO $ tryAny test) >>= \case
   Left err -> tell [err]
   Right () -> return ()
@@ -54,18 +58,21 @@ runAndGetResults spec = do
   fixedTree <- atomically $ mapM fixRunTree finalTree
   return $ fmap statusToResult $ concatMap getStatuses fixedTree
 
-runAndGetResultsAndLogs :: CoreSpec -> IO ([Result], [[LogStr]])
+runAndGetResultsAndLogs :: (HasCallStack) => CoreSpec -> IO ([Result], [[LogStr]])
 runAndGetResultsAndLogs spec = do
   finalTree <- runSandwichTree defaultOptions spec
   getResultsAndMessages <$> fixTree finalTree
 
+fixTree :: [RunNode context] -> IO [RunNodeFixed context]
 fixTree rts = atomically $ mapM fixRunTree rts
 
+getResultsAndMessages :: (HasCallStack) => [RunNodeFixed context] -> ([Result], [[LogStr]])
 getResultsAndMessages fixedTree = (results, msgs)
   where
     results = fmap statusToResult $ concatMap getStatuses fixedTree
     msgs = getMessages fixedTree
 
+getMessages :: (HasCallStack) => [RunNodeFixed context] -> [[LogStr]]
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
 getStatuses :: RunNodeWithStatus context s l t -> [(String, s)]
@@ -75,15 +82,16 @@ getLogs :: RunNodeWithStatus context s l t -> [l]
 getLogs = extractValues $ \node -> runTreeLogs $ runNodeCommon node
 
 statusToResult :: (HasCallStack) => (String, Status) -> Result
-statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}'|]
-statusToResult (label, Running {}) = error [i|Expected status to be Done but was Running for label '#{label}'|]
+statusToResult (label, NotStarted) = error [i|Expected status to be Done but was NotStarted for label '#{label}' (#{callStack})|]
+statusToResult (label, Running {}) = error [i|Expected status to be Done but was Running for label '#{label}' (#{callStack})|]
 statusToResult (_, Done _ _ _ _ result) = result
 
 mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y
   | x == y = return ()
-  | otherwise = error [i|Expected #{show y} but got #{show x}|]
+  | otherwise = error [i|Expected #{show y} but got #{show x} (#{callStack})|]
 
+waitUntilRunning :: TVar Status -> IO ()
 waitUntilRunning status = atomically $ do
   readTVar status >>= \case
     Running {} -> return ()

@@ -125,10 +125,22 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left (), emptyExtraTimingInfo)
   runInAsync node ctx $ do
     let wrappedAction = do
-          let failureResult e = case fromException e of
-                Just fr@(Pending {}) -> Failure fr
-                _ -> Failure $ Reason Nothing [i|introduceWith '#{runTreeLabel}' handler threw exception|]
-          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildrenAugmented ctx (failureResult e)) $ do
+          didAllocateVar <- liftIO $ newIORef False
+          let handler e = do
+                recordExceptionInStatus runTreeStatus e
+
+                liftIO (readIORef didAllocateVar) >>= \case
+                  False -> do
+                    -- We didn't successfully allocate, so mark the children below this point as failed due to a
+                    -- context issue.
+                    markAllChildrenWithResult runNodeChildrenAugmented ctx $ case fromException e of
+                      Just fr@(Pending {}) -> Failure fr
+                      _ -> Failure $ GetContextException Nothing (SomeExceptionWithEq e)
+                  True ->
+                    -- Otherwise, let their existing statuses stand.
+                    return ()
+
+          flip withException handler $ do
             beginningCleanupVar <- liftIO $ newIORef Nothing
 
             -- Record a start event in the test timing, if configured
@@ -145,6 +157,8 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
               -- handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
+
+              liftIO $ writeIORef didAllocateVar True
 
               (results, _, _) <- timed runTreeRecordTime (getBaseContext ctx) (runTreeLabel <> " (body)") $
                 liftIO $ runNodesSequentially runNodeChildrenAugmented (LabelValue intro :> ctx)
@@ -181,7 +195,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
           let failureResult e = case fromException e of
                 Just fr@(Pending {}) -> Failure fr
                 _ -> Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler threw exception|]
-          flip withException (\e -> recordExceptionInStatus runTreeStatus e >> markAllChildrenWithResult runNodeChildren ctx (failureResult e)) $ do
+          flip withException (\e -> recordExceptionInStatus runTreeStatus e) $ do
             runNodeActionWith $ do
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
@@ -192,7 +206,7 @@ startTree node@(RunNodeAround {..}) ctx' = do
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             (Left (), timingInfo) -> return (Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler didn't call action|], timingInfo)
             (Right _, timingInfo) -> return (Success, timingInfo)
-    runExampleM' wrappedAction ctx runTreeLogs (Just [i|Exception in introduceWith '#{runTreeLabel}' handler|]) >>= \case
+    runExampleM' wrappedAction ctx runTreeLogs (Just [i|Exception in around '#{runTreeLabel}' handler|]) >>= \case
       Left err -> return (Failure err, emptyExtraTimingInfo)
       Right x -> pure x
 startTree node@(RunNodeDescribe {..}) ctx' = do
