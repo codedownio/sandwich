@@ -143,7 +143,7 @@ startWebDriver wdOptions@(WdOptions {capabilities=capabilities'', ..}) (OnDemand
   capabilities <-
     pure capabilities'
     >>= configureChromeNoSandbox wdOptions
-    >>= configureChromeUserDataDir
+    -- >>= configureChromeUserDataDir
     >>= configureHeadlessCapabilities wdOptions runMode
     >>= configureDownloadCapabilities downloadDir
 
