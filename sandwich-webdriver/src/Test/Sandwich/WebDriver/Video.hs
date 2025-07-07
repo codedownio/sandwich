@@ -54,7 +54,7 @@ import UnliftIO.Exception
 
 type BaseVideoConstraints context m = (
   MonadLoggerIO m, MonadUnliftIO m, MonadMask m
-  , MonadReader context m, HasBaseContext context, HasWebDriverContext context
+  , MonadReader context m, HasBaseContext context, HasTestWebDriverContext context
   )
 
 -- | A type representing a live video recording process
@@ -76,7 +76,8 @@ startFullScreenVideoRecording :: (
   -> m VideoProcess
 startFullScreenVideoRecording path videoSettings = do
   sess <- getContext webdriver
-  let maybeXvfbSession = getXvfbSession sess
+  -- let maybeXvfbSession = getXvfbSession sess
+  let maybeXvfbSession = Nothing
   (width, height) <- case maybeXvfbSession of
     Just (XvfbSession {xvfbDimensions}) -> return xvfbDimensions
     Nothing -> do
@@ -109,7 +110,8 @@ startVideoRecording :: (
   -> m VideoProcess
 startVideoRecording path (width, height, x, y) vs = do
   sess <- getContext webdriver
-  let maybeXvfbSession = getXvfbSession sess
+  -- let maybeXvfbSession = getXvfbSession sess
+  let maybeXvfbSession = Nothing
 
   (cp', videoPath) <- getVideoArgs path (width, height, x, y) vs maybeXvfbSession
   let cp = cp' { create_group = True }

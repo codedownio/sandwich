@@ -51,7 +51,6 @@ library
       Test.Sandwich.WebDriver.Internal.Capabilities.Extra
       Test.Sandwich.WebDriver.Internal.Dependencies
       Test.Sandwich.WebDriver.Internal.OnDemand
-      Test.Sandwich.WebDriver.Internal.Screenshots
       Test.Sandwich.WebDriver.Internal.StartWebDriver
       Test.Sandwich.WebDriver.Internal.Types
       Test.Sandwich.WebDriver.Internal.Util

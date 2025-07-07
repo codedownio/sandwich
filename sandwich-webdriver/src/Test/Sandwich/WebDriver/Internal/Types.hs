@@ -1,8 +1,8 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Test.Sandwich.WebDriver.Internal.Types where
 
@@ -12,13 +12,11 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
 import Data.Text (Text)
-import Network.HTTP.Client (Manager)
 import System.Process
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Binaries.Ffmpeg
 import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Types as W
 import UnliftIO.Async
 
 
@@ -26,7 +24,7 @@ import UnliftIO.Async
 type Session = String
 
 -- * Labels
-webdriver :: Label "webdriver" WebDriverContext
+webdriver :: Label "webdriver" TestWebDriverContext
 webdriver = Label
 
 webdriverSession :: Label "webdriverSession" WebDriverSession
@@ -52,14 +50,8 @@ data WdOptions = WdOptions {
   capabilities :: W.Capabilities
   -- ^ The WebDriver capabilities to use.
 
-  , saveSeleniumMessageHistory :: WhenToSave
-  -- ^ When to save a record of Selenium requests and responses.
-
   , runMode :: RunMode
   -- ^ How to handle opening the browser (in a popup window, headless, etc.).
-
-  , httpManager :: Maybe Manager
-  -- ^ HTTP manager for making requests to Selenium. If not provided, one will be created for each session.
 
   , httpRetryCount :: Int
   -- ^ Number of times to retry an HTTP request if it times out.
@@ -110,9 +102,7 @@ defaultXvfbConfig = XvfbConfig Nothing False
 defaultWdOptions :: WdOptions
 defaultWdOptions = WdOptions {
   capabilities = W.defaultCaps
-  , saveSeleniumMessageHistory = OnException
   , runMode = Normal
-  , httpManager = Nothing
   , httpRetryCount = 0
   , chromeNoSandbox = False
   }
@@ -123,12 +113,12 @@ data OnDemand a =
   | OnDemandReady a
   | OnDemandErrored Text
 
-data WebDriverContext = WebDriverContext {
+data TestWebDriverContext = TestWebDriverContext {
   wdName :: String
-  , wdWebDriver :: (ProcessHandle, Maybe XvfbSession)
+  , wdContext :: W.WebDriverContext
   , wdOptions :: WdOptions
-  , wdSessionMap :: MVar (M.Map Session W.WDSession)
-  , wdConfig :: W.WDConfig
+  , wdSessionMap :: MVar (M.Map String W.Session)
+  , wdDriverConfig :: W.DriverConfig
   , wdDownloadDir :: FilePath
 
   , wdFfmpegToUse :: FfmpegToUse
@@ -136,8 +126,6 @@ data WebDriverContext = WebDriverContext {
 
   , wdXvfbToUse :: XvfbToUse
   , wdXvfb :: MVar (OnDemand FilePath)
-
-  , wdLogAsync :: Async ()
   }
 
 data InvalidLogsException = InvalidLogsException [W.LogEntry]
@@ -153,31 +141,31 @@ data XvfbSession = XvfbSession {
   , xvfbFluxboxProcess :: Maybe ProcessHandle
   }
 
-type WebDriverSession = (Session, IORef W.WDSession)
+type WebDriverSession = (Session, IORef W.Session)
 
 -- | Get the 'WdOptions' associated with the 'WebDriver'.
-getWdOptions :: WebDriverContext -> WdOptions
+getWdOptions :: TestWebDriverContext -> WdOptions
 getWdOptions = wdOptions
 
 -- | Get the X11 display number associated with the 'WebDriver'.
 -- Only present if running in 'RunInXvfb' mode.
-getDisplayNumber :: WebDriverContext -> Maybe Int
-getDisplayNumber (WebDriverContext {wdWebDriver=(_, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
-getDisplayNumber _ = Nothing
+-- getDisplayNumber :: TestWebDriverContext -> Maybe Int
+-- getDisplayNumber (TestWebDriverContext {wdWebDriver=(_, Just (XvfbSession {xvfbDisplayNum}))}) = Just xvfbDisplayNum
+-- getDisplayNumber _ = Nothing
 
--- | Get the Xvfb session associated with the 'WebDriver', if present.
-getXvfbSession :: WebDriverContext -> Maybe XvfbSession
-getXvfbSession (WebDriverContext {wdWebDriver=(_, Just sess)}) = Just sess
-getXvfbSession _ = Nothing
+-- -- | Get the Xvfb session associated with the 'WebDriver', if present.
+-- getXvfbSession :: TestWebDriverContext -> Maybe XvfbSession
+-- getXvfbSession (TestWebDriverContext {wdWebDriver=(_, Just sess)}) = Just sess
+-- getXvfbSession _ = Nothing
 
 -- | Get the configured download directory for the 'WebDriver'.
-getDownloadDirectory :: WebDriverContext -> FilePath
+getDownloadDirectory :: TestWebDriverContext -> FilePath
 getDownloadDirectory = wdDownloadDir
 
 -- | Get the name of the 'WebDriver'.
 -- This corresponds to the folder that will be created to hold the log files for the 'WebDriver'.
-getWebDriverName :: WebDriverContext -> String
-getWebDriverName (WebDriverContext {wdName}) = wdName
+getWebDriverName :: TestWebDriverContext -> String
+getWebDriverName (TestWebDriverContext {wdName}) = wdName
 
 instance Show XvfbSession where
   show (XvfbSession {xvfbDisplayNum}) = [i|<XVFB session with server num #{xvfbDisplayNum}>|]

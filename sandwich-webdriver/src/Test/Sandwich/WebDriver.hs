@@ -43,8 +43,8 @@ module Test.Sandwich.WebDriver (
   -- * Context types
   -- ** WebDriver
   , webdriver
-  , WebDriverContext
-  , HasWebDriverContext
+  , TestWebDriverContext
+  , HasTestWebDriverContext
   -- ** WebDriverSession
   , webdriverSession
   , WebDriverSession
@@ -74,18 +74,24 @@ import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
+import Lens.Micro
+import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Binaries
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
+import Test.Sandwich.WebDriver.Internal.Capabilities.Extra
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Util (makeUUID)
 import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Video (recordVideoIfConfigured)
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Types as WT
+import qualified Test.WebDriver.Capabilities as W
+import UnliftIO.Directory
 import UnliftIO.Exception (bracket)
 import UnliftIO.MVar
 
@@ -154,7 +160,7 @@ introduceWebDriver' :: forall m context. (
   )
   -- | Dependencies
   => WebDriverDependencies
-  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WebDriverContext)
+  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m TestWebDriverContext)
   -> WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
 introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
@@ -169,16 +175,63 @@ allocateWebDriver :: (
   -- | Options
   => WdOptions
   -> OnDemandOptions
-  -> ExampleT context m WebDriverContext
-allocateWebDriver wdOptions onDemandOptions = do
-  dir <- fromMaybe "/tmp" <$> getCurrentFolder
-  driverType <- getContext browserDependencies >>= \case
-    BrowserDependenciesChrome {..} -> return $ DriverTypeChromedriver browserDependenciesChromeChromedriver
-    BrowserDependenciesFirefox {..} -> return $ DriverTypeGeckodriver browserDependenciesFirefoxGeckodriver
-  startWebDriver driverType wdOptions onDemandOptions dir
+  -> ExampleT context m TestWebDriverContext
+allocateWebDriver wdOptions (OnDemandOptions {..}) = do
+  runRoot <- fromMaybe "/tmp" <$> getCurrentFolder
+
+  driverConfig <- getContext browserDependencies >>= \case
+    BrowserDependenciesChrome {..} -> return $ W.DriverConfigChromedriver {
+      driverConfigChromedriver = browserDependenciesChromeChromedriver
+      , driverConfigChrome = browserDependenciesChromeChrome
+      , driverConfigLogDir = runRoot
+      }
+    BrowserDependenciesFirefox {..} -> return $ W.DriverConfigGeckodriver {
+      driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
+      , driverConfigFirefox = browserDependenciesFirefoxFirefox
+      , driverConfigLogDir = runRoot
+      }
+
+  -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
+  webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
+
+  -- Directory to log everything for this webdriver
+  let webdriverRoot = runRoot </> (T.unpack webdriverName)
+  liftIO $ createDirectoryIfMissing True webdriverRoot
+
+  -- Directory to hold any downloads
+  let downloadDir = webdriverRoot </> "Downloads"
+  liftIO $ createDirectoryIfMissing True downloadDir
+
+  -- Final extra capabilities configuration
+  finalCaps <-
+    getContext browserDependencies
+    >>= getCapabilitiesForBrowser
+    >>= configureChromeNoSandbox wdOptions
+    -- >>= configureChromeUserDataDir
+    >>= configureHeadlessChromeCapabilities wdOptions (runMode wdOptions)
+    >>= configureHeadlessFirefoxCapabilities wdOptions (runMode wdOptions)
+    >>= configureChromeDownloadCapabilities downloadDir
+    >>= configureFirefoxDownloadCapabilities downloadDir
+
+  wdc <- W.mkEmptyWebDriverContext
+
+  TestWebDriverContext
+    <$> pure (T.unpack webdriverName)
+    <*> pure wdc
+    <*> pure wdOptions
+    <*> liftIO (newMVar mempty)
+    <*> pure driverConfig
+    <*> pure downloadDir
+
+    <*> pure ffmpegToUse
+    <*> newMVar OnDemandNotStarted
+
+    <*> pure xvfbToUse
+    <*> newMVar OnDemandNotStarted
+
 
 -- | Clean up the given WebDriver.
-cleanupWebDriver :: (BaseMonad m context) => WebDriverContext -> ExampleT context m ()
+cleanupWebDriver :: (BaseMonad m context) => TestWebDriverContext -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
@@ -192,17 +245,15 @@ withSession :: forall m context a. (
   => Session
   -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
-withSession session action = do
-  WebDriverContext {..} <- getContext webdriver
+withSession sessionName action = do
+  TestWebDriverContext {..} <- getContext webdriver
   -- Create new session if necessary (this can throw an exception)
-  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup session sessionMap of
+  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
-      debug [i|Creating session '#{session}'|]
-      sess'' <- liftIO $ WT.mkSession wdConfig
-      let sess' = sess'' { WT.wdSessHistUpdate = W.unlimitedHistory }
-      sess <- liftIO $ W.runWD sess' $ W.createSession $ WT._wdCapabilities wdConfig
-      return (M.insert session sess sessionMap, sess)
+      debug [i|Creating session '#{sessionName}'|]
+      sess <- W.startSession' wdContext wdDriverConfig (capabilities wdOptions) sessionName
+      return (M.insert sessionName sess sessionMap, sess)
 
   ref <- liftIO $ newIORef sess
 
@@ -210,8 +261,8 @@ withSession session action = do
   -- We could do the same here, but it's not clear that it's needed.
   -- let f :: m a -> m a = id
 
-  pushContext webdriverSession (session, ref) $
-    recordVideoIfConfigured session action
+  pushContext webdriverSession (sessionName, ref) $
+    recordVideoIfConfigured sessionName action
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: (
@@ -236,7 +287,7 @@ withSession2 = withSession "session2"
 -- | Get all existing session names.
 getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
 getSessions = do
-  WebDriverContext {..} <- getContext webdriver
+  TestWebDriverContext {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
 
 -- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.
@@ -248,4 +299,18 @@ addCommandLineOptionsToWdOptions (SomeCommandLineOptions (CommandLineOptions {op
     Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
     Just Current -> Normal
   , chromeNoSandbox = optChromeNoSandbox
+  }
+
+getCapabilitiesForBrowser :: MonadIO m => BrowserDependencies -> m W.Capabilities
+getCapabilitiesForBrowser (BrowserDependenciesChrome {..}) = pure $ W.defaultCaps {
+  W._capabilitiesBrowserName = Just "chrome"
+  , W._capabilitiesGoogChromeOptions = Just $
+    W.defaultChromeOptions
+      & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
+  }
+getCapabilitiesForBrowser (BrowserDependenciesFirefox {..}) = pure $ W.defaultCaps {
+  W._capabilitiesBrowserName = Just "firefox"
+  , W._capabilitiesMozFirefoxOptions = Just $
+    W.defaultFirefoxOptions
+      & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
   }

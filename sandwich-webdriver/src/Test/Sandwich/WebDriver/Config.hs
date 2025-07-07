@@ -7,16 +7,14 @@ module Test.Sandwich.WebDriver.Config (
   , defaultWdOptions
   , runMode
   , capabilities
-  , httpManager
   , httpRetryCount
-  , saveSeleniumMessageHistory
 
   -- * Accessors for the 'WebDriver' context
   , getWdOptions
-  , getDisplayNumber
+  -- , getDisplayNumber
   , getDownloadDirectory
   , getWebDriverName
-  , getXvfbSession
+  -- , getXvfbSession
 
   -- * Xvfb mode
   , XvfbConfig

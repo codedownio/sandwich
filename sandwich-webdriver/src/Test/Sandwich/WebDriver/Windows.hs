@@ -65,10 +65,11 @@ setWindowFullScreen = do
 
 -- | Get the screen resolution as (x, y, width, height). (The x and y coordinates may be nonzero in multi-monitor setups.)
 -- This function works with both normal 'RunMode' and Xvfb mode.
-getScreenResolution :: (MonadIO m) => WebDriverContext -> m (Int, Int, Int, Int)
-getScreenResolution (WebDriverContext {wdWebDriver=(_, maybeXvfbSession)}) = case maybeXvfbSession of
-  Nothing -> liftIO getResolution
-  Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
+getScreenResolution :: (MonadIO m) => TestWebDriverContext -> m (Int, Int, Int, Int)
+-- getScreenResolution (TestWebDriverContext {wdWebDriver=(_, maybeXvfbSession)}) = case maybeXvfbSession of
+--   Nothing -> liftIO getResolution
+--   Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
+getScreenResolution twdc = liftIO getResolution
 
 getScreenPixelDimensions :: (WebDriver m) => Int -> Int -> m (Double, Double)
 getScreenPixelDimensions width height = do
