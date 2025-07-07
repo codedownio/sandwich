@@ -8,7 +8,6 @@ module Test.Sandwich.WebDriver.Internal.Types where
 
 import Control.Concurrent.MVar
 import Control.Exception
-import Data.IORef
 import qualified Data.Map as M
 import Data.String.Interpolate
 import Data.Text (Text)
@@ -141,7 +140,7 @@ data XvfbSession = XvfbSession {
   , xvfbFluxboxProcess :: Maybe ProcessHandle
   }
 
-type WebDriverSession = (Session, IORef W.Session)
+type WebDriverSession = (Session, W.Session)
 
 -- | Get the 'WdOptions' associated with the 'WebDriver'.
 getWdOptions :: TestWebDriverContext -> WdOptions

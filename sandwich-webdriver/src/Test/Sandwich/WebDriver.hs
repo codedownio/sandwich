@@ -70,7 +70,6 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Data.IORef
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
@@ -218,7 +217,7 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
   TestWebDriverContext
     <$> pure (T.unpack webdriverName)
     <*> pure wdc
-    <*> pure wdOptions
+    <*> pure (wdOptions { capabilities = finalCaps })
     <*> liftIO (newMVar mempty)
     <*> pure driverConfig
     <*> pure downloadDir
@@ -255,13 +254,11 @@ withSession sessionName action = do
       sess <- W.startSession' wdContext wdDriverConfig (capabilities wdOptions) sessionName
       return (M.insert sessionName sess sessionMap, sess)
 
-  ref <- liftIO $ newIORef sess
-
   -- Not used for now, but previous libraries have use a finally to grab the final session on exception.
   -- We could do the same here, but it's not clear that it's needed.
   -- let f :: m a -> m a = id
 
-  pushContext webdriverSession (sessionName, ref) $
+  pushContext webdriverSession (sessionName, sess) $
     recordVideoIfConfigured sessionName action
 
 -- | Convenience function. @withSession1 = withSession "session1"@.

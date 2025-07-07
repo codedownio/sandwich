@@ -29,7 +29,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString
 import qualified Data.ByteString.Lazy as BL
-import Data.IORef
 import Data.String.Interpolate
 import GHC.Stack
 import qualified Network.HTTP.Client as HC
@@ -44,8 +43,8 @@ import UnliftIO.Exception as ES
 
 instance (MonadIO m, HasWebDriverSessionContext context) => W.SessionState (ExampleT context m) where
   getSession = do
-    (_, sessVar) <- getContext webdriverSession
-    liftIO $ readIORef sessVar
+    (_, sess) <- getContext webdriverSession
+    return sess
 
 -- This implementation of 'W.WebDriver' provides logging for the requests/responses.
 instance (MonadUnliftIO m) => W.WebDriverBase (ExampleT context m) where
