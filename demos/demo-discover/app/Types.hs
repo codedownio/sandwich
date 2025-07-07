@@ -9,6 +9,6 @@ import Test.Sandwich.WebDriver
 
 type SeleniumSpec = forall context. (
   HasBaseContext context
-  , HasWebDriverContext context
+  , HasTestWebDriverContext context
   , HasSomeCommandLineOptions context
   ) => SpecFree context IO ()

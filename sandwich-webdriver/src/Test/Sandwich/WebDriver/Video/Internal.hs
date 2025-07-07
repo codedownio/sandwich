@@ -37,10 +37,10 @@ videoExtension = "avi"
 
 getVideoArgs :: (
   MonadUnliftIO m, MonadLoggerIO m
-  , MonadReader context m, HasBaseContext context, HasWebDriverContext context
+  , MonadReader context m, HasBaseContext context, HasTestWebDriverContext context
   ) => FilePath -> (Float, Float, Float, Float) -> VideoSettings -> Maybe XvfbSession -> m (CreateProcess, FilePath)
 getVideoArgs path (width, height, x, y) (VideoSettings {..}) maybeXvfbSession = do
-  WebDriverContext {wdFfmpeg, wdFfmpegToUse} <- getContext webdriver
+  TestWebDriverContext {wdFfmpeg, wdFfmpegToUse} <- getContext webdriver
   ffmpeg <- getOnDemand wdFfmpeg (obtainFfmpeg wdFfmpegToUse)
 
 #ifdef linux_HOST_OS

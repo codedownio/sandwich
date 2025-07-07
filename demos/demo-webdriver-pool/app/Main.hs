@@ -33,13 +33,13 @@ import UnliftIO.Process
 
 -- * Introducing the pool
 
-webDriverPool = Label :: Label "webDriverPool" (Pool WebDriverContext)
-type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriverContext)
+webDriverPool = Label :: Label "webDriverPool" (Pool TestWebDriverContext)
+type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool TestWebDriverContext)
 
 introduceWebDriverPool :: forall m context. (
   MonadUnliftIO m, MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, HasBrowserDependencies context, HasFile context "java", HasFile context "selenium.jar"
-  ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriverContext) :> context) m () -> SpecFree context m ()
+  ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool TestWebDriverContext) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduceWith "Introduce webdriver pool" webDriverPool $ \action -> do
   wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
   bracket (newPool =<< mkSafeDefaultPoolConfig (allocateWebDriver wdOptions defaultOnDemandOptions) cleanupWebDriver 30.0 poolSize) destroyAllResources $ \pool ->
