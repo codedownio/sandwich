@@ -101,18 +101,20 @@ browserDependencies = Label
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
 
 getBrowserDependencies :: (
-  MonadReader context m, HasBaseContext context
-  , MonadUnliftIO m, MonadLogger m
+  MonadUnliftIO m, MonadLogger m
+  , MonadReader context m, HasBaseContext context, HasSomeCommandLineOptions context
   ) => BrowserDependenciesSpec -> m BrowserDependencies
 getBrowserDependencies BrowserDependenciesSpecChrome {..} = do
-  chrome <- exceptionOnLeft $ obtainChrome browserDependenciesSpecChromeChrome
-  chromeDriver <- exceptionOnLeft $ obtainChromeDriver browserDependenciesSpecChromeChromeDriver
+  SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions{..})}) <- getSomeCommandLineOptions
+  chrome <- maybe (exceptionOnLeft (obtainChrome browserDependenciesSpecChromeChrome)) pure optChromeBinary
+  chromeDriver <- maybe (exceptionOnLeft (obtainChromeDriver browserDependenciesSpecChromeChromeDriver)) pure optChromeDriverBinary
   info [i|chrome: #{chrome}|]
-  info [i|chromedriver: #{chromeDriver}|]
+  info [i|chromedriver: ''#{chromeDriver}|]
   return $ BrowserDependenciesChrome chrome chromeDriver
 getBrowserDependencies (BrowserDependenciesSpecFirefox {..}) = do
-  firefox <- exceptionOnLeft $ obtainFirefox browserDependenciesSpecFirefoxFirefox
-  geckoDriver <- exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver
+  SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions{..})}) <- getSomeCommandLineOptions
+  firefox <- maybe (exceptionOnLeft $ obtainFirefox browserDependenciesSpecFirefoxFirefox) pure optFirefoxBinary
+  geckoDriver <- maybe (exceptionOnLeft $ obtainGeckoDriver browserDependenciesSpecFirefoxGeckodriver) pure optGeckoDriverBinary
   info [i|firefox: #{firefox}|]
   info [i|geckodriver: #{geckoDriver}|]
   return $ BrowserDependenciesFirefox firefox geckoDriver
@@ -142,8 +144,9 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
     alloc = do
       SomeCommandLineOptions (CommandLineOptions {optWebdriverOptions=(CommandLineWebdriverOptions {..})}) <- getSomeCommandLineOptions
 
-      let useChrome = BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
-                                                <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+      let useChrome = BrowserDependenciesChrome
+            <$> maybe (getBinaryViaNixPackage @"google-chrome-stable" "google-chrome") pure optChromeBinary
+            <*> maybe (getBinaryViaNixPackage @"chromedriver" "chromedriver") pure optChromeDriverBinary
 
       -- let useFirefox = case os of
       --       "darwin" -> do
@@ -153,8 +156,9 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       --       _ -> BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
       --                                       <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
 
-      let useFirefox = BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
-                                                  <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+      let useFirefox = BrowserDependenciesFirefox
+            <$> maybe (getBinaryViaNixPackage @"firefox" "firefox") pure optFirefoxBinary
+            <*> maybe (getBinaryViaNixPackage @"geckodriver" "geckodriver") pure optGeckoDriverBinary
 
       deps <- case optBrowserToUse of
         Just UseChrome -> useChrome
