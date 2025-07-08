@@ -137,13 +137,13 @@ commandLineWebdriverOptions maybeInternal = CommandLineWebdriverOptions
   <*> flag False True (long "individual-videos" <> help "Record individual videos of each test (requires ffmpeg and Xvfb)" <> maybeInternal)
   <*> flag False True (long "error-videos" <> help "Record videos of each test but delete them unless there was an exception" <> maybeInternal)
 
-  <*> optional (strOption (long "selenium-jar" <> help "" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "selenium-jar" <> help "Path to selenium.jar file to use" <> metavar "STRING" <> maybeInternal))
 
-  <*> optional (strOption (long "chrome-binary" <> help "" <> metavar "STRING" <> maybeInternal))
-  <*> optional (strOption (long "chromedriver-binary" <> help "" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "chrome-binary" <> help "Path to chrome binary" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "chromedriver-binary" <> help "Path to chromedriver binary" <> metavar "STRING" <> maybeInternal))
 
-  <*> optional (strOption (long "firefox-binary" <> help "" <> metavar "STRING" <> maybeInternal))
-  <*> optional (strOption (long "geckodriver-binary" <> help "" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "firefox-binary" <> help "Path to firefox binary" <> metavar "STRING" <> maybeInternal))
+  <*> optional (strOption (long "geckodriver-binary" <> help "Path to geckodriver binary" <> metavar "STRING" <> maybeInternal))
 
 browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
 browserToUse maybeInternal =
