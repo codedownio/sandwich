@@ -20,7 +20,7 @@ import UnliftIO.Async
 
 
 -- | 'Session' is just a 'String' name.
-type Session = String
+type SessionName = String
 
 -- * Labels
 webdriver :: Label "webdriver" TestWebDriverContext
@@ -140,7 +140,7 @@ data XvfbSession = XvfbSession {
   , xvfbFluxboxProcess :: Maybe ProcessHandle
   }
 
-type WebDriverSession = (Session, W.Session)
+type WebDriverSession = (SessionName, W.Session)
 
 -- | Get the 'WdOptions' associated with the 'WebDriver'.
 getWdOptions :: TestWebDriverContext -> WdOptions
