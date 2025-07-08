@@ -30,7 +30,7 @@ module Test.Sandwich.WebDriver (
   , closeSession
   , closeAllSessions
   , closeAllSessionsExcept
-  , Session
+  , SessionName
 
   -- * Lower-level allocation functions
   , allocateWebDriver
@@ -241,7 +241,7 @@ withSession :: forall m context a. (
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Session to run
-  => Session
+  => SessionName
   -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
 withSession sessionName action = do
@@ -282,7 +282,7 @@ withSession2 :: (
 withSession2 = withSession "session2"
 
 -- | Get all existing session names.
-getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
+getSessions :: (MonadReader context m, WebDriverMonad m context) => m [SessionName]
 getSessions = do
   TestWebDriverContext {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)

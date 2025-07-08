@@ -19,7 +19,7 @@ import UnliftIO.Exception
 
 
 -- | Close the given session.
-closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m, W.WebDriverBase m) => Session -> TestWebDriverContext -> m ()
+closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m, W.WebDriverBase m) => SessionName -> TestWebDriverContext -> m ()
 closeSession session (TestWebDriverContext {wdSessionMap, wdContext}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
     case M.lookup session sessionMap of
@@ -29,7 +29,7 @@ closeSession session (TestWebDriverContext {wdSessionMap, wdContext}) = do
   whenJust toClose $ \sess -> W.closeSession' wdContext sess
 
 -- | Close all sessions except those listed.
-closeAllSessionsExcept :: (HasCallStack, MonadLogger m, W.WebDriverBase m) => [Session] -> TestWebDriverContext -> m ()
+closeAllSessionsExcept :: (HasCallStack, MonadLogger m, W.WebDriverBase m) => [SessionName] -> TestWebDriverContext -> m ()
 closeAllSessionsExcept toKeep (TestWebDriverContext {wdSessionMap, wdContext}) = do
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
 
