@@ -155,7 +155,7 @@ introduceWebDriverViaNix' nodeOptions wdOptions =
 
 -- | Same as 'introduceWebDriver', but with a controllable allocation callback.
 introduceWebDriver' :: forall m context. (
-  BaseMonad m context
+  BaseMonad m context, HasSomeCommandLineOptions context
   )
   -- | Dependencies
   => WebDriverDependencies
