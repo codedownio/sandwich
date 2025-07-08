@@ -18,7 +18,6 @@ module Test.Sandwich.WebDriver.Internal.Dependencies (
   , getBrowserDependencies
   , introduceBrowserDependenciesViaNix
   , introduceBrowserDependenciesViaNix'
-  , fillInCapabilitiesAndGetDriverArgs
   ) where
 
 import Control.Monad.IO.Unlift
@@ -171,26 +170,3 @@ introduceBrowserDependenciesViaNix' nodeOptions = introduce' nodeOptions "Introd
       info [i|Got browser dependencies: #{deps}|]
 
       return deps
-
-fillInCapabilitiesAndGetDriverArgs :: (
-  HasBrowserDependencies ctx, MonadReader ctx m
-  ) => FilePath -> WC.Capabilities -> m ([String], WC.Capabilities)
-fillInCapabilitiesAndGetDriverArgs webdriverRoot capabilities'' = getContext browserDependencies >>= \case
-  BrowserDependenciesFirefox {..} -> do
-    let args = [
-          [i|-Dwebdriver.gecko.driver=#{browserDependenciesFirefoxGeckodriver}|]
-          ]
-    let capabilities' = capabilities''
-          & over WC.capabilitiesMozFirefoxOptions (Just . fromMaybe WC.defaultFirefoxOptions)
-          & set (WC.capabilitiesMozFirefoxOptions . _Just . WC.firefoxOptionsBinary) (Just browserDependenciesFirefoxFirefox)
-    return (args, capabilities')
-  BrowserDependenciesChrome {..} -> do
-    let args = [
-          [i|-Dwebdriver.chrome.driver=#{browserDependenciesChromeChromedriver}|]
-          , [i|-Dwebdriver.chrome.logfile=#{webdriverRoot </> "chromedriver.log"}|]
-          , [i|-Dwebdriver.chrome.verboseLogging=true|]
-          ]
-    let capabilities' = capabilities''
-          & over WC.capabilitiesGoogChromeOptions (Just . fromMaybe WC.defaultChromeOptions)
-          & set (WC.capabilitiesGoogChromeOptions . _Just . WC.chromeOptionsBinary) (Just browserDependenciesChromeChrome)
-    return (args, capabilities')
