@@ -3,8 +3,6 @@
 module Test.Sandwich.WebDriver.Internal.Action where
 
 import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import qualified Data.Map as M
 import Data.String.Interpolate
@@ -19,7 +17,7 @@ import UnliftIO.Exception
 
 
 -- | Close the given session.
-closeSession :: (HasCallStack, MonadLogger m, MonadUnliftIO m, W.WebDriverBase m) => SessionName -> TestWebDriverContext -> m ()
+closeSession :: (MonadLogger m, W.WebDriverBase m) => SessionName -> TestWebDriverContext -> m ()
 closeSession session (TestWebDriverContext {wdSessionMap, wdContext}) = do
   toClose <- modifyMVar wdSessionMap $ \sessionMap ->
     case M.lookup session sessionMap of

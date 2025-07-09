@@ -206,7 +206,6 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
     getContext browserDependencies
     >>= getCapabilitiesForBrowser
     >>= configureChromeNoSandbox wdOptions
-    -- >>= configureChromeUserDataDir
     >>= configureHeadlessChromeCapabilities wdOptions (runMode wdOptions)
     >>= configureHeadlessFirefoxCapabilities wdOptions (runMode wdOptions)
     >>= configureChromeDownloadCapabilities downloadDir
@@ -246,20 +245,21 @@ withSession :: forall m context a. (
   -> ExampleT context m a
 withSession sessionName action = do
   TestWebDriverContext {..} <- getContext webdriver
+
   -- Create new session if necessary (this can throw an exception)
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
+      finalCaps <- pure (capabilities wdOptions)
+        >>= configureChromeUserDataDir
+
       debug [i|Creating session '#{sessionName}'|]
-      sess <- W.startSession' wdContext wdDriverConfig (capabilities wdOptions) sessionName
+      sess <- W.startSession' wdContext wdDriverConfig finalCaps sessionName
       return (M.insert sessionName sess sessionMap, sess)
 
-  -- Not used for now, but previous libraries have use a finally to grab the final session on exception.
-  -- We could do the same here, but it's not clear that it's needed.
-  -- let f :: m a -> m a = id
-
   pushContext webdriverSession (sessionName, sess) $
-    recordVideoIfConfigured sessionName action
+    recordVideoIfConfigured sessionName
+    action
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: (
