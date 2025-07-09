@@ -29,7 +29,7 @@ pendingWith :: (HasCallStack, MonadIO m) => String -> m a
 pendingWith msg = throwIO $ Pending (Just callStack) (Just msg)
 
 -- | Shorthand for a pending test example. You can quickly mark an 'it' node as pending by putting an "x" in front of it.
-xit :: (HasCallStack, MonadIO m) => String -> ExampleT context m1 () -> SpecFree context m ()
+xit :: (HasCallStack, MonadIO m) => String -> ExampleT context m () -> SpecFree context m ()
 xit name _ex = it name (throwIO $ Pending (Just callStack) Nothing)
 
 -- * Expecting failures
