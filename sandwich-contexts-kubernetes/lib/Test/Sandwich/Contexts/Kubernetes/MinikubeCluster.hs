@@ -243,7 +243,7 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", minikubeKubeConfigFile) : baseEnv)
 
-  info [i|startMinikubeCluster 1|]
+  info [i|startMinikubeCluster 1. env: #{env}|]
 
   -- Note: this doesn't actually work! These options actually go to the docker daemon, not the "start" operation.
   -- It may not be possible to get a label on the Docker container in current minikube.
@@ -265,7 +265,7 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
 
   let args = ["start"
              , "--profile", clusterName
-             , "--logtostderr"
+             -- , "--logtostderr"
              -- , "--addons=ingress"
              , "--extra-config=kubelet.streaming-connection-idle-timeout=5h"
              ]
