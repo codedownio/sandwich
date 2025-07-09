@@ -43,6 +43,7 @@ import Control.Monad.Logger
 import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text as T
+import qualified Data.Text.IO as T
 import Kubernetes.Client.Config
 import Relude hiding (withFile)
 import System.Exit
@@ -213,7 +214,9 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                    ExitSuccess -> return ()
                    ExitFailure n -> expectationFailure [i|Minikube cluster creation failed with code #{n}.|]
 
-                 info [i|withMinikubeCluster'' 4|]
+                 info [i|withMinikubeCluster'' 4: #{minikubeKubeConfigFile}|]
+                 contents <- liftIO $ T.readFile minikubeKubeConfigFile
+                 info [i|withMinikubeCluster'': minikubeKubeConfigFile: #{contents}|]
 
                  oidcCache <- newTVarIO mempty
                  (m, c) <- liftIO $ mkKubeClientConfig oidcCache $ KubeConfigFile minikubeKubeConfigFile
