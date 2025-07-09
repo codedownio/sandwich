@@ -170,6 +170,8 @@ withMinikubeCluster'' :: (
 withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions {..}) action = do
   Just dir <- getCurrentFolder
 
+  info [i|withMinikubeCluster'' 1|]
+
   minikubeDir <- liftIO $ createTempDirectory dir "minikube"
 
   let minikubeKubeConfigFile = minikubeDir </> "minikube-config"
@@ -177,6 +179,8 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
 
   let startLogFile = minikubeDir </> "minikube-start.log"
   let deleteLogFile = minikubeDir </> "minikube-delete.log"
+
+  info [i|withMinikubeCluster'' 2|]
 
   withFile startLogFile WriteMode $ \logH ->
     (bracket (startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile options)
@@ -203,12 +207,18 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                        ExitFailure n -> warn [i|Minikube cluster delete failed with code #{n}.|]
              ))
              (\p -> do
+                 info [i|withMinikubeCluster'' 3|]
+
                  waitForProcess p >>= \case
                    ExitSuccess -> return ()
                    ExitFailure n -> expectationFailure [i|Minikube cluster creation failed with code #{n}.|]
 
+                 info [i|withMinikubeCluster'' 4|]
+
                  oidcCache <- newTVarIO mempty
                  (m, c) <- liftIO $ mkKubeClientConfig oidcCache $ KubeConfigFile minikubeKubeConfigFile
+
+                 info [i|withMinikubeCluster'' 5|]
 
                  action $ KubernetesClusterContext {
                    kubernetesClusterName = toText clusterName
@@ -230,6 +240,8 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", minikubeKubeConfigFile) : baseEnv)
 
+  info [i|startMinikubeCluster 1|]
+
   -- Note: this doesn't actually work! These options actually go to the docker daemon, not the "start" operation.
   -- It may not be possible to get a label on the Docker container in current minikube.
   -- let labelArgs = case dockerLabels of
@@ -245,6 +257,8 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
                   , [i|--memory=#{fromMaybe "16000mb" minikubeClusterMemory}|]
                   , [i|--cpus=#{fromMaybe "8" minikubeClusterCpus}|]
                   ]
+
+  info [i|startMinikubeCluster 2|]
 
   let args = ["start"
              , "--profile", clusterName
