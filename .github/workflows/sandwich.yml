@@ -249,7 +249,7 @@ jobs:
 
     - name: Test (sandwich-webdriver)
       if: always() && runner.os != 'Windows'
-      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox"
+      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox --fixed-root sandwich-webdriver/test_runs/run"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
