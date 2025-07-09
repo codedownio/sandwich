@@ -28,10 +28,6 @@ type Constraints m = (
 
 stopWebDriver :: (Constraints m, W.WebDriverBase m) => TestWebDriverContext -> m ()
 stopWebDriver (TestWebDriverContext {wdContext}) = do
-  -- | TODO: expose this as an option
-  let gracePeriod :: Int
-      gracePeriod = 30_000_000
-
   W.teardownWebDriverContext wdContext
 
   -- whenJust maybeXvfbSession $ \(XvfbSession {..}) -> do

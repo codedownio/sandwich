@@ -23,10 +23,7 @@ module Test.Sandwich.WebDriver.Internal.Dependencies (
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
-import Data.Maybe
 import Data.String.Interpolate
-import Lens.Micro
-import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
@@ -36,7 +33,6 @@ import Test.Sandwich.WebDriver.Internal.Binaries.Firefox
 import Test.Sandwich.WebDriver.Internal.Binaries.Selenium.Types
 import Test.Sandwich.WebDriver.Internal.Binaries.Xvfb
 import Test.Sandwich.WebDriver.Internal.Util
-import qualified Test.WebDriver.Capabilities as WC
 
 
 -- * All dependencies
