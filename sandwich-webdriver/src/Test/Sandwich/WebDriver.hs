@@ -183,11 +183,13 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
       driverConfigChromedriver = browserDependenciesChromeChromedriver
       , driverConfigChrome = browserDependenciesChromeChrome
       , driverConfigLogDir = runRoot
+      , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
       }
     BrowserDependenciesFirefox {..} -> return $ W.DriverConfigGeckodriver {
       driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
       , driverConfigFirefox = browserDependenciesFirefoxFirefox
       , driverConfigLogDir = runRoot
+      , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
       }
 
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others

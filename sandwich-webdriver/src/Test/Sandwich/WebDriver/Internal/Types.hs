@@ -46,17 +46,23 @@ data RunMode =
   -- The @Xvfb@ binary must be installed and on the PATH.
 
 data WdOptions = WdOptions {
+  -- | The WebDriver capabilities to use.
   capabilities :: W.Capabilities
-  -- ^ The WebDriver capabilities to use.
 
+  -- | How to handle opening the browser (in a popup window, headless, etc.).
   , runMode :: RunMode
-  -- ^ How to handle opening the browser (in a popup window, headless, etc.).
 
+  -- | Number of times to retry an HTTP request if it times out.
   , httpRetryCount :: Int
-  -- ^ Number of times to retry an HTTP request if it times out.
 
+  -- | Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix).
   , chromeNoSandbox :: Bool
-  -- ^ Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix).
+
+  -- | Extra flags to pass to chromedriver
+  , chromedriverExtraFlags :: [String]
+
+  -- | Extra flags to pass to geckodriver
+  , geckodriverExtraFlags :: [String]
   }
 
 -- | How to obtain certain binaries "on demand". These may or not be needed based on 'WdOptions', so
@@ -104,6 +110,8 @@ defaultWdOptions = WdOptions {
   , runMode = Normal
   , httpRetryCount = 0
   , chromeNoSandbox = False
+  , chromedriverExtraFlags = []
+  , geckodriverExtraFlags = []
   }
 
 data OnDemand a =
