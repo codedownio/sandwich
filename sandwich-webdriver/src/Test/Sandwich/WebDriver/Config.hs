@@ -8,6 +8,8 @@ module Test.Sandwich.WebDriver.Config (
   , runMode
   , capabilities
   , httpRetryCount
+  , geckodriverExtraFlags
+  , chromedriverExtraFlags
 
   -- * Accessors for the 'WebDriver' context
   , getWdOptions
