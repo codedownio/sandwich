@@ -8,7 +8,6 @@ maintainer: tom@codedown.io
 copyright: 2025 Tom McLaughlin
 dependencies:
 - base >= 4.11 && < 5
-- exceptions
 - sandwich
 
 default-extensions:
@@ -44,11 +43,12 @@ library:
   - Test.Sandwich.Contexts.Kubernetes.Namespace
   - Test.Sandwich.Contexts.Kubernetes.SeaweedFS
   dependencies:
-  - aeson
-  - bytestring
   - sandwich-contexts
   - sandwich-contexts-minio
+  - aeson
+  - bytestring
   - containers
+  - exceptions
   - filepath
   - http-client
   - kubernetes-api

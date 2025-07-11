@@ -126,7 +126,7 @@ data FailureReason = Reason { failureCallStack :: Maybe CallStack
                    | RawImage { failureCallStack :: Maybe CallStack
                               , failureFallback :: String
                               , failureRawImage :: Image }
-  deriving (Show, Typeable, Eq)
+  deriving (Show, Eq)
 
 instance Exception FailureReason
 
