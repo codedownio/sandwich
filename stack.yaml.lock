@@ -5,15 +5,15 @@
 
 packages:
 - completed:
-    commit: 1269bc0ba31a28031888a95bea951aa71db3e4d0
+    commit: 97b1325188409be87e64325068cac7feaf4fb6cc
     git: https://github.com/haskell-webdriver/haskell-webdriver
     name: webdriver
     pantry-tree:
-      sha256: 84d42b9de0b59474eb4ea78262d3df7d698d31d907595302a6d423e1279a1113
+      sha256: 76b3d3d015b1e80cf061027d3a62b172cff4befcf24e672843257a1027a2cd6b
       size: 5851
     version: 0.12.0.1
   original:
-    commit: 1269bc0ba31a28031888a95bea951aa71db3e4d0
+    commit: 97b1325188409be87e64325068cac7feaf4fb6cc
     git: https://github.com/haskell-webdriver/haskell-webdriver
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4

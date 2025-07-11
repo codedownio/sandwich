@@ -65,8 +65,8 @@ extra-deps:
 # For sandwich-webdriver
 
 - git: https://github.com/haskell-webdriver/haskell-webdriver
-  # monad-rework branch
-  commit: 1269bc0ba31a28031888a95bea951aa71db3e4d0
+  # main branch
+  commit: 97b1325188409be87e64325068cac7feaf4fb6cc
 
 # For sandwich-contexts
 
