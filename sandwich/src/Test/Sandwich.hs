@@ -121,7 +121,7 @@ import System.Win32.Console (setConsoleOutputCP)
 runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = do
   (_exitReason, _itNodeFailures, totalFailures) <- runSandwich' Nothing options spec
-  when (0 < totalFailures) $ exitFailure
+  when (0 < totalFailures) exitFailure
 
 -- | Run the spec, configuring the options from the command line.
 runSandwichWithCommandLineArgs :: Options -> TopSpecWithOptions -> IO ()
@@ -167,14 +167,12 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
            case optIndividualTestModule clo of
              Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
-                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ())
-                 $ spec
+                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
-                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ())
-                 $ spec
+                 $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
-               let individualTestFlagStrings = [[ Just ("--" <> shorthand), const ("--" <> shorthand <> "-main") <$> nodeModuleInfoFn ]
+               let individualTestFlagStrings = [[ Just ("--" <> shorthand), ("--" <> shorthand <> "-main") <$ nodeModuleInfoFn ]
                                                | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
                                              & mconcat
                                              & catMaybes

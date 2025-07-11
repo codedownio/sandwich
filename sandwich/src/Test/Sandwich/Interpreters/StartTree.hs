@@ -192,9 +192,6 @@ startTree node@(RunNodeAround {..}) ctx' = do
   didRunWrappedAction <- liftIO $ newIORef (Left (), emptyExtraTimingInfo)
   runInAsync node ctx $ do
     let wrappedAction = do
-          let failureResult e = case fromException e of
-                Just fr@(Pending {}) -> Failure fr
-                _ -> Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler threw exception|]
           flip withException (\e -> recordExceptionInStatus runTreeStatus e) $ do
             runNodeActionWith $ do
               setupFinishTime <- liftIO getCurrentTime

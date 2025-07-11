@@ -1,3 +1,4 @@
+- arguments: [--color, --cpp-simple, -XQuasiQuotes, -j]
 
 - ignore: {name: "Redundant bracket"}
 - ignore: {name: "Redundant multi-way if"}

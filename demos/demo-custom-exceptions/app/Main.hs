@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 
@@ -20,7 +19,7 @@ data MyException = MyException Text CallStack
   deriving Show
 instance Exception MyException
 
-data MyColoredException = MyColoredException Text
+newtype MyColoredException = MyColoredException Text
   deriving Show
 instance Exception MyColoredException
 

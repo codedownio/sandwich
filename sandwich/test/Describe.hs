@@ -23,7 +23,7 @@ main = mainWith tests
 describeFailsWhenChildFails :: (HasCallStack) => IO ()
 describeFailsWhenChildFails = do
   results <- runAndGetResults $ describe "describe label" $ do
-    it "does thing 1" $ throwSomeUserError
+    it "does thing 1" throwSomeUserError
     it "does thing 2" $ return ()
 
   (results !! 0) `mustBe` (Failure (ChildrenFailed {failureCallStack = Nothing, failureNumChildren = 1}))

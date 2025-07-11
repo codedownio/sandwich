@@ -53,12 +53,12 @@ sendSampleEmail smtpHostname smtpPort = do
 
   liftIO $ doSMTPFn $ \smtpConn -> do
     authSucceed <- if shouldAuth then authenticate PLAIN smtpUsername smtpPassword smtpConn else return True
-    case authSucceed of
-      True -> do
-        forM_ (mailTo mail) $ \(Address _ to) -> do
-          let Address _ from = mailFrom mail
-          sendMail mail smtpConn
-      False -> expectationFailure [i|Failed to authenticate to SMTP server #{smtpHostname} (port #{smtpPort}) with username #{smtpUsername}|]
+    if authSucceed then do
+      forM_ (mailTo mail) $ \(Address _ to) -> do
+        let Address _ from = mailFrom mail
+        sendMail mail smtpConn
+    else
+      expectationFailure [i|Failed to authenticate to SMTP server #{smtpHostname} (port #{smtpPort}) with username #{smtpUsername}|]
 
 main :: IO ()
 main = runSandwichWithCommandLineArgs defaultOptions spec

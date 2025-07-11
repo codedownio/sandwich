@@ -23,12 +23,12 @@ type HasDatabase context = HasLabel context "database" DatabaseContext
 
 introduceDatabase = introduceWith "Introduce database" database $ \action ->
   bracket (debug "Spinning up DB..." >> return MySQLDatabaseContext)
-          (\db -> debug "Tearing down DB..." >> return ())
+          (\db -> void (debug "Tearing down DB..."))
           (void . action)
 
 -- * Server
 
-data Server = Server DatabaseContext deriving Show
+newtype Server = Server DatabaseContext deriving Show
 server = Label :: Label "server" Server
 
 introduceServer :: (HasDatabase context, MonadUnliftIO m)
@@ -39,7 +39,7 @@ introduceServer = introduceWith "Introduce server" server $ \action -> do
               debug "Spinning up server..."
               return $ Server db
           )
-          (\server -> debug "Tearing down server..." >> return ())
+          (\server -> void (debug "Tearing down server..."))
           (void . action)
 
 -- * Tests
