@@ -45,9 +45,9 @@ shouldFail action = do
 shouldFailPredicate :: (HasCallStack, MonadUnliftIO m) => (FailureReason -> Bool) -> m () -> m ()
 shouldFailPredicate p action = do
   try action >>= \case
-    Left (err :: FailureReason) -> case p err of
-      True -> return ()
-      False -> expectationFailure [i|Expected test to fail with a failure matching the predicate, but got a different failure: '#{err}'|]
+    Left (err :: FailureReason) -> if p err
+      then return ()
+      else expectationFailure [i|Expected test to fail with a failure matching the predicate, but got a different failure: '#{err}'|]
     Right () -> expectationFailure [i|Expected test to fail, but it succeeded|]
 
 -- | Asserts that an action should throw an exception. Accepts a predicate to determine if the exception matches.
@@ -79,9 +79,9 @@ shouldNotBe x y
 
 -- | Asserts that the given list contains a subsequence.
 shouldContain :: (HasCallStack, MonadIO m, Eq a, Show a) => [a] -> [a] -> m ()
-shouldContain haystack needle = case needle `L.isInfixOf` haystack of
-  True -> return ()
-  False -> expectationFailure [i|Expected #{show haystack} to contain #{show needle}|] -- TODO: custom exception type
+shouldContain haystack needle = if needle `L.isInfixOf` haystack
+  then return ()
+  else expectationFailure [i|Expected #{show haystack} to contain #{show needle}|] -- TODO: custom exception type
 
 -- | Asserts that the given list contains an item matching a predicate.
 shouldContainPredicate :: (HasCallStack, MonadIO m, Show a) => [a] -> (a -> Bool) -> m ()
@@ -91,15 +91,15 @@ shouldContainPredicate haystack p = case L.find p haystack of
 
 -- | Asserts that the given list does not contain a subsequence.
 shouldNotContain :: (HasCallStack, MonadIO m, Eq a, Show a) => [a] -> [a] -> m ()
-shouldNotContain haystack needle = case needle `L.isInfixOf` haystack of
-  True -> expectationFailure [i|Expected #{show haystack} not to contain #{show needle}|]
-  False -> return ()
+shouldNotContain haystack needle = if needle `L.isInfixOf` haystack
+  then expectationFailure [i|Expected #{show haystack} not to contain #{show needle}|]
+  else return ()
 
 -- | Asserts that the given lists are equal as sets.
 shouldBeSet :: (HasCallStack, MonadIO m, Ord a, Show a) => [a] -> [a] -> m ()
-shouldBeSet haystack needle = case Set.fromList needle == Set.fromList haystack of
-  True -> return ()
-  False -> expectationFailure [i|Expected #{show haystack} to equal as a set #{show needle}|]
+shouldBeSet haystack needle = if Set.fromList needle == Set.fromList haystack
+  then return ()
+  else expectationFailure [i|Expected #{show haystack} to equal as a set #{show needle}|]
 
 -- | Asserts that the given list contains an item matching a predicate.
 shouldNotContainPredicate :: (HasCallStack, MonadIO m, Show a) => [a] -> (a -> Bool) -> m ()

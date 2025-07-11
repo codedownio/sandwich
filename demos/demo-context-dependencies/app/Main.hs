@@ -19,7 +19,7 @@ database = Label :: Label "database" DatabaseContext
 
 introduceDatabase = introduceWith "Introduce database" database $ \action ->
   bracket (debug "Spinning up DB..." >> return MySQLDatabaseContext)
-          (\db -> debug "Tearing down DB..." >> return ())
+          (\db -> void (debug "Tearing down DB..."))
           (void . action)
 
 type HasDatabase context = HasLabel context "database" DatabaseContext

@@ -40,7 +40,7 @@ spec = describe "Introducing a Kubernetes cluster via Minikube" $ do
             info [i|Got Kata containers context: #{ctx}|]
 
           it "pauses" $ do
-            threadDelay 9999999999999
+            threadDelay 9_999_999_999_999
   where
     clusterOptions = defaultMinikubeClusterOptions {
       minikubeClusterDriver = Just "kvm2"

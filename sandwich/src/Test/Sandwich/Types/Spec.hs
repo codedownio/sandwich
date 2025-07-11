@@ -62,7 +62,7 @@ instance (MonadBase b m) => MonadBase b (ExampleT context m) where
   liftBase = liftBaseDefault
 
 instance MonadTrans (ExampleT context) where
-  lift x = ExampleT $ ReaderT (\_ -> (LoggingT (\_ -> x)))
+  lift x = ExampleT $ ReaderT (const (LoggingT (const x)))
 
 instance MonadTransControl (ExampleT context) where
   type StT (ExampleT context) a = StT LoggingT (StT (ReaderT context) a)
@@ -148,7 +148,7 @@ instance Eq SomeAsyncExceptionWithEq where
 
 data Label (l :: Symbol) a = Label
 
-data LabelValue (l :: Symbol) a = LabelValue { unLabelValue :: a }
+newtype LabelValue (l :: Symbol) a = LabelValue { unLabelValue :: a }
 
 -- TODO: get rid of overlapping instance
 -- Maybe look at https://kseo.github.io/posts/2017-02-05-avoid-overlapping-instances-with-closed-type-families.html

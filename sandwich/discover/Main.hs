@@ -14,7 +14,7 @@ import System.FilePath
 import Test.Sandwich.TH
 
 
-data SandwichDiscoverOptions = SandwichDiscoverOptions {
+newtype SandwichDiscoverOptions = SandwichDiscoverOptions {
   sandwichDiscoverModulePrefix :: String -- TODO: don't use this, instead detect the module some other way (haskell-src-exts? fancy regex?)
   }
 

@@ -1,6 +1,5 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ConstraintKinds #-}
@@ -23,7 +22,7 @@ import Test.Sandwich.Types.TestTimer.LensRules (testTimerLensRules)
 
 -- * SpeedScope types
 
-data SpeedScopeFrame = SpeedScopeFrame {
+newtype SpeedScopeFrame = SpeedScopeFrame {
   _name :: T.Text
   } deriving (Show, Eq)
 $(deriveJSON (A.defaultOptions {
@@ -32,7 +31,7 @@ $(deriveJSON (A.defaultOptions {
                  }) ''SpeedScopeFrame)
 $(makeLensesWith testTimerLensRules ''SpeedScopeFrame)
 
-data SpeedScopeShared = SpeedScopeShared {
+newtype SpeedScopeShared = SpeedScopeShared {
   _frames :: Seq SpeedScopeFrame
   } deriving Show
 $(deriveJSON (A.defaultOptions {
