@@ -19,6 +19,12 @@ packages:
 - ../sandwich-webdriver
 
 extra-deps:
+# For sandwich-webdriver
+
+- git: https://github.com/haskell-webdriver/haskell-webdriver
+  # main branch
+  commit: 97b1325188409be87e64325068cac7feaf4fb6cc
+
 ## For sandwich-contexts
 
 - git: https://github.com/minio/minio-hs
