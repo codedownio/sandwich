@@ -256,7 +256,7 @@ withSession sessionName action = do
         >>= configureChromeUserDataDir
 
       debug [i|Creating session '#{sessionName}'|]
-      sess <- W.startSession' wdContext wdDriverConfig finalCaps sessionName
+      sess <- W.startSession wdContext wdDriverConfig finalCaps sessionName
       return (M.insert sessionName sess sessionMap, sess)
 
   pushContext webdriverSession (sessionName, sess) $

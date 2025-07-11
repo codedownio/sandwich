@@ -24,7 +24,7 @@ closeSession session (TestWebDriverContext {wdSessionMap, wdContext}) = do
       Nothing -> return (sessionMap, Nothing)
       Just x -> return (M.delete session sessionMap, Just x)
 
-  whenJust toClose $ \sess -> W.closeSession' wdContext sess
+  whenJust toClose $ \sess -> W.closeSession wdContext sess
 
 -- | Close all sessions except those listed.
 closeAllSessionsExcept :: (HasCallStack, MonadLogger m, W.WebDriverBase m) => [SessionName] -> TestWebDriverContext -> m ()
@@ -32,7 +32,7 @@ closeAllSessionsExcept toKeep (TestWebDriverContext {wdSessionMap, wdContext}) =
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
 
   forM_ (M.toList toClose) $ \(name, sess) ->
-    catch (W.closeSession' wdContext sess)
+    catch (W.closeSession wdContext sess)
           (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
 
 -- | Close all sessions.
