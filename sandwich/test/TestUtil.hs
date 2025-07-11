@@ -45,7 +45,7 @@ someUserErrorWrapped = SomeExceptionWithEq $ SomeException $ userError "Oh no"
 -- * Helpers
 
 run :: (MonadIO m) => IO () -> WriterT [SomeException] m ()
-run test = (liftIO $ tryAny test) >>= \case
+run test = liftIO (tryAny test) >>= \case
   Left err -> tell [err]
   Right () -> return ()
 

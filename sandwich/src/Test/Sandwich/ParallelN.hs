@@ -81,7 +81,7 @@ parallelNFromArgs' :: forall context a m. (
   -> SpecFree context m ()
 parallelNFromArgs' nodeOptions getParallelism = parallelN'' nodeOptions f
   where
-    f = (getParallelism <$> getContext commandLineOptions) >>= liftIO . newQSem
+    f = getContext commandLineOptions >>= (liftIO . newQSem) . getParallelism
 
 parallelN'' :: (
   MonadUnliftIO m

@@ -96,7 +96,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appCurrentTime = startTime
           , _appSomethingRunning = initialSomethingRunning
 
-          , _appVisibilityThresholdSteps = L.sort $ L.nub $ terminalUIVisibilityThreshold : (fmap runTreeVisibilityLevel $ concatMap getCommons rts)
+          , _appVisibilityThresholdSteps = L.sort $ L.nub $ terminalUIVisibilityThreshold : fmap runTreeVisibilityLevel (concatMap getCommons rts)
           , _appVisibilityThreshold = terminalUIVisibilityThreshold
 
           , _appLogLevel = terminalUILogLevel

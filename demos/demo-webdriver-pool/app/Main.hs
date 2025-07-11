@@ -62,7 +62,7 @@ claimWebdriver spec = introduceWith' (
       pool <- getContext webDriverPool
 
       withResource pool $ \webdriver ->
-        (void $ action webdriver) `finally` closeAllSessions webdriver
+        void (action webdriver) `finally` closeAllSessions webdriver
 
 -- * Tests
 

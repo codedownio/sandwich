@@ -31,7 +31,7 @@ main = mainWith tests
 introduceCleansUpOnTestException :: (HasCallStack) => IO ()
 introduceCleansUpOnTestException = do
   (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> debug "doing cleanup") $ do
-    it "does thing 1" $ throwSomeUserError
+    it "does thing 1" throwSomeUserError
 
   msgs `mustBe` [["doing cleanup"], []]
   results `mustBe` [Success
@@ -48,7 +48,7 @@ introduceDoesNotCleanUpOnAllocateException = do
 
 introduceFailsOnCleanUpException :: (HasCallStack) => IO ()
 introduceFailsOnCleanUpException = do
-  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (\_ -> throwSomeUserError) $ do
+  (results, msgs) <- runAndGetResultsAndLogs $ introduce "introduce" fakeDatabaseLabel (return FakeDatabase) (const throwSomeUserError) $ do
     it "does thing 1" $ return ()
 
   msgs `mustBe` [[], []]
@@ -73,7 +73,7 @@ introduceCleansUpOnCancelDuringTest = do
   cancelNode topNode
 
   -- Waiting for the tree should not throw an exception
-  _ <- mapM waitForTree rts
+  mapM_ waitForTree rts
 
   fixedTree <- atomically $ mapM fixRunTree rts
   let results = fmap statusToResult $ concatMap getStatuses fixedTree

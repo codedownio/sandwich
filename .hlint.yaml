@@ -3,3 +3,5 @@
 - ignore: {name: "Redundant bracket"}
 - ignore: {name: "Redundant multi-way if"}
 - ignore: {name: "Use <$>"}
+- ignore: {name: "Use if"}
+- ignore: {name: "Use void"}
