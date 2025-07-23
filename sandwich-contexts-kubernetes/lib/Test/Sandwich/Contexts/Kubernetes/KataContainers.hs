@@ -81,7 +81,7 @@ data KataContainersOptions = KataContainersOptions {
 defaultKataContainersOptions :: KataContainersOptions
 defaultKataContainersOptions = KataContainersOptions {
   kataContainersSourceCheckout = SourceCheckoutNixDerivation kataContainersDerivation
-  , kataContainersKataDeployImage = Just "quay.io/kata-containers/kata-deploy:3.9.0"
+  , kataContainersKataDeployImage = Just kataContainersDeployImage
   , kataContainersPreloadImages = True
   , kataContainersLabelNode = True
   }
@@ -218,13 +218,18 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
 
   action $ KataContainersContext options
 
+kataContainersDeployImage :: Text
+kataContainersDeployImage = "quay.io/kata-containers/kata-deploy:3.19.1"
+
+-- | Checkout of the @kata-containers@ repo. Currently at release 3.19.1.
+kataContainersDerivation :: Text
 kataContainersDerivation = [__i|{fetchFromGitHub}:
 
                                 fetchFromGitHub {
                                   owner = "kata-containers";
                                   repo = "kata-containers";
-                                  rev = "cdaaf708a18da8e5f7e2b9824fa3e43b524893a5";
-                                  sha256 = "sha256-aBcu59LybgZ9xkCDUzZXb60FeClQNG1ivfC6lWQdlb0=";
+                                  rev = "acae4480ac84701d7354e679714cc9d084b37f44";
+                                  sha256 = "sha256-h9Jsto2l1NhQEwIQoecT/D+yt/QbGoqqH/l6NNzJOwk=";
                                 }
                                |]
 
