@@ -304,12 +304,12 @@ getCapabilitiesForBrowser :: MonadIO m => BrowserDependencies -> m W.Capabilitie
 getCapabilitiesForBrowser (BrowserDependenciesChrome {..}) = pure $ W.defaultCaps {
   W._capabilitiesBrowserName = Just "chrome"
   , W._capabilitiesGoogChromeOptions = Just $
-    W.defaultChromeOptions
-      & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
+      W.defaultChromeOptions
+        & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilitiesForBrowser (BrowserDependenciesFirefox {..}) = pure $ W.defaultCaps {
   W._capabilitiesBrowserName = Just "firefox"
   , W._capabilitiesMozFirefoxOptions = Just $
-    W.defaultFirefoxOptions
-      & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
+      W.defaultFirefoxOptions
+        & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
   }
