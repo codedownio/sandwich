@@ -128,10 +128,17 @@ configureFirefoxDownloadCapabilities downloadDir caps@(W.Capabilities {_capabili
   return (caps { W._capabilitiesMozFirefoxOptions = Just finalFirefoxOptions  })
 configureFirefoxDownloadCapabilities _ browser = return browser
 
--- | chromedriver >= 131 started showing the following error:
--- "session not created: probably user data directory is already in use, please specify a unique value for --user-data-dir argument, or don't use --user-data-dir".
+-- | Pass the @--user-data-dir@ argument to Chrome, putting the directory inside
+-- the test tree. This is usually better than allowing tests to leave stuff in
+-- /tmp etc.
 --
--- This is a regression of some kind, but a fix is to explicitly pass a distinct user data dir.
+-- Note that chromedriver sometimes reports an error like the following:
+-- "session not created: probably user data directory is already in use, please
+-- specify a unique value for --user-data-dir argument, or don't use
+-- --user-data-dir".
+--
+-- This is usually a red herring, chromedriver seems to report it whenever the
+-- browser fails to start up for whatever reason.
 configureChromeUserDataDir :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => W.Capabilities -> m W.Capabilities
 configureChromeUserDataDir caps@(W.Capabilities {_capabilitiesGoogChromeOptions=(Just chromeOptions)}) = do
   Just dir <- getCurrentFolder
