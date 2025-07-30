@@ -12,15 +12,15 @@ packages:
   original:
     hackage: HaskellNet-0.6.2
 - completed:
-    commit: 97b1325188409be87e64325068cac7feaf4fb6cc
+    commit: f591f2497ff7be4870cec7bcbb385abf7ff92665
     git: https://github.com/haskell-webdriver/haskell-webdriver
     name: webdriver
     pantry-tree:
-      sha256: 76b3d3d015b1e80cf061027d3a62b172cff4befcf24e672843257a1027a2cd6b
-      size: 5851
+      sha256: 8fb98d142d507e8c64670ad684d620e01cf06495a52fe2e82164a61bb313dc97
+      size: 5850
     version: 0.12.0.1
   original:
-    commit: 97b1325188409be87e64325068cac7feaf4fb6cc
+    commit: f591f2497ff7be4870cec7bcbb385abf7ff92665
     git: https://github.com/haskell-webdriver/haskell-webdriver
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4

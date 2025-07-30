@@ -115,12 +115,11 @@ configureFirefoxDownloadCapabilities :: (
 configureFirefoxDownloadCapabilities downloadDir caps@(W.Capabilities {_capabilitiesMozFirefoxOptions=(Just firefoxOptions)}) = do
   profile <- case W._firefoxOptionsProfile firefoxOptions of
     Just x -> pure x
-    Nothing -> liftIO $ defaultFirefoxProfile
+    Nothing -> pure $ defaultFirefoxProfile
       & addPref "browser.download.folderList" (2 :: Int)
       & addPref "browser.download.manager.showWhenStarting" False
       & addPref "browser.download.dir" downloadDir
       & addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
-      & prepareFirefoxProfile
 
   let finalFirefoxOptions = firefoxOptions
                           & set firefoxOptionsProfile (Just profile)

@@ -11,7 +11,6 @@ module Test.Sandwich.WebDriver.Internal.Capabilities (
   , getDefaultFirefoxProfile
   ) where
 
-import Control.Monad.IO.Class
 import qualified Data.Aeson as A
 import Data.Maybe
 import Lens.Micro
@@ -52,14 +51,13 @@ headlessChromeCapabilities maybeChromePath = chromeCapabilities maybeChromePath
 
 -- * Firefox
 
-getDefaultFirefoxProfile :: MonadIO m => FilePath -> m (PreparedProfile Firefox)
-getDefaultFirefoxProfile downloadDir = do
+getDefaultFirefoxProfile :: FilePath -> Profile Firefox
+getDefaultFirefoxProfile downloadDir =
   defaultFirefoxProfile
     & addPref "browser.download.folderList" (2 :: Int)
     & addPref "browser.download.manager.showWhenStarting" False
     & addPref "browser.download.dir" downloadDir
     & addPref "browser.helperApps.neverAsk.saveToDisk" ("*" :: String)
-    & prepareFirefoxProfile
 
 -- | Default capabilities for regular Firefox.
 firefoxCapabilities :: Maybe FilePath -> Capabilities
