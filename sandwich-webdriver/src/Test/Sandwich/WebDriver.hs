@@ -76,6 +76,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import Lens.Micro
 import System.FilePath
+import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Binaries
@@ -178,20 +179,6 @@ allocateWebDriver :: (
 allocateWebDriver wdOptions (OnDemandOptions {..}) = do
   runRoot <- fromMaybe "/tmp" <$> getCurrentFolder
 
-  driverConfig <- getContext browserDependencies >>= \case
-    BrowserDependenciesChrome {..} -> return $ W.DriverConfigChromedriver {
-      driverConfigChromedriver = browserDependenciesChromeChromedriver
-      , driverConfigChrome = browserDependenciesChromeChrome
-      , driverConfigLogDir = runRoot
-      , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
-      }
-    BrowserDependenciesFirefox {..} -> return $ W.DriverConfigGeckodriver {
-      driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
-      , driverConfigFirefox = browserDependenciesFirefoxFirefox
-      , driverConfigLogDir = runRoot
-      , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
-      }
-
   -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
   webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
 
@@ -203,10 +190,43 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
   let downloadDir = webdriverRoot </> "Downloads"
   liftIO $ createDirectoryIfMissing True downloadDir
 
+  (baseCaps, driverConfig) <- getContext browserDependencies >>= \case
+    BrowserDependenciesChrome {..} -> do
+      let caps = W.defaultCaps {
+            W._capabilitiesBrowserName = Just "chrome"
+            , W._capabilitiesGoogChromeOptions = Just $
+                W.defaultChromeOptions
+                & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
+            }
+      let driverConfig = W.DriverConfigChromedriver {
+            driverConfigChromedriver = browserDependenciesChromeChromedriver
+            , driverConfigChrome = browserDependenciesChromeChrome
+            , driverConfigLogDir = runRoot
+            , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
+            }
+      return (caps, driverConfig)
+    BrowserDependenciesFirefox {..} -> do
+      let ffOptions = W.defaultFirefoxOptions
+                    & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
+
+      let caps = W.defaultCaps {
+            W._capabilitiesBrowserName = Just "firefox"
+            , W._capabilitiesMozFirefoxOptions = Just ffOptions
+            }
+
+      profileRootDir <- liftIO $ createTempDirectory webdriverRoot "geckodriver-profile-root"
+
+      let driverConfig = W.DriverConfigGeckodriver {
+            driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
+            , driverConfigFirefox = browserDependenciesFirefoxFirefox
+            , driverConfigLogDir = runRoot
+            , driverConfigGeckodriverFlags = "--profile-root" : profileRootDir : geckodriverExtraFlags wdOptions
+            -- , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
+            }
+      return (caps, driverConfig)
+
   -- Final extra capabilities configuration
-  finalCaps <-
-    getContext browserDependencies
-    >>= getCapabilitiesForBrowser
+  finalCaps <- pure baseCaps
     >>= configureChromeNoSandbox wdOptions
     >>= configureHeadlessChromeCapabilities wdOptions (runMode wdOptions)
     >>= configureHeadlessFirefoxCapabilities wdOptions (runMode wdOptions)
@@ -298,18 +318,4 @@ addCommandLineOptionsToWdOptions (SomeCommandLineOptions (CommandLineOptions {op
     Just Xvfb -> RunInXvfb (defaultXvfbConfig { xvfbStartFluxbox = optFluxbox })
     Just Current -> Normal
   , chromeNoSandbox = optChromeNoSandbox
-  }
-
-getCapabilitiesForBrowser :: MonadIO m => BrowserDependencies -> m W.Capabilities
-getCapabilitiesForBrowser (BrowserDependenciesChrome {..}) = pure $ W.defaultCaps {
-  W._capabilitiesBrowserName = Just "chrome"
-  , W._capabilitiesGoogChromeOptions = Just $
-      W.defaultChromeOptions
-        & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
-  }
-getCapabilitiesForBrowser (BrowserDependenciesFirefox {..}) = pure $ W.defaultCaps {
-  W._capabilitiesBrowserName = Just "firefox"
-  , W._capabilitiesMozFirefoxOptions = Just $
-      W.defaultFirefoxOptions
-        & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
   }
