@@ -12,15 +12,15 @@ packages:
   original:
     hackage: vty-windows-0.2.0.3
 - completed:
-    commit: 1eb106f54ea852fd97b3c7c917dd1de57c2e6279
+    commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e
     git: https://github.com/haskell-webdriver/haskell-webdriver
     name: webdriver
     pantry-tree:
-      sha256: f0c86022e96e32ad90a717a59de537df54199923ca54fc58ed2226e1704db8d6
-      size: 6515
+      sha256: dc3189adbd9593f875628d59d0453a1f3f61c5678cd26b0531ed9c6ce56b2703
+      size: 6444
     version: 0.12.0.1
   original:
-    commit: 1eb106f54ea852fd97b3c7c917dd1de57c2e6279
+    commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e
     git: https://github.com/haskell-webdriver/haskell-webdriver
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4

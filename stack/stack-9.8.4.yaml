@@ -23,7 +23,7 @@ extra-deps:
 
 - git: https://github.com/haskell-webdriver/haskell-webdriver
   # main branch
-  commit: 1eb106f54ea852fd97b3c7c917dd1de57c2e6279 # haskell-webdriver
+  commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e # haskell-webdriver
 
 ## For sandwich-contexts
 
