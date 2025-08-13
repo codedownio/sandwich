@@ -2,7 +2,12 @@
 
 # 0.4.0.0
 
-* Add a lower bound on `webdriver-0.13.0.0`, which is a major change.
+* Switch to `webdriver-0.13.0.0`, which is a major change.
+* Rename 'WebDriver' -> 'TestWebDriverContext'
+* Disabling Xvfb support for now.
+* Be able to pass extra flags to chromedriver or geckodriver.
+* Now we have debug logging of all WebDriver requests and responses by default, which makes it much easier to see what's going on.
+* Some logic for starting and managing WebDriver processes has been moved to the `webdriver` package.
 
 # 0.3.0.1
 
