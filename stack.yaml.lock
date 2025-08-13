@@ -5,6 +5,13 @@
 
 packages:
 - completed:
+    hackage: webdriver-0.13.0.0@sha256:48742ee9e8ef2ae4f6d2962291f6a3380e076a0c1d00881947429db48d3e6b80,5653
+    pantry-tree:
+      sha256: 1976b3d7d4ffa3ff1ad73ba959824ec266fb7ebfe3c8d1953d020a324e44933e
+      size: 5405
+  original:
+    hackage: webdriver-0.13.0.0
+- completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
     name: minio-hs
@@ -60,9 +67,23 @@ packages:
       size: 1689
   original:
     hackage: HaskellNet-0.6.2
+- completed:
+    hackage: cryptonite-0.30@sha256:12c85dea7be63e5ad90bcb487eb3846bf3c413347f94336fa1dede7b28f9936a,18301
+    pantry-tree:
+      sha256: df1cbe4cc40d569cc75ffed40bc5deac43cb085653980b42b9b6a5d4b745a30a
+      size: 23323
+  original:
+    hackage: cryptonite-0.30@sha256:12c85dea7be63e5ad90bcb487eb3846bf3c413347f94336fa1dede7b28f9936a,18301
+- completed:
+    hackage: cryptonite-conduit-0.2.2@sha256:bfbae677a44f3a5cf3bf7f36271682979a402825f3d1e8767cfd62f2ddb702c2,1984
+    pantry-tree:
+      sha256: 251e4a1b3d382e4cbf9d378a5550cf617bb2650d61339db93253f2189bbfa918
+      size: 595
+  original:
+    hackage: cryptonite-conduit-0.2.2@sha256:bfbae677a44f3a5cf3bf7f36271682979a402825f3d1e8767cfd62f2ddb702c2,1984
 snapshots:
 - completed:
-    sha256: 0bff5f3f5548516a7c86cea95d47672383cef34dac97ba28d750a52ddfcdf54a
-    size: 682020
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/4/24.yaml
-  original: nightly-2025-04-24
+    sha256: a82ac3305208490a33760197fb2f4506be2d0310fbda0b4c041b9135f8010eb3
+    size: 686899
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/8/12.yaml
+  original: nightly-2025-08-12

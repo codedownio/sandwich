@@ -38,8 +38,10 @@ import System.Posix.Types
 
 #ifdef darwin_HOST_OS
 import GHC.IO.FD
+import GHC.IO.Handle (Handle)
 import qualified GHC.IO.Handle.FD as HFD
 newtype Fd = Fd FD
+handleToFd :: Handle -> IO Fd
 handleToFd h = Fd <$> HFD.handleToFd h
 #endif
 

@@ -30,7 +30,7 @@ module Test.Sandwich.WebDriver (
   , closeSession
   , closeAllSessions
   , closeAllSessionsExcept
-  , Session
+  , SessionName
 
   -- * Lower-level allocation functions
   , allocateWebDriver
@@ -43,8 +43,8 @@ module Test.Sandwich.WebDriver (
   -- * Context types
   -- ** WebDriver
   , webdriver
-  , WebDriver
-  , HasWebDriverContext
+  , TestWebDriverContext
+  , HasTestWebDriverContext
   -- ** WebDriverSession
   , webdriverSession
   , WebDriverSession
@@ -70,26 +70,28 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.IORef
-import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
+import qualified Data.Text as T
+import Lens.Micro
+import System.FilePath
+import System.IO.Temp
 import Test.Sandwich
-import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Binaries
 import Test.Sandwich.WebDriver.Config
 import Test.Sandwich.WebDriver.Internal.Action
+import Test.Sandwich.WebDriver.Internal.Capabilities.Extra
 import Test.Sandwich.WebDriver.Internal.Dependencies
 import Test.Sandwich.WebDriver.Internal.StartWebDriver
 import Test.Sandwich.WebDriver.Internal.Types
+import Test.Sandwich.WebDriver.Internal.Util (makeUUID)
 import Test.Sandwich.WebDriver.Types
 import Test.Sandwich.WebDriver.Video (recordVideoIfConfigured)
 import qualified Test.WebDriver as W
-import qualified Test.WebDriver.Config as W
-import qualified Test.WebDriver.Session as W
+import qualified Test.WebDriver.Capabilities as W
+import UnliftIO.Directory
 import UnliftIO.Exception (bracket)
 import UnliftIO.MVar
 
@@ -135,9 +137,7 @@ introduceWebDriverViaNix' :: forall m context. (
   -> SpecFree (ContextWithWebdriverDeps context) m ()
   -> SpecFree context m ()
 introduceWebDriverViaNix' nodeOptions wdOptions =
-  introduceFileViaNixPackage'' @"selenium.jar" nodeOptions "selenium-server-standalone" (findFirstFile (return . (".jar" `L.isSuffixOf`)))
-  . introduceBinaryViaNixPackage' @"java" nodeOptions "jre"
-  . introduceBrowserDependenciesViaNix' nodeOptions
+  introduceBrowserDependenciesViaNix' nodeOptions
   -- We use 'introduceWith' here because the alloc function will start an Async to read the logs from the Selenium
   -- process and log them. If we were to use 'introduce', the test_logs.txt file would be closed after the allocate section
   -- and the write handle would become invalid.
@@ -160,68 +160,132 @@ introduceWebDriver' :: forall m context. (
   )
   -- | Dependencies
   => WebDriverDependencies
-  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m WebDriver)
+  -> (WdOptions -> ExampleT (ContextWithBaseDeps context) m TestWebDriverContext)
   -> WdOptions
   -> SpecFree (ContextWithWebdriverDeps context) m () -> SpecFree context m ()
 introduceWebDriver' (WebDriverDependencies {..}) alloc wdOptions =
-  introduce "Introduce selenium.jar" (mkFileLabel @"selenium.jar") ((EnvironmentFile <$>) $ obtainSelenium webDriverDependencySelenium) (const $ return ())
-  . (case webDriverDependencyJava of Nothing -> introduceBinaryViaEnvironment @"java"; Just p -> introduceFile @"java" p)
-  . introduce "Introduce browser dependencies" browserDependencies (getBrowserDependencies webDriverDependencyBrowser) (const $ return ())
+  introduce "Introduce browser dependencies" browserDependencies (getBrowserDependencies webDriverDependencyBrowser) (const $ return ())
   -- We use 'introduceWith' deliberately here instead of 'introduce'. See comment on above.
   . introduceWith "Introduce WebDriver session" webdriver (\action -> bracket (alloc wdOptions) cleanupWebDriver (void . action))
 
 -- | Allocate a WebDriver using the given options.
 allocateWebDriver :: (
-  BaseMonad m context
-  , HasFile context "java", HasFile context "selenium.jar", HasBrowserDependencies context
+  BaseMonad m context, HasBrowserDependencies context
   )
   -- | Options
   => WdOptions
   -> OnDemandOptions
-  -> ExampleT context m WebDriver
-allocateWebDriver wdOptions onDemandOptions = do
-  dir <- fromMaybe "/tmp" <$> getCurrentFolder
-  startWebDriver wdOptions onDemandOptions dir
+  -> ExampleT context m TestWebDriverContext
+allocateWebDriver wdOptions (OnDemandOptions {..}) = do
+  runRoot <- fromMaybe "/tmp" <$> getCurrentFolder
+
+  -- Create a unique name for this webdriver so the folder for its log output doesn't conflict with any others
+  webdriverName <- ("webdriver_" <>) <$> liftIO makeUUID
+
+  -- Directory to log everything for this webdriver
+  let webdriverRoot = runRoot </> (T.unpack webdriverName)
+  liftIO $ createDirectoryIfMissing True webdriverRoot
+
+  -- Directory to hold any downloads
+  let downloadDir = webdriverRoot </> "Downloads"
+  liftIO $ createDirectoryIfMissing True downloadDir
+
+  (baseCaps, driverConfig) <- getContext browserDependencies >>= \case
+    BrowserDependenciesChrome {..} -> do
+      let caps = W.defaultCaps {
+            W._capabilitiesBrowserName = Just "chrome"
+            , W._capabilitiesGoogChromeOptions = Just $
+                W.defaultChromeOptions
+                & set W.chromeOptionsBinary (Just browserDependenciesChromeChrome)
+            }
+      let driverConfig = W.DriverConfigChromedriver {
+            driverConfigChromedriver = browserDependenciesChromeChromedriver
+            , driverConfigChrome = browserDependenciesChromeChrome
+            , driverConfigLogDir = runRoot
+            , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
+            }
+      return (caps, driverConfig)
+    BrowserDependenciesFirefox {..} -> do
+      let ffOptions = W.defaultFirefoxOptions
+                    & set W.firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
+
+      let caps = W.defaultCaps {
+            W._capabilitiesBrowserName = Just "firefox"
+            , W._capabilitiesMozFirefoxOptions = Just ffOptions
+            }
+
+      profileRootDir <- liftIO $ createTempDirectory webdriverRoot "geckodriver-profile-root"
+
+      let driverConfig = W.DriverConfigGeckodriver {
+            driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
+            , driverConfigFirefox = browserDependenciesFirefoxFirefox
+            , driverConfigLogDir = runRoot
+            , driverConfigGeckodriverFlags = "--profile-root" : profileRootDir : geckodriverExtraFlags wdOptions
+            -- , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
+            }
+      return (caps, driverConfig)
+
+  -- Final extra capabilities configuration
+  finalCaps <- pure baseCaps
+    >>= configureChromeNoSandbox wdOptions
+    >>= configureHeadlessChromeCapabilities wdOptions (runMode wdOptions)
+    >>= configureHeadlessFirefoxCapabilities wdOptions (runMode wdOptions)
+    >>= configureChromeDownloadCapabilities downloadDir
+    >>= configureFirefoxDownloadCapabilities downloadDir
+
+  wdc <- W.mkEmptyWebDriverContext
+
+  TestWebDriverContext
+    <$> pure (T.unpack webdriverName)
+    <*> pure wdc
+    <*> pure (wdOptions { capabilities = finalCaps })
+    <*> liftIO (newMVar mempty)
+    <*> pure driverConfig
+    <*> pure downloadDir
+
+    <*> pure ffmpegToUse
+    <*> newMVar OnDemandNotStarted
+
+    <*> pure xvfbToUse
+    <*> newMVar OnDemandNotStarted
+
 
 -- | Clean up the given WebDriver.
-cleanupWebDriver :: (BaseMonad m context) => WebDriver -> ExampleT context m ()
+cleanupWebDriver :: (BaseMonad m context) => TestWebDriverContext -> ExampleT context m ()
 cleanupWebDriver sess = do
   closeAllSessions sess
   stopWebDriver sess
 
 -- | Run a given example using a given Selenium session.
 withSession :: forall m context a. (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Session to run
-  => Session
+  => SessionName
   -> ExampleT (LabelValue "webdriverSession" WebDriverSession :> context) m a
   -> ExampleT context m a
-withSession session action = do
-  WebDriver {..} <- getContext webdriver
+withSession sessionName action = do
+  TestWebDriverContext {..} <- getContext webdriver
+
   -- Create new session if necessary (this can throw an exception)
-  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup session sessionMap of
+  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
-      debug [i|Creating session '#{session}'|]
-      sess'' <- liftIO $ W.mkSession wdConfig
-      let sess' = sess'' { W.wdSessHistUpdate = W.unlimitedHistory }
-      sess <- liftIO $ W.runWD sess' $ W.createSession $ W.wdCapabilities wdConfig
-      return (M.insert session sess sessionMap, sess)
+      finalCaps <- pure (capabilities wdOptions)
+        >>= configureChromeUserDataDir
 
-  ref <- liftIO $ newIORef sess
+      debug [i|Creating session '#{sessionName}'|]
+      sess <- W.startSession wdContext wdDriverConfig finalCaps sessionName
+      return (M.insert sessionName sess sessionMap, sess)
 
-  -- Not used for now, but previous libraries have use a finally to grab the final session on exception.
-  -- We could do the same here, but it's not clear that it's needed.
-  -- let f :: m a -> m a = id
-
-  pushContext webdriverSession (session, ref) $
-    recordVideoIfConfigured session action
+  pushContext webdriverSession (sessionName, sess) $
+    recordVideoIfConfigured sessionName
+    action
 
 -- | Convenience function. @withSession1 = withSession "session1"@.
 withSession1 :: (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Wrapped action
@@ -231,7 +295,7 @@ withSession1 = withSession "session1"
 
 -- | Convenience function. @withSession2 = withSession "session2"@.
 withSession2 :: (
-  MonadMask m, MonadBaseControl IO m
+  MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, WebDriverMonad m context
   )
   -- | Wrapped action
@@ -240,9 +304,9 @@ withSession2 :: (
 withSession2 = withSession "session2"
 
 -- | Get all existing session names.
-getSessions :: (MonadReader context m, WebDriverMonad m context) => m [Session]
+getSessions :: (MonadReader context m, WebDriverMonad m context) => m [SessionName]
 getSessions = do
-  WebDriver {..} <- getContext webdriver
+  TestWebDriverContext {..} <- getContext webdriver
   M.keys <$> liftIO (readMVar wdSessionMap)
 
 -- | Merge the options from the 'CommandLineOptions' into some 'WdOptions'.

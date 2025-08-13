@@ -101,7 +101,7 @@ data NixContext = NixContext {
   , nixContextBuildCache :: MVar (Map Text (Async FilePath))
   }
 instance Show NixContext where
-  show (NixContext {}) = "<NixContext>"
+  show (NixContext {..}) = [i|NixContext<#{nixContextNixBinary}, #{nixContextNixpkgsDerivation}>|]
 
 type HasNixContext context = HasLabel context "nixContext" NixContext
 

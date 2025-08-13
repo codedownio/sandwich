@@ -1,7 +1,7 @@
 {
   description = "Sandwich";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
   inputs.nixpkgsMaster.url = "github:NixOS/nixpkgs/master";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
@@ -35,6 +35,9 @@
               pkg-config
               postgresql
               zlib
+
+              haskell.compiler.ghc9122
+              cabal-install
             ];
           };
         });

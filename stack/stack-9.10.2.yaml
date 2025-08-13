@@ -1,5 +1,5 @@
 
-resolver: nightly-2025-05-28
+resolver: lts-24.4
 
 # ghc-options:
 #   "$locals": >-
@@ -29,6 +29,10 @@ packages:
 
 extra-deps:
 - HaskellNet-0.6.2
+
+# For sandwich-webdriver
+
+- webdriver-0.13.0.0
 
 ## For sandwich-contexts
 

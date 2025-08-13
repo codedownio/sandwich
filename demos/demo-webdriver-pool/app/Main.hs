@@ -14,7 +14,6 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.List as L
 import Data.Maybe
 import Data.String.Interpolate
@@ -34,13 +33,13 @@ import UnliftIO.Process
 
 -- * Introducing the pool
 
-webDriverPool = Label :: Label "webDriverPool" (Pool WebDriver)
-type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool WebDriver)
+webDriverPool = Label :: Label "webDriverPool" (Pool TestWebDriverContext)
+type HasWebDriverPool context = HasLabel context "webDriverPool" (Pool TestWebDriverContext)
 
 introduceWebDriverPool :: forall m context. (
-  MonadUnliftIO m, MonadBaseControl IO m, MonadMask m
+  MonadUnliftIO m, MonadMask m
   , HasBaseContext context, HasSomeCommandLineOptions context, HasBrowserDependencies context, HasFile context "java", HasFile context "selenium.jar"
-  ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool WebDriver) :> context) m () -> SpecFree context m ()
+  ) => Int -> WdOptions -> SpecFree (LabelValue "webDriverPool" (Pool TestWebDriverContext) :> context) m () -> SpecFree context m ()
 introduceWebDriverPool poolSize wdOptions' = introduceWith "Introduce webdriver pool" webDriverPool $ \action -> do
   wdOptions <- addCommandLineOptionsToWdOptions <$> getSomeCommandLineOptions <*> pure wdOptions'
   bracket (newPool =<< mkSafeDefaultPoolConfig (allocateWebDriver wdOptions defaultOnDemandOptions) cleanupWebDriver 30.0 poolSize) destroyAllResources $ \pool ->

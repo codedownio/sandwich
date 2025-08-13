@@ -1,5 +1,5 @@
 name:                sandwich-webdriver
-version:             0.3.0.1
+version:             0.4.0.0
 github:              "codedownio/sandwich"
 license:             BSD3
 author:              "Tom McLaughlin"
@@ -25,6 +25,7 @@ dependencies:
 - http-client
 - http-client-tls
 - http-conduit
+- http-types
 - microlens
 - microlens-aeson
 - monad-control
@@ -46,7 +47,7 @@ dependencies:
 - unliftio-core
 - unordered-containers
 - vector
-- webdriver
+- webdriver >= 0.13.0.0
 
 default-extensions:
 - FlexibleContexts

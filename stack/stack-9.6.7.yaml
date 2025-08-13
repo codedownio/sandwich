@@ -30,19 +30,24 @@ packages:
 extra-deps:
 - vty-windows-0.2.0.3
 
-## For sandwich-contexts
+# For sandwich-webdriver
+
+- webdriver-0.13.0.0
+- websockets-0.13.0.0@sha256:9b3680ba5055e0b34ab29c341b21d70084bf067519fc059af0e597cd90a4a05a,7567
+
+# For sandwich-contexts
 
 - git: https://github.com/minio/minio-hs
   commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
 
-## For sandwich-contexts-docker
+# For sandwich-contexts-docker
 
 - git: https://github.com/codedownio/docker-engine.git
   commit: 58535cd46712dff421f2148e438c49c2700ea20e
   subdirs:
   - v1.44
 
-## For sandwich-contexts-kubernetes
+# For sandwich-contexts-kubernetes
 
 - kubernetes-api-130.0.0
 - kubernetes-api-client-0.6.1.1
