@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-webdriver
-version:        0.3.0.1
+version:        0.4.0.0
 synopsis:       Sandwich integration with Selenium WebDriver
 description:    Please see the <https://codedownio.github.io/sandwich/docs/extensions/sandwich-webdriver documentation>.
 category:       Testing
@@ -108,7 +108,7 @@ library
     , unliftio-core
     , unordered-containers
     , vector
-    , webdriver
+    , webdriver >=0.13.0.0
   default-language: Haskell2010
   if os(darwin)
     other-modules:
@@ -194,7 +194,7 @@ test-suite sandwich-webdriver-test
     , unliftio-core
     , unordered-containers
     , vector
-    , webdriver
+    , webdriver >=0.13.0.0
   default-language: Haskell2010
   if os(darwin)
     other-modules:

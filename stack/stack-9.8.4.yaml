@@ -21,9 +21,7 @@ packages:
 extra-deps:
 # For sandwich-webdriver
 
-- git: https://github.com/haskell-webdriver/haskell-webdriver
-  # main branch
-  commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e # haskell-webdriver
+- webdriver-0.13.0.0
 
 ## For sandwich-contexts
 

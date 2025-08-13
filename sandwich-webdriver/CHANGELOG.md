@@ -1,5 +1,9 @@
 # Changelog for sandwich-webdriver
 
+# 0.4.0.0
+
+* Add a lower bound on `webdriver-0.13.0.0`, which is a major change.
+
 # 0.3.0.1
 
 * Add more debugging statements to binary fetching.

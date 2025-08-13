@@ -12,16 +12,12 @@ packages:
   original:
     hackage: HaskellNet-0.6.2
 - completed:
-    commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e
-    git: https://github.com/haskell-webdriver/haskell-webdriver
-    name: webdriver
+    hackage: webdriver-0.13.0.0@sha256:48742ee9e8ef2ae4f6d2962291f6a3380e076a0c1d00881947429db48d3e6b80,5653
     pantry-tree:
-      sha256: dc3189adbd9593f875628d59d0453a1f3f61c5678cd26b0531ed9c6ce56b2703
-      size: 6444
-    version: 0.12.0.1
+      sha256: 1976b3d7d4ffa3ff1ad73ba959824ec266fb7ebfe3c8d1953d020a324e44933e
+      size: 5405
   original:
-    commit: 75795e89805c96b0e10c3d117e08590dbfa8c42e
-    git: https://github.com/haskell-webdriver/haskell-webdriver
+    hackage: webdriver-0.13.0.0
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
@@ -73,7 +69,7 @@ packages:
     git: https://github.com/krdlab/haskell-oidc-client
 snapshots:
 - completed:
-    sha256: e9b93acfb8aaf8ae4869050506553a963a8adba95748cd60356f9ffe64f03345
-    size: 712232
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/5/28.yaml
-  original: nightly-2025-05-28
+    sha256: b96cc8b203559fdd1c1617ebd71e90ea04a2db0d71b416717a2a1d1539d5d5c9
+    size: 724735
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/4.yaml
+  original: lts-24.4
