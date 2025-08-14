@@ -1,5 +1,9 @@
 # Changelog for sandwich-webdriver
 
+# 0.4.0.1
+
+* Fix accidental mismatch in a couple fields with base sandwich package.
+
 # 0.4.0.0
 
 * Switch to `webdriver-0.13.0.0`, which is a major change.

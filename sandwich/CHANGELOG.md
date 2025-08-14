@@ -1,5 +1,11 @@
 # Changelog for sandwich
 
+## 0.3.0.5
+
+* Preserve configured test artifacts directory (#109)
+* Better handling for introduce node failures (#110)
+* Make the type of `xit` closer to the type of `it` (#111).
+
 ## 0.3.0.4
 
 * Improve display of setup/work/teardown in TUI.
