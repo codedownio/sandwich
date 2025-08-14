@@ -183,8 +183,8 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
   debug [i|Waiting for kata-deploy pod to exist|]
   podName <- waitUntil 600 $ do
     pods <- (T.words . toText) <$> readCreateProcessWithLogging ((
-      (proc "kubectl" ["-n", "kube-system"
-                      , "get", "pods", "-o=name"]) { env = Just env }
+      (proc kubectlBinary ["-n", "kube-system"
+                          , "get", "pods", "-o=name"]) { env = Just env }
       ) { env = Just env }) ""
 
     case headMay [t | t <- pods, "pod/kata-deploy" `T.isPrefixOf` t] of
