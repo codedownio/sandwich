@@ -173,11 +173,14 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
       loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
   -- Install kata-deploy
+  debug [i|Applying kata-rbac.yaml|]
   createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString rbacContents)
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  debug [i|Applying kata-deploy.yaml|]
   createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString deploymentContents)
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
+  debug [i|Waiting for kata-deploy pod to exist|]
   podName <- waitUntil 600 $ do
     pods <- (T.words . toText) <$> readCreateProcessWithLogging ((
       (proc "kubectl" ["-n", "kube-system"
@@ -207,11 +210,13 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options@(K
     toText sout `textShouldContain` "sleep infinity"
 
   -- Now install the runtime classes
+  debug [i|Applying kata-runtimeClasses.yaml|]
   runtimeClassesContents <- liftIO $ T.readFile $ kataRoot </> "tools/packaging/kata-deploy/runtimeclasses/kata-runtimeClasses.yaml"
   createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString runtimeClassesContents)
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   -- Finally, label the node(s)
+  debug [i|Labeling nodes with katacontainers.io/kata-runtime=true|]
   when kataContainersLabelNode $ do
     createProcessWithLoggingAndStdin ((proc kubectlBinary ["label", "nodes", "--all", "--overwrite", "katacontainers.io/kata-runtime=true"]) { env = Just env }) (toString deploymentContents)
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
