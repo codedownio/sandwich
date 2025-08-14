@@ -145,8 +145,8 @@ data CommandLineWebdriverOptions = CommandLineWebdriverOptions {
   , optSeleniumJar :: Maybe FilePath
 
   , optChromeBinary :: Maybe FilePath
-  , optChromeDriverBinary :: Maybe FilePath
+  , optChromeDriver :: Maybe FilePath
 
   , optFirefoxBinary :: Maybe FilePath
-  , optGeckoDriverBinary :: Maybe FilePath
+  , optGeckoDriver :: Maybe FilePath
   } deriving Show
