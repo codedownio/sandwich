@@ -44,8 +44,8 @@ someUserErrorWrapped = SomeExceptionWithEq $ SomeException $ userError "Oh no"
 
 -- * Helpers
 
-run :: (HasCallStack, MonadIO m) => IO () -> WriterT [SomeException] m ()
-run test = (liftIO $ tryAny test) >>= \case
+run :: (MonadIO m) => IO () -> WriterT [SomeException] m ()
+run test = liftIO (tryAny test) >>= \case
   Left err -> tell [err]
   Right () -> return ()
 
@@ -72,7 +72,7 @@ getResultsAndMessages fixedTree = (results, msgs)
     results = fmap statusToResult $ concatMap getStatuses fixedTree
     msgs = getMessages fixedTree
 
-getMessages :: (HasCallStack) => [RunNodeFixed context] -> [[LogStr]]
+getMessages :: [RunNodeFixed context] -> [[LogStr]]
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
 getStatuses :: RunNodeWithStatus context s l t -> [(String, s)]

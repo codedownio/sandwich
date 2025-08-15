@@ -1,7 +1,5 @@
-{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Main where
 
@@ -19,15 +17,15 @@ import Test.Sandwich.Formatters.TerminalUI
 simple :: TopSpec
 simple = parallel $ do
   describe "Foo" $ do
-    it "tests foo #1" $ pauseRandomAndSucceed
-    it "tests foo #2" $ pauseRandomAndFail
+    it "tests foo #1" pauseRandomAndSucceed
+    it "tests foo #2" pauseRandomAndFail
 
     describe "tests some nested foo" $ do
-      it "tests nested #3" $ pauseRandomAndSucceed
+      it "tests nested #3" pauseRandomAndSucceed
 
   describe "Bar" $ do
     it "tests bar #1" $ pauseRandomAndSucceed >> warn "That was a weird test"
-    it "tests bar #2" $ pauseRandomAndSucceed
+    it "tests bar #2" pauseRandomAndSucceed
 
 testOptions = defaultOptions {
   optionsTestArtifactsDirectory = defaultTestArtifactsDirectory

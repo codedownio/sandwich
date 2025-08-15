@@ -136,7 +136,7 @@ capitalizeFirst (x:xs) = capitalize x : xs
 
 capitalize :: T.Text -> T.Text
 capitalize t | T.length t == 1 = T.toUpper t
-capitalize t = (toUpper $ T.head t) `T.cons` (T.tail t)
+capitalize t = toUpper (T.head t) `T.cons` (T.tail t)
 
 splitR :: (Char -> Bool) -> String -> [String]
 splitR _ [] = []
