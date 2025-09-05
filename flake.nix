@@ -38,6 +38,7 @@
 
               haskell.compiler.ghc9122
               cabal-install
+              hlint
             ];
           };
         });
