@@ -26,13 +26,22 @@ spec = describe "Introducing a Kubernetes cluster" $
 You can also obtain the `kind` binary from your system PATH:
 
 ```haskell
-spec :: TopSpec  
+spec :: TopSpec
 spec = describe "Kind cluster from environment" $
   introduceBinaryViaEnvironment @"kind" $
     introduceBinaryViaEnvironment @"kubectl" $
       introduceKindClusterViaEnvironment defaultKindClusterOptions $ do
         -- Your tests here
 ```
+
+Kind clusters can be configured using [KindClusterOptions](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#t:KindClusterOptions):
+
+- **Number of nodes**: Set via [`kindClusterNumNodes`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterNumNodes)
+- **Extra flags**: Pass additional kind flags via [`kindClusterExtraFlags`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterExtraFlags)
+- **Container labels**: Apply labels to created containers via [`kindClusterContainerLabels`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterContainerLabels)
+- **Port mappings**: Expose cluster ports to the host via [`kindClusterExtraPortMappings`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterExtraPortMappings)
+- **Mounts**: Mount host directories into cluster nodes via [`kindClusterExtraMounts`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterExtraMounts)
+- **Name prefix**: Set cluster name prefix via [`kindClusterNamePrefix`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-KindCluster.html#v:kindClusterNamePrefix)
 
 ### Minikube clusters
 
@@ -59,25 +68,16 @@ spec = describe "Minikube cluster from environment" $
         -- Your tests here
 ```
 
-### Cluster configuration
+Minikube clusters can be configured using [MinikubeClusterOptions](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#t:MinikubeClusterOptions):
 
-Both cluster types support various configuration options:
-
-**Kind cluster options:**
-- **Cluster name**: Set via `kindClusterOptionsClusterName`
-- **Node image**: Configure Kubernetes version via `kindClusterOptionsNodeImage`
-- **Port mappings**: Expose cluster ports to the host via `kindClusterOptionsExtraPortMappings`
-- **Mounts**: Mount host directories into cluster nodes via `kindClusterOptionsExtraMounts`
-- **Network configuration**: Custom networking via `kindClusterOptionsNetwork`
-
-**Minikube cluster options:**
-- **Profile name**: Set via `minikubeClusterOptionsProfileName`
-- **Driver**: Choose container runtime via `minikubeClusterOptionsDriver` (docker, podman, etc.)
-- **Flags**: Pass additional minikube flags via `minikubeClusterOptionsExtraFlags`
+- **Number of nodes**: Set via [`minikubeClusterNumNodes`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterNumNodes)
+- **Extra flags**: Pass additional minikube flags via [`minikubeClusterExtraFlags`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterExtraFlags)
+- **Name prefix**: Set cluster name prefix via [`minikubeClusterNamePrefix`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterNamePrefix)
+- **Driver**: Choose container runtime via [`minikubeClusterDriver`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterDriver) (docker, podman, etc.)
+- **CPUs**: Set CPU allocation via [`minikubeClusterCpus`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterCpus)
+- **Memory**: Set memory allocation via [`minikubeClusterMemory`](https://hackage.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinikubeCluster.html#v:minikubeClusterMemory)
 
 ## Working with clusters
-
-### Accessing cluster context
 
 Once you have a cluster, you can access its context:
 
@@ -96,7 +96,7 @@ The library provides utilities for running kubectl commands with the correct con
 ```haskell
 it "runs kubectl commands" $ do
   (kubectlBinary, env) <- askKubectlArgs
-  pods <- readCreateProcessWithLogging 
+  pods <- readCreateProcessWithLogging
     ((proc kubectlBinary ["get", "pods", "-A"]) { env = Just env }) ""
   info [i|Cluster pods: #{pods}|]
 ```
@@ -109,10 +109,10 @@ The library includes utilities for waiting for Kubernetes resources to be ready:
 it "waits for resources" $ do
   -- Wait for pods to exist
   waitForPodsToExist "default" (LabelSelector [("app", "my-app")])
-  
-  -- Wait for pods to be ready  
+
+  -- Wait for pods to be ready
   waitForPodsToBeReady "default" (LabelSelector [("app", "my-app")])
-  
+
   -- Wait for service endpoints
   waitForServiceEndpointsToExist "default" "my-service"
 ```
@@ -127,10 +127,10 @@ The library provides comprehensive image management for both cluster types:
 it "loads images into cluster" $ do
   -- Load from Docker
   loadImage (ImageLoadSpecDocker "busybox:latest" IfNotPresent)
-  
+
   -- Load from Podman
   loadImage (ImageLoadSpecPodman "nginx:latest" Always)
-  
+
   -- Load from tarball
   tarPath <- buildNixCallPackageDerivation myImageDerivation
   loadImage (ImageLoadSpecTarball tarPath)
@@ -142,7 +142,7 @@ it "loads images into cluster" $ do
 it "checks available images" $ do
   images <- getLoadedImages
   forM_ images $ \image -> info [i|Available image: #{image}|]
-  
+
   hasImage <- clusterContainsImage "busybox:latest"
   hasImage `shouldBe` True
 ```
@@ -171,9 +171,7 @@ it "port forwards to a pod" $ do
     -- Connect to localhost:localPort
 ```
 
-## Advanced features
-
-### Namespaces
+## Namespaces
 
 Create and work within Kubernetes namespaces:
 
@@ -185,12 +183,12 @@ spec = introduceKindClusterViaNix defaultKindClusterOptions $
       -- Tests run within the "my-test-namespace" namespace
 ```
 
-### MinIO integration
+## MinIO integration
 
 The library includes built-in support for MinIO object storage:
 
 ```haskell title="https://github.com/codedownio/sandwich/blob/master/demos/demo-kubernetes-kind/app/Main.hs"
-spec :: TopSpec  
+spec :: TopSpec
 spec = introduceKindClusterViaNix defaultKindClusterOptions $
   introduceBinaryViaNixPackage @"kubectl" "kubectl" $
     introduceMinioOperator defaultMinioOperatorOptions $
@@ -201,7 +199,7 @@ spec = introduceKindClusterViaNix defaultKindClusterOptions $
             info [i|Got S3 server: #{server}|]
 ```
 
-### Logging
+## Logging
 
 Capture and analyze pod logs:
 
@@ -209,19 +207,8 @@ Capture and analyze pod logs:
 it "gets pod logs" $ do
   logs <- kubectlLogs "default" "my-pod" []
   info [i|Pod logs: #{logs}|]
-  
+
   -- Follow logs in real-time
   withKubectlLogs "default" "my-pod" ["-f"] $ \logHandle -> do
     -- Process streaming logs
 ```
-
-## Type constraints
-
-The library provides several constraint aliases to make function signatures cleaner:
-
-- `KubernetesBasic context m`: Basic Kubernetes functionality
-- `KubernetesClusterBasic context m`: Requires a cluster context
-- `KubectlBasic context m`: Requires kubectl binary and cluster context
-- `HasKubernetesClusterContext context`: Context has cluster information
-
-These constraints help ensure your functions have access to the required contexts and capabilities.

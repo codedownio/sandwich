@@ -76,7 +76,7 @@ customOptions = defaultMinIOContextOptions {
   , minioContextStartupTimeout = 120_000_000  -- 2 minutes
 }
 
-spec :: TopSpec  
+spec :: TopSpec
 spec = introduceNixContext nixpkgsReleaseDefault $
   introduceMinIOViaNix customOptions $ do
     -- Your tests with custom configuration
@@ -89,13 +89,13 @@ Once you have a MinIO server running, you can access its configuration through t
 ```haskell
 it "connects to MinIO server" $ do
   server <- getContext testS3Server
-  
+
   -- Access server details
   let endpoint = testS3ServerEndpoint server
   let accessKey = testS3ServerAccessKeyId server
   let secretKey = testS3ServerSecretAccessKey server
   let bucket = testS3ServerBucket server
-  
+
   info [i|MinIO endpoint: #{endpoint}|]
   info [i|Access key: #{accessKey}|]
   info [i|Bucket: #{bucket}|]
@@ -104,7 +104,7 @@ it "connects to MinIO server" $ do
 ### Default credentials
 
 MinIO servers started by this library use the default MinIO credentials:
-- **Access Key ID**: `minioadmin` 
+- **Access Key ID**: `minioadmin`
 - **Secret Access Key**: `minioadmin`
 
 These are suitable for testing but should never be used in production.
@@ -118,15 +118,15 @@ import Network.Minio
 
 it "creates MinIO connection" $ do
   server <- getContext testS3Server
-  
+
   -- Get a ConnectInfo for the minio-hs library
   let connInfo = testS3ServerConnectInfo server
-  
+
   -- Use the connection
   result <- liftIO $ runMinio connInfo $ do
     buckets <- listBuckets
     return $ length buckets
-    
+
   info [i|Found #{result} buckets|]
 ```
 
@@ -140,23 +140,23 @@ import Network.Minio
 it "performs S3 operations" $ do
   server <- getContext testS3Server
   let connInfo = testS3ServerConnectInfo server
-  
+
   liftIO $ runMinio connInfo $ do
-    -- List buckets  
+    -- List buckets
     buckets <- listBuckets
     info [i|Available buckets: #{buckets}|]
-    
+
     -- Upload an object (if bucket exists)
     whenJust (testS3ServerBucket server) $ \bucket -> do
       let objectName = "test-file.txt"
       let content = "Hello, MinIO!"
-      
+
       putObject bucket objectName content [] []
       info [i|Uploaded object #{objectName} to bucket #{bucket}|]
-      
+
       -- Download the object back
       result <- getObject bucket objectName
-      downloadedContent <- loadBytes result  
+      downloadedContent <- loadBytes result
       info [i|Downloaded content: #{downloadedContent}|]
 ```
 
@@ -170,11 +170,11 @@ import Network.HTTP.Simple
 it "makes HTTP requests to MinIO" $ do
   server <- getContext testS3Server
   let endpoint = testS3ServerEndpoint server
-  
+
   -- Make a request to the health endpoint
   request <- parseRequest $ toString $ endpoint <> "/minio/health/live"
   response <- httpLBS request
-  
+
   getResponseStatusCode response `shouldBe` 200
   info [i|MinIO health check passed|]
 ```
@@ -219,31 +219,12 @@ import Control.Monad.IO.Unlift
 it "uses bracket-style MinIO" $ do
   withMinIOViaBinary "/path/to/minio" defaultMinIOContextOptions $ \server -> do
     -- Server is running here
-    let endpoint = testS3ServerEndpoint server  
+    let endpoint = testS3ServerEndpoint server
     info [i|Server available at: #{endpoint}|]
-    
+
     -- Your test logic here
-    
+
     -- Server will be automatically cleaned up
 ```
 
 These functions are useful when you need to start multiple MinIO servers or when integrating with other resource management patterns.
-
-## Error handling and timeouts
-
-The library includes robust error handling and configurable timeouts:
-
-- **Startup timeout**: Configurable via `minioContextStartupTimeout`
-- **Health checks**: Automatic health checking using `/minio/health/live`
-- **Bucket creation**: Automatic retry logic for bucket creation with exponential backoff
-- **Container cleanup**: Automatic container removal even if tests fail
-
-## Type constraints
-
-The library uses several type constraints to ensure proper context availability:
-
-- `HasTestS3Server context`: Requires a `TestS3Server` in the context
-- `HasNixContext context`: Required for Nix-based binary introduction
-- `HasFile context "minio"`: Required when using existing binaries
-
-These constraints help catch configuration errors at compile time and ensure your tests have access to the required resources.
