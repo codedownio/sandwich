@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunksandwich_site=self.webpackChunksandwich_site||[]).push([[804],{6190:e=>{e.exports=JSON.parse('{"metadata":{"permalink":"/sandwich/blog","page":1,"postsPerPage":10,"totalPages":1,"totalCount":2,"blogDescription":"Blog","blogTitle":"Blog"}}')}}]);
