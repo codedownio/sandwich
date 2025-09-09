@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-contexts-minio
-version:        0.1.0.0
+version:        0.1.0.1
 synopsis:       Sandwich test contexts for MinIO
 description:    Please see README.md
 author:         Tom McLaughlin
