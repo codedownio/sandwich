@@ -10,6 +10,7 @@ import Test.Sandwich.Contexts.Nix
 import System.FilePath
 import Test.WebDriver.Commands
 import Test.Sandwich.WebDriver
+import Test.Sandwich.Waits
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BL
 
@@ -22,12 +23,15 @@ import qualified Data.ByteString.Lazy as BL
 spec :: TopSpecWithOptions
 spec = introduceNixContext (nixpkgsRelease2405 { nixpkgsDerivationAllowUnfree = True }) $
   introduceWebDriverViaNix defaultWdOptions $ do
-    it "opens Google and searches" $ withSession1 $ do
-      openPage [i|https://www.google.com|]
-      search <- findElem (ByCSS [i|*[title="Search"]|])
-      click search
-      sendKeys "Haskell Sandwich" search
-      findElem (ByCSS [i|input[type="submit"]|]) >>= click
+    it "opens Xkcd and presses the prev button" $ withSession1 $ do
+      openPage [i|https://www.xkcd.com|]
+      origUrl <- getCurrentURL
+      prev <- findElem (ByCSS [i|a[rel=prev]|])
+      click prev
+
+      waitUntil 30 $ do
+        url <- getCurrentURL
+        url `shouldNotBe` origUrl
 
       Just dir <- getCurrentFolder
       screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
