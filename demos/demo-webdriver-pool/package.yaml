@@ -6,7 +6,6 @@ dependencies:
 - base
 - exceptions
 - filepath
-- monad-control
 - monad-logger
 - sandwich
 - sandwich-contexts

@@ -18,7 +18,6 @@ dependencies:
 - base < 5
 - bytestring
 - containers
-- data-default
 - directory
 - exceptions
 - filepath
@@ -27,11 +26,8 @@ dependencies:
 - http-conduit
 - http-types
 - microlens
-- microlens-aeson
-- monad-control
 - monad-logger
 - mtl
-- network
 - process
 - random
 - retry
@@ -46,7 +42,6 @@ dependencies:
 - unliftio
 - unliftio-core
 - unordered-containers
-- vector
 - webdriver >= 0.13.0.0
 
 default-extensions:

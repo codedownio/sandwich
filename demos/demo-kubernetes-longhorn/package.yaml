@@ -6,13 +6,11 @@ dependencies:
 - base
 - bytestring
 - monad-logger
-- network
 - relude
 - sandwich
 - sandwich-contexts
 - sandwich-contexts-kubernetes
 - string-interpolate
-- text
 - time
 - unliftio
 

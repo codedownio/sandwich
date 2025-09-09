@@ -6,15 +6,12 @@ dependencies:
 - base
 - bytestring
 - monad-logger
-- network
 - postgresql-simple
 - relude
 - sandwich
 - sandwich-contexts
 - string-interpolate
-- text
 - time
-- unliftio
 
 default-extensions:
 - OverloadedStrings

@@ -79,7 +79,6 @@ library
     , base <5
     , bytestring
     , containers
-    , data-default
     , directory
     , exceptions
     , filepath
@@ -88,11 +87,8 @@ library
     , http-conduit
     , http-types
     , microlens
-    , microlens-aeson
-    , monad-control
     , monad-logger
     , mtl
-    , network
     , process
     , random
     , retry
@@ -107,7 +103,6 @@ library
     , unliftio
     , unliftio-core
     , unordered-containers
-    , vector
     , webdriver >=0.13.0.0
   default-language: Haskell2010
   if os(darwin)
@@ -164,7 +159,6 @@ test-suite sandwich-webdriver-test
     , base <5
     , bytestring
     , containers
-    , data-default
     , directory
     , exceptions
     , filepath
@@ -173,11 +167,8 @@ test-suite sandwich-webdriver-test
     , http-conduit
     , http-types
     , microlens
-    , microlens-aeson
-    , monad-control
     , monad-logger
     , mtl
-    , network
     , process
     , random
     , retry
@@ -193,7 +184,6 @@ test-suite sandwich-webdriver-test
     , unliftio
     , unliftio-core
     , unordered-containers
-    , vector
     , webdriver >=0.13.0.0
   default-language: Haskell2010
   if os(darwin)

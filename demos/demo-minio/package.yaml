@@ -6,13 +6,10 @@ dependencies:
 - base
 - bytestring
 - monad-logger
-- network
 - sandwich
 - sandwich-contexts
 - sandwich-contexts-minio
 - string-interpolate
-- text
-- unliftio
 
 default-extensions:
 - OverloadedStrings
