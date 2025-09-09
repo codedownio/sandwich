@@ -56,9 +56,9 @@ The [MinIOContextOptions](https://hackage-content.haskell.org/package/sandwich-c
 
 ```haskell
 data MinIOContextOptions = MinIOContextOptions {
-  minioContextBucket :: Maybe Text              -- Default bucket to create
-  , minioContextLabels :: Map Text Text         -- Container labels (for container mode)
-  , minioContextStartupTimeout :: Int           -- Startup timeout in microseconds
+  minioContextBucket :: Maybe Text        -- Default bucket to create
+  , minioContextLabels :: Map Text Text   -- Container labels (for container mode)
+  , minioContextStartupTimeout :: Int     -- Startup timeout in microseconds
 }
 ```
 
@@ -179,7 +179,7 @@ When using container mode, additional considerations apply:
 
 ### Container options
 
-You can customize container behavior using `ContainerOptions`:
+You can customize container behavior using [ContainerOptions](https://hackage-content.haskell.org/package/sandwich-contexts-minio/docs/Test-Sandwich-Contexts-MinIO.html#t:ContainerOptions):
 
 ```haskell
 customContainerOptions :: ContainerOptions
@@ -192,10 +192,6 @@ spec :: TopSpec
 spec = introduceMinIOViaContainer defaultMinIOContextOptions customContainerOptions $ do
   -- Your tests here
 ```
-
-### Volume mounting
-
-The container mode automatically creates and mounts a temporary directory for MinIO data storage. This directory is cleaned up when the container is destroyed.
 
 ### Port mapping
 

@@ -87,15 +87,24 @@ testS3ServerConnectInfo testServ@(TestS3Server {..}) =
   & (if testS3ServerHttpMode == HttpModeHttpsNoValidate then disableTLSCertValidation else id)
 
 data MinIOContextOptions = MinIOContextOptions {
+  -- | Bucket name to create on startup.
   minioContextBucket :: Maybe Text
+
+  -- | Image name to use when launching MinIO in container mode.
+  , minioContextImageName :: String
+  -- | Container labels to apply when launching MinIO in container mode.
   , minioContextLabels :: Map Text Text
+
   -- | Maximum time to wait in microseconds before seeing an "API:" message during startup
   , minioContextStartupTimeout :: Int
   } deriving (Show, Eq)
 defaultMinIOContextOptions :: MinIOContextOptions
 defaultMinIOContextOptions = MinIOContextOptions {
   minioContextBucket = Just "bucket1"
+
+  , minioContextImageName = "minio/minio:RELEASE.2022-09-25T15-44-53Z"
   , minioContextLabels = mempty
+
   , minioContextStartupTimeout = 60_000_000
   }
 
@@ -271,9 +280,9 @@ withMinIOViaContainer (MinIOContextOptions {..}) (ContainerOptions {..}) action 
                     ]
                     <> labelArgs
                     <> [
-                        "minio/minio:RELEASE.2022-09-25T15-44-53Z"
+                        minioContextImageName
                         , "server", "/data", "--console-address", ":9001"
-                    ]
+                       ]
 
               info [i|Got command: #{cp}"|]
 
