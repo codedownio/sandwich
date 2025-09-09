@@ -1,5 +1,5 @@
 name: sandwich-contexts-kubernetes
-version: 0.1.1.0
+version: 0.1.1.1
 synopsis: Sandwich test contexts for Kubernetes
 license: BSD3
 description: Please see README.md
