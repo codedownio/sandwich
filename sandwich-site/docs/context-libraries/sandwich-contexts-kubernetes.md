@@ -11,7 +11,7 @@ This package supports creating clusters using either [kind](https://kind.sigs.k8
 
 ### Kind clusters
 
-[Kind](https://kind.sigs.k8s.io/) is a tool for running local Kubernetes clusters using Docker container "nodes". It's lightweight and perfect for testing.
+[Kind](https://kind.sigs.k8s.io/) is a tool for running local Kubernetes clusters using Docker container "nodes."
 
 ```haskell title="https://github.com/codedownio/sandwich/blob/master/demos/demo-kubernetes-kind/app/Main.hs"
 spec :: TopSpec
@@ -119,21 +119,25 @@ it "waits for resources" $ do
 
 ## Image management
 
-The library provides comprehensive image management for both cluster types:
+The library provides [image management](https://hackage-content.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-Images.html) for both cluster types. You can load an image onto the cluster directly from your local Docker/Podman system, or from a tarball.
+
+An important thing to understand here is that an image name once it's loaded onto the cluster may not be the same as its local name. The [loadImage](https://hackage-content.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-Images.html#v:loadImage) function will return the cluster name of the image. This is the name you should use if you proceed to e.g. create a Pod using this image.
 
 ### Loading images
 
 ```haskell
 it "loads images into cluster" $ do
   -- Load from Docker
-  loadImage (ImageLoadSpecDocker "busybox:latest" IfNotPresent)
+  busyBoxImage <- loadImage (ImageLoadSpecDocker "busybox:latest" IfNotPresent)
 
   -- Load from Podman
-  loadImage (ImageLoadSpecPodman "nginx:latest" Always)
+  nginxImage <- loadImage (ImageLoadSpecPodman "nginx:latest" Always)
 
   -- Load from tarball
   tarPath <- buildNixCallPackageDerivation myImageDerivation
-  loadImage (ImageLoadSpecTarball tarPath)
+  tarballImage <- loadImage (ImageLoadSpecTarball tarPath)
+
+  -- Use these images
 ```
 
 ### Checking loaded images
@@ -173,7 +177,7 @@ it "port forwards to a pod" $ do
 
 ## Namespaces
 
-Create and work within Kubernetes namespaces:
+Create and destroy [Kubernetes namespaces](https://hackage-content.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-Namespace.html):
 
 ```haskell
 spec :: TopSpec
@@ -185,7 +189,9 @@ spec = introduceKindClusterViaNix defaultKindClusterOptions $
 
 ## MinIO integration
 
-The library includes built-in support for MinIO object storage:
+The library includes built-in support for deploying [MinIO](https://www.min.io/) object storage using the [operator](https://docs.min.io/enterprise/aistor-object-store/installation/kubernetes/install/).
+
+Once you deploy the operator, you can create a MinIO server using the [introduceK8SMinioS3Server](https://hackage-content.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes-MinioS3Server.html#v:introduceK8SMinioS3Server) family of functions.
 
 ```haskell title="https://github.com/codedownio/sandwich/blob/master/demos/demo-kubernetes-kind/app/Main.hs"
 spec :: TopSpec
@@ -201,7 +207,9 @@ spec = introduceKindClusterViaNix defaultKindClusterOptions $
 
 ## Logging
 
-Capture and analyze pod logs:
+The [withKubectlLogs](https://hackage-content.haskell.org/package/sandwich-contexts-kubernetes/docs/Test-Sandwich-Contexts-Kubernetes.html#v:withKubectlLogs) function will run a `kubectl logs` process, placing the logs in a file in the current test node directory.
+
+Note that this will stop working if the pod you're talking to goes away (even if you do it against a service). If this happens, a rerun of the command is needed to resume log forwarding.
 
 ```haskell
 it "gets pod logs" $ do
