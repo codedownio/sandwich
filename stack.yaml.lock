@@ -83,7 +83,7 @@ packages:
     hackage: cryptonite-conduit-0.2.2@sha256:bfbae677a44f3a5cf3bf7f36271682979a402825f3d1e8767cfd62f2ddb702c2,1984
 snapshots:
 - completed:
-    sha256: a82ac3305208490a33760197fb2f4506be2d0310fbda0b4c041b9135f8010eb3
-    size: 686899
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/8/12.yaml
-  original: nightly-2025-08-12
+    sha256: 89f1083d6c74b5b78ace9ca630e015f016d4a8d2ffcace7ae02bad57289ba9e9
+    size: 690943
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/9/6.yaml
+  original: nightly-2025-09-06

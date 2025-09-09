@@ -1,6 +1,5 @@
 
-resolver: nightly-2025-08-12
-compiler: ghc-9.12.2
+resolver: nightly-2025-09-06
 
 nix:
   enable: false
