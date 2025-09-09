@@ -1,5 +1,5 @@
 name: sandwich-contexts-minio
-version: 0.1.0.1
+version: 0.1.0.2
 synopsis: Sandwich test contexts for MinIO
 license: BSD3
 description: Please see README.md

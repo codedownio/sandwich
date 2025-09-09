@@ -31,6 +31,8 @@ module Test.Sandwich.Contexts.MinIO (
   , testS3Server
   , TestS3Server(..)
   , HasTestS3Server
+  , ContainerOptions(..)
+  , defaultContainerOptions
   , HttpMode(..)
   , NetworkAddress(..)
 
@@ -61,7 +63,7 @@ import System.Exit
 import System.FilePath
 import System.IO.Temp
 import Test.Sandwich
-import Test.Sandwich.Contexts.Container (ContainerOptions(..), containerPortToHostPort)
+import Test.Sandwich.Contexts.Container (ContainerOptions(..), containerPortToHostPort, defaultContainerOptions)
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.MinIO.Util
@@ -77,6 +79,7 @@ import UnliftIO.Timeout
 
 -- * Types
 
+-- | Construct a 'ConnectInfo' (from the @minio-hs@ package) for the given 'TestS3Server'.
 testS3ServerConnectInfo :: TestS3Server -> ConnectInfo
 testS3ServerConnectInfo testServ@(TestS3Server {..}) =
   fromString (toString (testS3ServerEndpoint testServ))

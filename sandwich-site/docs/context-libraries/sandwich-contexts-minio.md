@@ -5,7 +5,7 @@ title: MinIO
 
 The [sandwich-contexts-minio](https://hackage.haskell.org/package/sandwich-contexts-minio) package provides contexts for introducing [MinIO](https://min.io/) S3-compatible object storage servers in your tests. MinIO can be launched either as a raw binary or via a container system.
 
-The MinIO server is introduced as a generic `TestS3Server`, which gives you the flexibility to easily swap out different S3-compatible storage systems in your tests.
+The MinIO server is introduced as a generic [TestS3Server](https://hackage-content.haskell.org/package/sandwich-contexts-minio/docs/Test-Sandwich-Contexts-MinIO.html#t:TestS3Server), which gives you the flexibility to easily swap out different S3-compatible storage systems in your tests.
 
 ## Starting MinIO servers
 
@@ -47,12 +47,12 @@ spec = describe "MinIO with existing binary" $
     introduceMinIOViaBinary defaultMinIOContextOptions $ do
       it "uses the MinIO server" $ do
         server <- getContext testS3Server
-        -- Your tests here
+        info [i|Got S3 server: #{server}|]
 ```
 
 ## Configuration options
 
-The `MinIOContextOptions` type allows you to customize the MinIO server setup:
+The [MinIOContextOptions](https://hackage-content.haskell.org/package/sandwich-contexts-minio/docs/Test-Sandwich-Contexts-MinIO.html#t:MinIOContextOptions) type allows you to customize the MinIO server setup:
 
 ```haskell
 data MinIOContextOptions = MinIOContextOptions {
@@ -63,9 +63,9 @@ data MinIOContextOptions = MinIOContextOptions {
 ```
 
 **Default options:**
-- **Bucket**: `"bucket1"` - Creates a default bucket named "bucket1"
-- **Labels**: `mempty` - No additional container labels
-- **Startup timeout**: 60 seconds - Maximum time to wait for server startup
+- **Bucket**: `"bucket1"`
+- **Labels**: `mempty`
+- **Startup timeout**: 60 seconds
 
 You can customize these options:
 
@@ -91,14 +91,10 @@ it "connects to MinIO server" $ do
   server <- getContext testS3Server
 
   -- Access server details
-  let endpoint = testS3ServerEndpoint server
-  let accessKey = testS3ServerAccessKeyId server
-  let secretKey = testS3ServerSecretAccessKey server
-  let bucket = testS3ServerBucket server
-
-  info [i|MinIO endpoint: #{endpoint}|]
-  info [i|Access key: #{accessKey}|]
-  info [i|Bucket: #{bucket}|]
+  info [i|MinIO endpoint: #{testS3ServerEndpoint server}|]
+  info [i|Access key: #{testS3ServerAccessKeyId server}|]
+  info [i|Secret key: #{testS3ServerSecretAccessKey server}|]
+  info [i|Bucket: #{testS3ServerBucket server}|]
 ```
 
 ### Default credentials
@@ -106,8 +102,6 @@ it "connects to MinIO server" $ do
 MinIO servers started by this library use the default MinIO credentials:
 - **Access Key ID**: `minioadmin`
 - **Secret Access Key**: `minioadmin`
-
-These are suitable for testing but should never be used in production.
 
 ### Connection helpers
 
@@ -188,12 +182,10 @@ When using container mode, additional considerations apply:
 You can customize container behavior using `ContainerOptions`:
 
 ```haskell
-import Test.Sandwich.Contexts.Container
-
 customContainerOptions :: ContainerOptions
 customContainerOptions = defaultContainerOptions {
-  containerOptionsName = Just "my-minio-server"
-  , containerOptionsSystem = Docker  -- or Podman
+  containerOptionsSystem = ContainerSystemDocker
+  , containerOptionsName = Just "my-minio-server"
 }
 
 spec :: TopSpec
@@ -207,7 +199,7 @@ The container mode automatically creates and mounts a temporary directory for Mi
 
 ### Port mapping
 
-The library automatically handles port mapping, finding an available local port and mapping it to MinIO's internal port (9000). The `testS3ServerEndpoint` function will give you the correct local address to connect to.
+The library automatically handles port mapping, finding an available local port and mapping it to MinIO's internal port (9000). The [testS3ServerEndpoint](https://hackage-content.haskell.org/package/sandwich-contexts-minio/docs/Test-Sandwich-Contexts-MinIO.html#v:testS3ServerEndpoint) function will give you the correct local address to connect to.
 
 ## Bracket-style functions
 

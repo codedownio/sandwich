@@ -6,10 +6,10 @@ Helper module for working with containers.
 -}
 
 module Test.Sandwich.Contexts.Container (
-  ContainerOptions (..)
+  ContainerOptions(..)
   , defaultContainerOptions
 
-  , ContainerSystem (..)
+  , ContainerSystem(..)
   , waitForHealth
 
   -- * Container/host conversions
