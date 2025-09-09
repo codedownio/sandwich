@@ -59,28 +59,13 @@ data MinIOContextOptions = MinIOContextOptions {
   minioContextBucket :: Maybe Text        -- Default bucket to create
   , minioContextLabels :: Map Text Text   -- Container labels (for container mode)
   , minioContextStartupTimeout :: Int     -- Startup timeout in microseconds
-}
+  }
 ```
 
 **Default options:**
 - **Bucket**: `"bucket1"`
 - **Labels**: `mempty`
 - **Startup timeout**: 60 seconds
-
-You can customize these options:
-
-```haskell
-customOptions :: MinIOContextOptions
-customOptions = defaultMinIOContextOptions {
-  minioContextBucket = Just "my-test-bucket"
-  , minioContextStartupTimeout = 120_000_000  -- 2 minutes
-}
-
-spec :: TopSpec
-spec = introduceNixContext nixpkgsReleaseDefault $
-  introduceMinIOViaNix customOptions $ do
-    -- Your tests with custom configuration
-```
 
 ## Working with the TestS3Server
 
@@ -103,39 +88,20 @@ MinIO servers started by this library use the default MinIO credentials:
 - **Access Key ID**: `minioadmin`
 - **Secret Access Key**: `minioadmin`
 
-### Connection helpers
-
-The library provides helper functions for creating MinIO connections:
-
-```haskell
-import Network.Minio
-
-it "creates MinIO connection" $ do
-  server <- getContext testS3Server
-
-  -- Get a ConnectInfo for the minio-hs library
-  let connInfo = testS3ServerConnectInfo server
-
-  -- Use the connection
-  result <- liftIO $ runMinio connInfo $ do
-    buckets <- listBuckets
-    return $ length buckets
-
-  info [i|Found #{result} buckets|]
-```
-
 ## Integration examples
 
 ### Working with buckets and objects
+
+We provide support for generating a [ConnectInfo](https://hackage.haskell.org/package/minio-hs/docs/Network-Minio.html#t:ConnectInfo) for use with the [minio-hs](https://hackage.haskell.org/package/minio-hs) package.
 
 ```haskell
 import Network.Minio
 
 it "performs S3 operations" $ do
   server <- getContext testS3Server
-  let connInfo = testS3ServerConnectInfo server
+  let connectInfo = testS3ServerConnectInfo server
 
-  liftIO $ runMinio connInfo $ do
+  liftIO $ runMinio connectInfo $ do
     -- List buckets
     buckets <- listBuckets
     info [i|Available buckets: #{buckets}|]
@@ -209,10 +175,6 @@ it "uses bracket-style MinIO" $ do
     -- Server is running here
     let endpoint = testS3ServerEndpoint server
     info [i|Server available at: #{endpoint}|]
-
-    -- Your test logic here
-
-    -- Server will be automatically cleaned up
 ```
 
 These functions are useful when you need to start multiple MinIO servers or when integrating with other resource management patterns.
