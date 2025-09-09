@@ -26,7 +26,7 @@ Sandwich is a test framework for Haskell, inspired by and (almost) a drop-in rep
 * Interactive terminal UI interface for viewing test progress and results.
 * Built-in [profiling](/docs/timing) support.
 * Integrations such as [Hedgehog](/docs/extensions/sandwich-hedgehog), [QuickCheck](/docs/extensions/sandwich-quickcheck), and [Selenium](/docs/extensions/sandwich-webdriver).
-* Context libraries that allow you to introduce things like [databases](/docs/context-libraries/sandwich-contexts#postgresql-contexts), [Docker containers](#TODO), or even full [Kubernetes clusters](/docs/context-libraries/sandwich-contexts-kubernetes).
+* Context libraries that allow you to introduce things like [databases](/docs/context-libraries/sandwich-contexts-postgresql) or even full [Kubernetes clusters](/docs/context-libraries/sandwich-contexts-kubernetes).
 
 <div className={styles.carouselContainer}>
   <Carousel showThumbs={false}
