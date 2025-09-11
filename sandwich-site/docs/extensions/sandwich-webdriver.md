@@ -1,9 +1,9 @@
 ---
 id: sandwich-webdriver
-title: Selenium
+title: WebDriver
 ---
 
-Setting up Selenium tests normally requires manual work to obtain the Selenium server JAR file and a driver program for your browser, launch the server, and connect to the server with your client library. It can be error-prone to make sure the versions are compatible and everything runs smoothly.
+Setting up WebDriver tests normally requires manual work to obtain the Selenium server JAR file or other WebDriver server plus a driver program for your browser, launch the server, and connect to the server with your client library. It can be error-prone to make sure the versions are compatible and everything runs smoothly.
 
 The `sandwich-webdriver` extension streamlines this by automatically downloading the latest compatible binary files and introducing the contexts you need to use the [webdriver](https://hackage.haskell.org/package/webdriver) package within Sandwich. Here's how easy it is to get started:
 
@@ -28,7 +28,7 @@ To see a demo, try running `stack run demo-webdriver` in the Sandwich repo.
 
 ## Browser sessions
 
-You can start a Selenium session using the `withSession` function. It accepts a string key representing the name of the session. Each time a new session name is seen, it will be created if it doesn't already exist.
+You can start a WebDriver session using the `withSession` function. It accepts a string key representing the name of the session. Each time a new session name is seen, it will be created if it doesn't already exist.
 
 The library provides `withSession1`/`withSession2` as convenience functions for `withSession "browser1"`/`withSession "browser2"`, but you can use your own keys if you need.
 
@@ -62,7 +62,7 @@ positioning = introduceWebDriver defaultWdOptions $ do
 
 ## Launching browsers in the background
 
-This package makes it easy to run Selenium tests in the background, using either [Xvfb](https://en.wikipedia.org/wiki/Xvfb) or the headless mode of your browser.
+This package makes it easy to run WebDriver tests in the background, using either [Xvfb](https://en.wikipedia.org/wiki/Xvfb) or the headless mode of your browser.
 
 ### Headless
 
@@ -79,7 +79,7 @@ Alternatively, if you use Sandwich's [runSandwichWithCommandLineArgs](http://hac
 
 ### Xvfb
 
-Xvfb can be used to run your browser on a separate, "virtual" X11 display, different from the one connected to your monitor. This was more useful before headless browser modes existed, but it's still important because it gives you the ability to record **video**. When a Selenium test is running on an Xvfb display, you can use [ffmpeg](https://ffmpeg.org/) to record videos of the test runs for later examination.
+Xvfb can be used to run your browser on a separate, "virtual" X11 display, different from the one connected to your monitor. This was more useful before headless browser modes existed, but it's still important because it gives you the ability to record **video**. When a WebDriver test is running on an Xvfb display, you can use [ffmpeg](https://ffmpeg.org/) to record videos of the test runs for later examination.
 
 Xvfb mode can be configured manually just like headless mode.
 
