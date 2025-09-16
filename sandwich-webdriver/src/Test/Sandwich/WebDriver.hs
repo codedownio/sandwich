@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -201,7 +202,11 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
       let driverConfig = W.DriverConfigChromedriver {
             driverConfigChromedriver = browserDependenciesChromeChromedriver
             , driverConfigChrome = browserDependenciesChromeChrome
+#if MIN_VERSION_webdriver(0,14,0)
+            , driverConfigLogDir = Just runRoot
+#else
             , driverConfigLogDir = runRoot
+#endif
             , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
             }
       return (caps, driverConfig)
@@ -219,7 +224,11 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
       let driverConfig = W.DriverConfigGeckodriver {
             driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
             , driverConfigFirefox = browserDependenciesFirefoxFirefox
+#if MIN_VERSION_webdriver(0,14,0)
+            , driverConfigLogDir = Just runRoot
+#else
             , driverConfigLogDir = runRoot
+#endif
             , driverConfigGeckodriverFlags = "--profile-root" : profileRootDir : geckodriverExtraFlags wdOptions
             -- , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
             }
