@@ -1,5 +1,11 @@
 # Changelog for sandwich-contexts-kubernetes
 
+## 0.1.2.0
+
+* Add `getKubectlEnvironment`, similar to `askKubectlEnvironment` but not requiring reader context.
+* Re-export `NetworkAddress` from `Test.Sandwich.Contexts.Kubernetes.MinioS3Server`.
+* Add more low-level functions to `Test.Sandwich.Contexts.Kubernetes.Namespace`.
+
 ## 0.1.1.1
 
 * Bump Kata context to use latest 3.19.1 by default.

@@ -9,6 +9,7 @@ module Test.Sandwich.Contexts.Kubernetes.Kubectl (
   -- * Run commands with kubectl
   askKubectlArgs
   , askKubectlEnvironment
+  , getKubectlEnvironment
   ) where
 
 import Control.Monad.Logger
@@ -30,18 +31,28 @@ askKubectlArgs :: (
   -- | Returns the @kubectl@ binary and environment variables.
   => m (FilePath, [(String, String)])
 askKubectlArgs = do
-  kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  (kubectlBinary, ) <$> askKubectlEnvironment kcc
+  (kubectlBinary, ) <$> askKubectlEnvironment
 
 -- | Same as 'askKubectlArgs', but only returns the environment variables.
 askKubectlEnvironment :: (
+  KubernetesClusterBasic context m
+  )
+  -- | Returns the @kubectl@ environment variables.
+  => m [(String, String)]
+askKubectlEnvironment = do
+  KubernetesClusterContext {..} <- getContext kubernetesCluster
+  baseEnv <- getEnvironment
+  return $ L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
+
+-- | Same as 'askKubectlArgs', but only returns the environment variables.
+getKubectlEnvironment :: (
   MonadLoggerIO m
   )
   -- | Kubernetes cluster context
   => KubernetesClusterContext
   -- | Returns the @kubectl@ environment variables.
   -> m [(String, String)]
-askKubectlEnvironment (KubernetesClusterContext {..}) = do
+getKubectlEnvironment (KubernetesClusterContext {..}) = do
   baseEnv <- getEnvironment
   return $ L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)

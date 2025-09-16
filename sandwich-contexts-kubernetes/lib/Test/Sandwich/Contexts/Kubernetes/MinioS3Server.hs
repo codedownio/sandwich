@@ -27,6 +27,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   , testS3Server
   , TestS3Server(..)
   , HasTestS3Server
+  , NetworkAddress(..)
   ) where
 
 import Control.Monad
@@ -137,7 +138,7 @@ withK8SMinioS3Server' :: forall m context. (
   -> (TestS3Server -> m [Result])
   -> m ()
 withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOperatorContext (MinioS3ServerOptions {..}) action = do
-  env <- askKubectlEnvironment kcc
+  env <- getKubectlEnvironment kcc
   let runWithKubeConfig :: (HasCallStack) => String -> [String] -> m ()
       runWithKubeConfig prog args = do
         createProcessWithLogging ((proc prog args) { env = Just env, delegate_ctlc = True })

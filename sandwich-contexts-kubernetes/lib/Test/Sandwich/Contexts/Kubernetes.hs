@@ -36,6 +36,7 @@ module Test.Sandwich.Contexts.Kubernetes (
   -- * Run commands with kubectl
   , askKubectlArgs
   , askKubectlEnvironment
+  , getKubectlEnvironment
 
   -- * Forward services
   , withForwardKubernetesService
