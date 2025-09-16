@@ -74,7 +74,7 @@ withKubernetesNamespace'' :: (
 withKubernetesNamespace'' kubectl namespace =
   bracket_ (createKubernetesNamespace' kubectl namespace) (destroyKubernetesNamespace' kubectl False namespace)
 
--- | Same as 'withKubernetesNamespace''', but allows you to pass in the path to the cluster context.
+-- | Same as 'withKubernetesNamespace''', but allows you to pass in the cluster context.
 withKubernetesNamespace''' :: (
   KubernetesClusterBasic context m
   )
