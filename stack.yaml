@@ -60,7 +60,7 @@ packages:
 extra-deps:
 # For sandwich-webdriver
 
-- webdriver-0.13.0.0
+- webdriver-0.14.0.0
 
 # For sandwich-contexts
 

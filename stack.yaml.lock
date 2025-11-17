@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: webdriver-0.13.0.0@sha256:48742ee9e8ef2ae4f6d2962291f6a3380e076a0c1d00881947429db48d3e6b80,5653
+    hackage: webdriver-0.14.0.0@sha256:3a529a3520b3d9be4dcc0c51fabd96ee3e67661ac18e6d4417100ac187da4c15,6463
     pantry-tree:
-      sha256: 1976b3d7d4ffa3ff1ad73ba959824ec266fb7ebfe3c8d1953d020a324e44933e
-      size: 5405
+      sha256: 2770f7329cc59c8c60cc639ec56d11904cf04fc245c4195039ec6fec328dc0fd
+      size: 5522
   original:
-    hackage: webdriver-0.13.0.0
+    hackage: webdriver-0.14.0.0
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
