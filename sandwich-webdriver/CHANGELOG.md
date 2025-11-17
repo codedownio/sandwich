@@ -1,5 +1,8 @@
 # Changelog for sandwich-webdriver
 
+# Unreleased
+* Put geckodriver --profile-root at run root to deal with long path issues
+
 # 0.4.0.2
 
 * Support `webdriver-0.14.0.0`.

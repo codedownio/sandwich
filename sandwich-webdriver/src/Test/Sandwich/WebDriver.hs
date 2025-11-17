@@ -219,7 +219,10 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
             , W._capabilitiesMozFirefoxOptions = Just ffOptions
             }
 
-      profileRootDir <- liftIO $ createTempDirectory webdriverRoot "geckodriver-profile-root"
+      -- Put geckodriver profiles in the run root, since Firefox seems to crash
+      -- with longer paths. Especially in non-headless mode.
+      runRoot <- fromMaybe "/tmp" <$> getRunRoot
+      profileRootDir <- liftIO $ createTempDirectory runRoot "geckodriver-profiles"
 
       let driverConfig = W.DriverConfigGeckodriver {
             driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
