@@ -77,7 +77,6 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import Lens.Micro
 import System.FilePath
-import System.IO.Temp
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.WebDriver.Binaries
@@ -219,8 +218,6 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
             , W._capabilitiesMozFirefoxOptions = Just ffOptions
             }
 
-      profileRootDir <- liftIO $ createTempDirectory webdriverRoot "geckodriver-profile-root"
-
       let driverConfig = W.DriverConfigGeckodriver {
             driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
             , driverConfigFirefox = browserDependenciesFirefoxFirefox
@@ -229,8 +226,7 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
 #else
             , driverConfigLogDir = runRoot
 #endif
-            , driverConfigGeckodriverFlags = "--profile-root" : profileRootDir : geckodriverExtraFlags wdOptions
-            -- , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
+            , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
             }
       return (caps, driverConfig)
 
