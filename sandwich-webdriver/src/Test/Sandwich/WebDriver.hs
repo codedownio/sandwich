@@ -250,7 +250,8 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
   TestWebDriverContext
     <$> pure (T.unpack webdriverName)
     <*> pure wdc
-    <*> pure (wdOptions { capabilities = finalCaps })
+    <*> pure wdOptions
+    <*> pure finalCaps
     <*> liftIO (newMVar mempty)
     <*> pure driverConfig
     <*> pure downloadDir
@@ -284,8 +285,9 @@ withSession sessionName action = do
   sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
     Just sess -> return (sessionMap, sess)
     Nothing -> do
-      finalCaps <- pure (capabilities wdOptions)
+      finalCaps <- pure wdCapabilities
         >>= configureChromeUserDataDir
+        >>= liftIO . modifyCapabilities wdOptions
 
       debug [i|Creating session '#{sessionName}'|]
       sess <- W.startSession wdContext wdDriverConfig finalCaps sessionName

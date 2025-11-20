@@ -46,11 +46,8 @@ data RunMode =
   -- The @Xvfb@ binary must be installed and on the PATH.
 
 data WdOptions = WdOptions {
-  -- | The WebDriver capabilities to use.
-  capabilities :: W.Capabilities
-
   -- | How to handle opening the browser (in a popup window, headless, etc.).
-  , runMode :: RunMode
+  runMode :: RunMode
 
   -- | Number of times to retry an HTTP request if it times out.
   , httpRetryCount :: Int
@@ -58,11 +55,14 @@ data WdOptions = WdOptions {
   -- | Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix).
   , chromeNoSandbox :: Bool
 
-  -- | Extra flags to pass to chromedriver
+  -- | Extra flags to pass to chromedriver.
   , chromedriverExtraFlags :: [String]
 
-  -- | Extra flags to pass to geckodriver
+  -- | Extra flags to pass to geckodriver.
   , geckodriverExtraFlags :: [String]
+
+  -- | Modify capabilities before session creation.
+  , modifyCapabilities :: W.Capabilities -> IO W.Capabilities
   }
 
 -- | How to obtain certain binaries "on demand". These may or not be needed based on 'WdOptions', so
@@ -106,12 +106,12 @@ defaultXvfbConfig = XvfbConfig Nothing False
 -- You should start with this and modify it using the accessors.
 defaultWdOptions :: WdOptions
 defaultWdOptions = WdOptions {
-  capabilities = W.defaultCaps
-  , runMode = Normal
+  runMode = Normal
   , httpRetryCount = 0
   , chromeNoSandbox = False
   , chromedriverExtraFlags = []
   , geckodriverExtraFlags = []
+  , modifyCapabilities = return
   }
 
 data OnDemand a =
@@ -124,6 +124,7 @@ data TestWebDriverContext = TestWebDriverContext {
   wdName :: String
   , wdContext :: W.WebDriverContext
   , wdOptions :: WdOptions
+  , wdCapabilities :: W.Capabilities
   , wdSessionMap :: MVar (M.Map String W.Session)
   , wdDriverConfig :: W.DriverConfig
   , wdDownloadDir :: FilePath
