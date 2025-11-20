@@ -13,6 +13,7 @@ module Test.Sandwich.WebDriver.Config (
 
   -- * Accessors for the 'WebDriver' context
   , getWdOptions
+  , getWdCapabilities
   -- , getDisplayNumber
   , getDownloadDirectory
   , getWebDriverName

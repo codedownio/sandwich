@@ -155,6 +155,10 @@ type WebDriverSession = (SessionName, W.Session)
 getWdOptions :: TestWebDriverContext -> WdOptions
 getWdOptions = wdOptions
 
+-- | Get the 'W.Capabilities' associated with the 'WebDriver'.
+getWdCapabilities :: TestWebDriverContext -> W.Capabilities
+getWdCapabilities = wdCapabilities
+
 -- | Get the X11 display number associated with the 'WebDriver'.
 -- Only present if running in 'RunInXvfb' mode.
 -- getDisplayNumber :: TestWebDriverContext -> Maybe Int
