@@ -74,10 +74,13 @@ import Control.Monad.Free
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as BL
 import Data.Either
 import Data.Function
 import Data.IORef
 import qualified Data.List as L
+import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -154,6 +157,9 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
            OA.execParser $ OA.info (individualTestParser mempty <**> helper) $
              fullDesc <> header "Pass one of these flags to run an individual test module."
                       <> progDesc "If a module has a \"*\" next to its name, then we detected that it has its own main function. If you pass the option name suffixed by -main then we'll just directly invoke the main function."
+     | optListAvailableTestsJson clo == Just True -> do
+         BL.putStr $ A.encode [M.fromList [("module" :: T.Text, nodeModuleInfoModuleName), ("flag", "--" <> T.unpack shorthand)]
+                              | (NodeModuleInfo {..}, shorthand) <- modulesAndShorthands]
      | optUpdateGolden (optGoldenOptions clo) == Just True -> do
          updateGolden (optGoldenDir (optGoldenOptions clo))
      | otherwise -> do

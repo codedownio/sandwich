@@ -59,6 +59,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optMarkdownSummaryPath :: Maybe FilePath
 
   , optListAvailableTests :: Maybe Bool
+  , optListAvailableTestsJson :: Maybe Bool
   , optPrintGoldenFlags :: Maybe Bool
   , optPrintQuickCheckFlags :: Maybe Bool
   , optPrintHedgehogFlags :: Maybe Bool

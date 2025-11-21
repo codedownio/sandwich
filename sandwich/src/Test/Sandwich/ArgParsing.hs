@@ -95,6 +95,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
+  <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))
   <*> optional (flag False True (long "print-golden-flags" <> help "Print the additional golden testing flags"))
   <*> optional (flag False True (long "print-quickcheck-flags" <> help "Print the additional QuickCheck flags"))
   <*> optional (flag False True (long "print-hedgehog-flags" <> help "Print the additional Hedgehog flags"))

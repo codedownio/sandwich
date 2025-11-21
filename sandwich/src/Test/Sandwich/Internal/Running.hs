@@ -142,6 +142,7 @@ takenMainOptions = [
   , "repeat"
   , "fixed-root"
   , "list-tests"
+  , "list-tests-json"
 
   , "print-golden-flags"
   , "print-hedgehog-flags"
