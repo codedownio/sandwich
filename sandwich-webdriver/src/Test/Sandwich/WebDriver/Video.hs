@@ -109,7 +109,7 @@ startVideoRecording :: (
   -- | Returns handle to video process and list of files created
   -> m VideoProcess
 startVideoRecording path (width, height, x, y) vs = do
-  sess <- getContext webdriver
+  -- sess <- getContext webdriver
   -- let maybeXvfbSession = getXvfbSession sess
   let maybeXvfbSession = Nothing
 
