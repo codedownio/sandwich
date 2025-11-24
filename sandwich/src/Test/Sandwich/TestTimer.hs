@@ -127,7 +127,7 @@ finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
   -- Wrap every test profile in an overall frame called 'allTestsEventName'. If
   -- we don't do this, the speedscope viewer will show each profile as if it
   -- starts at time 0.
-  let finalSpeedScopeFile :: SpeedScopeFile = foldl'
+  let finalSpeedScopeFile :: SpeedScopeFile = L.foldl'
         (\ssf profileName ->
            ssf
            & prependSpeedScopeEvent testTimerStartTime profileName allTestsEventName SpeedScopeEventTypeOpen
