@@ -77,7 +77,7 @@ extra-deps:
 # For sandwich-contexts-kubernetes
 
 - kubernetes-api-130.0.0
-- kubernetes-api-client-0.6.1.1
+- kubernetes-api-client-0.6.1.2
 
 - git: https://github.com/krdlab/haskell-oidc-client
   commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
