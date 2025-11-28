@@ -21,7 +21,7 @@ import qualified Data.ByteString.Lazy as BL
 -- session not created: probably user data directory is already in use, please specify a unique value for --user-data-dir argument, or don't use --user-data-dir
 
 spec :: TopSpecWithOptions
-spec = introduceNixContext (nixpkgsRelease2405 { nixpkgsDerivationAllowUnfree = True }) $
+spec = introduceNixContext (nixpkgsRelease2505 { nixpkgsDerivationAllowUnfree = True }) $
   introduceWebDriverViaNix defaultWdOptions $ do
     it "opens Xkcd and presses the prev button" $ withSession1 $ do
       openPage [i|https://www.xkcd.com|]
