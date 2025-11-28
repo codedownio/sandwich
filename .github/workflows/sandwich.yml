@@ -169,6 +169,10 @@ jobs:
         name: test-results-cabal-${{ runner.os }}-${{ matrix.ghc }}
         path: |
           test_runs
+          sandwich-contexts-minio/test_runs
+          sandwich-hedgehog/test_runs
+          sandwich-quickcheck/test_runs
+          sandwich-webdriver/test_runs
         retention-days: 14
 
   stack:
