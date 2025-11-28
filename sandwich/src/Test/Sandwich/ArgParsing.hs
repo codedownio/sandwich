@@ -11,7 +11,6 @@ import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Time (UTCTime)
-import Data.Time.Clock.POSIX
 import Data.Typeable
 import Options.Applicative
 import qualified Options.Applicative as OA
@@ -268,7 +267,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
   let options = baseOptions {
     optionsTestArtifactsDirectory = case optFixedRoot of
       Nothing -> case optionsTestArtifactsDirectory baseOptions of
-        TestArtifactsNone -> TestArtifactsGeneratedDirectory "test_runs" (formatTime <$> getCurrentTime)
+        TestArtifactsNone -> defaultTestArtifactsDirectory
         existing -> existing
       Just path -> TestArtifactsFixedDirectory path
     , optionsPruneTree = case optTreePrune of
