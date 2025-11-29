@@ -87,8 +87,11 @@ tests:
     - -threaded
     dependencies:
     - filepath
-    - postgresql-simple
     - relude
     - sandwich-contexts
     - string-interpolate
     build-tools: sandwich:sandwich-discover
+    when:
+    - condition: "!os(windows)"
+      dependencies:
+      - postgresql-simple
