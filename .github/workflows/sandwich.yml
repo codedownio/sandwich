@@ -64,7 +64,7 @@ jobs:
         - "9.4.8"
         - "9.6.7"
         - "9.8.4"
-        - "9.10.2"
+        - "9.10.3"
         - "9.12.2"
         exclude:
         # We just want to test basic 8.8.4 compatibility on Linux; these fail.
@@ -191,8 +191,8 @@ jobs:
           yaml: "stack-9.6.7.yaml"
         - ghc: "9.8.4"
           yaml: "stack-9.8.4.yaml"
-        - ghc: "9.10.2"
-          yaml: "stack-9.10.2.yaml"
+        - ghc: "9.10.3"
+          yaml: "stack-9.10.3.yaml"
         - ghc: "9.12.2"
           yaml: "stack-9.12.2.yaml"
 
