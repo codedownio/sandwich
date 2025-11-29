@@ -15,7 +15,7 @@ import UnliftIO.Exception
 
 nixDemo :: TopSpec
 nixDemo =
-  introduceNixContext nixpkgsRelease2405 $
+  introduceNixContext nixpkgsRelease2505 $
     introduceNixEnvironment ["emacs", "firefox"] $ do
       it "Uses the Nix environment" $ do
         env <- getContext nixEnvironment

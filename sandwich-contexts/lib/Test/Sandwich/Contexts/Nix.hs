@@ -144,8 +144,8 @@ nixpkgsRelease2505 :: NixpkgsDerivation
 nixpkgsRelease2505 = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "8217c6edf391991f07ecacf3d31ba6eb01d733b1"
-  , nixpkgsDerivationSha256 = "sha256-aaeXPG9zVvi+aKTp0dMUYOeMuhDXQejRPh2CfK23nf8="
+  , nixpkgsDerivationRev = "e56210760332660c9c6456d0db9bf0dbfe330fa9"
+  , nixpkgsDerivationSha256 = "sha256-KGnvMRwjxD2z65x8ECA2WA9pfmnDCu2xo5Ltm/QTSGs="
   , nixpkgsDerivationAllowUnfree = False
   }
 
@@ -185,9 +185,9 @@ nixpkgsRelease2311 = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationAllowUnfree = False
   }
 
--- | Currently set to 'nixpkgsRelease2405'.
+-- | Currently set to 'nixpkgsRelease2505'.
 nixpkgsReleaseDefault :: NixpkgsDerivation
-nixpkgsReleaseDefault = nixpkgsRelease2405
+nixpkgsReleaseDefault = nixpkgsRelease2505
 
 -- | Introduce a 'NixContext', which contains information about where to find Nix and what
 -- version of Nixpkgs to use. This can be leveraged to introduce Nix packages in tests.

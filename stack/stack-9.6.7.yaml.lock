@@ -19,6 +19,13 @@ packages:
   original:
     hackage: webdriver-0.13.0.0
 - completed:
+    hackage: websockets-0.13.0.0@sha256:9b3680ba5055e0b34ab29c341b21d70084bf067519fc059af0e597cd90a4a05a,7567
+    pantry-tree:
+      sha256: 5f1ab27ecaf9c6fcabe5d86fb6fa55d79c8c506a216a0d088a60436643ec9f07
+      size: 2736
+  original:
+    hackage: websockets-0.13.0.0@sha256:9b3680ba5055e0b34ab29c341b21d70084bf067519fc059af0e597cd90a4a05a,7567
+- completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
     name: minio-hs
@@ -50,12 +57,12 @@ packages:
   original:
     hackage: kubernetes-api-130.0.0
 - completed:
-    hackage: kubernetes-api-client-0.6.1.1@sha256:ae17e14e83e6750bd92529365b29f63f29fa01bbf1c8a6623e43b5553cbf569e,5034
+    hackage: kubernetes-api-client-0.6.1.2@sha256:1e8fc7d53511f08380b54cea92ab85c50c88e7ba97552d10e8712ee918976015,5034
     pantry-tree:
-      sha256: e1eea70be5de3236421321f23266a2c7bcd443f3ef8ad7ac9e1301f3263b7aea
+      sha256: f339c3ef1e14988806ba79fb885f6802be06510ae9bb2a6ae1809a5adceeea0c
       size: 2026
   original:
-    hackage: kubernetes-api-client-0.6.1.1
+    hackage: kubernetes-api-client-0.6.1.2
 - completed:
     commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
     git: https://github.com/krdlab/haskell-oidc-client

@@ -219,9 +219,12 @@ startTree node@(RunNodeParallel {..}) ctx' = do
       0 -> return (Success, emptyExtraTimingInfo)
       n -> return (Failure (ChildrenFailed Nothing n), emptyExtraTimingInfo)
 startTree node@(RunNodeIt {..}) ctx' = do
+  let RunNodeCommonWithStatus {..} = runNodeCommon
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
-    (, emptyExtraTimingInfo) <$> runExampleM runNodeExample ctx (runTreeLogs runNodeCommon) Nothing
+    (results, _, _) <- timed runTreeRecordTime (getBaseContext ctx) runTreeLabel $
+      runExampleM runNodeExample ctx runTreeLogs Nothing
+    return (results, emptyExtraTimingInfo)
 
 -- * Util
 

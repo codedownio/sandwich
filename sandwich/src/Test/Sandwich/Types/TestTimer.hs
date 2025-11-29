@@ -118,7 +118,8 @@ newProfile profileName startTime = SpeedScopeProfile {
 -- * Main type
 
 data TestTimer = SpeedScopeTestTimer {
-  testTimerBasePath :: FilePath
+  testTimerStartTime :: POSIXTime
+  , testTimerBasePath :: FilePath
   , testTimerHandle :: Maybe Handle
   , testTimerSpeedScopeFile :: MVar SpeedScopeFile
   } | NullTestTimer
