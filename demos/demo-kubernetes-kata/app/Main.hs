@@ -34,7 +34,7 @@ spec = describe "Introducing a Kubernetes cluster via Minikube" $ do
   introduceNixContext nixpkgsReleaseDefault $ do
     introduceMinikubeClusterViaNix clusterOptions $ do
       introduceBinaryViaNixPackage @"kubectl" "kubectl" $ do
-        introduceKataContainers defaultKataContainersOptions $ do
+        introduceKataContainers kataOptions $ do
           it "Has a Kata containers context" $ do
             ctx <- getContext kataContainers
             info [i|Got Kata containers context: #{ctx}|]
@@ -42,8 +42,14 @@ spec = describe "Introducing a Kubernetes cluster via Minikube" $ do
           it "pauses" $ do
             threadDelay 9999999999999
   where
+    kataOptions = defaultKataContainersOptionsHelmChart {
+      kataContainersHelmArgs = [
+          "--version", "3.23.0"
+          ]
+      }
+
     clusterOptions = defaultMinikubeClusterOptions {
-      minikubeClusterDriver = Just "kvm2"
+      minikubeClusterDriver = Just "docker"
       , minikubeClusterExtraFlags = ["--container-runtime=containerd"]
       }
 
