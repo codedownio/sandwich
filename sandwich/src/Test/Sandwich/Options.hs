@@ -68,6 +68,7 @@ defaultTestArtifactsDirectory = TestArtifactsGeneratedDirectory "test_runs" getF
       ts <- show <$> getCurrentTime
       return $ ts
         & replace ':' '_'
+        & replace ' ' '_'
 
     replace :: Eq a => a -> a -> [a] -> [a]
     replace a b = map $ \c -> if c == a then b else c
