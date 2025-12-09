@@ -1,0 +1,31 @@
+name:                demo-context-simple
+version:             0.1.0.0
+license:             BSD3
+
+dependencies:
+- base
+- sandwich
+- sandwich-demos
+- string-interpolate
+- unliftio
+- unliftio-core
+
+default-extensions:
+- OverloadedStrings
+- QuasiQuotes
+- NamedFieldPuns
+- RecordWildCards
+- ScopedTypeVariables
+- FlexibleContexts
+- FlexibleInstances
+- LambdaCase
+
+ghc-options:
+- -threaded
+- -rtsopts
+- -with-rtsopts=-N
+
+executables:
+  demo-context-simple:
+    main: Main.hs
+    source-dirs: app
