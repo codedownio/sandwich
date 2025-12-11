@@ -8,6 +8,8 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart (
 
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Data.String.Interpolate
+import qualified Data.Text as T
 import Relude hiding (withFile)
 import System.Exit
 import Test.Sandwich
@@ -45,12 +47,14 @@ withKataContainersHelmChart' :: (
 withKataContainersHelmChart' helmBinary kcc options helmChart helmArgs action = do
   let args = [
         "install", "kata-deploy"
+        , helmChart
         , "--namespace", "kube-system"
         , "--wait"
         , "--timeout", "10m", "--atomic"
-        , helmChart
         -- , "--version", helmChartVersion
         ] <> helmArgs
+
+  info [i|helm #{T.intercalate " " (fmap toText args)}|]
 
   env <- getKubectlEnvironment kcc
 
