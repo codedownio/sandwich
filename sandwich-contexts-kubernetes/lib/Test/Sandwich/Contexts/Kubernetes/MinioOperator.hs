@@ -15,16 +15,24 @@ This is necessary if you want to use the "Test.Sandwich.Contexts.Kubernetes.Mini
 module Test.Sandwich.Contexts.Kubernetes.MinioOperator (
   introduceMinioOperator
   , introduceMinioOperator'
+  , introduceMinioOperator''
 
   -- * Bracket-style variants
   , withMinioOperator
   , withMinioOperator'
 
+  -- * Misc
+  , minioRepoDerivation
+
   -- * Types
   , minioOperator
   , MinioOperatorContext(..)
+
   , MinioOperatorOptions(..)
   , defaultMinioOperatorOptions
+
+  , MinioOperatorYamlSource(..)
+
   , HasMinioOperatorContext
   ) where
 
@@ -44,6 +52,7 @@ import Test.Sandwich.Contexts.Kubernetes.FindImages
 import Test.Sandwich.Contexts.Kubernetes.Images
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Nix
 import UnliftIO.Exception
 import UnliftIO.Process
 
@@ -57,15 +66,35 @@ type HasMinioOperatorContext context = HasLabel context "minioOperator" MinioOpe
 
 data MinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages :: Bool
+  , minioOperatorYamlSource :: MinioOperatorYamlSource
   }
 defaultMinioOperatorOptions :: MinioOperatorOptions
 defaultMinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages = True
+  , minioOperatorYamlSource = MinioOperatorYamlSourceGitHub "github.com/minio/operator?ref=v6.0.1"
   }
+
+data MinioOperatorYamlSource =
+  MinioOperatorYamlSourceGitHub String
+  | MinioOperatorYamlSourceNixDerivation Text
+  deriving (Show, Eq)
+
+-- | Sample derivation for fetching the MinIO repo at version 6.0.4.
+minioRepoDerivation :: Text
+minioRepoDerivation =
+  [__i|{ fetchFromGitHub }:
+
+       fetchFromGitHub {
+         owner = "minio";
+         repo = "operator";
+         rev = "c5b838c475609921935bd4f335fdbc4b6846be14";
+         sha256 = "sha256-pWxBqfSxpTWylmR+Bz8+4gGlGwAiLY/3RFNU5mcnOPE=";
+       }
+      |]
 
 -- | Install the [MinIO Kubernetes operator](https://min.io/docs/minio/kubernetes/upstream/operations/installation.html) onto a Kubernetes cluster.
 introduceMinioOperator :: (
-  KubectlBasicWithoutReader context m
+  KubectlBasicWithoutReader context m, HasNixContext context
   )
   -- | Options
   => MinioOperatorOptions
@@ -77,7 +106,8 @@ introduceMinioOperator options = introduceWith "introduce MinIO operator" minioO
 
 -- | Same as 'introduceMinioOperator', but allows you to pass in the @kubectl@ binary path.
 introduceMinioOperator' :: (
-  HasCallStack, MonadFail m, MonadUnliftIO m, HasKubernetesClusterContext context, HasBaseContext context
+  HasCallStack, MonadFail m, MonadUnliftIO m
+  , HasBaseContext context, HasKubernetesClusterContext context, HasNixContext context
   )
   -- | Path to @kubectl@ binary
   => FilePath
@@ -89,9 +119,26 @@ introduceMinioOperator' kubectlBinary options = introduceWith "introduce MinIO o
   kcc <- getContext kubernetesCluster
   void $ withMinioOperator' kubectlBinary options kcc action
 
+-- | Same as 'introduceMinioOperator', but allows you to pass in the @kubectl@ binary path and operator YAML.
+introduceMinioOperator'' :: (
+  HasCallStack, MonadFail m, MonadUnliftIO m
+  , HasBaseContext context, HasKubernetesClusterContext context
+  )
+  -- | Path to @kubectl@ binary
+  => FilePath
+  -- | Operator YAML
+  -> Text
+  -- | Options
+  -> MinioOperatorOptions
+  -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m ()
+  -> SpecFree context m ()
+introduceMinioOperator'' kubectlBinary allYaml options = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
+  kcc <- getContext kubernetesCluster
+  void $ withMinioOperator'' kubectlBinary options kcc allYaml action
+
 -- | Bracket-style variant of 'introduceMinioOperator'.
 withMinioOperator :: (
-  HasCallStack, MonadFail m, KubectlBasic context m
+  HasCallStack, MonadFail m, KubectlBasic context m, HasNixContext context
   )
   -- | Options
   => MinioOperatorOptions
@@ -104,7 +151,7 @@ withMinioOperator options kcc action = do
 
 -- | Same as 'withMinioOperator', but allows you to pass in the @kubectl@ binary path.
 withMinioOperator' :: (
-  HasCallStack, MonadFail m, KubernetesBasic context m
+  HasCallStack, MonadFail m, KubernetesBasic context m, HasNixContext context
   )
   -- | Path to @kubectl@ binary
   => FilePath
@@ -113,10 +160,32 @@ withMinioOperator' :: (
   -> KubernetesClusterContext
   -> (MinioOperatorContext -> m a)
   -> m a
-withMinioOperator' kubectlBinary (MinioOperatorOptions {..}) kcc action = do
-  env <- getKubectlEnvironment kcc
+withMinioOperator' kubectlBinary opts kcc action = do
+  allYaml <- case minioOperatorYamlSource opts of
+    MinioOperatorYamlSourceGitHub url -> readCreateProcessWithLogging (proc kubectlBinary ["kustomize", url]) ""
+    MinioOperatorYamlSourceNixDerivation derivation -> do
+      minioRepo <- buildNixCallPackageDerivation derivation
+      readCreateProcessWithLogging (proc kubectlBinary ["kustomize", minioRepo]) ""
 
-  allYaml <- readCreateProcessWithLogging ((proc kubectlBinary ["kustomize", "github.com/minio/operator?ref=v6.0.1"]) { env = Just env }) ""
+  withMinioOperator'' kubectlBinary opts kcc (toText allYaml) action
+
+-- | Same as 'withMinioOperator'', but allows you to pass in the operator YAML.
+--
+-- If you want to generate this YAML yourself, just run a command like
+-- @kubectl kustomize "github.com/minio/operator?ref=v6.0.1"@
+withMinioOperator'' :: (
+  HasCallStack, MonadFail m, KubernetesBasic context m
+  )
+  -- | Path to @kubectl@ binary
+  => FilePath
+  -- | Options
+  -> MinioOperatorOptions
+  -> KubernetesClusterContext
+  -> Text
+  -> (MinioOperatorContext -> m a)
+  -> m a
+withMinioOperator'' kubectlBinary (MinioOperatorOptions {..}) kcc allYaml action = do
+  env <- getKubectlEnvironment kcc
 
   when minioOperatorPreloadImages $ do
     let images = findAllImages (toText allYaml)
@@ -124,7 +193,7 @@ withMinioOperator' kubectlBinary (MinioOperatorOptions {..}) kcc action = do
     forM_ images $ \image ->
       loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
-  let create = createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) allYaml
+  let create = createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString allYaml)
                  >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   let namespaceToDestroy = fromMaybe "minio-operator" (findNamespace (toText allYaml))
@@ -139,7 +208,7 @@ withMinioOperator' kubectlBinary (MinioOperatorOptions {..}) kcc action = do
         createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"
                                                               , "--ignore-not-found", "--wait=false", "--all=true"
                                                               ]) {
-                                             env = Just env, delegate_ctlc = True }) allYaml
+                                             env = Just env, delegate_ctlc = True }) (toString allYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
         -- createProcessWithLogging ((proc kubectlBinary ["delete", "namespace", toString namespaceToDestroy, "-f"]) {
