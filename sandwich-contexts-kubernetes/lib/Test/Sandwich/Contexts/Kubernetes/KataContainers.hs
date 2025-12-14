@@ -25,7 +25,6 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
   , KataContainersOptions(..)
   , SourceCheckout(..)
 
-  , defaultKataContainersOptions
   , defaultKataContainersOptionsLegacy
   , defaultKataContainersOptionsHelmChart
 
@@ -38,31 +37,29 @@ import Control.Monad
 import Data.String.Interpolate
 import Relude hiding (withFile)
 import Safe
-import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart
 import Test.Sandwich.Contexts.Kubernetes.KataContainers.Legacy
 import Test.Sandwich.Contexts.Kubernetes.KataContainers.Types
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Nix
 import UnliftIO.Process
 
 
 -- | Install Kata Containers on the cluster and introduce a 'KataContainersContext'.
 introduceKataContainers :: (
-  Typeable context, KubernetesClusterBasicWithoutReader context m, HasNixContext context
+  Typeable context, KubectlBasic context m
   )
   -- | Options
   => KataContainersOptions
   -> SpecFree (ContextWithKataContainers context) m ()
   -> SpecFree context m ()
-introduceKataContainers options = introduceBinaryViaNixPackage @"kubectl" "kubectl" . introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
+introduceKataContainers options = introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
 
 -- | Bracket-style version of 'introduceKataContainers'.
 withKataContainers :: forall context m a. (
   HasCallStack, Typeable context, MonadFail m
-  , KubectlBasic context m, HasNixContext context
+  , KubectlBasic context m
   )
   -- | Options
   => KataContainersOptions
@@ -76,7 +73,7 @@ withKataContainers options action = do
 -- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
 withKataContainers' :: forall context m a. (
   HasCallStack, Typeable context, MonadFail m
-  , KubernetesBasic context m, HasNixContext context
+  , KubernetesBasic context m
   )
   => KubernetesClusterContext
   -- | Path to @kubectl@ binary
@@ -99,7 +96,7 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options ac
         Nothing -> expectationFailure [i|Preflight check: couldn't parse output of minikube ssh "egrep -c 'vmx|svm' /proc/cpuinfo"|]
 
   case options of
-    KataContainersOptionsLegacy {..} -> withKataContainersLegacy kcc kubectlBinary options kataContainersSourceCheckout kataContainersKataDeployImage kataContainersPreloadImages kataContainersLabelNode action
-    KataContainersOptionsHelmChart {..} -> do
-      helmOutput <- buildNixPackage "kubernetes-helm"
-      withKataContainersHelmChart' (helmOutput </> "bin" </> "helm") kcc options kataContainersHelmChart kataContainersHelmArgs action
+    KataContainersOptionsLegacy {..} ->
+      withKataContainersLegacy kcc kubectlBinary options kataContainersSourceCheckout kataContainersKataDeployImage kataContainersPreloadImages kataContainersLabelNode action
+    KataContainersOptionsHelmChart {..} ->
+      withKataContainersHelmChart' kataContainersHelmBinary kcc options kataContainersHelmChart kataContainersHelmArgs action

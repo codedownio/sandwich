@@ -7,7 +7,6 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers.Types where
 import Data.String.Interpolate
 import Relude hiding (withFile)
 import Test.Sandwich
-import Test.Sandwich.Contexts.Files
 
 
 data KataContainersContext = KataContainersContext {
@@ -36,8 +35,10 @@ data KataContainersOptions =
     }
   -- | Install Kata using a Helm chart
   | KataContainersOptionsHelmChart {
+      -- | Path to the @helm@ binary
+      kataContainersHelmBinary :: FilePath
       -- | Path or URL to a Helm chart
-      kataContainersHelmChart :: FilePath
+      , kataContainersHelmChart :: FilePath
       -- | Extra arguments to pass to Helm
       , kataContainersHelmArgs :: [String]
       }
@@ -66,14 +67,12 @@ defaultKataContainersOptionsLegacy = KataContainersOptionsLegacy {
                                     }
                                    |]
 
-defaultKataContainersOptionsHelmChart :: KataContainersOptions
-defaultKataContainersOptionsHelmChart = KataContainersOptionsHelmChart {
-  kataContainersHelmChart = "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy:3.23.0"
+defaultKataContainersOptionsHelmChart :: FilePath -> KataContainersOptions
+defaultKataContainersOptionsHelmChart helmBinary = KataContainersOptionsHelmChart {
+  kataContainersHelmBinary = helmBinary
+  , kataContainersHelmChart = "oci://ghcr.io/kata-containers/kata-deploy-charts/kata-deploy:3.23.0"
   , kataContainersHelmArgs = []
   }
-
-defaultKataContainersOptions :: KataContainersOptions
-defaultKataContainersOptions = defaultKataContainersOptionsHelmChart
 
 kataContainers :: Label "kataContainers" KataContainersContext
 kataContainers = Label
@@ -81,5 +80,4 @@ type HasKataContainersContext context = HasLabel context "kataContainers" KataCo
 
 type ContextWithKataContainers context =
   LabelValue "kataContainers" KataContainersContext
-  :> LabelValue "file-kubectl" (EnvironmentFile "kubectl")
   :> context

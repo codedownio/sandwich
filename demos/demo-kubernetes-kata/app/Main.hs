@@ -30,17 +30,18 @@ import UnliftIO.Process
 
 
 spec :: TopSpec
-spec = describe "Introducing a Kubernetes cluster via Minikube" $ do
-  introduceNixContext nixpkgsReleaseDefault $ do
-    introduceMinikubeClusterViaNix clusterOptions $ do
-      introduceBinaryViaNixPackage @"kubectl" "kubectl" $ do
-        introduceKataContainers kataOptions $ do
-          it "Has a Kata containers context" $ do
-            ctx <- getContext kataContainers
-            info [i|Got Kata containers context: #{ctx}|]
+spec = describe "Introducing a Kubernetes cluster via Minikube" $
+  introduceNixContext nixpkgsReleaseDefault $
+  introduceMinikubeClusterViaNix clusterOptions $
+  introduceBinaryViaNixPackage @"kubectl" "kubectl" $
+  introduceBinaryViaNixPackage @"helm" "kubernetes-helm" $
+  introduceKataContainers (kataOptions undefined) $ do
+    it "Has a Kata containers context" $ do
+      ctx <- getContext kataContainers
+      info [i|Got Kata containers context: #{ctx}|]
 
-          it "pauses" $ do
-            threadDelay 9999999999999
+    it "pauses" $ do
+      threadDelay 9999999999999
   where
     kataOptions = defaultKataContainersOptionsHelmChart {
       kataContainersHelmArgs = [
