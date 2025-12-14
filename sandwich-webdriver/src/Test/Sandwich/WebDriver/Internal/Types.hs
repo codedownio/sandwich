@@ -120,12 +120,20 @@ data OnDemand a =
   | OnDemandReady a
   | OnDemandErrored Text
 
+data SessionMapEntry = SessionMapEntry {
+  sessionMapEntrySession :: W.Session
+  -- Per-session directories which we should clean up when a session is closed.
+  -- These are typically browser profile directories, which can take up a lot of
+  -- space in test artifact directories.
+  , sessionMapEntryDirsToRemove :: [FilePath]
+  }
+
 data TestWebDriverContext = TestWebDriverContext {
   wdName :: String
   , wdContext :: W.WebDriverContext
   , wdOptions :: WdOptions
   , wdCapabilities :: W.Capabilities
-  , wdSessionMap :: MVar (M.Map String W.Session)
+  , wdSessionMap :: MVar (M.Map String SessionMapEntry)
   , wdDriverConfig :: W.DriverConfig
   , wdDownloadDir :: FilePath
 

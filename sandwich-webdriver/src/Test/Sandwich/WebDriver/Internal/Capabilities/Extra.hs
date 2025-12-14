@@ -138,15 +138,15 @@ configureFirefoxDownloadCapabilities _ browser = return browser
 --
 -- This is usually a red herring, chromedriver seems to report it whenever the
 -- browser fails to start up for whatever reason.
-configureChromeUserDataDir :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => W.Capabilities -> m W.Capabilities
+configureChromeUserDataDir :: (Constraints m, HasBaseContextMonad context m, MonadFail m) => W.Capabilities -> m (Maybe FilePath, W.Capabilities)
 configureChromeUserDataDir caps@(W.Capabilities {_capabilitiesGoogChromeOptions=(Just chromeOptions)}) = do
   Just dir <- getCurrentFolder
   userDataDir <- liftIO $ createTempDirectory dir "chrome-user-data-dir"
   let arg = [i|--user-data-dir=#{userDataDir}|]
   let finalChromeOptions = chromeOptions
                          & over chromeOptionsArgs (Just . (arg :) . fromMaybe [])
-  return (caps { W._capabilitiesGoogChromeOptions = Just finalChromeOptions })
-configureChromeUserDataDir caps = return caps
+  return (Just userDataDir, caps { W._capabilitiesGoogChromeOptions = Just finalChromeOptions })
+configureChromeUserDataDir caps = return (Nothing, caps)
 
 
 -- | This is to make it possible to use Chrome installed by Nix, avoiding errors like this:

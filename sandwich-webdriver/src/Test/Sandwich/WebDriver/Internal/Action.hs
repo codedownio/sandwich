@@ -13,6 +13,7 @@ import Test.Sandwich.WebDriver.Internal.Util
 import Test.Sandwich.WebDriver.Types
 import qualified Test.WebDriver as W
 import UnliftIO.Concurrent
+import UnliftIO.Directory
 import UnliftIO.Exception
 
 
@@ -24,16 +25,29 @@ closeSession session (TestWebDriverContext {wdSessionMap, wdContext}) = do
       Nothing -> return (sessionMap, Nothing)
       Just x -> return (M.delete session sessionMap, Just x)
 
-  whenJust toClose $ \sess -> W.closeSession wdContext sess
+  whenJust toClose $ \(SessionMapEntry {..}) -> do
+    W.closeSession wdContext sessionMapEntrySession
+
+    info [i|Closing session: #{sessionMapEntrySession}. sessionMapEntryDirsToRemove: #{sessionMapEntryDirsToRemove}|]
+
+    forM_ sessionMapEntryDirsToRemove $ \dirToRemove -> do
+      debug [i|Removing session-specific directory: #{dirToRemove}|]
+      catch (removePathForcibly dirToRemove)
+            (\(e :: SomeException) -> warn [i|Failed to remove session directory '#{dirToRemove}': '#{e}'|])
 
 -- | Close all sessions except those listed.
 closeAllSessionsExcept :: (HasCallStack, MonadLogger m, W.WebDriverBase m) => [SessionName] -> TestWebDriverContext -> m ()
 closeAllSessionsExcept toKeep (TestWebDriverContext {wdSessionMap, wdContext}) = do
   toClose <- modifyMVar wdSessionMap $ return . M.partitionWithKey (\name _ -> name `elem` toKeep)
 
-  forM_ (M.toList toClose) $ \(name, sess) ->
-    catch (W.closeSession wdContext sess)
+  forM_ (M.toList toClose) $ \(name, SessionMapEntry {..}) -> do
+    catch (W.closeSession wdContext sessionMapEntrySession)
           (\(e :: SomeException) -> warn [i|Failed to destroy session '#{name}': '#{e}'|])
+
+    forM_ sessionMapEntryDirsToRemove $ \dirToRemove -> do
+      debug [i|Removing session-specific directory: #{dirToRemove}|]
+      catch (removePathForcibly dirToRemove)
+            (\(e :: SomeException) -> warn [i|Failed to remove session directory '#{dirToRemove}': '#{e}'|])
 
 -- | Close all sessions.
 closeAllSessions :: (HasCallStack, MonadLogger m, W.WebDriverBase m) => TestWebDriverContext -> m ()

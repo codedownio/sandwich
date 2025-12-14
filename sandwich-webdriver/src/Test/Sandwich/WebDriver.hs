@@ -282,18 +282,25 @@ withSession sessionName action = do
   TestWebDriverContext {..} <- getContext webdriver
 
   -- Create new session if necessary (this can throw an exception)
-  sess <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
-    Just sess -> return (sessionMap, sess)
+  SessionMapEntry {..} <- modifyMVar wdSessionMap $ \sessionMap -> case M.lookup sessionName sessionMap of
+    Just sessionMapEntry -> return (sessionMap, sessionMapEntry)
     Nothing -> do
-      finalCaps <- pure wdCapabilities
+      (maybeChromeUserDataDir, finalCaps') <- pure wdCapabilities
         >>= configureChromeUserDataDir
-        >>= liftIO . modifyCapabilities wdOptions
+
+      finalCaps <- liftIO $ modifyCapabilities wdOptions finalCaps'
 
       debug [i|Creating session '#{sessionName}'|]
       sess <- W.startSession wdContext wdDriverConfig finalCaps sessionName
-      return (M.insert sessionName sess sessionMap, sess)
 
-  pushContext webdriverSession (sessionName, sess) $
+      let sessionMapEntry = SessionMapEntry {
+            sessionMapEntrySession = sess
+            , sessionMapEntryDirsToRemove = maybeToList maybeChromeUserDataDir
+            }
+
+      return (M.insert sessionName sessionMapEntry sessionMap, sessionMapEntry)
+
+  pushContext webdriverSession (sessionName, sessionMapEntrySession) $
     recordVideoIfConfigured sessionName
     action
 
