@@ -2,8 +2,8 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart (
-  withKataContainersHelmChart
-  , withKataContainersHelmChart'
+  withKataContainers
+  , withKataContainers'
   ) where
 
 import Control.Monad.IO.Unlift
@@ -20,39 +20,35 @@ import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Process
 
 
-withKataContainersHelmChart :: (
+withKataContainers :: (
   MonadFail m, MonadLoggerIO m, MonadUnliftIO m
   , MonadReader context m, HasFile context "helm"
   )
   => KubernetesClusterContext
   -> KataContainersOptions
-  -> String
-  -> [String]
   -> (KataContainersContext -> m b)
   -> m b
-withKataContainersHelmChart kcc options helmChart helmArgs action = do
+withKataContainers kcc options action = do
   helmBinary <- askFile @"helm"
-  withKataContainersHelmChart' helmBinary kcc options helmChart helmArgs action
+  withKataContainers' helmBinary kcc options action
 
-withKataContainersHelmChart' :: (
+withKataContainers' :: (
   MonadFail m, MonadLoggerIO m, MonadUnliftIO m
   )
   => FilePath
   -> KubernetesClusterContext
   -> KataContainersOptions
-  -> String
-  -> [String]
   -> (KataContainersContext -> m b)
   -> m b
-withKataContainersHelmChart' helmBinary kcc options helmChart helmArgs action = do
+withKataContainers' helmBinary kcc options@(KataContainersOptions {..}) action = do
   let args = [
         "install", "kata-deploy"
-        , helmChart
+        , kataContainersHelmChart
         , "--namespace", "kube-system"
         , "--wait"
         , "--timeout", "10m", "--atomic"
         -- , "--version", helmChartVersion
-        ] <> helmArgs
+        ] <> kataContainersHelmArgs
 
   info [i|helm #{T.intercalate " " (fmap toText args)}|]
 
