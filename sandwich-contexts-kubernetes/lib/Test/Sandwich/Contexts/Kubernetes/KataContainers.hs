@@ -16,6 +16,7 @@ Install [Kata Containers](https://katacontainers.io) on a Kubernetes cluster.
 module Test.Sandwich.Contexts.Kubernetes.KataContainers (
   -- * Introduce Kata Containers
   introduceKataContainers
+  , introduceKataContainers'
 
   -- * Bracket-style versions
   , withKataContainers
@@ -23,10 +24,8 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
 
   -- * Types
   , KataContainersOptions(..)
-  , SourceCheckout(..)
 
-  , defaultKataContainersOptionsLegacy
-  , defaultKataContainersOptionsHelmChart
+  , defaultKataContainersOptions
 
   , kataContainers
   , KataContainersContext(..)
@@ -34,13 +33,13 @@ module Test.Sandwich.Contexts.Kubernetes.KataContainers (
   ) where
 
 import Control.Monad
+import Control.Monad.IO.Unlift
 import Data.String.Interpolate
 import Relude hiding (withFile)
 import Safe
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart
-import Test.Sandwich.Contexts.Kubernetes.KataContainers.Legacy
+import qualified Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart as HC
 import Test.Sandwich.Contexts.Kubernetes.KataContainers.Types
 import Test.Sandwich.Contexts.Kubernetes.Types
 import UnliftIO.Process
@@ -48,7 +47,7 @@ import UnliftIO.Process
 
 -- | Install Kata Containers on the cluster and introduce a 'KataContainersContext'.
 introduceKataContainers :: (
-  Typeable context, KubectlBasic context m
+  MonadUnliftIO m, HasBaseContext context, HasKubernetesClusterContext context, HasFile context "helm"
   )
   -- | Options
   => KataContainersOptions
@@ -56,10 +55,23 @@ introduceKataContainers :: (
   -> SpecFree context m ()
 introduceKataContainers options = introduceWith "introduce KataContainers" kataContainers (void . withKataContainers options)
 
+-- | Same as 'introduceKataContainers', but allows you to pass in the 'KubernetesClusterContext' and binary paths.
+introduceKataContainers' :: (
+  MonadUnliftIO m, HasBaseContext context
+  )
+  => KubernetesClusterContext
+  -- | Path to @helm@ binary
+  -> FilePath
+  -- | Options
+  -> KataContainersOptions
+  -> SpecFree (ContextWithKataContainers context) m ()
+  -> SpecFree context m ()
+introduceKataContainers' kcc helmBinary options = introduceWith "introduce KataContainers" kataContainers (void . withKataContainers' kcc helmBinary options)
+
 -- | Bracket-style version of 'introduceKataContainers'.
 withKataContainers :: forall context m a. (
-  HasCallStack, Typeable context, MonadFail m
-  , KubectlBasic context m
+  HasCallStack, MonadFail m
+  , KubernetesClusterBasic context m, HasFile context "helm"
   )
   -- | Options
   => KataContainersOptions
@@ -67,21 +79,21 @@ withKataContainers :: forall context m a. (
   -> m a
 withKataContainers options action = do
   kcc <- getContext kubernetesCluster
-  kubectlBinary <- askFile @"kubectl"
-  withKataContainers' kcc kubectlBinary options action
+  helmBinary <- askFile @"helm"
+  withKataContainers' kcc helmBinary options action
 
--- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary path.
+-- | Same as 'withKataContainers', but allows you to pass in the 'KubernetesClusterContext' and binary paths.
 withKataContainers' :: forall context m a. (
-  HasCallStack, Typeable context, MonadFail m
+  HasCallStack, MonadFail m
   , KubernetesBasic context m
   )
   => KubernetesClusterContext
-  -- | Path to @kubectl@ binary
+  -- | Path to @helm@ binary
   -> FilePath
   -> KataContainersOptions
   -> (KataContainersContext -> m a)
   -> m a
-withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options action = do
+withKataContainers' kcc@(KubernetesClusterContext {..}) helmBinary options action = do
   -- Preflight checks
   case kubernetesClusterType of
     KubernetesClusterKind {} -> expectationFailure [i|Can't install Kata Containers on Kind at presenpt.|]
@@ -95,8 +107,4 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) kubectlBinary options ac
         Just _ -> return ()
         Nothing -> expectationFailure [i|Preflight check: couldn't parse output of minikube ssh "egrep -c 'vmx|svm' /proc/cpuinfo"|]
 
-  case options of
-    KataContainersOptionsLegacy {..} ->
-      withKataContainersLegacy kcc kubectlBinary options kataContainersSourceCheckout kataContainersKataDeployImage kataContainersPreloadImages kataContainersLabelNode action
-    KataContainersOptionsHelmChart {..} ->
-      withKataContainersHelmChart' kataContainersHelmBinary kcc options kataContainersHelmChart kataContainersHelmArgs action
+  HC.withKataContainers' helmBinary kcc options action

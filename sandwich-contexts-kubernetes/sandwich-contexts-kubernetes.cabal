@@ -28,7 +28,6 @@ library
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages
       Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart
-      Test.Sandwich.Contexts.Kubernetes.KataContainers.Legacy
       Test.Sandwich.Contexts.Kubernetes.KataContainers.Types
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
