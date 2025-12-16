@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -27,6 +27,9 @@ library
       Test.Sandwich.Contexts.Kubernetes.SeaweedFS
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages
+      Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart
+      Test.Sandwich.Contexts.Kubernetes.KataContainers.Legacy
+      Test.Sandwich.Contexts.Kubernetes.KataContainers.Types
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Images
       Test.Sandwich.Contexts.Kubernetes.KindCluster.Network
