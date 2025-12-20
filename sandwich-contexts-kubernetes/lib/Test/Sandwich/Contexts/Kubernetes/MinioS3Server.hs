@@ -22,6 +22,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinioS3Server (
   , MinioS3ServerOptions(..)
   , defaultMinioS3ServerOptions
   , NetworkPolicies(..)
+  , KustomizationDir(..)
 
   -- * Re-exports
   , testS3Server
