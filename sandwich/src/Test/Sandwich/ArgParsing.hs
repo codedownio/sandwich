@@ -91,6 +91,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> option auto (long "repeat" <> short 'r' <> showDefault <> help "Repeat the test N times and report how many failures occur" <> value 1 <> metavar "INT")
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
+  <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
@@ -278,6 +279,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         xs -> Just $ TreeFilter xs
     , optionsFormatters = finalFormatters
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
+    , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
     }
 
   return (options, optRepeatCount)

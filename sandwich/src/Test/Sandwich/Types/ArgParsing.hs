@@ -56,6 +56,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optRepeatCount :: Int
   , optFixedRoot :: Maybe String
   , optDryRun :: Maybe Bool
+  , optWarnOnLongExecutionMs :: Maybe Int
   , optMarkdownSummaryPath :: Maybe FilePath
 
   , optListAvailableTests :: Maybe Bool

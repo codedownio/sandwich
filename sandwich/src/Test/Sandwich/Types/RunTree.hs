@@ -291,8 +291,9 @@ data Options = Options {
   -- We use this hint to connect 'CallStack' paths (which are relative to the project root) to their actual path on disk.
   , optionsTestTimerType :: TestTimerType
   -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
+  , optionsWarnOnLongExecutionMs :: Maybe Int
+  -- ^ If set, alerts user to nodes that run for the given number of milliseconds, by writing to a file in the root directory.
   }
-
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way
 -- to reliably get a callstack from an exception, but if you can throw (or catch+rethrow) this type

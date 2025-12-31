@@ -55,6 +55,7 @@ defaultOptions = Options {
   , optionsFormatters = [SomeFormatter defaultPrintFormatter]
   , optionsProjectRoot = Nothing
   , optionsTestTimerType = SpeedScopeTestTimerType { speedScopeTestTimerWriteRawTimings = False }
+  , optionsWarnOnLongExecutionMs = Nothing
   }
 
 -- | Generate a test artifacts directory based on a timestamp.
