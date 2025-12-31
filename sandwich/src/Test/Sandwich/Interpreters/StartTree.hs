@@ -425,29 +425,45 @@ timed (RunNodeCommonWithStatus {..}) recordTime bc@(BaseContext {..}) label acti
 
   startTime <- liftIO getCurrentTime
 
-  ret <- case optionsWarnOnLongExecutionMs baseContextOptions of
-    Nothing -> timerFn action
-    Just maxTimeMs ->
-      withAsync (warnAfterMilliseconds maxTimeMs) $ \_ ->
-        timerFn action
+  ret <-
+    withMaybeWarnOnLongExecution $
+    withMaybeCancelOnLongExecution $
+    timerFn action
+
   endTime <- liftIO getCurrentTime
   pure (ret, startTime, endTime)
   where
-    warnAfterMilliseconds :: Int -> m ()
-    warnAfterMilliseconds ms = do
-      threadDelay (ms * 1000)
+    withMaybeWarnOnLongExecution inner = case optionsWarnOnLongExecutionMs baseContextOptions of
+      Nothing -> inner
+      Just maxTimeMs ->
+        flip withAsync (const inner) $ do
+          threadDelay (maxTimeMs * 1000)
 
-      whenJust baseContextRunRoot $ \runRoot -> do
-        let warningsDir = runRoot </> "long-execution-warnings"
-        createDirectoryIfMissing True warningsDir
-        let fileName = warningsDir </> (nodeToFolderName [i|#{runTreeId}-#{label}|] 1 0) <.> "log"
-        bracket (liftIO $ openFile fileName WriteMode) (liftIO . hClose) $ \h -> do
-          liftIO $ T.hPutStrLn h [__i|Node was still running after #{ms}ms: #{label}
+          whenJust baseContextRunRoot $ \runRoot -> do
+            let warningsDir = runRoot </> "long-execution-warnings"
+            createDirectoryIfMissing True warningsDir
+            writeInfoToFile maxTimeMs (warningsDir </> (nodeToFolderName [i|#{runTreeId}-warn-#{label}|] 1 0) <.> "log")
 
-                                      Ancestors: #{runTreeAncestors}
+    withMaybeCancelOnLongExecution inner = case optionsWarnOnLongExecutionMs baseContextOptions of
+      Nothing -> inner
+      Just maxTimeMs ->
+        race (threadDelay (maxTimeMs * 1000)) inner >>= \case
+          Left _ -> do
+            whenJust baseContextRunRoot $ \runRoot -> do
+              let warningsDir = runRoot </> "long-execution-warnings"
+              createDirectoryIfMissing True warningsDir
+              writeInfoToFile maxTimeMs (warningsDir </> (nodeToFolderName [i|#{runTreeId}-cancel-#{label}|] 1 0) <.> "log")
+            throwIO $ Reason (Just callStack) $ [i|Timed out long-running node: #{label}|]
+          Right x -> return x
 
-                                      Folder: #{runTreeFolder}
-                                      |]
-          whenJust runTreeLoc $ \(SrcLoc {..}) ->
-            liftIO $ T.hPutStrLn h [__i|Loc: #{srcLocFile}:#{srcLocStartLine}:#{srcLocStartCol} in #{srcLocPackage}:#{srcLocModule}
-                                       |]
+    writeInfoToFile ms fileName =
+      bracket (liftIO $ openFile fileName WriteMode) (liftIO . hClose) $ \h -> do
+        liftIO $ T.hPutStrLn h [__i|Node was still running after #{ms}ms: #{label}
+
+                                    Ancestors: #{runTreeAncestors}
+
+                                    Folder: #{runTreeFolder}
+                                    |]
+        whenJust runTreeLoc $ \(SrcLoc {..}) ->
+          liftIO $ T.hPutStrLn h [__i|\nLoc: #{srcLocFile}:#{srcLocStartLine}:#{srcLocStartCol} in #{srcLocPackage}:#{srcLocModule}
+                                     |]

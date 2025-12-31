@@ -293,6 +293,8 @@ data Options = Options {
   -- ^ Whether to enable the test timer. When the test timer is present, timing information will be emitted to the project root (if present).
   , optionsWarnOnLongExecutionMs :: Maybe Int
   -- ^ If set, alerts user to nodes that run for the given number of milliseconds, by writing to a file in the root directory.
+  , optionsCancelOnLongExecutionMs :: Maybe Int
+  -- ^ Same as 'optionsWarnOnLongExecutionMs', but also cancels the problematic nodes.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

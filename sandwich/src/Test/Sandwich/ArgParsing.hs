@@ -92,6 +92,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (strOption (long "fixed-root" <> help "Store test artifacts at a fixed path" <> metavar "STRING"))
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
   <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
+  <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
@@ -280,6 +281,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     , optionsFormatters = finalFormatters
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
+    , optionsCancelOnLongExecutionMs = (optionsCancelOnLongExecutionMs baseOptions) <|> optCancelOnLongExecutionMs
     }
 
   return (options, optRepeatCount)
