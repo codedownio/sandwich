@@ -9,6 +9,7 @@ module Test.Sandwich.Interpreters.StartTree (
 
 
 import Control.Concurrent.MVar
+import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
@@ -91,41 +92,46 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     result <- liftIO $ newIORef (Success, emptyExtraTimingInfo)
-    bracket (do
-                let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
-                let label = runTreeLabel <> " (setup)"
-                flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
-                  timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
-                    runExampleM' runNodeCommon label runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])
-            )
-            (\(ret, setupStartTime, setupFinishTime) -> case ret of
-                Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupStartTime)
-                Right intro -> do
-                  teardownStartTime <- getCurrentTime
-                  addTeardownStartTimeToStatus runTreeStatus teardownStartTime
-                  let label = runTreeLabel <> " (teardown)"
-                  (ret', _, _) <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
-                    runExampleM runNodeCommon label (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
-                  writeIORef result (ret', ExtraTimingInfo (Just setupFinishTime) (Just teardownStartTime))
-            )
-            (\(ret, _setupStartTime, setupFinishTime) -> do
-                addSetupFinishTimeToStatus runTreeStatus setupFinishTime
-                case ret of
-                  Left failureReason@(Pending {}) -> do
-                    -- TODO: add note about failure in allocation
-                    markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
-                  Left failureReason -> do
-                    -- TODO: add note about failure in allocation
-                    markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
-                  Right intro -> do
-                    -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
-                    -- It would be better to track the profile at the type level
-                    let ctxFinal = case cast intro of
-                          Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-                          Nothing -> ctx
+    -- The bracket from @base@ uses 'mask', while the one from @unliftio@ uses 'uninterruptibleMask'.
+    -- We want to err on the side of avoiding deadlocks so we use the @base@ version.
+    -- This also plays nicer with the 'withMaybeWarnOnLongExecution' and 'withMaybeCancelOnLongExecution' functions.
+    -- See the discussion at https://github.com/fpco/safe-exceptions/issues/3
+    liftIO $ E.bracket
+      (do
+          let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
+          let label = runTreeLabel <> " (setup)"
+          flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
+            timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
+              runExampleM' runNodeCommon label runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])
+      )
+      (\(ret, setupStartTime, setupFinishTime) -> case ret of
+          Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupStartTime)
+          Right intro -> do
+            teardownStartTime <- getCurrentTime
+            addTeardownStartTimeToStatus runTreeStatus teardownStartTime
+            let label = runTreeLabel <> " (teardown)"
+            (ret', _, _) <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
+              runExampleM runNodeCommon label (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
+            writeIORef result (ret', ExtraTimingInfo (Just setupFinishTime) (Just teardownStartTime))
+      )
+      (\(ret, _setupStartTime, setupFinishTime) -> do
+          addSetupFinishTimeToStatus runTreeStatus setupFinishTime
+          case ret of
+            Left failureReason@(Pending {}) -> do
+              -- TODO: add note about failure in allocation
+              markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure failureReason)
+            Left failureReason -> do
+              -- TODO: add note about failure in allocation
+              markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
+            Right intro -> do
+              -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
+              -- It would be better to track the profile at the type level
+              let ctxFinal = case cast intro of
+                    Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
+                    Nothing -> ctx
 
-                    void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
-            )
+              void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
+      )
     readIORef result
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
@@ -474,10 +480,6 @@ withMaybeCancelOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {
   where
     waiter maxTimeMs =
       -- Use unsafeUnmask to make threadDelay interruptible even in masked cleanup contexts
-      -- (like the bracket call of an Introduce node)
-      --
-      -- However, this function still won't work properly on
-
       liftIO $ unsafeUnmask $ threadDelay (maxTimeMs * 1000)
 
 writeInfoToFile :: MonadUnliftIO m => RunNodeCommonWithStatus s l t -> Int -> FilePath -> String -> m ()
