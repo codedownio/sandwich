@@ -24,6 +24,7 @@ import qualified Data.Text.IO as T
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Typeable
+import GHC.IO (unsafeUnmask)
 import GHC.Stack
 import System.FilePath
 import System.IO
@@ -437,13 +438,18 @@ timed _rnc recordTime bc@(BaseContext {..}) label action = do
   endTime <- liftIO getCurrentTime
   pure (ret, startTime, endTime)
 
-
 withMaybeWarnOnLongExecution :: (MonadUnliftIO m) => BaseContext -> RunNodeCommonWithStatus s l t -> String -> m a -> m a
 withMaybeWarnOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {..}) label inner = case optionsWarnOnLongExecutionMs baseContextOptions of
   Nothing -> inner
-  Just maxTimeMs ->
-    flip withAsync (const inner) $ do
-      threadDelay (maxTimeMs * 1000)
+  Just maxTimeMs -> do
+    withAsync (waiter maxTimeMs) $ \_ -> do
+      inner
+
+  where
+    waiter maxTimeMs = do
+      -- Use unsafeUnmask to make threadDelay interruptible even in masked cleanup contexts
+      -- (like the bracket call of an Introduce node)
+      liftIO $ unsafeUnmask $ threadDelay (maxTimeMs * 1000)
 
       micros <- liftIO getCurrentMicrosInteger
 
@@ -456,7 +462,7 @@ withMaybeCancelOnLongExecution :: (MonadUnliftIO m) => BaseContext -> RunNodeCom
 withMaybeCancelOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {..}) label inner = case optionsCancelOnLongExecutionMs baseContextOptions of
   Nothing -> inner
   Just maxTimeMs ->
-    race (threadDelay (maxTimeMs * 1000)) inner >>= \case
+    race (waiter maxTimeMs) inner >>= \case
       Left _ -> do
         micros <- liftIO getCurrentMicrosInteger
         whenJust baseContextRunRoot $ \runRoot -> do
@@ -465,6 +471,14 @@ withMaybeCancelOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {
           writeInfoToFile rnc maxTimeMs (dir </> (nodeToFolderName [i|#{micros}-#{runTreeId}-cancel-#{label}|] 1 0) <.> "log") label
         throwIO $ Reason (Just callStack) $ [i|Timed out long-running node|]
       Right x -> return x
+  where
+    waiter maxTimeMs =
+      -- Use unsafeUnmask to make threadDelay interruptible even in masked cleanup contexts
+      -- (like the bracket call of an Introduce node)
+      --
+      -- However, this function still won't work properly on
+
+      liftIO $ unsafeUnmask $ threadDelay (maxTimeMs * 1000)
 
 writeInfoToFile :: MonadUnliftIO m => RunNodeCommonWithStatus s l t -> Int -> FilePath -> String -> m ()
 writeInfoToFile (RunNodeCommonWithStatus {..}) ms fileName label =
