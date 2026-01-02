@@ -1,6 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Test.Sandwich.Formatters.Print.CallStacks where
+module Test.Sandwich.Formatters.Print.CallStacks (
+  printCallStack
+  , printSrcLoc
+  ) where
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -20,10 +23,16 @@ printCallStack cs = forM_ (getCallStack cs) printCallStackLine
 printCallStackLine :: (
   MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
   ) => (String, SrcLoc) -> m ()
-printCallStackLine (f, (SrcLoc {..})) = do
+printCallStackLine (f, srcLoc) = do
   pic logFunctionColor f
 
   p " called at "
+  printSrcLoc srcLoc
+
+printSrcLoc :: (
+  MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
+  ) => SrcLoc -> m ()
+printSrcLoc (SrcLoc {..}) = do
   pc logFilenameColor srcLocFile
   p ":"
   pc logLineColor (show srcLocStartLine)
