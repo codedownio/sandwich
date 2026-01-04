@@ -79,13 +79,14 @@ startTree node@(RunNodeAfter {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   runInAsync node ctx $ do
     result <- liftIO $ newIORef (Success, emptyExtraTimingInfo)
-    finally (void $ runNodesSequentially runNodeChildren ctx)
-            (do
-                let label = runTreeLabel <> " (teardown)"
-                (ret, teardownStartTime, _teardownFinishTime) <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
-                  runExampleM runNodeCommon label runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])
-                writeIORef result (ret, mkTeardownTimingInfo teardownStartTime)
-            )
+    -- We use the 'finally' from @base@; see the comment below about 'bracket'
+    E.finally (void $ runNodesSequentially runNodeChildren ctx)
+              (do
+                  let label = runTreeLabel <> " (teardown)"
+                  (ret, teardownStartTime, _teardownFinishTime) <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
+                    runExampleM runNodeCommon label runNodeAfter ctx runTreeLogs (Just [i|Exception in after '#{runTreeLabel}' handler|])
+                  writeIORef result (ret, mkTeardownTimingInfo teardownStartTime)
+              )
     liftIO $ readIORef result
 startTree node@(RunNodeIntroduce {..}) ctx' = do
   let RunNodeCommonWithStatus {..} = runNodeCommon
