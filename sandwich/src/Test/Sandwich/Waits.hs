@@ -19,6 +19,7 @@ module Test.Sandwich.Waits (
   ) where
 
 import Control.Monad.IO.Unlift
+import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Time
 import Data.Typeable
@@ -70,9 +71,12 @@ waitUntil' policy timeInSeconds action = do
       if
 #if MIN_VERSION_base(4,14,0)
         | Just (_ :: Timeout) <- fromExceptionUnwrap e -> do
-            throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
+            throwIO $ Reason (Just (popCallStackSafe callStack)) "Timeout in waitUntil"
         | Just (SyncExceptionWrapper (cast -> Just (SomeException (cast -> Just (SomeAsyncException (cast -> Just (_ :: Timeout))))))) <- cast inner -> do
-            throwIO $ Reason (Just (popCallStack callStack)) "Timeout in waitUntil"
+            throwIO $ Reason (Just (popCallStackSafe callStack)) "Timeout in waitUntil"
 #endif
         | otherwise -> do
             throwIO e
+
+popCallStackSafe :: CallStack -> CallStack
+popCallStackSafe cs = if L.null (getCallStack cs) then cs else popCallStack cs
