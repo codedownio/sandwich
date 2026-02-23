@@ -25,6 +25,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server
       Test.Sandwich.Contexts.Kubernetes.Namespace
       Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+      Test.Sandwich.Contexts.Kubernetes.Typesense
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages
       Test.Sandwich.Contexts.Kubernetes.KataContainers.HelmChart

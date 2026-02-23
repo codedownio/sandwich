@@ -42,6 +42,7 @@ library:
   - Test.Sandwich.Contexts.Kubernetes.MinioS3Server
   - Test.Sandwich.Contexts.Kubernetes.Namespace
   - Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+  - Test.Sandwich.Contexts.Kubernetes.Typesense
   dependencies:
   - sandwich-contexts
   - sandwich-contexts-minio

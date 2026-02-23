@@ -35,6 +35,7 @@ packages:
 - ./demos/demo-kubernetes-longhorn
 - ./demos/demo-kubernetes-minikube
 - ./demos/demo-kubernetes-seaweedfs
+- ./demos/demo-kubernetes-typesense
 - ./demos/demo-landing
 - ./demos/demo-minio
 - ./demos/demo-nix
