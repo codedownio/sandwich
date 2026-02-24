@@ -47,9 +47,11 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
   (stdoutRead, stdoutWrite) <- liftIO createPipe
   (stderrRead, stderrWrite) <- liftIO createPipe
 
-  let forwardStderr = forever $ do
-        line <- liftIO $ hGetLine stderrRead
-        info [i|minikube service stderr: #{line}|]
+  let forwardStderr =
+        flip withException (\(e :: SomeException) -> debug [i|withForwardKubernetesService: stderr reader exited due to exception: #{e}|]) $
+        forever $ do
+          line <- liftIO $ hGetLine stderrRead
+          info [i|minikube service stderr: #{line}|]
 
   withAsync forwardStderr $ \_ -> do
     let cp = (proc kubernetesClusterTypeMinikubeBinary args) {

@@ -22,7 +22,6 @@ module Test.Sandwich.Logging (
 
   -- * Process functions with file logging
   , createProcessWithFileLogging
-  , createProcessWithFileLogging'
   ) where
 
 import Control.Concurrent
@@ -101,14 +100,9 @@ createProcessWithLogging' logLevel cp = do
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
 
--- | Spawn a process with its stdout and stderr connected to the logging system.
--- Every line output by the process will be fed to a 'debug' call.
+-- | Spawn a process with its stdout and stderr logged to a file in the test tree.
 createProcessWithFileLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> CreateProcess -> m ProcessHandle
-createProcessWithFileLogging name = withFrozenCallStack (createProcessWithFileLogging' name)
-
--- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithFileLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> CreateProcess -> m ProcessHandle
-createProcessWithFileLogging' name cp = do
+createProcessWithFileLogging name cp = withFrozenCallStack $ do
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|createProcessWithFileLogging': no current folder, so unable to log for name '#{name}'.|]
     Just dir ->
