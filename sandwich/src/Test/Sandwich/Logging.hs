@@ -9,7 +9,7 @@ module Test.Sandwich.Logging (
   , Test.Sandwich.Logging.logError
   , Test.Sandwich.Logging.logOther
 
-  -- * Process functions with logging
+  -- * Process functions with direct logging
   , createProcessWithLogging
   , readCreateProcessWithLogging
   , createProcessWithLoggingAndStdin
@@ -19,6 +19,10 @@ module Test.Sandwich.Logging (
   , readCreateProcessWithLogging'
   , createProcessWithLoggingAndStdin'
   , callCommandWithLogging'
+
+  -- * Process functions with file logging
+  , createProcessWithFileLogging
+  , createProcessWithFileLogging'
   ) where
 
 import Control.Concurrent
@@ -33,9 +37,13 @@ import Data.Text (Text)
 import Foreign.C.Error
 import GHC.IO.Exception
 import GHC.Stack
+import System.FilePath
 import System.IO
 import System.IO.Error (mkIOError)
 import System.Process
+import Test.Sandwich.Contexts
+import Test.Sandwich.Expectations
+import Test.Sandwich.Types.RunTree
 import UnliftIO.Async hiding (wait)
 import UnliftIO.Exception
 
@@ -92,6 +100,22 @@ createProcessWithLogging' logLevel cp = do
 
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
   return p
+
+-- | Spawn a process with its stdout and stderr connected to the logging system.
+-- Every line output by the process will be fed to a 'debug' call.
+createProcessWithFileLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> CreateProcess -> m ProcessHandle
+createProcessWithFileLogging name = withFrozenCallStack (createProcessWithFileLogging' name)
+
+-- | Spawn a process with its stdout and stderr connected to the logging system.
+createProcessWithFileLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> CreateProcess -> m ProcessHandle
+createProcessWithFileLogging' name cp = do
+  getCurrentFolder >>= \case
+    Nothing -> expectationFailure [i|createProcessWithFileLogging': no current folder, so unable to log for name '#{name}'.|]
+    Just dir ->
+      bracket (liftIO $ openTempFile dir (name <.> "out")) (\(_outfile, hOut) -> liftIO $ hClose hOut) $ \(_outfile, hOut) ->
+      bracket (liftIO $ openTempFile dir (name <.> "err")) (\(_errfile, hErr) -> liftIO $ hClose hErr) $ \(_errfile, hErr) -> do
+        (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hOut, std_err = UseHandle hErr })
+        return p
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
 -- Every line output by the process will be fed to a 'debug' call.
