@@ -49,6 +49,7 @@ mainAttrMap = attrMap V.defAttr [
   , (logLineAttr, fg solarizedCyan)
   , (logChAttr, fg solarizedOrange)
   , (logFunctionAttr, fg solarizedMagenta)
+  , (logSizeAttr, fg midWhite)
 
   -- Progress bar
   , (progressCompleteAttr, bg (V.Color240 235))
@@ -158,6 +159,8 @@ logPackageAttr = mkAttrName "logPackage"
 logLineAttr = mkAttrName "logLine"
 logChAttr = mkAttrName "logCh"
 logFunctionAttr = mkAttrName "logFunction"
+
+logSizeAttr = mkAttrName "logSize"
 
 -- * Exceptions and pretty printing
 

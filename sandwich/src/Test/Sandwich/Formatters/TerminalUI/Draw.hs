@@ -10,6 +10,7 @@ import qualified Brick.Widgets.List as L
 import Control.Monad
 import Control.Monad.Logger
 import Control.Monad.Reader
+import qualified Data.ByteString as BS
 import Data.Foldable
 import qualified Data.List as L
 import Data.Maybe
@@ -19,6 +20,7 @@ import qualified Data.Text.Encoding as E
 import Data.Time.Clock
 import GHC.Stack
 import Lens.Micro hiding (ix)
+import Numeric (showFFloat)
 import Safe
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Formatters.Common.Util
@@ -74,6 +76,9 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
                       , withAttr visibilityThresholdIndicatorMutedAttr $ str "V="
                       , withAttr visibilityThresholdIndicatorAttr $ str $ show visibilityLevel
                       , str "]"]
+      , if not (app ^. appShowLogSizes) then Nothing else
+          let totalSize = sum $ fmap (BS.length . fromLogStr . logEntryStr) logs
+          in if totalSize > 0 then Just $ hBox [str " [", withAttr logSizeAttr (str $ formatBytes totalSize), str "]"] else Nothing
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
           Running {..} -> Just $ getRunTimes app statusStartTime statusSetupFinishTime statusTeardownStartTime (app ^. appCurrentTime) True
@@ -151,3 +156,13 @@ getCallStackFromStatus cef (Done {statusResult=(Failure reason@(GotException _ _
     _ -> failureCallStack reason
 getCallStackFromStatus _ (Done {statusResult=(Failure reason)}) = failureCallStack reason
 getCallStackFromStatus _ _ = Nothing
+
+formatBytes :: Int -> String
+formatBytes bytes
+  | bytes < 1024 = show bytes <> " B"
+  | bytes < 1024 * 1024 = [i|#{formatDecimal (fromIntegral bytes / 1024 :: Double) 1} KB|]
+  | bytes < 1024 * 1024 * 1024 = [i|#{formatDecimal (fromIntegral bytes / (1024 * 1024) :: Double) 1} MB|]
+  | otherwise = [i|#{formatDecimal (fromIntegral bytes / (1024 * 1024 * 1024) :: Double) 1} GB|]
+  where
+    formatDecimal :: Double -> Int -> String
+    formatDecimal x decimals = showFFloat (Just decimals) x ""

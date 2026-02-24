@@ -103,6 +103,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appShowRunTimes = terminalUIShowRunTimes
           , _appShowFileLocations = terminalUIShowFileLocations
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
+          , _appShowLogSizes = terminalUIShowLogSizes
 
           , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (const $ return ())
           , _appDebug = (const $ return ())
@@ -347,6 +348,8 @@ appEvent s (VtyEvent e) =
       & appShowFileLocations %~ not
     V.EvKey c [] | c == toggleVisibilityThresholdsKey -> continue $ s
       & appShowVisibilityThresholds %~ not
+    V.EvKey c [] | c == toggleShowLogSizesKey -> continue $ s
+      & appShowLogSizes %~ not
     V.EvKey c [] | c `elem` [V.KEsc, exitKey] -> do
       -- Cancel everything and wait for cleanups
       liftIO $ mapM_ cancelNode (s ^. appRunTreeBase)

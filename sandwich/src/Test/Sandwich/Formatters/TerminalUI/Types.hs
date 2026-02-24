@@ -29,6 +29,8 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- ^ Whether to show or hide the files in which tests are defined.
   , terminalUIShowVisibilityThresholds :: Bool
   -- ^ Whether to show or hide visibility thresholds next to nodes.
+  , terminalUIShowLogSizes :: Bool
+  -- ^ Whether to show or hide log sizes in bytes next to nodes.
   , terminalUILogLevel :: Maybe LogLevel
   -- ^ Log level for test log displays.
   , terminalUIRefreshPeriod :: Int
@@ -72,6 +74,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIShowRunTimes = True
   , terminalUIShowFileLocations = False
   , terminalUIShowVisibilityThresholds = False
+  , terminalUIShowLogSizes = False
   , terminalUILogLevel = Just LevelWarn
   , terminalUIRefreshPeriod = 100000
   , terminalUIClockUpdatePeriod = Just 1000000
@@ -131,6 +134,7 @@ data AppState = AppState {
   , _appShowRunTimes :: Bool
   , _appShowFileLocations :: Bool
   , _appShowVisibilityThresholds :: Bool
+  , _appShowLogSizes :: Bool
 
   , _appOpenInEditor :: SrcLoc -> IO ()
   , _appDebug :: T.Text -> IO ()

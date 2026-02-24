@@ -96,12 +96,16 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str $ showKey toggleFileLocationsKey
                                               , str "/"
                                               , str $ showKey toggleVisibilityThresholdsKey
+                                              , str "/"
+                                              , str $ showKey toggleShowLogSizesKey
                                               , str "] "
                                               , highlightMessageIfPredicate (^. appShowRunTimes) app (str "Times")
                                               , str "/"
                                               , highlightMessageIfPredicate (^. appShowFileLocations) app (str "locations")
                                               , str "/"
                                               , highlightMessageIfPredicate (^. appShowVisibilityThresholds) app (str "thresholds")
+                                              , str "/"
+                                              , highlightMessageIfPredicate (^. appShowLogSizes) app (str "log sizes")
                                          ]
                                        , hBox [str "["
                                               , highlightIfLogLevel app LevelDebug [unKChar debugKey]
