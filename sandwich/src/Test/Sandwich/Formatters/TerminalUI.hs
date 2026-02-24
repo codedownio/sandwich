@@ -115,17 +115,16 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   logFn <- askLoggerIO
 
   currentFixedTree <- liftIO $ newTVarIO rtsFixed
-  eventAsync <- liftIO $ async $
-    forever $ do
-      handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
-        (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
-          currentFixed <- lift $ readTVar currentFixedTree
-          newFixed <- mapM fixRunTree' rts
-          when (fmap getCommons newFixed == fmap getCommons currentFixed) (lift retry)
-          lift $ writeTVar currentFixedTree newFixed
-          return newFixed
-        writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
-        threadDelay terminalUIRefreshPeriod
+  let eventAsync = liftIO $ forever $ do
+        handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
+          (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
+            currentFixed <- lift $ readTVar currentFixedTree
+            newFixed <- mapM fixRunTree' rts
+            when (fmap getCommons newFixed == fmap getCommons currentFixed) (lift retry)
+            lift $ writeTVar currentFixedTree newFixed
+            return newFixed
+          writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
+          threadDelay terminalUIRefreshPeriod
 
   let buildVty = do
         v <- V.mkVty V.defaultConfig
@@ -142,8 +141,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   liftIO $
     (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> withAsync (updateCurrentTimeForever ts) (\_ -> action)) $
-      flip onException (cancel eventAsync) $
-        void $ customMain initialVty buildVty (Just eventChan) app initialState
+    withAsync eventAsync $ \_ ->
+    void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ClickableName
 app = App {
