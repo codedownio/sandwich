@@ -55,6 +55,9 @@ data TerminalUIFormatter = TerminalUIFormatter {
   -- It's also passed a debug callback that accepts a 'T.Text'; messages logged with this function will go into the formatter logs.
   , terminalUICustomExceptionFormatters :: CustomExceptionFormatters
   -- ^ Custom exception formatters, used to nicely format custom exception types.
+  , terminalUIDebugSocket :: Bool
+  -- ^ If True, create a Unix socket at @\<test-root\>/tui-debug.sock@ for debug output.
+  -- Connect with @nc -U \<path\>@ to receive line-oriented debug events about the TUI event loop.
   }
 
 instance Show TerminalUIFormatter where
@@ -81,6 +84,7 @@ defaultTerminalUIFormatter = TerminalUIFormatter {
   , terminalUIDefaultEditor = Just "emacsclient +$((LINE+1)):COLUMN --no-wait"
   , terminalUIOpenInEditor = autoOpenInEditor
   , terminalUICustomExceptionFormatters = []
+  , terminalUIDebugSocket = False
   }
 
 type CustomExceptionFormatters = [SomeException -> Maybe CustomTUIException]

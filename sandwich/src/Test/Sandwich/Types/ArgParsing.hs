@@ -59,6 +59,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optWarnOnLongExecutionMs :: Maybe Int
   , optCancelOnLongExecutionMs :: Maybe Int
   , optMarkdownSummaryPath :: Maybe FilePath
+  , optTuiDebugSocket :: Bool
 
   , optListAvailableTests :: Maybe Bool
   , optListAvailableTestsJson :: Maybe Bool

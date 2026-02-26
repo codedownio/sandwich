@@ -16,6 +16,7 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIDefaultEditor
   , terminalUIOpenInEditor
   , terminalUICustomExceptionFormatters
+  , terminalUIDebugSocket
 
   -- * Auxiliary types
   , InitialFolding(..)
@@ -36,6 +37,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Trans
 import Control.Monad.Trans.State hiding (get, put)
+import qualified Data.ByteString.Char8 as BS8
 import Data.Either
 import Data.Foldable
 import qualified Data.List as L
@@ -43,6 +45,7 @@ import Data.Maybe
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.String.Interpolate
+import Data.Text (Text)
 import Data.Time
 import qualified Data.Vector as Vec
 import GHC.Stack
@@ -52,6 +55,7 @@ import Lens.Micro
 import Safe
 import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
+import Test.Sandwich.Formatters.TerminalUI.DebugSocket
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
@@ -85,6 +89,13 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   (rtsFixed, initialSomethingRunning) <- liftIO $ atomically $ runStateT (mapM fixRunTree' rts) False
 
+  -- Create debug channel for optional debug socket server
+  debugChan <- liftIO $ newBroadcastTChanIO
+  let debugFn :: Text -> IO ()
+      debugFn msg = do
+        now <- getCurrentTime
+        atomically $ writeTChan debugChan (BS8.pack [i|#{formatTime defaultTimeLocale "%H:%M:%S%3Q" now} #{msg}\n|])
+
   let initialState = updateFilteredTree $
         AppState {
           _appRunTreeBase = rts
@@ -105,8 +116,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
           , _appShowLogSizes = terminalUIShowLogSizes
 
-          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (const $ return ())
-          , _appDebug = (const $ return ())
+          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor debugFn
+          , _appDebug = debugFn
           , _appCustomExceptionFormatters = terminalUICustomExceptionFormatters
         }
 
@@ -117,12 +128,15 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   currentFixedTree <- liftIO $ newTVarIO rtsFixed
   let eventAsync = liftIO $ forever $ do
         handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
+          debugFn "eventAsync: waiting for tree change"
           (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
             currentFixed <- lift $ readTVar currentFixedTree
             newFixed <- mapM fixRunTree' rts
             when (fmap getCommons newFixed == fmap getCommons currentFixed) (lift retry)
             lift $ writeTVar currentFixedTree newFixed
             return newFixed
+          let nodeCount = length $ concatMap getCommons newFixedTree
+          debugFn [i|eventAsync: tree changed, nodes=#{nodeCount} somethingRunning=#{somethingRunning}|]
           writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
           threadDelay terminalUIRefreshPeriod
 
@@ -136,10 +150,17 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   let updateCurrentTimeForever period = forever $ do
         now <- getCurrentTime
+        debugFn "CurrentTimeUpdated tick"
         writeBChan eventChan (CurrentTimeUpdated now)
         threadDelay period
 
+  -- Optionally start the debug socket server in the test tree root
+  let withDebugSocket = case (terminalUIDebugSocket, baseContextRunRoot baseContext) of
+        (True, Just runRoot) -> \action -> withAsync (debugSocketServer (runRoot </> "tui-debug.sock") debugChan) (\_ -> action)
+        _ -> id
+
   liftIO $
+    withDebugSocket $
     (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> withAsync (updateCurrentTimeForever ts) (\_ -> action)) $
     withAsync eventAsync $ \_ ->
     void $ customMain initialVty buildVty (Just eventChan) app initialState

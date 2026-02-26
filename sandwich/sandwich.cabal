@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -59,6 +59,7 @@ library
       Test.Sandwich.Formatters.Print.Util
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
+      Test.Sandwich.Formatters.TerminalUI.DebugSocket
       Test.Sandwich.Formatters.TerminalUI.Draw
       Test.Sandwich.Formatters.TerminalUI.Draw.ColorProgressBar
       Test.Sandwich.Formatters.TerminalUI.Draw.RunTimes
@@ -128,6 +129,7 @@ library
     , monad-control
     , monad-logger
     , mtl
+    , network
     , optparse-applicative
     , pretty-show
     , process
@@ -190,6 +192,7 @@ executable sandwich-demo
     , monad-control
     , monad-logger
     , mtl
+    , network
     , optparse-applicative
     , pretty-show
     , process
@@ -250,6 +253,7 @@ executable sandwich-discover
     , monad-control
     , monad-logger
     , mtl
+    , network
     , optparse-applicative
     , pretty-show
     , process
@@ -316,6 +320,7 @@ executable sandwich-test
     , monad-control
     , monad-logger
     , mtl
+    , network
     , optparse-applicative
     , pretty-show
     , process
@@ -383,6 +388,7 @@ test-suite sandwich-test-suite
     , monad-control
     , monad-logger
     , mtl
+    , network
     , optparse-applicative
     , pretty-show
     , process

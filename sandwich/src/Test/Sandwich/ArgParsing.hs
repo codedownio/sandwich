@@ -94,6 +94,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
   <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
+  <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))
@@ -253,7 +254,10 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
           printFormatter
         (_, TUI) ->
           let mainTerminalUiFormatter = headMay [x | SomeFormatter (cast -> Just x@(TerminalUIFormatter {})) <- optionsFormatters baseOptions]
-          in SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) { terminalUILogLevel = optLogLevel }
+          in SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) {
+            terminalUILogLevel = optLogLevel
+            , terminalUIDebugSocket = optTuiDebugSocket
+            }
         (_, Print) -> printFormatter
         (_, PrintFailures) -> failureReportFormatter
         (_, Silent) -> silentFormatter
