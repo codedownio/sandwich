@@ -38,6 +38,7 @@ library
       Test.Sandwich.Formatters.LogSaver
       Test.Sandwich.Formatters.Print
       Test.Sandwich.Formatters.Silent
+      Test.Sandwich.Formatters.Socket
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
       Test.Sandwich.TH
@@ -57,6 +58,8 @@ library
       Test.Sandwich.Formatters.Print.PrintPretty
       Test.Sandwich.Formatters.Print.Types
       Test.Sandwich.Formatters.Print.Util
+      Test.Sandwich.Formatters.Socket.Commands
+      Test.Sandwich.Formatters.Socket.Server
       Test.Sandwich.Formatters.TerminalUI.AttrMap
       Test.Sandwich.Formatters.TerminalUI.CrossPlatform
       Test.Sandwich.Formatters.TerminalUI.DebugSocket

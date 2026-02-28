@@ -87,6 +87,7 @@ library:
   - Test.Sandwich.Formatters.LogSaver
   - Test.Sandwich.Formatters.Print
   - Test.Sandwich.Formatters.Silent
+  - Test.Sandwich.Formatters.Socket
   - Test.Sandwich.Formatters.TerminalUI
   - Test.Sandwich.Internal
   - Test.Sandwich.TH

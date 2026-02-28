@@ -19,6 +19,7 @@ import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.MarkdownSummary
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
+import Test.Sandwich.Formatters.Socket
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Internal.Running
@@ -95,6 +96,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
   <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
+  <*> switch (long "socket" <> help "Enable interactive socket formatter at <test-root>/socket.sock")
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))
@@ -263,11 +265,12 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
-  let baseFormatters = optionsFormatters baseOptions
-                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
-                     & filter (not . isMainFormatter)
+  baseFormatters <- optionsFormatters baseOptions
+                    & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
+                    & tryAddSocketFormatter optSocketFormatter
+  let baseFormatters' = filter (not . isMainFormatter) baseFormatters
 
-  let finalFormatters = baseFormatters <> [mainFormatter]
+  let finalFormatters = baseFormatters' <> [mainFormatter]
                       & fmap (setVisibilityThreshold optVisibilityThreshold)
 
   let options = baseOptions {
@@ -322,3 +325,16 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     tryAddMarkdownSummaryFormatter (Just path) xs
       | L.any isMarkdownSummaryFormatter xs = fmap (setMarkdownSummaryFormatterPath path) xs
       | otherwise = (SomeFormatter (defaultMarkdownSummaryFormatter path)) : xs
+
+    isSocketFormatter :: SomeFormatter -> Bool
+    isSocketFormatter (SomeFormatter x) = case cast x of
+      Just (_ :: SocketFormatter) -> True
+      Nothing -> False
+
+    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO [SomeFormatter]
+    tryAddSocketFormatter False xs = return xs
+    tryAddSocketFormatter True xs
+      | L.any isSocketFormatter xs = return xs
+      | otherwise = do
+          sf <- defaultSocketFormatter
+          return $ (SomeFormatter sf) : xs
