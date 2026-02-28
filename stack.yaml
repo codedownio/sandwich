@@ -48,6 +48,7 @@ packages:
 - ./demos/demo-setup-teardown
 - ./demos/demo-slack
 - ./demos/demo-stack-test
+- ./demos/demo-stress
 - ./demos/demo-timing
 - ./demos/demo-timing-parallel
 - ./demos/demo-tui

@@ -1,0 +1,34 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.39.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           demo-stress
+version:        0.1.0.0
+license:        BSD3
+build-type:     Simple
+
+executable demo-stress
+  main-is: Main.hs
+  other-modules:
+      Paths_demo_stress
+  hs-source-dirs:
+      app
+  default-extensions:
+      OverloadedStrings
+      QuasiQuotes
+      NamedFieldPuns
+      RecordWildCards
+      ScopedTypeVariables
+      FlexibleContexts
+      FlexibleInstances
+      LambdaCase
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fdistinct-constructor-tables -finfo-table-map -g
+  build-depends:
+      base
+    , random
+    , sandwich
+    , string-interpolate
+    , text
+  default-language: Haskell2010
