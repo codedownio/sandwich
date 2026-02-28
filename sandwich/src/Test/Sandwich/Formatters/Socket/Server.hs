@@ -33,13 +33,16 @@ socketServer socketPath rts = do
 handleConnection :: Socket -> [RunNode BaseContext] -> IO ()
 handleConnection conn rts = do
   bufRef <- newIORef BS.empty
-  handle (\(_ :: IOError) -> close conn) $ forever $ do
-    line <- readLine conn bufRef
-    now <- getCurrentTime
-    response <- handleCommand rts now (BS8.unpack (stripCR line))
-    unless (null response) $ do
-      sendAll conn (BS8.pack response)
-      sendAll conn "\n"
+  handle (\(_ :: IOError) -> close conn) $ do
+    sendAll conn "Connected to sandwich socket formatter. Type \"help\" for commands.\n\n> "
+    forever $ do
+      line <- readLine conn bufRef
+      now <- getCurrentTime
+      response <- handleCommand rts now (BS8.unpack (stripCR line))
+      unless (null response) $ do
+        sendAll conn (BS8.pack response)
+        sendAll conn "\n"
+      sendAll conn "> "
 
 -- | Read a single line from the socket, buffering leftover bytes.
 -- Returns the line without the trailing newline.
