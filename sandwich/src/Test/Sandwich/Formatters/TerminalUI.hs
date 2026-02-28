@@ -209,9 +209,7 @@ appEvent s (AppEvent (RunTreeUpdated newTree somethingRunning)) = do
     & appSomethingRunning .~ somethingRunning
     & updateFilteredTree
 appEvent s (AppEvent (CurrentTimeUpdated ts)) = do
-  continue $ case (s ^. appSomethingRunning) of
-    True -> s & appCurrentTime .~ ts
-    False -> s
+  continue $ s & appCurrentTime .~ ts
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
