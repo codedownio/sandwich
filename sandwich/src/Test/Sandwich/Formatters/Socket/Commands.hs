@@ -240,5 +240,5 @@ showLogEntry (LogEntry {logEntryTime, logEntryLevel, logEntryStr}) =
         LevelWarn -> "WARN"
         LevelError -> "ERROR"
         LevelOther t -> show t
-      msgStr = BS8.unpack (fromLogStr logEntryStr)
+      msgStr = BS8.unpack logEntryStr
   in [i|#{show logEntryTime} [#{levelStr}] #{msgStr}|]

@@ -403,7 +403,7 @@ runExampleM' rnc label ex ctx logs exceptionMessage = do
     withBroadcast (Just chan) logFn = \loc logSrc logLevel logStr -> do
       logFn loc logSrc logLevel logStr
       ts <- getCurrentTime
-      atomically $ writeTChan chan (runTreeId rnc, runTreeLabel rnc, LogEntry ts loc logSrc logLevel logStr)
+      atomically $ writeTChan chan (runTreeId rnc, runTreeLabel rnc, LogEntry ts loc logSrc logLevel (fromLogStr logStr))
 
     getTestDirectory :: (HasBaseContext a) => a -> IO (Maybe FilePath)
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextPath of

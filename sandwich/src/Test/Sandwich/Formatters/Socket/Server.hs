@@ -67,7 +67,7 @@ streamLogs conn broadcastChan = do
           LevelWarn -> "WARN"
           LevelError -> "ERROR"
           LevelOther t -> show t
-        msgStr = BS8.unpack (fromLogStr logEntryStr)
+        msgStr = BS8.unpack logEntryStr
         formatted = [i|#{show logEntryTime} [#{levelStr}] [#{nodeId}] #{nodeLabel}: #{msgStr}\n|]
     sendAll conn (BS8.pack formatted)
 

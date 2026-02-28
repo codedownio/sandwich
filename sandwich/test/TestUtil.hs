@@ -4,6 +4,7 @@
 module TestUtil where
 
 import Control.Concurrent.STM
+import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Trans.Writer
@@ -58,7 +59,7 @@ runAndGetResults spec = do
   fixedTree <- atomically $ mapM fixRunTree finalTree
   return $ fmap statusToResult $ concatMap getStatuses fixedTree
 
-runAndGetResultsAndLogs :: (HasCallStack) => CoreSpec -> IO ([Result], [[LogStr]])
+runAndGetResultsAndLogs :: (HasCallStack) => CoreSpec -> IO ([Result], [[BS8.ByteString]])
 runAndGetResultsAndLogs spec = do
   finalTree <- runSandwichTree defaultOptions spec
   getResultsAndMessages <$> fixTree finalTree
@@ -66,13 +67,13 @@ runAndGetResultsAndLogs spec = do
 fixTree :: [RunNode context] -> IO [RunNodeFixed context]
 fixTree rts = atomically $ mapM fixRunTree rts
 
-getResultsAndMessages :: (HasCallStack) => [RunNodeFixed context] -> ([Result], [[LogStr]])
+getResultsAndMessages :: (HasCallStack) => [RunNodeFixed context] -> ([Result], [[BS8.ByteString]])
 getResultsAndMessages fixedTree = (results, msgs)
   where
     results = fmap statusToResult $ concatMap getStatuses fixedTree
     msgs = getMessages fixedTree
 
-getMessages :: [RunNodeFixed context] -> [[LogStr]]
+getMessages :: [RunNodeFixed context] -> [[BS8.ByteString]]
 getMessages fixedTree = fmap (toList . (fmap logEntryStr)) $ concatMap getLogs fixedTree
 
 getStatuses :: RunNodeWithStatus context s l t -> [(String, s)]
