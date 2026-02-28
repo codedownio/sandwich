@@ -397,37 +397,37 @@ modifyToggled :: AppState -> (Bool -> Bool) -> EventM ClickableName AppState ()
 modifyToggled s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
   Just (_i, MainListElem {..}) -> do
-    liftIO $ atomically $ modifyTVar (runTreeToggled node) f
+    liftIO $ atomically $ modifyTVar' (runTreeToggled node) f
     continue s
 
 modifyOpen :: AppState -> (Bool -> Bool) -> EventM ClickableName AppState ()
 modifyOpen s f = case listSelectedElement (s ^. appMainList) of
   Nothing -> continue s
   Just (_i, MainListElem {..}) -> do
-    liftIO $ atomically $ modifyTVar (runTreeOpen node) f
+    liftIO $ atomically $ modifyTVar' (runTreeOpen node) f
     continue s
 
 openIndices :: [RunNode context] -> Seq.Seq Int -> IO ()
 openIndices nodes openSet =
   atomically $ forM_ (concatMap getCommons nodes) $ \node ->
     when ((runTreeId node) `elem` (toList openSet)) $
-      modifyTVar (runTreeOpen node) (const True)
+      modifyTVar' (runTreeOpen node) (const True)
 
 openToDepth :: (Foldable t) => t MainListElem -> Int -> IO ()
 openToDepth elems thresh =
   atomically $ forM_ elems $ \(MainListElem {..}) ->
-    if | (depth < thresh) -> modifyTVar (runTreeOpen node) (const True)
-       | otherwise -> modifyTVar (runTreeOpen node) (const False)
+    if | (depth < thresh) -> modifyTVar' (runTreeOpen node) (const True)
+       | otherwise -> modifyTVar' (runTreeOpen node) (const False)
 
 setInitialFolding :: InitialFolding -> [RunNode BaseContext] -> IO ()
 setInitialFolding InitialFoldingAllOpen _rts = return ()
 setInitialFolding InitialFoldingAllClosed rts =
   atomically $ forM_ (concatMap getCommons rts) $ \(RunNodeCommonWithStatus {..}) ->
-    modifyTVar runTreeOpen (const False)
+    modifyTVar' runTreeOpen (const False)
 setInitialFolding (InitialFoldingTopNOpen n) rts =
   atomically $ forM_ (concatMap getCommons rts) $ \(RunNodeCommonWithStatus {..}) ->
     when (Seq.length runTreeAncestors > n) $
-      modifyTVar runTreeOpen (const False)
+      modifyTVar' runTreeOpen (const False)
 
 updateFilteredTree :: AppState -> AppState
 updateFilteredTree s = s

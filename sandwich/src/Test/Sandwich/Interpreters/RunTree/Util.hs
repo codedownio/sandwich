@@ -28,7 +28,7 @@ waitForTree node = atomically $
 appendLogMessage :: ToLogStr msg => TVar (Seq LogEntry) -> msg -> IO ()
 appendLogMessage logs msg = do
   ts <- getCurrentTime
-  atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
+  atomically $ modifyTVar' logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
 -- | Count how many folder children are present as children or siblings of the given node.
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
