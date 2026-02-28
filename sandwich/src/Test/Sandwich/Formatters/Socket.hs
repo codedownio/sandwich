@@ -18,6 +18,7 @@ module Test.Sandwich.Formatters.Socket (
   ) where
 
 import Control.Concurrent.Async
+import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Data.IORef
 import Data.Typeable
@@ -33,6 +34,8 @@ data SocketFormatter = SocketFormatter {
   -- ^ Socket path. Nothing = \<run-root\>/socket.sock
   , socketFormatterServerAsync :: IORef (Maybe (Async ()))
   -- ^ Internal: handle to the running server thread, used for cleanup.
+  , socketFormatterLogBroadcast :: TChan (Int, String, LogEntry)
+  -- ^ Broadcast channel for streaming logs to connected clients.
   } deriving (Typeable)
 
 instance Show SocketFormatter where
@@ -42,9 +45,11 @@ instance Show SocketFormatter where
 defaultSocketFormatter :: IO SocketFormatter
 defaultSocketFormatter = do
   ref <- newIORef Nothing
+  chan <- newBroadcastTChanIO
   return SocketFormatter {
     socketFormatterPath = Nothing
     , socketFormatterServerAsync = ref
+    , socketFormatterLogBroadcast = chan
     }
 
 instance Formatter SocketFormatter where
@@ -61,7 +66,7 @@ run (SocketFormatter {..}) rts _maybeCommandLineOptions bc = do
   case resolveSocketPath of
     Nothing -> return ()
     Just path -> liftIO $ do
-      a <- async (socketServer path rts)
+      a <- async (socketServer path rts socketFormatterLogBroadcast)
       writeIORef socketFormatterServerAsync (Just a)
       -- Block until all tests complete
       mapM_ waitForTree rts

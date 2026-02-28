@@ -295,6 +295,9 @@ data Options = Options {
   -- ^ If set, alerts user to nodes that run for the given number of milliseconds, by writing to a file in the root directory.
   , optionsCancelOnLongExecutionMs :: Maybe Int
   -- ^ Same as 'optionsWarnOnLongExecutionMs', but also cancels the problematic nodes.
+  , optionsLogBroadcast :: Maybe (TChan (Int, String, LogEntry))
+  -- ^ Broadcast channel for streaming log entries to external consumers (e.g. socket formatter).
+  -- Each entry is tagged with (nodeId, nodeLabel, logEntry).
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

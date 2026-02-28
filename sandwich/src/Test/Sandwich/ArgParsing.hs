@@ -5,6 +5,7 @@
 
 module Test.Sandwich.ArgParsing where
 
+import Control.Concurrent.STM
 import Control.Monad.Logger
 import Data.Function
 import qualified Data.List as L
@@ -265,7 +266,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
-  baseFormatters <- optionsFormatters baseOptions
+  (baseFormatters, maybeLogBroadcast) <- optionsFormatters baseOptions
                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
                     & tryAddSocketFormatter optSocketFormatter
   let baseFormatters' = filter (not . isMainFormatter) baseFormatters
@@ -289,6 +290,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
     , optionsCancelOnLongExecutionMs = (optionsCancelOnLongExecutionMs baseOptions) <|> optCancelOnLongExecutionMs
+    , optionsLogBroadcast = maybeLogBroadcast
     }
 
   return (options, optRepeatCount)
@@ -331,10 +333,13 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       Just (_ :: SocketFormatter) -> True
       Nothing -> False
 
-    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO [SomeFormatter]
-    tryAddSocketFormatter False xs = return xs
+    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO ([SomeFormatter], Maybe (TChan (Int, String, LogEntry)))
+    tryAddSocketFormatter False xs = return (xs, Nothing)
     tryAddSocketFormatter True xs
-      | L.any isSocketFormatter xs = return xs
+      | L.any isSocketFormatter xs =
+          -- Extract the broadcast channel from the existing formatter
+          let chan = headMay [socketFormatterLogBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
+          in return (xs, chan)
       | otherwise = do
           sf <- defaultSocketFormatter
-          return $ (SomeFormatter sf) : xs
+          return ((SomeFormatter sf) : xs, Just (socketFormatterLogBroadcast sf))

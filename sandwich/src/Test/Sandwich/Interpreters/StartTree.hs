@@ -393,10 +393,17 @@ runExampleM' rnc label ex ctx logs exceptionMessage = do
 
   where
     withLogFn :: Maybe FilePath -> Options -> (LogFn -> IO a) -> IO a
-    withLogFn Nothing (Options {..}) action = action (logToMemory optionsSavedLogLevel logs)
+    withLogFn Nothing (Options {..}) action = action (withBroadcast optionsLogBroadcast $ logToMemory optionsSavedLogLevel logs)
     withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
       hSetBuffering h LineBuffering
-      action (logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
+      action (withBroadcast optionsLogBroadcast $ logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
+
+    withBroadcast :: Maybe (TChan (Int, String, LogEntry)) -> LogFn -> LogFn
+    withBroadcast Nothing logFn = logFn
+    withBroadcast (Just chan) logFn = \loc logSrc logLevel logStr -> do
+      logFn loc logSrc logLevel logStr
+      ts <- getCurrentTime
+      atomically $ writeTChan chan (runTreeId rnc, runTreeLabel rnc, LogEntry ts loc logSrc logLevel logStr)
 
     getTestDirectory :: (HasBaseContext a) => a -> IO (Maybe FilePath)
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextPath of

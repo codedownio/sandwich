@@ -42,14 +42,15 @@ handleCommand rts now cmd = case words cmd of
 helpText :: String
 helpText = unlines
   [ "Available commands:"
-  , "  help       - Show this help"
-  , "  status     - Summary counts: total, running, succeeded, failed, pending, not started"
-  , "  active     - List currently running nodes"
-  , "  failures   - List failed nodes with failure reason"
-  , "  pending    - List pending nodes"
-  , "  tree       - Full tree with indented status"
-  , "  node <id>  - Detail for a specific node"
-  , "  logs <id>  - Show logs for a specific node"
+  , "  help        - Show this help"
+  , "  status      - Summary counts: total, running, succeeded, failed, pending, not started"
+  , "  active      - List currently running nodes"
+  , "  failures    - List failed nodes with failure reason"
+  , "  pending     - List pending nodes"
+  , "  tree        - Full tree with indented status"
+  , "  node <id>   - Detail for a specific node"
+  , "  logs <id>   - Show logs for a specific node"
+  , "  stream-logs - Stream all logs live (disconnect to stop)"
   ]
 
 -- | Snapshot the tree atomically
