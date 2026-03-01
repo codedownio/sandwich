@@ -18,14 +18,15 @@ import Network.Socket.ByteString (recv, sendAll)
 import System.Directory (removeFile)
 import Test.Sandwich.Formatters.Socket.Commands
 import Test.Sandwich.Types.RunTree
+import Test.Sandwich.Types.Spec
 import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Exception
 
 
 -- | Bidirectional Unix socket server. Each client connection reads line-based
 -- commands and sends back responses terminated by a line containing just ".".
-socketServer :: FilePath -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> IO ()
-socketServer socketPath rts logBroadcast = do
+socketServer :: FilePath -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> TChan NodeEvent -> IO ()
+socketServer socketPath rts logBroadcast eventBroadcast = do
   -- Clean up any existing socket file
   removeFile socketPath `catch` \(_ :: IOError) -> return ()
 
@@ -34,10 +35,10 @@ socketServer socketPath rts logBroadcast = do
     listen sock 5
     forever $ do
       (conn, _) <- accept sock
-      void $ async $ handleConnection conn rts logBroadcast
+      void $ async $ handleConnection conn rts logBroadcast eventBroadcast
 
-handleConnection :: Socket -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> IO ()
-handleConnection conn rts logBroadcast = do
+handleConnection :: Socket -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> TChan NodeEvent -> IO ()
+handleConnection conn rts logBroadcast eventBroadcast = do
   bufRef <- newIORef BS.empty
   handle (\(_ :: IOError) -> close conn) $ do
     sendAll conn "Connected to sandwich socket formatter. Type \"help\" for commands.\n\n> "
@@ -47,6 +48,7 @@ handleConnection conn rts logBroadcast = do
       let cmd = BS8.unpack (stripCR line)
       case words cmd of
         ["stream-logs"] -> streamLogs conn logBroadcast
+        ["stream-events"] -> streamEvents conn eventBroadcast
         ["stream-rts-stats"] -> streamRtsStats conn
         _ -> do
           response <- handleCommand rts now cmd
@@ -74,6 +76,29 @@ streamLogs conn broadcastChan = do
         msgStr = BS8.unpack logEntryStr
         formatted = [i|#{show logEntryTime} [#{levelStr}] [#{nodeId}] #{nodeLabel}: #{msgStr}\n|]
     sendAll conn (BS8.pack formatted)
+
+-- | Stream node lifecycle events (started, done) to the client.
+streamEvents :: Socket -> TChan NodeEvent -> IO ()
+streamEvents conn broadcastChan = do
+  sendAll conn "Streaming events (disconnect to stop)...\n"
+  chan <- atomically $ dupTChan broadcastChan
+  handle (\(_ :: IOError) -> return ()) $ forever $ do
+    NodeEvent {..} <- atomically $ readTChan chan
+    let typeStr :: String
+        typeStr = case nodeEventType of
+          EventStarted -> "STARTED"
+          EventDone Success -> "DONE:OK"
+          EventDone (Failure (Pending {})) -> "DONE:PENDING"
+          EventDone (Failure reason) -> [i|DONE:FAIL: #{showFailureReasonBrief reason}|]
+          EventDone DryRun -> "DONE:DRYRUN"
+          EventDone Cancelled -> "DONE:CANCELLED"
+        formatted = [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr}\n|]
+    sendAll conn (BS8.pack formatted)
+
+showFailureReasonBrief :: FailureReason -> String
+showFailureReasonBrief (Reason {failureReason}) = failureReason
+showFailureReasonBrief (ChildrenFailed {failureNumChildren}) = [i|#{failureNumChildren} children failed|]
+showFailureReasonBrief _ = "(see node detail)"
 
 -- | Stream RTS stats to the client every second until the connection is closed.
 -- Requires the program to be run with +RTS -T for stats to be available.

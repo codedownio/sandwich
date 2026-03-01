@@ -266,7 +266,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
-  (baseFormatters, maybeLogBroadcast) <- optionsFormatters baseOptions
+  (baseFormatters, maybeLogBroadcast, maybeEventBroadcast) <- optionsFormatters baseOptions
                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
                     & tryAddSocketFormatter optSocketFormatter
   let baseFormatters' = filter (not . isMainFormatter) baseFormatters
@@ -291,6 +291,7 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
     , optionsCancelOnLongExecutionMs = (optionsCancelOnLongExecutionMs baseOptions) <|> optCancelOnLongExecutionMs
     , optionsLogBroadcast = maybeLogBroadcast
+    , optionsEventBroadcast = maybeEventBroadcast
     }
 
   return (options, optRepeatCount)
@@ -333,13 +334,14 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
       Just (_ :: SocketFormatter) -> True
       Nothing -> False
 
-    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO ([SomeFormatter], Maybe (TChan (Int, String, LogEntry)))
-    tryAddSocketFormatter False xs = return (xs, Nothing)
+    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO ([SomeFormatter], Maybe (TChan (Int, String, LogEntry)), Maybe (TChan NodeEvent))
+    tryAddSocketFormatter False xs = return (xs, Nothing, Nothing)
     tryAddSocketFormatter True xs
       | L.any isSocketFormatter xs =
-          -- Extract the broadcast channel from the existing formatter
-          let chan = headMay [socketFormatterLogBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
-          in return (xs, chan)
+          -- Extract the broadcast channels from the existing formatter
+          let logChan = headMay [socketFormatterLogBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
+              eventChan = headMay [socketFormatterEventBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
+          in return (xs, logChan, eventChan)
       | otherwise = do
           sf <- defaultSocketFormatter
-          return ((SomeFormatter sf) : xs, Just (socketFormatterLogBroadcast sf))
+          return ((SomeFormatter sf) : xs, Just (socketFormatterLogBroadcast sf), Just (socketFormatterEventBroadcast sf))

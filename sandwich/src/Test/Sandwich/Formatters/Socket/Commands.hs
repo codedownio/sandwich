@@ -51,6 +51,7 @@ helpText = unlines
   , "  node <id>   - Detail for a specific node"
   , "  logs <id>   - Show logs for a specific node"
   , "  stream-logs      - Stream all logs live (disconnect to stop)"
+  , "  stream-events    - Stream node lifecycle events (started/done) live"
   , "  stream-rts-stats - Stream GHC RTS memory stats every 1s (needs +RTS -T)"
   ]
 

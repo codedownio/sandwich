@@ -118,6 +118,18 @@ data LogEntry = LogEntry {
   , logEntryStr :: !BS8.ByteString
   } deriving (Show, Eq)
 
+data NodeEvent = NodeEvent {
+  nodeEventTime :: !UTCTime
+  , nodeEventId :: !Int
+  , nodeEventLabel :: !String
+  , nodeEventType :: !NodeEventType
+  } deriving (Show, Eq)
+
+data NodeEventType
+  = EventStarted
+  | EventDone !Result
+  deriving (Show, Eq)
+
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {
   runTreeCurrentAncestors :: Seq Int
@@ -298,6 +310,8 @@ data Options = Options {
   , optionsLogBroadcast :: Maybe (TChan (Int, String, LogEntry))
   -- ^ Broadcast channel for streaming log entries to external consumers (e.g. socket formatter).
   -- Each entry is tagged with (nodeId, nodeLabel, logEntry).
+  , optionsEventBroadcast :: Maybe (TChan NodeEvent)
+  -- ^ Broadcast channel for streaming node lifecycle events (started, done) to external consumers.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

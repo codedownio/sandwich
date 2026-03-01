@@ -258,6 +258,7 @@ runInAsync node ctx action = do
       (result, extraTimingInfo) <- timerFn action
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime (setupFinishTime extraTimingInfo) (teardownStartTime extraTimingInfo) endTime result
+      liftIO $ emitEvent baseContextOptions endTime runTreeId runTreeLabel (EventDone result)
 
       whenFailure result $ \reason -> do
         -- Make sure the folder exists, if configured
@@ -312,6 +313,7 @@ runInAsync node ctx action = do
 
       return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime Nothing Nothing myAsync
+  liftIO $ emitEvent baseContextOptions startTime runTreeId runTreeLabel EventStarted
   liftIO $ putMVar mvar ()
   return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
 
@@ -430,6 +432,11 @@ addTeardownStartTimeToStatus statusVar t = atomically $ modifyTVar' statusVar $ 
   status@(Running {}) -> status { statusTeardownStartTime = Just t }
   status@(Done {}) -> status { statusTeardownStartTime = Just t }
   x -> x
+
+emitEvent :: Options -> UTCTime -> Int -> String -> NodeEventType -> IO ()
+emitEvent (Options {optionsEventBroadcast = Just chan}) ts nid label evtType =
+  atomically $ writeTChan chan (NodeEvent ts nid label evtType)
+emitEvent _ _ _ _ _ = return ()
 
 recordExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()
 recordExceptionInStatus status e = do

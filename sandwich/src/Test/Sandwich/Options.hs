@@ -58,6 +58,7 @@ defaultOptions = Options {
   , optionsWarnOnLongExecutionMs = Nothing
   , optionsCancelOnLongExecutionMs = Nothing
   , optionsLogBroadcast = Nothing
+  , optionsEventBroadcast = Nothing
   }
 
 -- | Generate a test artifacts directory based on a timestamp.

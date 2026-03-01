@@ -36,6 +36,8 @@ data SocketFormatter = SocketFormatter {
   -- ^ Internal: handle to the running server thread, used for cleanup.
   , socketFormatterLogBroadcast :: TChan (Int, String, LogEntry)
   -- ^ Broadcast channel for streaming logs to connected clients.
+  , socketFormatterEventBroadcast :: TChan NodeEvent
+  -- ^ Broadcast channel for streaming node lifecycle events to connected clients.
   } deriving (Typeable)
 
 instance Show SocketFormatter where
@@ -46,10 +48,12 @@ defaultSocketFormatter :: IO SocketFormatter
 defaultSocketFormatter = do
   ref <- newIORef Nothing
   chan <- newBroadcastTChanIO
+  eventChan <- newBroadcastTChanIO
   return SocketFormatter {
     socketFormatterPath = Nothing
     , socketFormatterServerAsync = ref
     , socketFormatterLogBroadcast = chan
+    , socketFormatterEventBroadcast = eventChan
     }
 
 instance Formatter SocketFormatter where
@@ -66,7 +70,7 @@ run (SocketFormatter {..}) rts _maybeCommandLineOptions bc = do
   case resolveSocketPath of
     Nothing -> return ()
     Just path -> liftIO $ do
-      a <- async (socketServer path rts socketFormatterLogBroadcast)
+      a <- async (socketServer path rts socketFormatterLogBroadcast socketFormatterEventBroadcast)
       writeIORef socketFormatterServerAsync (Just a)
       -- Block until all tests complete
       mapM_ waitForTree rts
