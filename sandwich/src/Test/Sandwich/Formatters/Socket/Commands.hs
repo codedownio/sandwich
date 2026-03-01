@@ -50,7 +50,8 @@ helpText = unlines
   , "  tree        - Full tree with indented status"
   , "  node <id>   - Detail for a specific node"
   , "  logs <id>   - Show logs for a specific node"
-  , "  stream-logs - Stream all logs live (disconnect to stop)"
+  , "  stream-logs      - Stream all logs live (disconnect to stop)"
+  , "  stream-rts-stats - Stream GHC RTS memory stats every 1s (needs +RTS -T)"
   ]
 
 -- | Snapshot the tree atomically
