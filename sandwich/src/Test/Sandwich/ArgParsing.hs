@@ -98,6 +98,9 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
   <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
   <*> switch (long "socket" <> help "Enable interactive socket formatter at <test-root>/socket.sock")
+  <*> switch (long "log-logs" <> help "Stream all test logs to <run-root>/logs.txt (for debugging)")
+  <*> switch (long "log-events" <> help "Stream node lifecycle events to <run-root>/events.txt (for debugging)")
+  <*> switch (long "log-rts-stats" <> help "Stream RTS memory stats to <run-root>/rts-stats.txt (for debugging)")
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))
@@ -266,10 +269,21 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
         (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
-  (baseFormatters, maybeLogBroadcast, maybeEventBroadcast) <- optionsFormatters baseOptions
+  (baseFormatters, socketLogBroadcast, socketEventBroadcast) <- optionsFormatters baseOptions
                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
                     & tryAddSocketFormatter optSocketFormatter
   let baseFormatters' = filter (not . isMainFormatter) baseFormatters
+
+  -- Ensure broadcast channels exist if file logging flags need them
+  maybeLogBroadcast <- case socketLogBroadcast of
+    Just ch -> return (Just ch)
+    Nothing | optLogLogs -> Just <$> newBroadcastTChanIO
+    Nothing -> return Nothing
+
+  maybeEventBroadcast <- case socketEventBroadcast of
+    Just ch -> return (Just ch)
+    Nothing | optLogEvents -> Just <$> newBroadcastTChanIO
+    Nothing -> return Nothing
 
   let finalFormatters = baseFormatters' <> [mainFormatter]
                       & fmap (setVisibilityThreshold optVisibilityThreshold)

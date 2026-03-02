@@ -95,6 +95,7 @@ import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Golden.Update
+import Test.Sandwich.Instrumentation
 import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
@@ -223,6 +224,25 @@ runSandwich' maybeCommandLineOptions options spec' = do
     loggingFn $
       runFormatter f rts maybeCommandLineOptions baseContext
 
+  -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats
+  fileStreamAsyncs <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+    (Just clo, Just runRoot) -> fmap catMaybes $ sequence
+      [ if optLogLogs clo
+        then case optionsLogBroadcast options of
+          Just chan -> Just <$> async (streamLogsToFile (runRoot </> "logs.txt") chan)
+          Nothing -> return Nothing
+        else return Nothing
+      , if optLogEvents clo
+        then case optionsEventBroadcast options of
+          Just chan -> Just <$> async (streamEventsToFile (runRoot </> "events.txt") chan)
+          Nothing -> return Nothing
+        else return Nothing
+      , if optLogRtsStats clo
+        then Just <$> async (streamRtsStatsToFile (runRoot </> "rts-stats.txt"))
+        else return Nothing
+      ]
+    _ -> return []
+
   exitReasonRef <- newIORef NormalExit
 
   let shutdown sig = do
@@ -256,6 +276,9 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   fixedTree <- atomically $ mapM fixRunTree rts
 
+  -- Cancel file stream asyncs
+  mapM_ cancel fileStreamAsyncs
+
   exitReason <- readIORef exitReasonRef
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
@@ -269,3 +292,4 @@ countItNodes (Free (IntroduceWith'' {..})) = countItNodes next + countItNodes su
 countItNodes (Free (Introduce'' {..})) = countItNodes next + countItNodes subspecAugmented
 countItNodes (Free x) = countItNodes (next x) + countItNodes (subspec x)
 countItNodes (Pure _) = 0
+

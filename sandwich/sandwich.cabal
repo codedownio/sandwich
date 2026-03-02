@@ -74,6 +74,7 @@ library
       Test.Sandwich.Formatters.TerminalUI.OpenInEditor
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Golden.Update
+      Test.Sandwich.Instrumentation
       Test.Sandwich.Internal.Formatters
       Test.Sandwich.Internal.Inspection
       Test.Sandwich.Internal.Running

@@ -61,6 +61,9 @@ data CommandLineOptions a = CommandLineOptions {
   , optMarkdownSummaryPath :: Maybe FilePath
   , optTuiDebugSocket :: Bool
   , optSocketFormatter :: Bool
+  , optLogLogs :: Bool
+  , optLogEvents :: Bool
+  , optLogRtsStats :: Bool
 
   , optListAvailableTests :: Maybe Bool
   , optListAvailableTestsJson :: Maybe Bool
