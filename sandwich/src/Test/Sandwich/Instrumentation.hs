@@ -9,6 +9,7 @@ import Control.Monad
 import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS8
 import Data.String.Interpolate
+import Data.Time
 import Data.Word
 import GHC.Stats
 import System.IO (IOMode(..), hFlush, hPutStr, hSetBuffering, BufferMode(..), withFile)
@@ -66,9 +67,10 @@ streamRtsStatsToFile path = do
     withFile path AppendMode $ \h -> do
       hSetBuffering h LineBuffering
       forever $ do
+        now <- getCurrentTime
         stats <- getRTSStats
         let gc' = gc stats
-        hPutStr h (formatRtsStats stats gc')
+        hPutStr h (formatRtsStats now stats gc')
         hFlush h
         threadDelay 1000000
 
@@ -77,9 +79,10 @@ showFailureReasonBrief (Reason {failureReason}) = failureReason
 showFailureReasonBrief (ChildrenFailed {failureNumChildren}) = [i|#{failureNumChildren} children failed|]
 showFailureReasonBrief _ = "(see node detail)"
 
-formatRtsStats :: RTSStats -> GCDetails -> String
-formatRtsStats stats gc' = unlines
-  [ [i|live_bytes:         #{formatBytes (gcdetails_live_bytes gc')}|]
+formatRtsStats :: UTCTime -> RTSStats -> GCDetails -> String
+formatRtsStats now stats gc' = unlines
+  [ [i|#{show now}|]
+  , [i|live_bytes:         #{formatBytes (gcdetails_live_bytes gc')}|]
   , [i|heap_size:          #{formatBytes (gcdetails_mem_in_use_bytes gc')}|]
   , [i|allocated_bytes:    #{formatBytes (allocated_bytes stats)}|]
   , [i|max_live_bytes:     #{formatBytes (max_live_bytes stats)}|]
