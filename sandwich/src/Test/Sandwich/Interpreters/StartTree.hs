@@ -309,7 +309,7 @@ runInAsync node ctx action = do
                 p "\n"
                 printCallStack cs
               p "\n"
-              printLogs runTreeLogs
+              -- printLogs runTreeLogs
 
       return result
   liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime Nothing Nothing myAsync

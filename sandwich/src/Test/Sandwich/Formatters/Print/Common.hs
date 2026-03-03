@@ -30,4 +30,4 @@ finishPrinting (RunNodeCommonWithStatus {..}) result = do
       _ -> return ()
 
   -- Print the logs, if configured
-  printLogs runTreeLogs
+  -- printLogs runTreeLogs
