@@ -233,9 +233,11 @@ runSandwich' maybeCommandLineOptions options spec' = do
           Nothing -> return Nothing
         else return Nothing
       , if optLogEvents clo
-        then case optionsEventBroadcast options of
-          Just chan -> Just <$> async (streamEventsToFile (runRoot </> "events.txt") chan)
-          Nothing -> return Nothing
+        then do
+          writeTreeFile (runRoot </> "events-tree.txt") rts
+          case optionsEventBroadcast options of
+            Just chan -> Just <$> async (streamEventsToFile (runRoot </> "events.txt") chan)
+            Nothing -> return Nothing
         else return Nothing
       , if optLogRtsStats clo
         then Just <$> async (streamRtsStatsToFile (runRoot </> "rts-stats.txt"))

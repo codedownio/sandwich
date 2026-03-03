@@ -2,6 +2,7 @@ module Test.Sandwich.Instrumentation (
   streamLogsToFile
   , streamEventsToFile
   , streamRtsStatsToFile
+  , writeTreeFile
   ) where
 
 import Control.Concurrent.STM
@@ -122,3 +123,22 @@ formatBytes b
   | b < 1024 * 1024 = [i|#{b `div` 1024} KiB (#{b})|]
   | b < 1024 * 1024 * 1024 = [i|#{b `div` (1024 * 1024)} MiB (#{b})|]
   | otherwise = [i|#{b `div` (1024 * 1024 * 1024)} GiB (#{b})|]
+
+-- | Write a tree of node IDs and labels to a file for cross-referencing with events.
+writeTreeFile :: FilePath -> [RunNodeWithStatus context s l t] -> IO ()
+writeTreeFile path rts =
+  writeFile path $ unlines $ concatMap (renderTree 0) rts
+
+renderTree :: Int -> RunNodeWithStatus context s l t -> [String]
+renderTree depth node = line : children
+  where
+    c = runNodeCommon node
+    indent = replicate (depth * 2) ' '
+    label = runTreeLabel c
+    nid = runTreeId c
+    line = [i|#{indent}[#{nid}] #{label}|]
+    children = case node of
+      RunNodeIt {} -> []
+      RunNodeIntroduce {runNodeChildrenAugmented} -> concatMap (renderTree (depth + 1)) runNodeChildrenAugmented
+      RunNodeIntroduceWith {runNodeChildrenAugmented} -> concatMap (renderTree (depth + 1)) runNodeChildrenAugmented
+      _ -> concatMap (renderTree (depth + 1)) (runNodeChildren node)
