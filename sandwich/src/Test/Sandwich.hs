@@ -229,7 +229,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
     (Just clo, Just runRoot) -> fmap catMaybes $ sequence
       [ if optLogLogs clo
         then case optionsLogBroadcast options of
-          Just chan -> Just <$> async (streamLogsToFile (runRoot </> "logs.txt") chan)
+          Just chan -> Just <$> async (streamLogsToFile (runRoot </> "all-logs.txt") chan)
           Nothing -> return Nothing
         else return Nothing
       , if optLogEvents clo
