@@ -97,22 +97,28 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
     -- We want to err on the side of avoiding deadlocks so we use the @base@ version.
     -- This also plays nicer with the 'withMaybeWarnOnLongExecution' and 'withMaybeCancelOnLongExecution' functions.
     -- See the discussion at https://github.com/fpco/safe-exceptions/issues/3
+    let opts = baseContextOptions (getBaseContext ctx)
     liftIO $ E.bracket
       (do
           let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
           let label = runTreeLabel <> " (setup)"
-          flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $
-            timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
+          getCurrentTime >>= \t -> emitEvent opts t runTreeId runTreeLabel EventSetupStarted
+          flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $ do
+            ret <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
               runExampleM' runNodeCommon label runNodeAlloc ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' allocation handler|])
+            getCurrentTime >>= \t -> emitEvent opts t runTreeId runTreeLabel EventSetupFinished
+            return ret
       )
       (\(ret, setupStartTime, setupFinishTime) -> case ret of
           Left failureReason -> writeIORef result (Failure failureReason, mkSetupTimingInfo setupStartTime)
           Right intro -> do
             teardownStartTime <- getCurrentTime
             addTeardownStartTimeToStatus runTreeStatus teardownStartTime
+            emitEvent opts teardownStartTime runTreeId runTreeLabel EventTeardownStarted
             let label = runTreeLabel <> " (teardown)"
             (ret', _, _) <- timed runNodeCommon runTreeRecordTime (getBaseContext ctx) label $
               runExampleM runNodeCommon label (runNodeCleanup intro) ctx runTreeLogs (Just [i|Failure in introduce '#{runTreeLabel}' cleanup handler|])
+            getCurrentTime >>= \t -> emitEvent opts t runTreeId runTreeLabel EventTeardownFinished
             writeIORef result (ret', ExtraTimingInfo (Just setupFinishTime) (Just teardownStartTime))
       )
       (\(ret, _setupStartTime, setupFinishTime) -> do
@@ -166,6 +172,8 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
             -- let teardownLabel = runTreeLabel <> " (teardown)"
             -- handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
 
+            let opts = baseContextOptions (getBaseContext ctx)
+            liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventSetupStarted
             results <- runNodeIntroduceAction $ \intro -> do
               -- Record the end event in the test timing
               -- TODO: do we need to deal with exceptions here and in teardown? I think we we fail to emit the
@@ -173,6 +181,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
               -- handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack setupLabel)
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
+              liftIO $ emitEvent opts setupFinishTime runTreeId runTreeLabel EventSetupFinished
 
               liftIO $ writeIORef didAllocateVar True
 
@@ -181,6 +190,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
 
               teardownStartTime <- liftIO getCurrentTime
               addTeardownStartTimeToStatus runTreeStatus teardownStartTime
+              liftIO $ emitEvent opts teardownStartTime runTreeId runTreeLabel EventTeardownStarted
 
               liftIO $ writeIORef beginningCleanupVar (Just teardownStartTime)
               -- handleStartEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
@@ -191,6 +201,7 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
               Nothing -> return ()
               Just teardownStartTime -> do
                 -- handleEndEvent tt (baseContextTestTimerProfile (getBaseContext ctx)) (T.pack teardownLabel)
+                liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownFinished
                 liftIO $ modifyIORef' didRunWrappedAction $ \(ret, timingInfo) ->
                   (ret, timingInfo { teardownStartTime = Just teardownStartTime })
 
@@ -207,15 +218,20 @@ startTree node@(RunNodeAround {..}) ctx' = do
   let ctx = modifyBaseContext ctx' $ baseContextFromCommon runNodeCommon
   didRunWrappedAction <- liftIO $ newIORef (Left (), emptyExtraTimingInfo)
   runInAsync node ctx $ do
+    let opts = baseContextOptions (getBaseContext ctx)
     let wrappedAction = do
           flip withException (\e -> recordExceptionInStatus runTreeStatus e) $ do
+            liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventSetupStarted
             runNodeActionWith $ do
               setupFinishTime <- liftIO getCurrentTime
               addSetupFinishTimeToStatus runTreeStatus setupFinishTime
+              liftIO $ emitEvent opts setupFinishTime runTreeId runTreeLabel EventSetupFinished
               results <- liftIO $ runNodesSequentially runNodeChildren ctx
+              liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownStarted
               liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupFinishTime)
               return results
 
+          liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownFinished
           (liftIO $ readIORef didRunWrappedAction) >>= \case
             (Left (), timingInfo) -> return (Failure $ Reason Nothing [i|around '#{runTreeLabel}' handler didn't call action|], timingInfo)
             (Right _, timingInfo) -> return (Success, timingInfo)

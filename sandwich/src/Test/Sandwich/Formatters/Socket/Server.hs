@@ -92,6 +92,10 @@ streamEvents conn broadcastChan = do
           EventDone (Failure reason) -> [i|DONE:FAIL: #{showFailureReasonBrief reason}|]
           EventDone DryRun -> "DONE:DRYRUN"
           EventDone Cancelled -> "DONE:CANCELLED"
+          EventSetupStarted -> "SETUP:STARTED"
+          EventSetupFinished -> "SETUP:FINISHED"
+          EventTeardownStarted -> "TEARDOWN:STARTED"
+          EventTeardownFinished -> "TEARDOWN:FINISHED"
         formatted = [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr}\n|]
     sendAll conn (BS8.pack formatted)
 

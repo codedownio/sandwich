@@ -128,6 +128,10 @@ data NodeEvent = NodeEvent {
 data NodeEventType
   = EventStarted
   | EventDone !Result
+  | EventSetupStarted
+  | EventSetupFinished
+  | EventTeardownStarted
+  | EventTeardownFinished
   deriving (Show, Eq)
 
 -- | Context passed around through the evaluation of a RunTree
