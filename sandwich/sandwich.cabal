@@ -128,6 +128,7 @@ library
     , exceptions
     , filepath
     , free
+    , ghc-datasize
     , microlens
     , microlens-th
     , monad-control
@@ -191,6 +192,7 @@ executable sandwich-demo
     , exceptions
     , filepath
     , free
+    , ghc-datasize
     , microlens
     , microlens-th
     , monad-control
@@ -252,6 +254,7 @@ executable sandwich-discover
     , exceptions
     , filepath
     , free
+    , ghc-datasize
     , microlens
     , microlens-th
     , monad-control
@@ -319,6 +322,7 @@ executable sandwich-test
     , exceptions
     , filepath
     , free
+    , ghc-datasize
     , microlens
     , microlens-th
     , monad-control
@@ -387,6 +391,7 @@ test-suite sandwich-test-suite
     , exceptions
     , filepath
     , free
+    , ghc-datasize
     , microlens
     , microlens-th
     , monad-control

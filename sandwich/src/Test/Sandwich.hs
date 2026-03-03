@@ -292,4 +292,3 @@ countItNodes (Free (IntroduceWith'' {..})) = countItNodes next + countItNodes su
 countItNodes (Free (Introduce'' {..})) = countItNodes next + countItNodes subspecAugmented
 countItNodes (Free x) = countItNodes (next x) + countItNodes (subspec x)
 countItNodes (Pure _) = 0
-

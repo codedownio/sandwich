@@ -8,34 +8,50 @@ import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS8
+import Data.IORef
 import Data.String.Interpolate
 import Data.Time
 import Data.Word
+import Debug.Trace (traceMarkerIO)
+import GHC.DataSize (recursiveSize)
 import GHC.Stats
 import System.IO (IOMode(..), hFlush, hPutStr, hSetBuffering, BufferMode(..), withFile)
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import UnliftIO.Concurrent (threadDelay)
+import UnliftIO.Exception
 
 
--- | Stream all log entries from a broadcast channel to a file.
+-- | Stream all log entries from a broadcast channel to a file,
+-- including the recursive heap size of each LogEntry.
+-- When cancelled, writes a summary line with total bytes.
 streamLogsToFile :: FilePath -> TChan (Int, String, LogEntry) -> IO ()
 streamLogsToFile path broadcastChan = do
   chan <- atomically $ dupTChan broadcastChan
+  totalRef <- newIORef (0 :: Word)
+  countRef <- newIORef (0 :: Int)
   withFile path AppendMode $ \h -> do
     hSetBuffering h LineBuffering
-    forever $ do
-      (nodeId, nodeLabel, LogEntry {..}) <- atomically $ readTChan chan
-      let levelStr :: String
-          levelStr = case logEntryLevel of
-            LevelDebug -> "DEBUG"
-            LevelInfo -> "INFO"
-            LevelWarn -> "WARN"
-            LevelError -> "ERROR"
-            LevelOther t -> show t
-          msgStr = BS8.unpack logEntryStr
-          formatted = [i|#{show logEntryTime} [#{levelStr}] [#{nodeId}] #{nodeLabel}: #{msgStr}\n|]
-      hPutStr h formatted
+    let loop = forever $ do
+          (nodeId, nodeLabel, entry@(LogEntry {..})) <- atomically $ readTChan chan
+          entrySize <- recursiveSize entry
+          modifyIORef' totalRef (+ entrySize)
+          modifyIORef' countRef (+ 1)
+          let levelStr :: String
+              levelStr = case logEntryLevel of
+                LevelDebug -> "DEBUG"
+                LevelInfo -> "INFO"
+                LevelWarn -> "WARN"
+                LevelError -> "ERROR"
+                LevelOther t -> show t
+              msgStr = BS8.unpack logEntryStr
+              formatted = [i|#{show logEntryTime} [#{levelStr}] [#{nodeId}] #{nodeLabel}: #{msgStr} (#{entrySize} bytes)\n|]
+          hPutStr h formatted
+          hFlush h
+    loop `finally` do
+      total <- readIORef totalRef
+      count <- readIORef countRef
+      hPutStr h [i|\nTotal: #{count} log entries, #{formatBytes (fromIntegral total)} recursive heap size\n|]
       hFlush h
 
 -- | Stream node lifecycle events from a broadcast channel to a file.
