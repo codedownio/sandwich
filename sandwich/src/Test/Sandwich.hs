@@ -92,6 +92,7 @@ import qualified Options.Applicative as OA
 import System.Environment
 import System.Exit
 import System.FilePath
+import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose)
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
@@ -198,10 +199,20 @@ runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (Exit
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
 
+  -- Open late-log file if --log-logs is active
+  maybeLateLogHandle <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+    (Just clo, Just runRoot) | optLogLogs clo -> do
+      h <- openFile (runRoot </> "late-logs.txt") AppendMode
+      hSetBuffering h LineBuffering
+      return (Just h)
+    _ -> return Nothing
+
+  let options' = options { optionsLateLogFile = maybeLateLogHandle }
+
   let milestone msg = do
         traceMarkerIO [i|sandwich: #{msg}|]
         now <- getCurrentTime
-        case optionsEventBroadcast options of
+        case optionsEventBroadcast options' of
           Just chan -> atomically $ writeTChan chan (NodeEvent now 0 "sandwich" (EventMilestone msg))
           Nothing -> return ()
 
@@ -224,10 +235,10 @@ runSandwich' maybeCommandLineOptions options spec' = do
                         }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
   milestone "startSandwichTree'"
-  rts <- startSandwichTree' baseContext options spec
+  rts <- startSandwichTree' baseContext options' spec
 
   milestone "spawning formatters"
-  formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ do
+  formatterAsyncs <- forM (optionsFormatters options') $ \(SomeFormatter f) -> async $ do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
@@ -240,14 +251,14 @@ runSandwich' maybeCommandLineOptions options spec' = do
   fileStreamAsyncs <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
     (Just clo, Just runRoot) -> fmap catMaybes $ sequence
       [ if optLogLogs clo
-        then case optionsLogBroadcast options of
+        then case optionsLogBroadcast options' of
           Just chan -> Just <$> async (streamLogsToFile (runRoot </> "all-logs.txt") chan)
           Nothing -> return Nothing
         else return Nothing
       , if optLogEvents clo
         then do
           writeTreeFile (runRoot </> "events-tree.txt") rts
-          case optionsEventBroadcast options of
+          case optionsEventBroadcast options' of
             Just chan -> Just <$> async (streamEventsToFile (runRoot </> "events.txt") chan)
             Nothing -> return Nothing
         else return Nothing
@@ -286,7 +297,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   -- Run finalizeFormatter method on formatters
   milestone "finalizing formatters"
-  forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
+  forM_ (optionsFormatters options') $ \(SomeFormatter f) -> do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
@@ -299,6 +310,9 @@ runSandwich' maybeCommandLineOptions options spec' = do
   -- Cancel file stream asyncs
   milestone "cancelling file stream asyncs"
   mapM_ cancel fileStreamAsyncs
+
+  -- Close late-log file handle
+  mapM_ hClose maybeLateLogHandle
 
   milestone "done"
   exitReason <- readIORef exitReasonRef

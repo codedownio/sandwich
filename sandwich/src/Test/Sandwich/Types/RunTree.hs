@@ -23,6 +23,7 @@ import qualified Data.Text as T
 import Data.Time
 import Data.Typeable
 import GHC.Stack
+import System.IO (Handle)
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
@@ -317,6 +318,8 @@ data Options = Options {
   -- Each entry is tagged with (nodeId, nodeLabel, logEntry).
   , optionsEventBroadcast :: Maybe (TChan NodeEvent)
   -- ^ Broadcast channel for streaming node lifecycle events (started, done) to external consumers.
+  , optionsLateLogFile :: Maybe Handle
+  -- ^ If set, log writes that occur after a node is already Done will be written to this file handle.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

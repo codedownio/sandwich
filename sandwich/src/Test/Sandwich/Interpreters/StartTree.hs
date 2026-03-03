@@ -11,6 +11,7 @@ module Test.Sandwich.Interpreters.StartTree (
 import Control.Concurrent.MVar
 import qualified Control.Exception as E
 import Control.Monad
+import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
@@ -390,12 +391,12 @@ shouldRunChild' ctx common = case baseContextOnlyRunIds $ getBaseContext ctx of
 
 -- * Running examples
 
-runExampleM :: HasBaseContext r => RunNodeCommonWithStatus s l t -> String -> ExampleM r () -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
+runExampleM :: HasBaseContext r => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r () -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
 runExampleM rnc label ex ctx logs exceptionMessage = runExampleM' rnc label ex ctx logs exceptionMessage >>= \case
   Left err -> return $ Failure err
   Right () -> return Success
 
-runExampleM' :: HasBaseContext r => RunNodeCommonWithStatus s l t -> String -> ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
+runExampleM' :: HasBaseContext r => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
 runExampleM' rnc label ex ctx logs exceptionMessage = do
   maybeTestDirectory <- getTestDirectory ctx
   let options = baseContextOptions $ getBaseContext ctx
@@ -411,10 +412,10 @@ runExampleM' rnc label ex ctx logs exceptionMessage = do
 
   where
     withLogFn :: Maybe FilePath -> Options -> (LogFn -> IO a) -> IO a
-    withLogFn Nothing (Options {..}) action = action (withBroadcast optionsLogBroadcast $ logToMemory optionsSavedLogLevel logs)
+    withLogFn Nothing (Options {..}) action = action (withLateLogCheck optionsLateLogFile $ withBroadcast optionsLogBroadcast $ logToMemory optionsSavedLogLevel logs)
     withLogFn (Just logPath) (Options {..}) action = withFile (logPath </> "test_logs.txt") AppendMode $ \h -> do
       hSetBuffering h LineBuffering
-      action (withBroadcast optionsLogBroadcast $ logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
+      action (withLateLogCheck optionsLateLogFile $ withBroadcast optionsLogBroadcast $ logToMemoryAndFile optionsMemoryLogLevel optionsSavedLogLevel optionsLogFormatter logs h)
 
     withBroadcast :: Maybe (TChan (Int, String, LogEntry)) -> LogFn -> LogFn
     withBroadcast Nothing logFn = logFn
@@ -422,6 +423,20 @@ runExampleM' rnc label ex ctx logs exceptionMessage = do
       logFn loc logSrc logLevel logStr
       ts <- getCurrentTime
       atomically $ writeTChan chan (runTreeId rnc, runTreeLabel rnc, LogEntry ts loc logSrc logLevel (fromLogStr logStr))
+
+    withLateLogCheck :: Maybe Handle -> LogFn -> LogFn
+    withLateLogCheck Nothing logFn = logFn
+    withLateLogCheck (Just lateH) logFn = \loc logSrc logLevel logStr -> do
+      logFn loc logSrc logLevel logStr
+      status <- readTVarIO (runTreeStatus rnc)
+      case status of
+        Done {} -> do
+          ts <- getCurrentTime
+          let bs = fromLogStr logStr
+          let line = [i|#{show ts} [LATE] [#{runTreeId rnc}] #{runTreeLabel rnc}: #{BS8.unpack bs}\n|]
+          BS8.hPutStr lateH (BS8.pack line)
+          hFlush lateH
+        _ -> return ()
 
     getTestDirectory :: (HasBaseContext a) => a -> IO (Maybe FilePath)
     getTestDirectory (getBaseContext -> (BaseContext {..})) = case baseContextPath of
