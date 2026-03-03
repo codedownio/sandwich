@@ -96,6 +96,7 @@ streamEvents conn broadcastChan = do
           EventSetupFinished -> "SETUP:FINISHED"
           EventTeardownStarted -> "TEARDOWN:STARTED"
           EventTeardownFinished -> "TEARDOWN:FINISHED"
+          EventMilestone msg -> [i|MILESTONE: #{msg}|]
         formatted = [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr}\n|]
     sendAll conn (BS8.pack formatted)
 

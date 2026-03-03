@@ -84,6 +84,8 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
+import Data.Time (getCurrentTime)
+import Debug.Trace (traceMarkerIO)
 import GHC.IO.Encoding
 import Options.Applicative
 import qualified Options.Applicative as OA
@@ -196,6 +198,13 @@ runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (Exit
 runSandwich' maybeCommandLineOptions options spec' = do
   baseContext <- baseContextFromOptions options
 
+  let milestone msg = do
+        traceMarkerIO [i|sandwich: #{msg}|]
+        now <- getCurrentTime
+        case optionsEventBroadcast options of
+          Just chan -> atomically $ writeTChan chan (NodeEvent now 0 "sandwich" (EventMilestone msg))
+          Nothing -> return ()
+
   -- To prevent weird errors saving files like "commitAndReleaseBuffer: invalid argument (invalid character)",
   -- especially on Windows
   -- See https://gitlab.haskell.org/ghc/ghc/issues/8118
@@ -214,8 +223,10 @@ runSandwich' maybeCommandLineOptions options spec' = do
                         , nodeOptionsCreateFolder = False
                         }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
+  milestone "startSandwichTree'"
   rts <- startSandwichTree' baseContext options spec
 
+  milestone "spawning formatters"
   formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
@@ -225,6 +236,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
       runFormatter f rts maybeCommandLineOptions baseContext
 
   -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats
+  milestone "spawning file stream asyncs"
   fileStreamAsyncs <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
     (Just clo, Just runRoot) -> fmap catMaybes $ sequence
       [ if optLogLogs clo
@@ -260,15 +272,20 @@ runSandwich' maybeCommandLineOptions options spec' = do
   _ <- installHandler sigTERM shutdown
 
   -- Wait for the tree to finish
+  milestone "waiting for tree"
   mapM_ waitForTree rts
+  milestone "tree finished"
 
   -- Wait for all formatters to finish
+  milestone "waiting for formatters"
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   let failures = lefts finalResults
   unless (null failures) $
     putStrLn [i|Some formatters failed: '#{failures}'|]
+  milestone "formatters finished"
 
   -- Run finalizeFormatter method on formatters
+  milestone "finalizing formatters"
   forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
@@ -276,11 +293,14 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
     loggingFn $ finalizeFormatter f rts baseContext
 
+  milestone "fixing tree"
   fixedTree <- atomically $ mapM fixRunTree rts
 
   -- Cancel file stream asyncs
+  milestone "cancelling file stream asyncs"
   mapM_ cancel fileStreamAsyncs
 
+  milestone "done"
   exitReason <- readIORef exitReasonRef
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
