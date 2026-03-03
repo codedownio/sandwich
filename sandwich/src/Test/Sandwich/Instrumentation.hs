@@ -55,6 +55,7 @@ streamEventsToFile path broadcastChan = do
             EventDone DryRun -> "DONE:DRYRUN"
             EventDone Cancelled -> "DONE:CANCELLED"
           formatted = [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr}\n|]
+      traceMarkerIO [i|[#{nodeEventId}] #{nodeEventLabel}: #{typeStr}|]
       hPutStr h formatted
       hFlush h
 
