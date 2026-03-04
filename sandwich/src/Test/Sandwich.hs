@@ -271,8 +271,8 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
           else return Nothing
         ]
       -- Spawn the managed-async event stream separately so we can cancel it last
-      maybeManagedAsync <- if optLogEvents clo
-        then Just <$> managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "managed-asyncs.log") asyncEventBroadcast)
+      maybeManagedAsync <- if optLogAsyncs clo
+        then Just <$> managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "asyncs.log") asyncEventBroadcast)
         else return Nothing
       return (others, maybeManagedAsync)
     _ -> return ([], Nothing)

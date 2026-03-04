@@ -101,6 +101,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> switch (long "log-logs" <> help "Stream all test logs to <run-root>/logs.txt (for debugging)")
   <*> switch (long "log-events" <> help "Stream node lifecycle events to <run-root>/events.txt (for debugging)")
   <*> switch (long "log-rts-stats" <> help "Stream RTS memory stats to <run-root>/rts-stats.txt (for debugging)")
+  <*> switch (long "log-asyncs" <> help "Stream managed async lifecycle events to <run-root>/managed-asyncs.log (for debugging)")
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))

@@ -64,6 +64,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optLogLogs :: Bool
   , optLogEvents :: Bool
   , optLogRtsStats :: Bool
+  , optLogAsyncs :: Bool
 
   , optListAvailableTests :: Maybe Bool
   , optListAvailableTestsJson :: Maybe Bool
