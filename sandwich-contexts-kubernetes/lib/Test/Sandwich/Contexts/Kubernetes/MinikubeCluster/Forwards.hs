@@ -80,8 +80,8 @@ withForwardKubernetesService' _ _profile _namespace _service _action = error "Ex
 
 withForwardKubernetesServiceFileLogging' :: (
   HasCallStack, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> Text -> Text -> Text -> Text -> (URI -> m a) -> m a
-withForwardKubernetesServiceFileLogging' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) fileName profile namespace service action = do
+  ) => KubernetesClusterContext -> Text -> Text -> Text -> (URI -> m a) -> m a
+withForwardKubernetesServiceFileLogging' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) profile namespace service action = do
   baseEnv <- liftIO getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
@@ -102,6 +102,8 @@ withForwardKubernetesServiceFileLogging' (KubernetesClusterContext {kubernetesCl
         env = Just env
         , create_group = True
         }
+
+  let fileName = namespace <> "-" <> "service"
 
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|withForwardKubernetesServiceFileLogging': no current folder.|]
@@ -129,4 +131,4 @@ withForwardKubernetesServiceFileLogging' (KubernetesClusterContext {kubernetesCl
           case T.lines contents of
             (x:_) -> pure x
             [] -> threadDelay 50_000 >> loop
-withForwardKubernetesServiceFileLogging' _ _fileName _profile _namespace _service _action = error "Expected Minikube KubernetesClusterContext"
+withForwardKubernetesServiceFileLogging' _ _profile _namespace _service _action = error "Expected Minikube KubernetesClusterContext"

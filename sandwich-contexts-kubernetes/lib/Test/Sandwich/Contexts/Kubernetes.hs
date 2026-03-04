@@ -41,6 +41,7 @@ module Test.Sandwich.Contexts.Kubernetes (
   -- * Forward services
   , withForwardKubernetesService
   , withForwardKubernetesService'
+  , withForwardKubernetesServiceFileLogging'
 
   -- * Logs
   , module Test.Sandwich.Contexts.Kubernetes.KubectlLogs
@@ -119,3 +120,24 @@ withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterTy
   Minikube.withForwardKubernetesService' kcc kubernetesClusterTypeMinikubeProfileName
 withForwardKubernetesService' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) kubectlBinary =
   Kind.withForwardKubernetesService' kcc kubectlBinary
+
+-- | Same as 'withForwardKubernetesService', but allows you to pass in the 'KubernetesClusterContext' and @kubectl@ binary.
+withForwardKubernetesServiceFileLogging' :: (
+  MonadLoggerIO m, MonadUnliftIO m
+  , HasBaseContextMonad context m
+  )
+  -- | Kubernetes cluster context
+  => KubernetesClusterContext
+  -- | Binary path for kubectl
+  -> FilePath
+  -- | Namespace
+  -> Text
+  -- | Service name
+  -> Text
+  -- | Callback receiving the service 'URL'.
+  -> (URI -> m a)
+  -> m a
+withForwardKubernetesServiceFileLogging' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..})}) _kubectlBinary =
+  Minikube.withForwardKubernetesServiceFileLogging' kcc kubernetesClusterTypeMinikubeProfileName
+withForwardKubernetesServiceFileLogging' kcc@(KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {})}) kubectlBinary =
+  Kind.withForwardKubernetesServiceFileLogging' kcc kubectlBinary
