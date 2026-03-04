@@ -82,8 +82,9 @@ import System.IO.Temp (createTempDirectory)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Util.Aeson
+import Test.Sandwich.ManagedAsync
 import qualified Text.Show
-import UnliftIO.Async
+import UnliftIO.Async (Async, wait)
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.MVar (modifyMVar)
@@ -355,11 +356,12 @@ buildNixCallPackageDerivation' :: forall context m. (
   -> Text
   -> m FilePath
 buildNixCallPackageDerivation' nc@(NixContext {..}) derivation = do
+  runId <- baseContextRunId <$> asks getBaseContext
   wait =<< modifyMVar nixContextBuildCache (\m ->
     case M.lookup derivation m of
       Just x -> return (m, x)
       Nothing -> do
-        asy <- async $ do
+        asy <- managedAsync runId "nix-build-call-package" $ do
           maybeNixExpressionDir <- getCurrentFolder >>= \case
             Just dir -> (Just <$>) $ liftIO $ createTempDirectory dir "nix-expression"
             Nothing -> return Nothing
@@ -395,11 +397,12 @@ buildNixExpression' :: (
   -- | Nix expression
   => NixContext -> Text -> m FilePath
 buildNixExpression' nc@(NixContext {..}) expr = do
+  runId <- baseContextRunId <$> asks getBaseContext
   wait =<< modifyMVar nixContextBuildCache (\m ->
     case M.lookup expr m of
       Just x -> return (m, x)
       Nothing -> do
-        asy <- async $ do
+        asy <- managedAsync runId "nix-build-expression" $ do
           maybeNixExpressionDir <- getCurrentFolder >>= \case
             Just dir -> (Just <$>) $ liftIO $ createTempDirectory dir "nix-expression"
             Nothing -> pure Nothing

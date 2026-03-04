@@ -15,7 +15,8 @@ import Data.String.Interpolate
 import Network.Socket
 import Relude
 import Test.Sandwich (expectationFailure)
-import UnliftIO.Async
+import Test.Sandwich.ManagedAsync
+import UnliftIO.Async (concurrently_)
 import UnliftIO.Exception
 import UnliftIO.Timeout
 
@@ -30,7 +31,7 @@ withProxyToUnixSocket socketPath f = do
                SockAddrInet6 port _ _ _ -> putMVar portVar port
                x -> expectationFailure [i|withProxyToUnixSocket: expected to bind a TCP socket, but got other addr: #{x}|]
            )
-  withAsync (liftIO $ DCN.runTCPServer ss app `onException` (tryPutMVar portVar (-1))) $ \_ ->
+  managedWithAsync_ "" "tcp-reverse-proxy" (liftIO $ DCN.runTCPServer ss app `onException` (tryPutMVar portVar (-1))) $
     timeout 60_000_000 (readMVar portVar) >>= \case
       Nothing -> expectationFailure [i|withProxyToUnixSocket: didn't get port within 60s|]
       Just (-1) -> expectationFailure [i|withProxyToUnixSocket: TCP server threw exception|]

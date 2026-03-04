@@ -34,7 +34,8 @@ module Test.Sandwich.Misc (
 
   -- * Context classes
   , BaseContext
-  , HasBaseContext
+  , baseContextRunId
+  , HasBaseContext(..)
   , HasBaseContextMonad
   , HasCommandLineOptions
   , SomeCommandLineOptions(..)
