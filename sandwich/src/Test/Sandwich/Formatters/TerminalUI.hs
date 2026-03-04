@@ -30,7 +30,6 @@ import Brick as B
 import Brick.BChan
 import Brick.Widgets.List
 import Control.Concurrent
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
@@ -64,12 +63,14 @@ import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
+import UnliftIO.Async (Async, cancel)
 import UnliftIO.Exception
 
 
@@ -155,14 +156,15 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
         threadDelay period
 
   -- Optionally start the debug socket server in the test tree root
+  let runId = baseContextRunId baseContext
   let withDebugSocket = case (terminalUIDebugSocket, baseContextRunRoot baseContext) of
-        (True, Just runRoot) -> \action -> withAsync (debugSocketServer (runRoot </> "tui-debug.sock") debugChan) (\_ -> action)
+        (True, Just runRoot) -> \action -> managedWithAsync_ runId "tui-debug-socket" (debugSocketServer runId (runRoot </> "tui-debug.sock") debugChan) action
         _ -> id
 
   liftIO $
     withDebugSocket $
-    (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> withAsync (updateCurrentTimeForever ts) (\_ -> action)) $
-    withAsync eventAsync $ \_ ->
+    (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> managedWithAsync_ runId "tui-clock-update" (updateCurrentTimeForever ts) action) $
+    managedWithAsync_ runId "tui-event-async" eventAsync $
     void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ClickableName
@@ -290,9 +292,10 @@ appEvent s (VtyEvent e) =
           _ -> return ()
     V.EvKey c [] | c == runAllKey -> do
       now <- liftIO getCurrentTime
+      let appRunId = baseContextRunId (s ^. appBaseContext)
       when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
         mapM_ clearRecursively (s ^. appRunTreeBase)
-        void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
+        void $ managedAsync appRunId "tui-run-all" $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
       continue $ s
         & appStartTime .~ now
         & appCurrentTime .~ now
@@ -302,6 +305,7 @@ appEvent s (VtyEvent e) =
         _ -> do
           -- Get the set of IDs for only this node's ancestors and children
           let ancestorIds = S.fromList $ toList $ runTreeAncestors node
+          let appRunId = baseContextRunId (s ^. appBaseContext)
           case findRunNodeChildrenById ident (s ^. appRunTree) of
             Nothing -> continue s
             Just childIds -> do
@@ -311,7 +315,7 @@ appEvent s (VtyEvent e) =
               -- Start a run for all affected nodes
               now <- liftIO getCurrentTime
               let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
-              void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
+              void $ liftIO $ managedAsync appRunId "tui-run-selected" $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
               continue $ s
                 & appStartTime .~ now
                 & appCurrentTime .~ now

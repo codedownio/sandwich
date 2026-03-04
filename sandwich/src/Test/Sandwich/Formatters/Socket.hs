@@ -17,7 +17,6 @@ module Test.Sandwich.Formatters.Socket (
   , SocketFormatter(..)
   ) where
 
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Data.IORef
@@ -25,8 +24,10 @@ import Data.Typeable
 import System.FilePath
 import Test.Sandwich.Formatters.Socket.Server
 import Test.Sandwich.Interpreters.RunTree.Util (waitForTree)
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
+import UnliftIO.Async (Async, cancel)
 
 
 data SocketFormatter = SocketFormatter {
@@ -67,10 +68,11 @@ instance Formatter SocketFormatter where
 
 run :: (MonadIO m) => SocketFormatter -> [RunNode BaseContext] -> Maybe (CommandLineOptions ()) -> BaseContext -> m ()
 run (SocketFormatter {..}) rts _maybeCommandLineOptions bc = do
+  let runId = baseContextRunId bc
   case resolveSocketPath of
     Nothing -> return ()
     Just path -> liftIO $ do
-      a <- async (socketServer path rts socketFormatterLogBroadcast socketFormatterEventBroadcast)
+      a <- managedAsync runId "socket-server" (socketServer runId path rts socketFormatterLogBroadcast socketFormatterEventBroadcast)
       writeIORef socketFormatterServerAsync (Just a)
       -- Block until all tests complete
       mapM_ waitForTree rts

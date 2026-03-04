@@ -2,6 +2,7 @@ module Test.Sandwich.Instrumentation (
   streamLogsToFile
   , streamEventsToFile
   , streamRtsStatsToFile
+  , streamManagedAsyncEventsToFile
   , writeTreeFile
   ) where
 
@@ -11,12 +12,14 @@ import Control.Monad.Logger
 import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Data.Time
 import Data.Word
 import Debug.Trace (traceMarkerIO)
 import GHC.DataSize (recursiveSize)
 import GHC.Stats
 import System.IO (IOMode(..), hFlush, hPutStr, hSetBuffering, BufferMode(..), withFile)
+import Test.Sandwich.ManagedAsync (AsyncEvent(..), AsyncInfo(..))
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import UnliftIO.Concurrent (threadDelay)
@@ -128,6 +131,22 @@ formatBytes b
   | b < 1024 * 1024 = [i|#{b `div` 1024} KiB (#{b})|]
   | b < 1024 * 1024 * 1024 = [i|#{b `div` (1024 * 1024)} MiB (#{b})|]
   | otherwise = [i|#{b `div` (1024 * 1024 * 1024)} GiB (#{b})|]
+
+-- | Stream managed async lifecycle events (started/finished) from a broadcast channel to a file.
+streamManagedAsyncEventsToFile :: FilePath -> TChan AsyncEvent -> IO ()
+streamManagedAsyncEventsToFile path broadcastChan = do
+  chan <- atomically $ dupTChan broadcastChan
+  withFile path AppendMode $ \h -> do
+    hSetBuffering h LineBuffering
+    forever $ do
+      event <- atomically $ readTChan chan
+      now <- getCurrentTime
+      let line :: String
+          line = case event of
+            AsyncStarted info -> [i|#{show now} STARTED #{asyncInfoName info} (thread: #{asyncInfoThreadId info}, parent: #{asyncInfoParentThreadId info}, runId: #{asyncInfoRunId info})|]
+            AsyncFinished info -> [i|#{show now} FINISHED #{asyncInfoName info} (thread: #{asyncInfoThreadId info}, runId: #{asyncInfoRunId info})|]
+      hPutStr h (line <> "\n")
+      hFlush h
 
 -- | Write a tree of node IDs and labels to a file for cross-referencing with events.
 writeTreeFile :: FilePath -> [RunNodeWithStatus context s l t] -> IO ()

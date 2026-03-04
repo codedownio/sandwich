@@ -37,6 +37,7 @@ import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Interpreters.RunTree.Logging
 import Test.Sandwich.Interpreters.RunTree.Util
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.RunTree
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.RunTree
@@ -267,9 +268,10 @@ runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
   let timerFn = if runTreeRecordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel) else id
+  let asyncName = T.pack [i|node:#{runTreeId}:#{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
-  myAsync <- liftIO $ asyncWithUnmask $ \unmask -> do
+  myAsync <- liftIO $ managedAsyncWithUnmask baseContextRunId asyncName $ \unmask -> do
     flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
       readMVar mvar
       (result, extraTimingInfo) <- timerFn action
@@ -494,8 +496,7 @@ withMaybeWarnOnLongExecution :: (MonadUnliftIO m) => BaseContext -> RunNodeCommo
 withMaybeWarnOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {..}) label inner = case optionsWarnOnLongExecutionMs baseContextOptions of
   Nothing -> inner
   Just maxTimeMs -> do
-    withAsync (waiter maxTimeMs) $ \_ -> do
-      inner
+    managedWithAsync_ baseContextRunId (T.pack [i|warn-long:#{runTreeId}:#{label}|]) (waiter maxTimeMs) inner
 
   where
     waiter maxTimeMs = do

@@ -2,7 +2,6 @@ module Test.Sandwich.Formatters.Socket.Server (
   socketServer
   ) where
 
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Logger
@@ -10,6 +9,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Data.Time
 import Data.Word
 import GHC.Stats
@@ -17,6 +17,7 @@ import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import System.Directory (removeFile)
 import Test.Sandwich.Formatters.Socket.Commands
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import UnliftIO.Concurrent (threadDelay)
@@ -25,8 +26,8 @@ import UnliftIO.Exception
 
 -- | Bidirectional Unix socket server. Each client connection reads line-based
 -- commands and sends back responses terminated by a line containing just ".".
-socketServer :: FilePath -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> TChan NodeEvent -> IO ()
-socketServer socketPath rts logBroadcast eventBroadcast = do
+socketServer :: T.Text -> FilePath -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> TChan NodeEvent -> IO ()
+socketServer runId socketPath rts logBroadcast eventBroadcast = do
   -- Clean up any existing socket file
   removeFile socketPath `catch` \(_ :: IOError) -> return ()
 
@@ -35,7 +36,7 @@ socketServer socketPath rts logBroadcast eventBroadcast = do
     listen sock 5
     forever $ do
       (conn, _) <- accept sock
-      void $ async $ handleConnection conn rts logBroadcast eventBroadcast
+      void $ managedAsync runId "socket-connection" $ handleConnection conn rts logBroadcast eventBroadcast
 
 handleConnection :: Socket -> [RunNode BaseContext] -> TChan (Int, String, LogEntry) -> TChan NodeEvent -> IO ()
 handleConnection conn rts logBroadcast eventBroadcast = do

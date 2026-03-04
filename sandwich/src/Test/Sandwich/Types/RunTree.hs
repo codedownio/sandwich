@@ -154,6 +154,7 @@ data BaseContext = BaseContext {
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
+  , baseContextRunId :: T.Text
   }
 
 -- | Has-* class for asserting a 'BaseContext' is available.
