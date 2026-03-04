@@ -204,7 +204,7 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
   -- Open late-log file if --log-logs is active
   maybeLateLogHandle <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
     (Just clo, Just runRoot) | optLogLogs clo -> do
-      h <- openFile (runRoot </> "late-logs.txt") AppendMode
+      h <- openFile (runRoot </> "late-logs.log") AppendMode
       hSetBuffering h LineBuffering
       return (Just h)
     _ -> return Nothing
@@ -251,28 +251,31 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
 
   -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats, --log-events (managed-asyncs)
   milestone "spawning file stream asyncs"
-  fileStreamAsyncs <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
-    (Just clo, Just runRoot) -> fmap (concat . catMaybes) $ sequence
-      [ if optLogLogs clo
-        then case optionsLogBroadcast options' of
-          Just chan -> Just . (:[]) <$> managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.txt") chan)
-          Nothing -> return Nothing
-        else return Nothing
-      , if optLogEvents clo
-        then do
-          writeTreeFile (runRoot </> "events-tree.txt") rts
-          case optionsEventBroadcast options' of
-            Just chan -> do
-              asyncManagedEvents <- managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "managed-asyncs.txt") asyncEventBroadcast)
-              asyncEvents <- managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.txt") chan)
-              return (Just [asyncManagedEvents, asyncEvents])
+  (fileStreamAsyncs, maybeManagedAsyncStreamAsync) <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+    (Just clo, Just runRoot) -> do
+      others <- fmap catMaybes $ sequence
+        [ if optLogLogs clo
+          then case optionsLogBroadcast options' of
+            Just chan -> Just <$> managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.log") chan)
             Nothing -> return Nothing
+          else return Nothing
+        , if optLogEvents clo
+          then do
+            writeTreeFile (runRoot </> "events-tree.txt") rts
+            case optionsEventBroadcast options' of
+              Just chan -> Just <$> managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
+              Nothing -> return Nothing
+          else return Nothing
+        , if optLogRtsStats clo
+          then Just <$> managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.log"))
+          else return Nothing
+        ]
+      -- Spawn the managed-async event stream separately so we can cancel it last
+      maybeManagedAsync <- if optLogEvents clo
+        then Just <$> managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "managed-asyncs.log") asyncEventBroadcast)
         else return Nothing
-      , if optLogRtsStats clo
-        then Just . (:[]) <$> managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.txt"))
-        else return Nothing
-      ]
-    _ -> return []
+      return (others, maybeManagedAsync)
+    _ -> return ([], Nothing)
 
   exitReasonRef <- newIORef NormalExit
 
@@ -313,9 +316,12 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
   milestone "fixing tree"
   fixedTree <- atomically $ mapM fixRunTree rts
 
-  -- Cancel file stream asyncs
+  -- Cancel file stream asyncs (but not the managed-async stream yet)
   milestone "cancelling file stream asyncs"
   mapM_ cancel fileStreamAsyncs
+
+  -- Cancel the managed-async stream last, so its finally block captures the final state
+  mapM_ cancel maybeManagedAsyncStreamAsync
 
   -- Check for stale managed asyncs from this run
   milestone "checking for stale asyncs"

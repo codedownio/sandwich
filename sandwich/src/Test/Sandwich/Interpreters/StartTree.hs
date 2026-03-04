@@ -11,11 +11,11 @@ module Test.Sandwich.Interpreters.StartTree (
 import Control.Concurrent.MVar
 import qualified Control.Exception as E
 import Control.Monad
-import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Trans.Reader
+import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import qualified Data.List as L
 import Data.Sequence hiding ((:>))
@@ -268,7 +268,7 @@ runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
   let timerFn = if runTreeRecordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel) else id
-  let asyncName = T.pack [i|node:#{runTreeId}:#{runTreeLabel}|]
+  let asyncName = T.pack [i|node #{runTreeId}, #{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
   myAsync <- liftIO $ managedAsyncWithUnmask baseContextRunId asyncName $ \unmask -> do
