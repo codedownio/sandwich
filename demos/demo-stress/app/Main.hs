@@ -17,7 +17,7 @@ import Test.Sandwich
 -- when all tests finish and statuses stabilize.
 stressSpec :: TopSpec
 stressSpec = parallel $ do
-  forM_ [(1 :: Int)..400] $ \nodeId ->
+  forM_ [(1 :: Int)..20] $ \nodeId ->
     it [i|test #{nodeId}|] $ stressTest nodeId
 
 stressTest :: Int -> ExampleM context ()
@@ -27,7 +27,7 @@ stressTest nodeId = do
   let logCount = 100 + (nodeId * 47 `mod` 200)
   -- Spread the work over the 5-minute window.
   -- Total run time per test: ~4-5 minutes with jitter.
-  let baseSleepUs = (5 * 60 * 1000000) `div` logCount
+  let baseSleepUs = (5 * 60 * 100000) `div` logCount
   go gen logCount baseSleepUs (1 :: Int)
   where
     go _ 0 _ _ = return ()
