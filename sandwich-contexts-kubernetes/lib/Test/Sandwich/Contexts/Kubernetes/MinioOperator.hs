@@ -66,11 +66,13 @@ type HasMinioOperatorContext context = HasLabel context "minioOperator" MinioOpe
 
 data MinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages :: Bool
+  , minioOperatorExtraImages :: [Text]
   , minioOperatorYamlSource :: MinioOperatorYamlSource
   }
 defaultMinioOperatorOptions :: MinioOperatorOptions
 defaultMinioOperatorOptions = MinioOperatorOptions {
   minioOperatorPreloadImages = True
+  , minioOperatorExtraImages = ["quay.io/minio/operator-sidecar:v6.0.0"]
   , minioOperatorYamlSource = MinioOperatorYamlSourceGitHub "github.com/minio/operator?ref=v6.0.1"
   }
 
@@ -126,15 +128,17 @@ introduceMinioOperator'' :: (
   )
   -- | Path to @kubectl@ binary
   => FilePath
-  -- | Whether to preload images
+  -- | Whether to preload images found in the operator YAML
   -> Bool
+  -- | Extra images to preload
+  -> [Text]
   -- | Operator YAML
   -> Text
   -> SpecFree (LabelValue "minioOperator" MinioOperatorContext :> context) m ()
   -> SpecFree context m ()
-introduceMinioOperator'' kubectlBinary preloadImages allYaml = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
+introduceMinioOperator'' kubectlBinary preloadImages extraImages allYaml = introduceWith "introduce MinIO operator" minioOperator $ \action -> do
   kcc <- getContext kubernetesCluster
-  void $ withMinioOperator'' kubectlBinary kcc preloadImages allYaml action
+  void $ withMinioOperator'' kubectlBinary kcc preloadImages extraImages allYaml action
 
 -- | Bracket-style variant of 'introduceMinioOperator'.
 withMinioOperator :: (
@@ -170,7 +174,7 @@ withMinioOperator' kubectlBinary kcc opts action = do
           minioRepo <- buildNixCallPackageDerivation' nc derivation
           readCreateProcessWithLogging (proc kubectlBinary ["kustomize", minioRepo]) ""
 
-  withMinioOperator'' kubectlBinary kcc (minioOperatorPreloadImages opts) (toText allYaml) action
+  withMinioOperator'' kubectlBinary kcc (minioOperatorPreloadImages opts) (minioOperatorExtraImages opts) (toText allYaml) action
 
 -- | Same as 'withMinioOperator'', but allows you to pass in the options individually.
 --
@@ -182,17 +186,22 @@ withMinioOperator'' :: (
   -- | Path to @kubectl@ binary
   => FilePath
   -> KubernetesClusterContext
-  -- | Whether to preload images
+  -- | Whether to preload images found in the operator YAML
   -> Bool
+  -- | Extra images to preload
+  -> [Text]
   -- | Operator YAML
   -> Text
   -> (MinioOperatorContext -> m a)
   -> m a
-withMinioOperator'' kubectlBinary kcc preloadImages allYaml action = do
+withMinioOperator'' kubectlBinary kcc preloadImages extraImages allYaml action = do
   env <- getKubectlEnvironment kcc
 
   when preloadImages $ do
-    let images = findAllImages (toText allYaml)
+    let images = findAllImages (toText allYaml) <> extraImages
+
+    info [i|Found images to load from YAML: #{images}|]
+    info [i|Had extra images to load: #{extraImages}|]
 
     forM_ images $ \image ->
       loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
