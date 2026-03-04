@@ -252,10 +252,10 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
   -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats, --log-events (managed-asyncs)
   milestone "spawning file stream asyncs"
   fileStreamAsyncs <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
-    (Just clo, Just runRoot) -> fmap catMaybes $ sequence
+    (Just clo, Just runRoot) -> fmap (concat . catMaybes) $ sequence
       [ if optLogLogs clo
         then case optionsLogBroadcast options' of
-          Just chan -> Just <$> managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.txt") chan)
+          Just chan -> Just . (:[]) <$> managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.txt") chan)
           Nothing -> return Nothing
         else return Nothing
       , if optLogEvents clo
@@ -263,12 +263,13 @@ runSandwich' runId maybeCommandLineOptions options spec' = do
           writeTreeFile (runRoot </> "events-tree.txt") rts
           case optionsEventBroadcast options' of
             Just chan -> do
-              _ <- managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "managed-asyncs.txt") asyncEventBroadcast)
-              Just <$> managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.txt") chan)
+              asyncManagedEvents <- managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "managed-asyncs.txt") asyncEventBroadcast)
+              asyncEvents <- managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.txt") chan)
+              return (Just [asyncManagedEvents, asyncEvents])
             Nothing -> return Nothing
         else return Nothing
       , if optLogRtsStats clo
-        then Just <$> managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.txt"))
+        then Just . (:[]) <$> managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.txt"))
         else return Nothing
       ]
     _ -> return []
