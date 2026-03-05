@@ -123,17 +123,19 @@ waitForPodsToBeReady namespace labels timeInSeconds = do
   kubeConfigFile <- kubernetesClusterKubeConfigPath <$> getContext kubernetesCluster
 
   let labelArgs = [[i|-l #{k}=#{v}|] | (k, v) <- M.toList labels]
-  p <- createProcessWithLogging (proc kubectlBinary (
-                                  ["wait", "pods"
-                                  , "--kubeconfig", kubeConfigFile
-                                  , "-n", toString namespace
-                                  ]
-                                  <> labelArgs
-                                  <> [
-                                    "--for", "condition=Ready"
-                                    , "--timeout=" <> show timeInSeconds <> "s"
-                                    ]
-                                ))
+  p <- createProcessWithFileLogging (
+    proc kubectlBinary (
+        ["wait", "pods"
+        , "--kubeconfig", kubeConfigFile
+        , "-n", toString namespace
+        ]
+        <> labelArgs
+        <> [
+            "--for", "condition=Ready"
+           , "--timeout=" <> show timeInSeconds <> "s"
+           ]
+        )
+    )
   waitForProcess p >>= \case
     ExitSuccess -> return ()
     ExitFailure n -> expectationFailure [i|Failed to wait for pods to exist (code #{n})|]

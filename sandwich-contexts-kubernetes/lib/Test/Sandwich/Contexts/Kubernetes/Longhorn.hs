@@ -78,7 +78,7 @@ withLonghorn' (KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubec
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  createProcessWithLogging ((proc kubectlBinary ["apply", "-f", longhornYaml]) { env = Just env })
+  createProcessWithFileLogging ((proc kubectlBinary ["apply", "-f", longhornYaml]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   action $ LonghornContext options

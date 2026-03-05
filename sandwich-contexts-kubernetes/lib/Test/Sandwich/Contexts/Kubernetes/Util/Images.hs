@@ -66,13 +66,13 @@ commonPullIfNecessary binary image pullPolicy = isImagePresentCommon binary imag
        | otherwise -> doPull
   where
     doPull = do
-      createProcessWithLogging (proc binary ["pull", toString image])
+      createProcessWithFileLogging (proc binary ["pull", toString image])
         >>= waitForProcess >>= (`shouldBe` ExitSuccess)
       return True
 
 isImagePresentCommon :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => String -> Text -> m Bool
 isImagePresentCommon binary image = do
-  createProcessWithLogging (proc binary ["inspect", "--type=image", toString image]) >>= waitForProcess >>= \case
+  createProcessWithFileLogging (proc binary ["inspect", "--type=image", toString image]) >>= waitForProcess >>= \case
     ExitSuccess -> return True
     ExitFailure _ -> return False
 

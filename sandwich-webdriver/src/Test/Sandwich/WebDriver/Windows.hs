@@ -69,7 +69,7 @@ getScreenResolution :: (MonadIO m) => TestWebDriverContext -> m (Int, Int, Int, 
 -- getScreenResolution (TestWebDriverContext {wdWebDriver=(_, maybeXvfbSession)}) = case maybeXvfbSession of
 --   Nothing -> liftIO getResolution
 --   Just (XvfbSession {..}) -> liftIO $ getResolutionForDisplay xvfbDisplayNum
-getScreenResolution twdc = liftIO getResolution
+getScreenResolution _twdc = liftIO getResolution
 
 getScreenPixelDimensions :: (WebDriver m) => Int -> Int -> m (Double, Double)
 getScreenPixelDimensions width height = do

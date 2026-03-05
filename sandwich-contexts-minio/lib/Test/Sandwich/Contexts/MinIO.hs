@@ -287,9 +287,9 @@ withMinIOViaContainer (MinIOContextOptions {..}) (ContainerOptions {..}) action 
 
               info [i|Got command: #{cp}"|]
 
-              createProcessWithLogging cp
+              createProcessWithFileLogging cp
           )
-          (\_ -> do
+          (\_ ->
               void $ liftIO $ readCreateProcess (shell [i|#{containerOptionsSystem} rm -f --volumes #{containerName}|]) ""
           )
           (\p -> do

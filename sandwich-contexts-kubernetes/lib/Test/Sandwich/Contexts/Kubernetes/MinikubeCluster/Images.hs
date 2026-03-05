@@ -57,7 +57,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
           withSystemTempDirectory "image-tarball" $ \tempDir -> do
             let tarFile = tempDir </> "image.tar"
             -- TODO: don't depend on external tar file
-            createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
+            createProcessWithFileLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
               >>= waitForProcess >>= (`shouldBe` ExitSuccess)
             imageLoad tarFile False
             readImageName (toString image)
@@ -69,7 +69,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
               -- TODO: don't depend on external gzip file
-              createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
+              createProcessWithFileLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
               imageLoad tarFile False
               readImageName (toString image)
@@ -107,7 +107,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             logFn loc src level str
 
       liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
-        createProcessWithLogging (proc minikubeBinary args)
+        createProcessWithFileLogging (proc minikubeBinary args)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
       stderrOutput <- fromLogStr <$> readIORef stderrOutputVar

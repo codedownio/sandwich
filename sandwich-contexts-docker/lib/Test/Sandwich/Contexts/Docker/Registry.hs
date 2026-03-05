@@ -32,6 +32,7 @@ import qualified System.Random as R
 import Test.Sandwich
 import Test.Sandwich.Contexts.Docker (createNetwork, doesNetworkExist, getDockerState)
 import Test.Sandwich.Contexts.Docker.Container (isInContainer)
+import UnliftIO.Async
 import UnliftIO.Exception
 import UnliftIO.Process
 
@@ -89,12 +90,14 @@ withNewDockerRegistry action = do
                   Right _ -> return ()
                   Left err -> warn [i|Creating Docker network "kind" failed: '#{err}'|]
 
-              ps <- createProcessWithLogging (proc "docker" ["run", "-d", "--restart=always"
-                                                            , "-p", [i|5000|]
-                                                            ,  "--name", containerName
-                                                            ,  "--net=kind"
-                                                            , "registry:2"])
-              waitForProcess ps
+              (ps, asy) <- createProcessWithLogging (
+                proc "docker" ["run", "-d", "--restart=always"
+                              , "-p", [i|5000|]
+                                  ,  "--name", containerName
+                                  ,  "--net=kind"
+                                  , "registry:2"]
+                )
+              finally (waitForProcess ps) (cancel asy)
           )
           (\_ -> do
               info [i|Deleting registry '#{containerName}'|]
@@ -138,12 +141,14 @@ pushContainerToRegistry imageName (DockerRegistryContext {..}) = do
       -- We need to push to our local registry, but we'll get an insecure Docker registry error unless
       -- we're pushing to localhost. To accomplish this, we'll launch a new Docker container with host networking
       -- to do the push
-      ps <- createProcessWithLogging (shell [i|docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock docker:stable docker push #{pushedName}|])
-      void $ liftIO $ waitForProcess ps
+      (ps, asy) <- createProcessWithLogging (shell [i|docker run --rm --network host -v /var/run/docker.sock:/var/run/docker.sock docker:stable docker push #{pushedName}|])
+      finally (void $ liftIO $ waitForProcess ps)
+              (cancel asy)
 
     False -> do
-      ps <- createProcessWithLogging (shell [i|docker push #{pushedName}|])
-      void $ liftIO $ waitForProcess ps
+      (ps, asy) <- createProcessWithLogging (shell [i|docker push #{pushedName}|])
+      finally (void $ liftIO $ waitForProcess ps)
+              (cancel asy)
 
   debug [i|finished pushing.|]
 

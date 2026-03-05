@@ -54,7 +54,7 @@ withKataContainers' helmBinary kcc options@(KataContainersOptions {..}) action =
 
   env <- getKubectlEnvironment kcc
 
-  createProcessWithLogging ((proc helmBinary args) { env = Just env })
+  createProcessWithFileLogging ((proc helmBinary args) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   action (KataContainersContext options)

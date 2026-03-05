@@ -46,11 +46,12 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     let configFile = dir </> "ingress.yaml"
     liftIO $ T.writeFile configFile (ingressConfig service randomHost)
 
-    createProcessWithLogging ((proc kubectlBinary ["create"
-                                                  , "--namespace", toString namespace
-                                                  , "-f", configFile]) {
-                                 env = Just env
-                                 }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    createProcessWithFileLogging (
+      (proc kubectlBinary ["create"
+                          , "--namespace", toString namespace
+                          , "-f", configFile]) {
+          env = Just env
+          }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   -- TODO: wait for ingress to be ready?
   -- Possibly not necessary since the server context waits for 200 after this
