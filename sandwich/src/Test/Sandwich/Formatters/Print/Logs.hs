@@ -21,6 +21,7 @@ import Control.Monad
 #endif
 
 
+-- TODO: bring this back
 -- printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int, Handle) m, Foldable t) => TVar (t LogEntry) -> m ()
 -- printLogs runTreeLogs = do
 --   (asks (printFormatterLogLevel . fst3)) >>= \case

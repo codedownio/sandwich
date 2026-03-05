@@ -54,8 +54,8 @@ import Lens.Micro
 import Safe
 import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
-import Test.Sandwich.Formatters.TerminalUI.DebugSocket
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
+import Test.Sandwich.Formatters.TerminalUI.DebugSocket
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
@@ -70,7 +70,7 @@ import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
-import UnliftIO.Async (Async, cancel)
+import UnliftIO.Async (cancel)
 import UnliftIO.Exception
 
 

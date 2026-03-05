@@ -29,10 +29,11 @@ import GHC.IO.Exception
 import GHC.Stack
 import System.IO
 import System.IO.Error (mkIOError)
-import System.Process
-import Test.Sandwich.Types.RunTree
 import Test.Sandwich.ManagedAsync
+import Test.Sandwich.Types.RunTree
+import UnliftIO.Async
 import UnliftIO.Exception
+import UnliftIO.Process
 
 #if !MIN_VERSION_base(4,13,0)
 import Control.Monad.Fail
@@ -41,11 +42,11 @@ import Control.Monad.Fail
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> m ProcessHandle
+createProcessWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> m (ProcessHandle, Async ())
 createProcessWithLogging = withFrozenCallStack (createProcessWithLogging' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> m ProcessHandle
+createProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> m (ProcessHandle, Async ())
 createProcessWithLogging' logLevel cp = do
   runId <- baseContextRunId <$> asks getBaseContext
   (hRead, hWrite) <- liftIO createPipe
@@ -54,12 +55,12 @@ createProcessWithLogging' logLevel cp = do
         ShellCommand {} -> "shell"
         RawCommand path _ -> path
 
-  _ <- managedAsync runId "process-logging" $ forever $ do
+  streamsReaderAsy <- managedAsync runId "streams-reader" $ forever $ do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
   (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
-  return p
+  return (p, streamsReaderAsy)
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
 -- Every line output by the process will be fed to a 'debug' call.
@@ -76,32 +77,34 @@ readCreateProcessWithLogging' logLevel cp input = do
         ShellCommand {} -> "shell"
         RawCommand path _ -> path
 
-  _ <- managedAsync runId "process-stderr-logging" $ forever $ do
-    line <- liftIO $ hGetLine hReadErr
-    logOtherCS callStack logLevel [i|#{name}: #{line}|]
+  let stderrReader = forever $ do
+        line <- liftIO $ hGetLine hReadErr
+        logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
-  -- Do this just like 'readCreateProcess'
-  -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
-  (ex, output) <- liftIO $ withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p -> do
-    case (sin', sout) of
-      (Just hIn, Just hOut) -> do
-        output  <- hGetContents hOut
-        withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
-          -- now write any input
-          unless (Prelude.null input) $
-            ignoreSigPipe $ hPutStr hIn input
-          -- hClose performs implicit hFlush, and thus may trigger a SIGPIPE
-          ignoreSigPipe $ hClose hIn
+  (ex, output) <-
+    managedWithAsync_ runId "stderr-reader" stderrReader $
+    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p ->
+      -- Do this just like 'readCreateProcess'
+      -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
+      case (sin', sout) of
+        (Just hIn, Just hOut) -> liftIO $ do
+          output  <- hGetContents hOut
+          withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
+            -- now write any input
+            unless (Prelude.null input) $
+              ignoreSigPipe $ hPutStr hIn input
+            -- hClose performs implicit hFlush, and thus may trigger a SIGPIPE
+            ignoreSigPipe $ hClose hIn
 
-          -- wait on the output
-          waitOut
-          hClose hOut
+            -- wait on the output
+            waitOut
+            hClose hOut
 
-        -- wait on the process
-        ex <- waitForProcess p
-        return (ex, output)
-      (Nothing, _) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdin handle."
-      (_, Nothing) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdout handle."
+          -- wait on the process
+          ex <- waitForProcess p
+          return (ex, output)
+        (Nothing, _) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdin handle."
+        (_, Nothing) -> liftIO $ throwIO $ userError "readCreateProcessWithStderrLogging: Failed to get a stdout handle."
 
   case ex of
     ExitSuccess -> return output
@@ -118,11 +121,11 @@ readCreateProcessWithLogging' logLevel cp input = do
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
-createProcessWithLoggingAndStdin :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> String -> m (ProcessHandle, Async ())
 createProcessWithLoggingAndStdin = withFrozenCallStack (createProcessWithLoggingAndStdin' LevelDebug)
 
 -- | Spawn a process with its stdout and stderr connected to the logging system.
-createProcessWithLoggingAndStdin' :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> String -> m ProcessHandle
+createProcessWithLoggingAndStdin' :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> String -> m (ProcessHandle, Async ())
 createProcessWithLoggingAndStdin' logLevel cp input = do
   runId <- baseContextRunId <$> asks getBaseContext
   (hRead, hWrite) <- liftIO createPipe
@@ -131,7 +134,7 @@ createProcessWithLoggingAndStdin' logLevel cp input = do
         ShellCommand {} -> "shell"
         RawCommand path _ -> path
 
-  _ <- managedAsync runId "process-logging-stdin" $ forever $ do
+  readAsy <- managedAsync runId "read-process-streams" $ forever $ do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
@@ -146,7 +149,7 @@ createProcessWithLoggingAndStdin' logLevel cp input = do
   -- hClose performs implicit hFlush, and thus may trigger a SIGPIPE
   liftIO $ ignoreSigPipe $ hClose inh
 
-  return p
+  return (p, readAsy)
 
 -- | Higher level version of 'createProcessWithLogging', accepting a shell command.
 callCommandWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => String -> m ()
@@ -164,13 +167,14 @@ callCommandWithLogging' logLevel cmd = do
     , std_err = UseHandle hWrite
     }
 
-  _ <- managedAsync runId "command-logging" $ forever $ do
-    line <- liftIO $ hGetLine hRead
-    logOtherCS callStack logLevel [i|#{cmd}: #{line}|]
+  let streamsReader = forever $ do
+        line <- liftIO $ hGetLine hRead
+        logOtherCS callStack logLevel [i|#{cmd}: #{line}|]
 
-  liftIO (waitForProcess p) >>= \case
-    ExitSuccess -> return ()
-    ExitFailure r -> liftIO $ throwIO $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]
+  managedWithAsync_ runId "stderr-reader" streamsReader $
+    liftIO (waitForProcess p) >>= \case
+      ExitSuccess -> return ()
+      ExitFailure r -> liftIO $ throwIO $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]
 
 
 -- * Util
@@ -181,8 +185,8 @@ withForkWait asy body = do
   waitVar <- newEmptyMVar :: IO (MVar (Either SomeException ()))
   mask $ \restore -> do
     tid <- forkIO $ try (restore asy) >>= putMVar waitVar
-    let wait = takeMVar waitVar >>= either throwIO return
-    restore (body wait) `C.onException` killThread tid
+    let wait' = takeMVar waitVar >>= either throwIO return
+    restore (body wait') `C.onException` killThread tid
 
 -- Copied from System.Process
 ignoreSigPipe :: IO () -> IO ()

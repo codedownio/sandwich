@@ -20,7 +20,6 @@ import Data.String.Interpolate
 import Foreign.C.Error
 import GHC.IO.Exception
 import GHC.Stack
-import System.Exit
 import System.FilePath
 import System.IO
 import System.Process
@@ -45,7 +44,9 @@ processName cp = case cmdspec cp of
     [] -> "shell"
 
 -- | Spawn a process with its stdout and stderr logged to files in the test tree.
-createProcessWithFileLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> m ProcessHandle
+createProcessWithFileLogging :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  ) => CreateProcess -> m ProcessHandle
 createProcessWithFileLogging cp = withFrozenCallStack $ do
   let name = processName cp
   getCurrentFolder >>= \case
@@ -58,7 +59,9 @@ createProcessWithFileLogging cp = withFrozenCallStack $ do
 
 -- | Like 'readCreateProcess', but capture the stderr output to a file in the test tree.
 -- Returns the stdout output as a 'String'.
-readCreateProcessWithFileLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> String -> m String
+readCreateProcessWithFileLogging :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  ) => CreateProcess -> String -> m String
 readCreateProcessWithFileLogging cp input = withFrozenCallStack $ do
   let name = processName cp
   getCurrentFolder >>= \case

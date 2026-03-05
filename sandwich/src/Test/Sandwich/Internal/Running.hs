@@ -61,7 +61,7 @@ runSandwichTree options spec = do
 
 -- | For 0 repeats, repeat until a failure
 runWithRepeat :: Int -> Int -> (Int -> IO (ExitReason, Int, Int)) -> IO ()
-runWithRepeat 0 totalTests action = go 0
+runWithRepeat 0 _totalTests action = go 0
   where
     go !idx = do
       (_, _itNodeFailures, totalFailures) <- action idx

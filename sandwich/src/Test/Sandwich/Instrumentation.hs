@@ -13,7 +13,6 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.String.Interpolate
-import qualified Data.Text as T
 import Data.Time
 import Data.Word
 import Debug.Trace (traceMarkerIO)

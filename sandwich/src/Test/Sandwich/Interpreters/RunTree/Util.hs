@@ -5,11 +5,8 @@ module Test.Sandwich.Interpreters.RunTree.Util where
 
 import Control.Concurrent.STM
 import Control.Monad.Free
-import Control.Monad.Logger
 import qualified Data.List as L
-import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf

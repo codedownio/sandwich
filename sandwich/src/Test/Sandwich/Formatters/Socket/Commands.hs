@@ -110,7 +110,7 @@ cmdFailures rts = do
   where
     getFailureInfo :: RunNodeWithStatus ctx Status (Seq LogEntry) Bool -> Maybe (String, Int, FailureReason)
     getFailureInfo node = case runTreeStatus (runNodeCommon node) of
-      Done {statusResult = Failure reason@(Pending {})} -> Nothing
+      Done {statusResult = Failure (Pending {})} -> Nothing
       Done {statusResult = Failure reason} ->
         let c = runNodeCommon node
         in Just (runTreeLabel c, runTreeId c, reason)

@@ -328,11 +328,11 @@ runSandwich' maybeCommandLineOptions options spec' = do
   -- Check for stale managed asyncs from this run
   milestone "checking for stale asyncs"
   allAsyncs <- getManagedAsyncInfos
-  let staleAsyncs = M.filter (\info -> asyncInfoRunId info == runId) allAsyncs
+  let staleAsyncs = M.filter (\x -> asyncInfoRunId x == runId) allAsyncs
   unless (M.null staleAsyncs) $ do
     putStrLn [i|WARNING: #{M.size staleAsyncs} managed asyncs still running after tree finished:|]
-    forM_ (M.toList staleAsyncs) $ \(tid, info) ->
-      putStrLn [i|  #{tid}: #{asyncInfoName info}|]
+    forM_ (M.toList staleAsyncs) $ \(tid, x) ->
+      putStrLn [i|  #{tid}: #{asyncInfoName x}|]
 
   -- Close late-log file handle
   mapM_ hClose maybeLateLogHandle

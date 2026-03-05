@@ -20,7 +20,6 @@ module Test.Sandwich.Formatters.Socket (
 import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Data.IORef
-import Data.Typeable
 import System.FilePath
 import Test.Sandwich.Formatters.Socket.Server
 import Test.Sandwich.Interpreters.RunTree.Util (waitForTree)
@@ -39,7 +38,7 @@ data SocketFormatter = SocketFormatter {
   -- ^ Broadcast channel for streaming logs to connected clients.
   , socketFormatterEventBroadcast :: TChan NodeEvent
   -- ^ Broadcast channel for streaming node lifecycle events to connected clients.
-  } deriving (Typeable)
+  }
 
 instance Show SocketFormatter where
   show (SocketFormatter {socketFormatterPath}) =
