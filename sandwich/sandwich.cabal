@@ -87,6 +87,8 @@ library
       Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Interpreters.RunTree.Util
       Test.Sandwich.Interpreters.StartTree
+      Test.Sandwich.Logging.Process
+      Test.Sandwich.Logging.ProcessFileLogging
       Test.Sandwich.ParallelN
       Test.Sandwich.RunTree
       Test.Sandwich.Shutdown
