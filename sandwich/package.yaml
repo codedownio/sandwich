@@ -39,7 +39,6 @@ dependencies:
 - exceptions
 - filepath
 - free
-- ghc-datasize
 - microlens
 - microlens-th
 - monad-control

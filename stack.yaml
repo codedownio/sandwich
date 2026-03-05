@@ -60,7 +60,6 @@ packages:
 - ./demos/demo-webdriver-video
 
 extra-deps:
-- ghc-datasize-0.2.7
 
 # For sandwich-webdriver
 

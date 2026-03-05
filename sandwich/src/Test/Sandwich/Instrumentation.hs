@@ -16,7 +16,6 @@ import Data.String.Interpolate
 import Data.Time
 import Data.Word
 import Debug.Trace (traceMarkerIO)
-import GHC.DataSize (recursiveSize)
 import GHC.Stats
 import System.IO (IOMode(..), hFlush, hPutStr, hSetBuffering, BufferMode(..), withFile)
 import Test.Sandwich.ManagedAsync (AsyncEvent(..), AsyncInfo(..), getManagedAsyncInfos)
@@ -32,13 +31,13 @@ import UnliftIO.Exception
 streamLogsToFile :: FilePath -> TChan (Int, String, LogEntry) -> IO ()
 streamLogsToFile path broadcastChan = do
   chan <- atomically $ dupTChan broadcastChan
-  totalRef <- newIORef (0 :: Word)
+  totalRef <- newIORef (0 :: Word64)
   countRef <- newIORef (0 :: Int)
   withFile path AppendMode $ \h -> do
     hSetBuffering h LineBuffering
     let loop = forever $ do
-          (nodeId, nodeLabel, entry@(LogEntry {..})) <- atomically $ readTChan chan
-          entrySize <- recursiveSize entry
+          (nodeId, nodeLabel, LogEntry {..}) <- atomically $ readTChan chan
+          let entrySize = fromIntegral (BS8.length logEntryStr) :: Word64
           modifyIORef' totalRef (+ entrySize)
           modifyIORef' countRef (+ 1)
           let levelStr :: String
@@ -55,7 +54,7 @@ streamLogsToFile path broadcastChan = do
     loop `finally` do
       total <- readIORef totalRef
       count <- readIORef countRef
-      hPutStr h [i|\nTotal: #{count} log entries, #{formatBytes (fromIntegral total)} recursive heap size\n|]
+      hPutStr h [i|\nTotal: #{count} log entries, #{formatBytes total} total log bytes\n|]
       hFlush h
 
 -- | Stream node lifecycle events from a broadcast channel to a file.

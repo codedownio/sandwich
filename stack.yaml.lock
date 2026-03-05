@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: ghc-datasize-0.2.7@sha256:3397b0306f179836a0f5912e9888b5a0d2c40c2a6bba12965e82144a22de15a3,1132
-    pantry-tree:
-      sha256: 7855227e0065019e4d762705f011a1aa195e4389e8cd0870eea1f0f3b7e906ee
-      size: 216
-  original:
-    hackage: ghc-datasize-0.2.7
-- completed:
     hackage: webdriver-0.14.0.0@sha256:3a529a3520b3d9be4dcc0c51fabd96ee3e67661ac18e6d4417100ac187da4c15,6463
     pantry-tree:
       sha256: 2770f7329cc59c8c60cc639ec56d11904cf04fc245c4195039ec6fec328dc0fd
