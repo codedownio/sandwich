@@ -6,21 +6,20 @@ import Control.Monad.Logger
 import Data.String.Interpolate
 import Data.Text as T
 import Test.Sandwich
-import Test.Sandwich.ManagedAsync
 import Test.Sandwich.WebDriver.Internal.Types
 import UnliftIO.Async (wait)
 import UnliftIO.Exception
 import UnliftIO.MVar
 
 
-getOnDemand :: forall m a. (
-  MonadUnliftIO m, MonadLogger m
+getOnDemand :: forall context m a. (
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => MVar (OnDemand a) -> m (Either Text a) -> m a
 getOnDemand onDemandVar doObtain = do
   result <- modifyMVar onDemandVar $ \case
     OnDemandErrored msg -> expectationFailure (T.unpack msg)
     OnDemandNotStarted -> do
-      asy <- managedAsync "" "webdriver-on-demand" $ do
+      asy <- managedAsync "webdriver-on-demand" $ do
         let handler :: SomeException -> m a
             handler e = do
               modifyMVar_ onDemandVar (const $ return $ OnDemandErrored [i|Got exception: #{e}|])

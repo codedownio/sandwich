@@ -22,7 +22,6 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger hiding (logOther)
-import Control.Monad.Reader
 import Data.String.Interpolate
 import Foreign.C.Error
 import GHC.IO.Exception
@@ -48,14 +47,13 @@ createProcessWithLogging = withFrozenCallStack (createProcessWithLogging' LevelD
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 createProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> m (ProcessHandle, Async ())
 createProcessWithLogging' logLevel cp = do
-  runId <- baseContextRunId <$> asks getBaseContext
   (hRead, hWrite) <- liftIO createPipe
 
   let name = case cmdspec cp of
         ShellCommand {} -> "shell"
         RawCommand path _ -> path
 
-  streamsReaderAsy <- managedAsync runId "streams-reader" $ forever $ do
+  streamsReaderAsy <- managedAsyncContext "streams-reader" $ forever $ do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
@@ -70,7 +68,6 @@ readCreateProcessWithLogging = withFrozenCallStack (readCreateProcessWithLogging
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
 readCreateProcessWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> String -> m String
 readCreateProcessWithLogging' logLevel cp input = do
-  runId <- baseContextRunId <$> asks getBaseContext
   (hReadErr, hWriteErr) <- liftIO createPipe
 
   let name = case cmdspec cp of
@@ -82,7 +79,7 @@ readCreateProcessWithLogging' logLevel cp input = do
         logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
   (ex, output) <-
-    managedWithAsync_ runId "stderr-reader" stderrReader $
+    managedWithAsyncContext_ "stderr-reader" stderrReader $
     withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p ->
       -- Do this just like 'readCreateProcess'
       -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
@@ -127,14 +124,13 @@ createProcessWithLoggingAndStdin = withFrozenCallStack (createProcessWithLogging
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 createProcessWithLoggingAndStdin' :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> CreateProcess -> String -> m (ProcessHandle, Async ())
 createProcessWithLoggingAndStdin' logLevel cp input = do
-  runId <- baseContextRunId <$> asks getBaseContext
   (hRead, hWrite) <- liftIO createPipe
 
   let name = case cmdspec cp of
         ShellCommand {} -> "shell"
         RawCommand path _ -> path
 
-  readAsy <- managedAsync runId "read-process-streams" $ forever $ do
+  readAsy <- managedAsyncContext "read-process-streams" $ forever $ do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
@@ -158,7 +154,6 @@ callCommandWithLogging = withFrozenCallStack (callCommandWithLogging' LevelDebug
 -- | Higher level version of 'createProcessWithLogging'', accepting a shell command.
 callCommandWithLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => LogLevel -> String -> m ()
 callCommandWithLogging' logLevel cmd = do
-  runId <- baseContextRunId <$> asks getBaseContext
   (hRead, hWrite) <- liftIO createPipe
 
   (_, _, _, p) <- liftIO $ createProcess (shell cmd) {
@@ -171,7 +166,7 @@ callCommandWithLogging' logLevel cmd = do
         line <- liftIO $ hGetLine hRead
         logOtherCS callStack logLevel [i|#{cmd}: #{line}|]
 
-  managedWithAsync_ runId "stderr-reader" streamsReader $
+  managedWithAsyncContext_ "stderr-reader" streamsReader $
     liftIO (waitForProcess p) >>= \case
       ExitSuccess -> return ()
       ExitFailure r -> liftIO $ throwIO $ userError [i|callCommandWithLogging failed for '#{cmd}': '#{r}'|]

@@ -1,10 +1,19 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Test.Sandwich.ManagedAsync (
+  -- * With explicit run ID
   managedAsync
   , managedAsyncWithUnmask
   , managedWithAsync
   , managedWithAsync_
+
+  -- * With run ID from BaseContext
+  , managedAsyncContext
+  , managedAsyncWithUnmaskContext
+  , managedWithAsyncContext
+  , managedWithAsyncContext_
+
+  -- * Types and utilities
   , AsyncInfo(..)
   , AsyncEvent(..)
   , asyncEventBroadcast
@@ -14,10 +23,12 @@ module Test.Sandwich.ManagedAsync (
 import Control.Concurrent (ThreadId, myThreadId)
 import Control.Concurrent.STM
 import Control.Monad.IO.Unlift
+import Control.Monad.Reader
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
+import Test.Sandwich.Types.RunTree (HasBaseContextMonad, HasBaseContext, BaseContext(..), getBaseContext)
 import UnliftIO.Async
 import UnliftIO.Exception
 
@@ -59,6 +70,30 @@ managedWithAsync runId name action cb = do
 
 managedWithAsync_ :: MonadUnliftIO m => T.Text -> T.Text -> m a -> m b -> m b
 managedWithAsync_ runId name f g = managedWithAsync runId name f (const g)
+
+-- * With run ID from BaseContext
+
+-- | Like 'managedAsync', but extracts the run ID from 'BaseContext'.
+managedAsyncContext :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m (Async a)
+managedAsyncContext name action = do
+  runId <- baseContextRunId <$> asks getBaseContext
+  managedAsync runId name action
+
+-- | Like 'managedAsyncWithUnmask', but extracts the run ID from 'BaseContext'.
+managedAsyncWithUnmaskContext :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> ((forall b. m b -> m b) -> m a) -> m (Async a)
+managedAsyncWithUnmaskContext name action = do
+  runId <- baseContextRunId <$> asks getBaseContext
+  managedAsyncWithUnmask runId name action
+
+-- | Like 'managedWithAsync', but extracts the run ID from 'BaseContext'.
+managedWithAsyncContext :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> (Async a -> m b) -> m b
+managedWithAsyncContext name action cb = do
+  runId <- baseContextRunId <$> asks getBaseContext
+  managedWithAsync runId name action cb
+
+-- | Like 'managedWithAsync_', but extracts the run ID from 'BaseContext'.
+managedWithAsyncContext_ :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m b -> m b
+managedWithAsyncContext_ name f g = managedWithAsyncContext name f (const g)
 
 -- * Internal
 

@@ -19,7 +19,7 @@ import System.IO (hClose, hGetLine, openTempFile)
 import System.Process (getPid)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.ManagedAsync
+
 import Test.Sandwich.Util.Process
 import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Environment
@@ -28,7 +28,7 @@ import UnliftIO.Process
 
 
 withForwardKubernetesService' :: (
-  HasCallStack, MonadLoggerIO m, MonadUnliftIO m
+  HasCallStack, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) profile namespace service action = do
   baseEnv <- liftIO getEnvironment
@@ -56,7 +56,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
           line <- liftIO $ hGetLine stderrRead
           info [i|minikube service stderr: #{line}|]
 
-  managedWithAsync_ "" "minikube-service-stderr" forwardStderr $ do
+  managedWithAsync_ "minikube-service-stderr" forwardStderr $ do
     let cp = (proc kubernetesClusterTypeMinikubeBinary args) {
           env = Just env
           , std_out = UseHandle stdoutWrite

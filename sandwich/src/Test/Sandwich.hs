@@ -56,6 +56,15 @@ module Test.Sandwich (
   , withTimingProfile
   , withTimingProfile'
 
+  -- * Managed async
+  --
+  -- | If you want to run asyncs within your tests, we can help keep track of
+  -- them and make sure they get cleaned up.
+  , managedAsync
+  , managedAsyncWithUnmask
+  , managedWithAsync
+  , managedWithAsync_
+
   -- * Exports
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
@@ -72,6 +81,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger
 import Control.Monad.Reader
 import qualified Data.Aeson as A
@@ -104,7 +114,7 @@ import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Logging
-import Test.Sandwich.ManagedAsync
+import qualified Test.Sandwich.ManagedAsync as MA
 import Test.Sandwich.Misc
 import Test.Sandwich.Nodes
 import Test.Sandwich.Options
@@ -243,7 +253,7 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   milestone "spawning formatters"
   formatterAsyncs <- forM (optionsFormatters options') $ \(SomeFormatter f) ->
-    managedAsync runId (T.pack [i|formatter:#{formatterName f}|]) $ do
+    MA.managedAsync runId (T.pack [i|formatter:#{formatterName f}|]) $ do
       let loggingFn = case baseContextRunRoot baseContext of
             Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
             Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
@@ -258,23 +268,23 @@ runSandwich' maybeCommandLineOptions options spec' = do
       others <- fmap catMaybes $ sequence
         [ if optLogLogs clo
           then case optionsLogBroadcast options' of
-            Just chan -> Just <$> managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.log") chan)
+            Just chan -> Just <$> MA.managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.log") chan)
             Nothing -> return Nothing
           else return Nothing
         , if optLogEvents clo
           then do
             writeTreeFile (runRoot </> "events-tree.txt") rts
             case optionsEventBroadcast options' of
-              Just chan -> Just <$> managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
+              Just chan -> Just <$> MA.managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
               Nothing -> return Nothing
           else return Nothing
         , if optLogRtsStats clo
-          then Just <$> managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.log"))
+          then Just <$> MA.managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.log"))
           else return Nothing
         ]
       -- Spawn the managed-async event stream separately so we can cancel it last
       maybeManagedAsync <- if optLogAsyncs clo
-        then Just <$> managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "asyncs.log") asyncEventBroadcast)
+        then Just <$> MA.managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "asyncs.log") MA.asyncEventBroadcast)
         else return Nothing
       return (others, maybeManagedAsync)
     _ -> return ([], Nothing)
@@ -327,12 +337,12 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   -- Check for stale managed asyncs from this run
   milestone "checking for stale asyncs"
-  allAsyncs <- getManagedAsyncInfos
-  let staleAsyncs = M.filter (\x -> asyncInfoRunId x == runId) allAsyncs
+  allAsyncs <- MA.getManagedAsyncInfos
+  let staleAsyncs = M.filter (\x -> MA.asyncInfoRunId x == runId) allAsyncs
   unless (M.null staleAsyncs) $ do
     putStrLn [i|WARNING: #{M.size staleAsyncs} managed asyncs still running after tree finished:|]
     forM_ (M.toList staleAsyncs) $ \(tid, x) ->
-      putStrLn [i|  #{tid}: #{asyncInfoName x}|]
+      putStrLn [i|  #{tid}: #{MA.asyncInfoName x}|]
 
   -- Close late-log file handle
   mapM_ hClose maybeLateLogHandle
@@ -351,3 +361,21 @@ countItNodes (Free (IntroduceWith'' {..})) = countItNodes next + countItNodes su
 countItNodes (Free (Introduce'' {..})) = countItNodes next + countItNodes subspecAugmented
 countItNodes (Free x) = countItNodes (next x) + countItNodes (subspec x)
 countItNodes (Pure _) = 0
+
+-- * Managed async (context-aware aliases)
+
+-- | Launch a managed async thread, tracking it with the run ID from 'BaseContext'.
+managedAsync :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m (Async a)
+managedAsync = MA.managedAsyncContext
+
+-- | Like 'managedAsync', but the action receives an unmask function.
+managedAsyncWithUnmask :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> ((forall b. m b -> m b) -> m a) -> m (Async a)
+managedAsyncWithUnmask = MA.managedAsyncWithUnmaskContext
+
+-- | Run a managed async thread scoped to a callback.
+managedWithAsync :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> (Async a -> m b) -> m b
+managedWithAsync = MA.managedWithAsyncContext
+
+-- | Like 'managedWithAsync', but ignores the 'Async' handle.
+managedWithAsync_ :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m b -> m b
+managedWithAsync_ = MA.managedWithAsyncContext_
