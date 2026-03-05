@@ -227,7 +227,7 @@ withKindCluster' kindBinary kubectlBinary opts@(KindClusterOptions {..}) action 
            )
 
 startKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m
+  MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => FilePath -> KindClusterOptions -> Text -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m KubernetesClusterContext
 startKindCluster kindBinary (KindClusterOptions {..}) clusterName kindConfigFile kindKubeConfigFile environmentToUse driver = do
   ps <- createProcessWithLogging ((proc kindBinary ["create", "cluster", "-v", "1", "--name", toString clusterName

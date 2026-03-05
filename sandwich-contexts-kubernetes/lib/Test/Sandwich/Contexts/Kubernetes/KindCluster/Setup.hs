@@ -25,7 +25,7 @@ import UnliftIO.Process
 
 
 setUpKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m
+  MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m ()
 setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary environmentToUse driver = do
   baseEnv <- maybe getEnvironment return environmentToUse

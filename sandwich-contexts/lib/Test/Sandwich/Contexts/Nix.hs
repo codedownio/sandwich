@@ -416,7 +416,7 @@ buildNixExpression' nc@(NixContext {..}) expr = do
 --   nc <- getContext nixContext
 --   runNixBuild' nc expr outputPath
 
-runNixBuild' :: (MonadUnliftIO m, MonadLogger m) => NixContext -> Text -> Maybe String -> m String
+runNixBuild' :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => NixContext -> Text -> Maybe String -> m String
 runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr maybeOutputPath = do
   maybeEnv <- case nixpkgsDerivationAllowUnfree nixContextNixpkgsDerivation of
     False -> pure Nothing

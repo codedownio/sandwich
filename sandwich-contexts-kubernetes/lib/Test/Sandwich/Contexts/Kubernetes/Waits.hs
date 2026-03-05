@@ -109,7 +109,7 @@ listPods namespace labels =
 -- | Wait for a set of pods to be in the Ready condition, specified by a set of labels.
 waitForPodsToBeReady :: (
   MonadUnliftIO m, MonadLogger m
-  , MonadReader context m, HasKubernetesClusterContext context, HasFile context "kubectl"
+  , MonadReader context m, HasBaseContext context, HasKubernetesClusterContext context, HasFile context "kubectl"
   )
   -- | Namespace
   => Text

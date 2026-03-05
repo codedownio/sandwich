@@ -30,7 +30,7 @@ import UnliftIO.Temporary
 
 -- | Load an image into a Kind cluster.
 loadImageKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLoggerIO m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
   )
   -- | Path to @kind@ binary
   => FilePath
@@ -93,7 +93,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
 
 -- | Get the set of loaded images on the given Kind cluster.
 getLoadedImagesKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   => KubernetesClusterContext
   -- | Driver (should be "docker" or "podman")
@@ -128,7 +128,7 @@ getLoadedImagesKind kcc driver kindBinary env = do
 
 -- | Test if the Kind cluster contains a given image.
 clusterContainsImageKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   => KubernetesClusterContext
   -- | Driver (should be "docker" or "podman")

@@ -321,6 +321,8 @@ data Options = Options {
   -- ^ Broadcast channel for streaming node lifecycle events (started, done) to external consumers.
   , optionsLateLogFile :: Maybe Handle
   -- ^ If set, log writes that occur after a node is already Done will be written to this file handle.
+  , optionsRunId :: T.Text
+  -- ^ An identifier for this test run, used to track managed async threads.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

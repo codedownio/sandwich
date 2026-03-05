@@ -100,7 +100,7 @@ clusterContainsImage image = do
 
 -- | Same as 'clusterContainsImage', but allows you to pass in the 'KubernetesClusterContext'.
 clusterContainsImage' :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   -- | Cluster context
   => KubernetesClusterContext

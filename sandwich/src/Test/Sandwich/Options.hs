@@ -60,6 +60,7 @@ defaultOptions = Options {
   , optionsLogBroadcast = Nothing
   , optionsEventBroadcast = Nothing
   , optionsLateLogFile = Nothing
+  , optionsRunId = "run0"
   }
 
 -- | Generate a test artifacts directory based on a timestamp.

@@ -71,8 +71,8 @@ withLonghorn options action = do
   kubectlBinary <- askFile @"kubectl"
   withLonghorn' kcc kubectlBinary options action
 
-withLonghorn' :: forall m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+withLonghorn' :: forall context m a. (
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> String -> LonghornOptions -> (LonghornContext -> m a) -> m a
 withLonghorn' (KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary options@(LonghornOptions {..}) action = do
   baseEnv <- getEnvironment

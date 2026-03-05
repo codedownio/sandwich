@@ -128,7 +128,7 @@ import System.Win32.Console (setConsoleOutputCP)
 -- | Run the spec with the given 'Options'.
 runSandwich :: Options -> CoreSpec -> IO ()
 runSandwich options spec = do
-  (_exitReason, _itNodeFailures, totalFailures) <- runSandwich' "run" Nothing options spec
+  (_exitReason, _itNodeFailures, totalFailures) <- runSandwich' Nothing options spec
   when (0 < totalFailures) exitFailure
 
 -- | Run the spec, configuring the options from the command line.
@@ -175,12 +175,13 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
                                                  , nodeOptionsCreateFolder = False }
 
          let mkRunId idx = if repeatCount == 1 then "run" else [i|repeat-#{idx}|]
-         runWithRepeat repeatCount totalTests $ \repeatIdx ->
+         runWithRepeat repeatCount totalTests $ \repeatIdx -> do
+           let opts = options { optionsRunId = mkRunId repeatIdx }
            case optIndividualTestModule clo of
-             Nothing -> runSandwich' (mkRunId repeatIdx) (Just $ clo { optUserOptions = () }) options $
+             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) opts $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
                  $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
-             Just (IndividualTestModuleName x) -> runSandwich' (mkRunId repeatIdx) (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
+             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) opts $ filterTreeToModule x $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
                  $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
@@ -197,9 +198,10 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 -- | Run the spec with optional custom 'CommandLineOptions'. When finished, return the exit reason,
 -- the number of "it" nodes which failed, and the total failed nodes (which includes "it" nodes, and
 -- may also include other nodes like "introduce" nodes).
-runSandwich' :: T.Text -> Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
-runSandwich' runId maybeCommandLineOptions options spec' = do
-  baseContext <- baseContextFromOptionsWithRunId runId options
+runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
+runSandwich' maybeCommandLineOptions options spec' = do
+  let runId = optionsRunId options
+  baseContext <- baseContextFromOptions options
 
   -- Open late-log file if --log-logs is active
   maybeLateLogHandle <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of

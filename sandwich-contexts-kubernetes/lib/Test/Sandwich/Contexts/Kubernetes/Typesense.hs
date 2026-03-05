@@ -184,7 +184,7 @@ withTypesense' kcc _kubectlBinary namespace options@(TypesenseOptions {..}) acti
       , typesenseNamespace = namespace
       }
 
-cleanupTypesense :: (MonadLoggerIO m, MonadUnliftIO m) => FilePath -> [(String, String)] -> Text -> Text -> m ()
+cleanupTypesense :: (MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m) => FilePath -> [(String, String)] -> Text -> Text -> m ()
 cleanupTypesense helmBinary env namespace releaseName = do
   info [i|Cleaning up Typesense release '#{releaseName}' in namespace '#{namespace}'...|]
   createProcessWithLogging ((proc helmBinary [

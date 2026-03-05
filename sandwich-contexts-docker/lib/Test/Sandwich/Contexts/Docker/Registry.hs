@@ -50,7 +50,7 @@ type HasDockerRegistryContext context = HasLabel context "dockerRegistry" Docker
 -- * Introduce
 
 introduceDockerRegistry :: (
-  HasCallStack, MonadUnliftIO m
+  HasCallStack, MonadUnliftIO m, HasBaseContext context
   ) => SpecFree (LabelValue "dockerRegistry" DockerRegistryContext :> context) m () -> SpecFree context m ()
 introduceDockerRegistry = introduceWith "introduce Docker registry" dockerRegistry $ \action -> do
   void $ withDockerRegistry Nothing action
@@ -65,7 +65,7 @@ pushDockerImages images = before "push Docker images" $ do
 -- * Implementation
 
 withDockerRegistry :: (
-  MonadUnliftIO m, MonadLoggerIO m
+  MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
   ) => Maybe (HostName, PortNumber) -> (DockerRegistryContext -> m a) -> m a
 withDockerRegistry optExternalDockerRegistry action = do
   case optExternalDockerRegistry of
@@ -74,7 +74,7 @@ withDockerRegistry optExternalDockerRegistry action = do
                                      , dockerRegistryPort = port }
     Nothing -> withNewDockerRegistry action
 
-withNewDockerRegistry :: (MonadUnliftIO m, MonadLoggerIO m) => (DockerRegistryContext -> m a) -> m a
+withNewDockerRegistry :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => (DockerRegistryContext -> m a) -> m a
 withNewDockerRegistry action = do
   registryID <- makeUUID' 5
 
@@ -122,7 +122,7 @@ pushContainerToRegistryTimed imageName drc = timeAction [i|Pushing docker image 
   pushContainerToRegistry imageName drc
 
 pushContainerToRegistry :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => Text -> DockerRegistryContext -> m Text
 pushContainerToRegistry imageName (DockerRegistryContext {..}) = do
   imageNamePart <- case splitOn "/" imageName of

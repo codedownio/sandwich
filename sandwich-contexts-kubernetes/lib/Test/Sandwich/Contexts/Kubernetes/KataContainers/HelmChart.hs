@@ -22,7 +22,7 @@ import UnliftIO.Process
 
 withKataContainers :: (
   MonadFail m, MonadLoggerIO m, MonadUnliftIO m
-  , MonadReader context m, HasFile context "helm"
+  , HasBaseContextMonad context m, HasFile context "helm"
   )
   => KubernetesClusterContext
   -> KataContainersOptions
@@ -33,7 +33,7 @@ withKataContainers kcc options action = do
   withKataContainers' helmBinary kcc options action
 
 withKataContainers' :: (
-  MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   )
   => FilePath
   -> KubernetesClusterContext

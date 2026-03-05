@@ -14,11 +14,12 @@ import System.FilePath
 import System.Process
 import Test.Sandwich.Expectations
 import Test.Sandwich.Logging
+import Test.Sandwich.Misc (HasBaseContextMonad)
 import Test.Sandwich.WebDriver.Internal.Util
 import UnliftIO.Temporary
 
 
-downloadAndUnzipToPath :: (MonadUnliftIO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUnzipToPath :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
@@ -38,7 +39,7 @@ downloadAndUnzipToPath downloadPath localPath = leftOnException' $ do
           >>= liftIO . waitForProcess >>= (`shouldBe` ExitSuccess)
       xs -> liftIO $ throwIO $ userError [i|Found multiple executable found in file downloaded from #{downloadPath}: #{xs}|]
 
-downloadAndUntarballToPath :: (MonadUnliftIO m, MonadLogger m) => T.Text -> FilePath -> m (Either T.Text ())
+downloadAndUntarballToPath :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => T.Text -> FilePath -> m (Either T.Text ())
 downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)
@@ -47,7 +48,7 @@ downloadAndUntarballToPath downloadPath localPath = leftOnException' $ do
   createProcessWithLogging (shell [i|chmod u+x #{localPath}|])
     >>= liftIO . waitForProcess >>= (`shouldBe` ExitSuccess)
 
-curlDownloadToPath :: (MonadUnliftIO m, MonadLogger m) => String -> FilePath -> m ()
+curlDownloadToPath :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => String -> FilePath -> m ()
 curlDownloadToPath downloadPath localPath = do
   info [i|Downloading #{downloadPath} to #{localPath}|]
   liftIO $ createDirectoryIfMissing True (takeDirectory localPath)

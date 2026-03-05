@@ -24,10 +24,11 @@ import Test.Sandwich.WebDriver.Internal.Util
 import UnliftIO.Directory
 
 
-type Constraints m = (
+type Constraints context m = (
   HasCallStack
   , MonadLogger m
   , MonadUnliftIO m
+  , HasBaseContextMonad context m
   )
 
 -- * Obtaining binaries
@@ -76,13 +77,13 @@ obtainSelenium (UseSeleniumFromNixpkgs nc) = do
 
 -- * Lower level helpers
 
-downloadSeleniumIfNecessary :: Constraints m => FilePath -> m (Either T.Text FilePath)
+downloadSeleniumIfNecessary :: Constraints context m => FilePath -> m (Either T.Text FilePath)
 downloadSeleniumIfNecessary toolsDir = leftOnException' $ do
   let seleniumPath = [i|#{toolsDir}/selenium-server.jar|]
   liftIO (doesFileExist seleniumPath) >>= flip unless (downloadSelenium seleniumPath)
   return seleniumPath
   where
-    downloadSelenium :: Constraints m => FilePath -> m ()
+    downloadSelenium :: Constraints context m => FilePath -> m ()
     downloadSelenium seleniumPath = void $ do
       info [i|Downloading selenium-server.jar to #{seleniumPath}|]
       curlDownloadToPath defaultSeleniumJarUrl seleniumPath

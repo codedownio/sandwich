@@ -32,7 +32,7 @@ import UnliftIO.Temporary
 
 -- | Load an image onto a cluster. This image can come from a variety of sources, as specified by the 'ImageLoadSpec'.
 loadImageMinikube :: (
-  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m, HasBaseContextMonad context m
   )
   -- | Path to @minikube@ binary
   => FilePath
@@ -84,7 +84,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
       imageLoad (toString image) True >> return image
 
   where
-    imageLoad :: (MonadLoggerIO m, HasCallStack) => String -> Bool -> m ()
+    imageLoad :: (MonadLoggerIO m, HasBaseContextMonad context m, HasCallStack) => String -> Bool -> m ()
     imageLoad toLoad daemon = do
       let extraFlags = case "--rootless" `L.elem` minikubeFlags of
                          True -> ["--rootless"]
@@ -100,12 +100,13 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
 
       -- Gather stderr output while also logging it
       logFn <- askLoggerIO
+      ctx <- ask
       stderrOutputVar <- newIORef mempty
       let customLogFn loc src level str = do
             modifyIORef' stderrOutputVar (<> str)
             logFn loc src level str
 
-      liftIO $ flip runLoggingT customLogFn $
+      liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
         createProcessWithLogging (proc minikubeBinary args)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
@@ -132,7 +133,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
 
 -- | Get the loaded images on a cluster, by cluster name.
 getLoadedImagesMinikube :: (
-  MonadUnliftIO m, MonadLogger m
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   -- | Path to @minikube@ binary
   => FilePath
@@ -150,7 +151,7 @@ getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags = do
 
 -- | Test if the cluster contains a given image, by cluster name.
 clusterContainsImageMinikube :: (
-  MonadUnliftIO m, MonadLogger m
+  MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   -- | Path to @minikube@ binary
   => FilePath

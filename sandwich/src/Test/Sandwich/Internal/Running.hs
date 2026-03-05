@@ -83,10 +83,8 @@ runWithRepeat n totalTests action = do
   when (successes /= total) $ exitFailure
 
 baseContextFromOptions :: Options -> IO BaseContext
-baseContextFromOptions = baseContextFromOptionsWithRunId "run"
-
-baseContextFromOptionsWithRunId :: T.Text -> Options -> IO BaseContext
-baseContextFromOptionsWithRunId runId options@(Options {..}) = do
+baseContextFromOptions options@(Options {..}) = do
+  let runId = optionsRunId
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
     TestArtifactsFixedDirectory dir' -> do

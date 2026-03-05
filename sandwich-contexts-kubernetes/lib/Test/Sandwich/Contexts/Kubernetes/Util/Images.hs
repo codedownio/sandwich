@@ -38,25 +38,25 @@ import UnliftIO.Temporary
 
 -- | Pull an image using Docker if it isn't already present.
 -- Returns 'True' if a pull was done.
-dockerPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m) => Text -> ImagePullPolicy -> m Bool
+dockerPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => Text -> ImagePullPolicy -> m Bool
 dockerPullIfNecessary = commonPullIfNecessary "docker"
 
-isDockerImagePresent :: (MonadUnliftIO m, MonadLoggerIO m) => Text -> m Bool
+isDockerImagePresent :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => Text -> m Bool
 isDockerImagePresent = isImagePresentCommon "docker"
 
 -- * Podman
 
 -- | Pull an image using Docker if it isn't already present.
 -- Returns 'True' if a pull was done.
-podmanPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m) => Text -> ImagePullPolicy -> m Bool
+podmanPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => Text -> ImagePullPolicy -> m Bool
 podmanPullIfNecessary = commonPullIfNecessary "podman"
 
-isPodmanImagePresent :: (MonadUnliftIO m, MonadLoggerIO m) => Text -> m Bool
+isPodmanImagePresent :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => Text -> m Bool
 isPodmanImagePresent = isImagePresentCommon "podman"
 
 -- * Common
 
-commonPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m) => String -> Text -> ImagePullPolicy -> m Bool
+commonPullIfNecessary :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => String -> Text -> ImagePullPolicy -> m Bool
 commonPullIfNecessary binary image pullPolicy = isImagePresentCommon binary image >>= \case
   True ->
     if | pullPolicy == Always -> doPull
@@ -70,7 +70,7 @@ commonPullIfNecessary binary image pullPolicy = isImagePresentCommon binary imag
         >>= waitForProcess >>= (`shouldBe` ExitSuccess)
       return True
 
-isImagePresentCommon :: (MonadUnliftIO m, MonadLoggerIO m) => String -> Text -> m Bool
+isImagePresentCommon :: (MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m) => String -> Text -> m Bool
 isImagePresentCommon binary image = do
   createProcessWithLogging (proc binary ["inspect", "--type=image", toString image]) >>= waitForProcess >>= \case
     ExitSuccess -> return True
@@ -78,7 +78,7 @@ isImagePresentCommon binary image = do
 
 -- * Image name reading
 
-readImageName :: (HasCallStack, MonadUnliftIO m, MonadLogger m) => FilePath -> m Text
+readImageName :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> m Text
 readImageName path = doesDirectoryExist path >>= \case
   True -> readUncompressedImageName path
   False -> case takeExtension path of
@@ -113,7 +113,7 @@ getImageNameFromManifestJson path contents = do
     getRepoTags (A.Object (aesonLookup "RepoTags" -> Just (A.Array repoItems))) = [t | A.String t <- V.toList repoItems]
     getRepoTags _ = []
 
-imageLoadSpecToImageName :: (MonadUnliftIO m, MonadLogger m) => ImageLoadSpec -> m Text
+imageLoadSpecToImageName :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => ImageLoadSpec -> m Text
 imageLoadSpecToImageName (ImageLoadSpecTarball image) = readImageName image
 imageLoadSpecToImageName (ImageLoadSpecDocker image _) = pure image
 imageLoadSpecToImageName (ImageLoadSpecPodman image _) = pure image
