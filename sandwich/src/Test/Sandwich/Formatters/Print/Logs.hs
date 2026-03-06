@@ -21,17 +21,15 @@ import Control.Monad
 #endif
 
 
--- TODO: bring this back
--- printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int, Handle) m, Foldable t) => TVar (t LogEntry) -> m ()
--- printLogs runTreeLogs = do
---   (asks (printFormatterLogLevel . fst3)) >>= \case
---     Nothing -> return ()
---     Just logLevel -> do
---       logEntries <- liftIO $ readTVarIO runTreeLogs
---       withBumpIndent $
---         forM_ logEntries $ \entry ->
---           when (logEntryLevel entry >= logLevel) $ printLogEntry entry
-
+printLogs :: (MonadIO m, MonadReader (PrintFormatter, Int, Handle) m, Foldable t) => TVar (t LogEntry) -> m ()
+printLogs runTreeLogs = do
+  (asks (printFormatterLogLevel . fst3)) >>= \case
+    Nothing -> return ()
+    Just logLevel -> do
+      logEntries <- liftIO $ readTVarIO runTreeLogs
+      withBumpIndent $
+        forM_ logEntries $ \entry ->
+          when (logEntryLevel entry >= logLevel) $ printLogEntry entry
 
 printLogEntry :: (
   MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
