@@ -41,7 +41,6 @@ library
       Test.Sandwich.Formatters.Socket
       Test.Sandwich.Formatters.TerminalUI
       Test.Sandwich.Internal
-      Test.Sandwich.ManagedAsync
       Test.Sandwich.TH
       Test.Sandwich.Util.Process
       Test.Sandwich.Waits
@@ -89,6 +88,7 @@ library
       Test.Sandwich.Interpreters.StartTree
       Test.Sandwich.Logging.Process
       Test.Sandwich.Logging.ProcessFileLogging
+      Test.Sandwich.ManagedAsync
       Test.Sandwich.ParallelN
       Test.Sandwich.RunTree
       Test.Sandwich.Shutdown

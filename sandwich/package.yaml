@@ -90,7 +90,6 @@ library:
   - Test.Sandwich.Formatters.Socket
   - Test.Sandwich.Formatters.TerminalUI
   - Test.Sandwich.Internal
-  - Test.Sandwich.ManagedAsync
   - Test.Sandwich.TH
   - Test.Sandwich.Util.Process
   - Test.Sandwich.Waits
