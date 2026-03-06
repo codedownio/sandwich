@@ -4,6 +4,8 @@ module Test.Sandwich.Instrumentation (
   , streamRtsStatsToFile
   , streamManagedAsyncEventsToFile
   , writeTreeFile
+
+  , formatRtsStats
   ) where
 
 import Control.Concurrent.STM
@@ -13,6 +15,8 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import qualified Data.Map.Strict as M
 import Data.String.Interpolate
+import Data.Text (Text)
+import qualified Data.Text.IO as T
 import Data.Time
 import Data.Word
 import Debug.Trace (traceMarkerIO)
@@ -95,7 +99,8 @@ streamRtsStatsToFile path = do
         now <- getCurrentTime
         stats <- getRTSStats
         let gc' = gc stats
-        hPutStr h (formatRtsStats now stats gc')
+        T.hPutStr h "\n\n"
+        T.hPutStr h $ formatRtsStats now stats gc'
         hFlush h
         threadDelay 1000000
 
@@ -104,22 +109,21 @@ showFailureReasonBrief (Reason {failureReason}) = failureReason
 showFailureReasonBrief (ChildrenFailed {failureNumChildren}) = [i|#{failureNumChildren} children failed|]
 showFailureReasonBrief _ = "(see node detail)"
 
-formatRtsStats :: UTCTime -> RTSStats -> GCDetails -> String
-formatRtsStats now stats gc' = unlines
-  [ [i|#{show now}|]
-  , [i|live_bytes:         #{formatBytes (gcdetails_live_bytes gc')}|]
-  , [i|heap_size:          #{formatBytes (gcdetails_mem_in_use_bytes gc')}|]
-  , [i|allocated_bytes:    #{formatBytes (allocated_bytes stats)}|]
-  , [i|max_live_bytes:     #{formatBytes (max_live_bytes stats)}|]
-  , [i|large_objects:      #{formatBytes (gcdetails_large_objects_bytes gc')}|]
-  , [i|compact_bytes:      #{formatBytes (gcdetails_compact_bytes gc')}|]
-  , [i|slop_bytes:         #{formatBytes (gcdetails_slop_bytes gc')}|]
-  , [i|gcs:                #{gcs stats}|]
-  , [i|major_gcs:          #{major_gcs stats}|]
-  , [i|gc_cpu:             #{nsToMs (gc_cpu_ns stats)}ms|]
-  , [i|mutator_cpu:        #{nsToMs (mutator_cpu_ns stats)}ms|]
-  , ""
-  ]
+formatRtsStats :: UTCTime -> RTSStats -> GCDetails -> Text
+formatRtsStats now stats gc' = [__i|
+  #{now}
+  live_bytes:         #{formatBytes (gcdetails_live_bytes gc')}
+  heap_size:          #{formatBytes (gcdetails_mem_in_use_bytes gc')}
+  allocated_bytes:    #{formatBytes (allocated_bytes stats)}
+  max_live_bytes:     #{formatBytes (max_live_bytes stats)}
+  large_objects:      #{formatBytes (gcdetails_large_objects_bytes gc')}
+  compact_bytes:      #{formatBytes (gcdetails_compact_bytes gc')}
+  slop_bytes:         #{formatBytes (gcdetails_slop_bytes gc')}
+  gcs:                #{gcs stats}
+  major_gcs:          #{major_gcs stats}
+  gc_cpu:             #{nsToMs (gc_cpu_ns stats)}ms
+  mutator_cpu:        #{nsToMs (mutator_cpu_ns stats)}ms
+  |]
   where
     nsToMs :: RtsTime -> RtsTime
     nsToMs ns = ns `div` 1000000

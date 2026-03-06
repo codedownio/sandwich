@@ -24,11 +24,11 @@ import Control.Concurrent (ThreadId, myThreadId)
 import Control.Concurrent.STM
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.IORef
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.IORef
 import System.IO.Unsafe (unsafePerformIO)
-import Test.Sandwich.Types.RunTree (HasBaseContextMonad, HasBaseContext, BaseContext(..), getBaseContext)
+import Test.Sandwich.Types.RunTree (HasBaseContextMonad, BaseContext(..), getBaseContext)
 import UnliftIO.Async
 import UnliftIO.Exception
 

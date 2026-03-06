@@ -10,13 +10,14 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.IORef
 import Data.String.Interpolate
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import Data.Time
-import Data.Word
 import GHC.Stats
 import Network.Socket
 import Network.Socket.ByteString (recv, sendAll)
 import System.Directory (removeFile)
 import Test.Sandwich.Formatters.Socket.Commands
+import Test.Sandwich.Instrumentation (formatRtsStats)
 import Test.Sandwich.ManagedAsync
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
@@ -118,35 +119,11 @@ streamRtsStats conn = do
       handle (\(_ :: IOError) -> return ()) $ forever $ do
         stats <- getRTSStats
         let gc' = gc stats
-            line = formatRtsStats stats gc'
-        sendAll conn (BS8.pack line)
-        threadDelay 1000000
-
-formatRtsStats :: RTSStats -> GCDetails -> String
-formatRtsStats stats gc' = unlines
-  [ [i|live_bytes:         #{formatBytes (gcdetails_live_bytes gc')}|]
-  , [i|heap_size:          #{formatBytes (gcdetails_mem_in_use_bytes gc')}|]
-  , [i|allocated_bytes:    #{formatBytes (allocated_bytes stats)}|]
-  , [i|max_live_bytes:     #{formatBytes (max_live_bytes stats)}|]
-  , [i|large_objects:      #{formatBytes (gcdetails_large_objects_bytes gc')}|]
-  , [i|compact_bytes:      #{formatBytes (gcdetails_compact_bytes gc')}|]
-  , [i|slop_bytes:         #{formatBytes (gcdetails_slop_bytes gc')}|]
-  , [i|gcs:                #{gcs stats}|]
-  , [i|major_gcs:          #{major_gcs stats}|]
-  , [i|gc_cpu:             #{nsToMs (gc_cpu_ns stats)}ms|]
-  , [i|mutator_cpu:        #{nsToMs (mutator_cpu_ns stats)}ms|]
-  , ""
-  ]
-  where
-    nsToMs :: RtsTime -> RtsTime
-    nsToMs ns = ns `div` 1000000
-
-formatBytes :: Word64 -> String
-formatBytes b
-  | b < 1024 = [i|#{b} B|]
-  | b < 1024 * 1024 = [i|#{b `div` 1024} KiB (#{b})|]
-  | b < 1024 * 1024 * 1024 = [i|#{b `div` (1024 * 1024)} MiB (#{b})|]
-  | otherwise = [i|#{b `div` (1024 * 1024 * 1024)} GiB (#{b})|]
+        now <- getCurrentTime
+        let line = formatRtsStats now stats gc'
+        sendAll conn "\n\n"
+        sendAll conn (T.encodeUtf8 line)
+        threadDelay 1_000_000
 
 -- | Read a single line from the socket, buffering leftover bytes.
 -- Returns the line without the trailing newline.
