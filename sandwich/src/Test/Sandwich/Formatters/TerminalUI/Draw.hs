@@ -77,7 +77,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
                       , withAttr visibilityThresholdIndicatorAttr $ str $ show visibilityLevel
                       , str "]"]
       , if not (app ^. appShowLogSizes) then Nothing else
-          let totalSize = sum $ fmap (BS.length . fromLogStr . logEntryStr) logs
+          let totalSize = sum $ fmap (BS.length . logEntryStr) logs
           in if totalSize > 0 then Just $ hBox [str " [", withAttr logSizeAttr (str $ formatBytes totalSize), str "]"] else Nothing
       , Just $ padRight Max $ withAttr toggleMarkerAttr $ str (if toggled then " [-]" else " [+]")
       , if not (app ^. appShowRunTimes) then Nothing else case status of
@@ -107,7 +107,7 @@ mainList app = hCenter $ padAll 1 $ L.renderListWithIndex listDrawElement True (
       , str " "
       , logLocWidget logEntryLoc
       , str " "
-      , txtWrap (E.decodeUtf8 $ fromLogStr logEntryStr)
+      , txtWrap (E.decodeUtf8 logEntryStr)
       ]
 
     logLocWidget (Loc {loc_start=(line, ch), ..}) = hBox [
