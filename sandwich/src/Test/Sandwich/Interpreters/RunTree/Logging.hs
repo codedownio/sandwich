@@ -25,7 +25,7 @@ logToMemory (Just minLevel) logs loc logSrc logLevel logStr =
     let !bs = fromLogStr logStr
     let !entry = LogEntry ts loc logSrc logLevel bs
     -- atomically $ modifyTVar' logs (\s -> let s' = s |> entry in forceSeq s' `seq` s')
-    atomically $ modifyTVar' logs (|> LogEntry ts loc logSrc logLevel bs)
+    atomically $ modifyTVar' logs (|> entry)
 
 logToMemoryAndFile :: Maybe LogLevel -> Maybe LogLevel -> LogEntryFormatter -> TVar (Seq LogEntry) -> Handle -> Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 logToMemoryAndFile maybeMemLogLevel maybeSavedLogLevel formatter logs h loc logSrc logLevel logStr = do
@@ -35,7 +35,7 @@ logToMemoryAndFile maybeMemLogLevel maybeSavedLogLevel formatter logs h loc logS
       ts <- getCurrentTime
       let !entry = LogEntry ts loc logSrc logLevel bs
       -- atomically $ modifyTVar' logs (\s -> let s' = s |> entry in forceSeq s' `seq` s')
-      atomically $ modifyTVar' logs (|> LogEntry ts loc logSrc logLevel bs)
+      atomically $ modifyTVar' logs (|> entry)
       return $ Just ts
     _ -> return Nothing
 
