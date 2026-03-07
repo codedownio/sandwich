@@ -17,19 +17,19 @@ import Test.Sandwich
 parallelNDemo :: TopSpec
 parallelNDemo = describe "Creating processes with logging" $ do
   it "createProcessWithLogging" $ do
-    p <- createProcessWithLogging (shell "echo hiiiiii")
+    (p, _) <- createProcessWithLogging (shell "echo hiiiiii")
     liftIO (waitForProcess p) >>= (`shouldBe` ExitSuccess)
 
   it "createProcessWithLogging'" $ do
-    p <- createProcessWithLogging' LevelDebug (shell "echo hiiiiii")
+    (p, _) <- createProcessWithLogging' LevelDebug (shell "echo hiiiiii")
     liftIO (waitForProcess p) >>= (`shouldBe` ExitSuccess)
 
   it "createProcessWithLoggingAndStdin" $ do
-    p <- createProcessWithLoggingAndStdin (shell "echo hiiiiii") ""
+    (p, _) <- createProcessWithLoggingAndStdin (shell "echo hiiiiii") ""
     liftIO (waitForProcess p) >>= (`shouldBe` ExitSuccess)
 
   it "createProcessWithLoggingAndStdin'" $ do
-    p <- createProcessWithLoggingAndStdin' LevelDebug (shell "echo hiiiiii") ""
+    (p, _) <- createProcessWithLoggingAndStdin' LevelDebug (shell "echo hiiiiii") ""
     liftIO (waitForProcess p) >>= (`shouldBe` ExitSuccess)
 
   it "readCreateProcessWithLogging" $ do
