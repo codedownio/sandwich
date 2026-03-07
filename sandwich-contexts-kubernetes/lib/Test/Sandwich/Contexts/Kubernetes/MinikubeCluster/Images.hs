@@ -111,8 +111,9 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             logFn loc src level str
 
       liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
-        createProcessWithFileLogging' "minikube-image-load" (proc minikubeBinary args)
-          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+        createProcessWithLogging (proc minikubeBinary args)
+          >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                                    (cancel asy)
 
       stderrOutput <- fromLogStr <$> readIORef stderrOutputVar
 
