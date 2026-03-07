@@ -216,7 +216,7 @@ withKindCluster' kindBinary kubectlBinary opts@(KindClusterOptions {..}) action 
 
   (bracket (startKindCluster kindBinary opts clusterName kindConfigFile kindKubeConfigFile environmentToUse driver)
            (\_ -> do
-               ps <- createProcessWithFileLogging (
+               ps <- createProcessWithFileLogging' "kind-delete-cluster" (
                  (proc kindBinary ["delete", "cluster", "--name", toString clusterName]) {
                      env = environmentToUse
                      })
@@ -231,7 +231,7 @@ startKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => FilePath -> KindClusterOptions -> Text -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m KubernetesClusterContext
 startKindCluster kindBinary (KindClusterOptions {..}) clusterName kindConfigFile kindKubeConfigFile environmentToUse driver = do
-  ps <- createProcessWithFileLogging (
+  ps <- createProcessWithFileLogging' "kind-create-cluster" (
     (proc kindBinary ["create", "cluster", "-v", "1", "--name", toString clusterName
                      , "--config", kindConfigFile
                      , "--kubeconfig", kindKubeConfigFile]) {

@@ -25,6 +25,11 @@ module Test.Sandwich.Logging (
   , readCreateProcessWithFileLogging
   , createProcessWithFileLoggingAndStdin
   , callCommandWithFileLogging
+
+  , createProcessWithFileLogging'
+  , readCreateProcessWithFileLogging'
+  , createProcessWithFileLoggingAndStdin'
+  , callCommandWithFileLogging'
   ) where
 
 import Control.Monad.Logger hiding (logOther)

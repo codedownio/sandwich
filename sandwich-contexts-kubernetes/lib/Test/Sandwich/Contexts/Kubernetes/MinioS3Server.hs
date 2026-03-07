@@ -140,9 +140,9 @@ withK8SMinioS3Server' :: forall m context. (
   -> m ()
 withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOperatorContext (MinioS3ServerOptions {..}) action = do
   env <- getKubectlEnvironment kcc
-  let runWithKubeConfig :: (HasCallStack) => String -> [String] -> m ()
-      runWithKubeConfig prog args = do
-        createProcessWithFileLogging ((proc prog args) { env = Just env, delegate_ctlc = True })
+  let runWithKubeConfig :: (HasCallStack) => String -> String -> [String] -> m ()
+      runWithKubeConfig name prog args = do
+        createProcessWithFileLogging' name ((proc prog args) { env = Just env, delegate_ctlc = True })
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   deploymentName <- ("minio-" <>) <$> makeUUID' 5
@@ -179,31 +179,31 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
 
         info [i|Got username and password: #{(username, password)}|]
 
-        createProcessWithFileLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
+        createProcessWithFileLoggingAndStdin' "minio-s3-kubectl-apply" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString finalYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
         return (userAndPassword, finalYaml)
 
   let destroy (_, finalYaml) = do
         info [i|-------------------------- DESTROYING --------------------------|]
-        createProcessWithFileLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"]) { env = Just env }) (toString finalYaml)
+        createProcessWithFileLoggingAndStdin' "minio-s3-kubectl-delete" ((proc kubectlBinary ["delete", "-f", "-"]) { env = Just env }) (toString finalYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 
   -- Create network policy allowing ingress/egress for v1.min.io/tenant = deploymentName
   let createNetworkPolicy = do
         let NetworkPolicies policyNames yaml = fromMaybe (defaultNetworkPolicies deploymentName) minioS3ServerNetworkPolicies
-        createProcessWithFileLoggingAndStdin ((proc kubectlBinary ["create", "--namespace", toString minioS3ServerNamespace, "-f", "-"]) { env = Just env, delegate_ctlc = True }) yaml
+        createProcessWithFileLoggingAndStdin' "minio-s3-kubectl-create-network-policy" ((proc kubectlBinary ["create", "--namespace", toString minioS3ServerNamespace, "-f", "-"]) { env = Just env, delegate_ctlc = True }) yaml
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
         pure policyNames
   let destroyNetworkPolicy policyNames = do
         forM_ policyNames $ \name ->
-          runWithKubeConfig kubectlBinary ["delete", "NetworkPolicy", name, "--namespace", toString minioS3ServerNamespace]
+          runWithKubeConfig "minio-s3-kubectl-delete-network-policy" kubectlBinary ["delete", "NetworkPolicy", name, "--namespace", toString minioS3ServerNamespace]
 
   bracket createNetworkPolicy destroyNetworkPolicy $ \_ -> bracket create destroy $ \((username, password), _) -> do
     do
       uuid <- makeUUID
-      p <- createProcessWithFileLogging (
+      p <- createProcessWithFileLogging' "minio-s3-kubectl-run-discoverer" (
         (proc kubectlBinary [
             "run", "discoverer-" <> toString uuid
             , "--rm", "-i"
