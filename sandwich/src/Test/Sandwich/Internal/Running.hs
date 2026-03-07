@@ -1,9 +1,9 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Test.Sandwich.Internal.Running where
 
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Free
@@ -22,6 +22,7 @@ import Test.Sandwich.Interpreters.PruneTree
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.Options
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.General
@@ -38,13 +39,14 @@ startSandwichTree options spec = do
 
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpts), optionsFilterTree=(unwrapTreeFilter -> filterOpts), optionsDryRun}) spec = do
+  let runId = baseContextRunId baseContext
   runTree <- spec
     & (\tree -> L.foldl' pruneTree tree pruneOpts)
     & (\tree -> L.foldl' filterTree tree filterOpts)
     & atomically . specToRunTreeVariable baseContext
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
-     | otherwise -> void $ async $ void $ runNodesSequentially runTree baseContext
+     | otherwise -> void $ managedAsync runId [i|root-nodes:#{runId}|] $ void $ runNodesSequentially runTree baseContext
 
   return runTree
 
@@ -58,20 +60,22 @@ runSandwichTree options spec = do
   return rts
 
 -- | For 0 repeats, repeat until a failure
-runWithRepeat :: Int -> Int -> IO (ExitReason, Int, Int) -> IO ()
-runWithRepeat 0 totalTests action = do
-  (_, _itNodeFailures, totalFailures) <- action
-  if | totalFailures == 0 -> runWithRepeat 0 totalTests action
-     | otherwise -> exitFailure
+runWithRepeat :: Int -> Int -> (Int -> IO (ExitReason, Int, Int)) -> IO ()
+runWithRepeat 0 _totalTests action = go 0
+  where
+    go !idx = do
+      (_, _itNodeFailures, totalFailures) <- action idx
+      if | totalFailures == 0 -> go (idx + 1)
+         | otherwise -> exitFailure
 -- | For 1 repeat, run once and return
 runWithRepeat n totalTests action = do
-  (successes, total) <- (flip execStateT (0 :: Int, 0 :: Int)) $ flip fix (n - 1) $ \loop n' -> do
-    (exitReason, _itNodeFailures, totalFailures) <- liftIO action
+  (successes, total) <- (flip execStateT (0 :: Int, 0 :: Int)) $ flip fix (0 :: Int) $ \loop idx -> do
+    (exitReason, _itNodeFailures, totalFailures) <- liftIO $ action idx
 
     modify $ \(successes, total) -> (successes + (if totalFailures == 0 then 1 else 0), total + 1)
 
     if | exitReason == SignalExit -> return ()
-       | n' > 0 -> loop (n' - 1)
+       | idx < n - 1 -> loop (idx + 1)
        | otherwise -> return ()
 
   putStrLn [i|#{successes} runs succeeded out of #{total} repeat#{if n > 1 then ("s" :: String) else ""} (#{totalTests} tests)|]
@@ -80,6 +84,7 @@ runWithRepeat n totalTests action = do
 
 baseContextFromOptions :: Options -> IO BaseContext
 baseContextFromOptions options@(Options {..}) = do
+  let runId = optionsRunId
   runRoot <- case optionsTestArtifactsDirectory of
     TestArtifactsNone -> return Nothing
     TestArtifactsFixedDirectory dir' -> do
@@ -117,6 +122,7 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextOnlyRunIds = Nothing
     , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
+    , baseContextRunId = runId
     }
 
 

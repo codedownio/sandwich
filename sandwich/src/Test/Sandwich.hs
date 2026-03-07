@@ -72,6 +72,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Free
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger
 import Control.Monad.Reader
 import qualified Data.Aeson as A
@@ -84,17 +85,21 @@ import qualified Data.Map as M
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
+import Data.Time (getCurrentTime)
+import Debug.Trace (traceMarkerIO)
 import GHC.IO.Encoding
 import Options.Applicative
 import qualified Options.Applicative as OA
 import System.Environment
 import System.Exit
 import System.FilePath
+import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose)
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
 import Test.Sandwich.Formatters.Common.Count
 import Test.Sandwich.Golden.Update
+import Test.Sandwich.Instrumentation
 import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
@@ -169,12 +174,14 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
          let cliNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = systemVisibilityThreshold
                                                  , nodeOptionsCreateFolder = False }
 
-         runWithRepeat repeatCount totalTests $
+         let mkRunId idx = if repeatCount == 1 then "run" else [i|repeat-#{idx}|]
+         runWithRepeat repeatCount totalTests $ \repeatIdx -> do
+           let opts = options { optionsRunId = mkRunId repeatIdx }
            case optIndividualTestModule clo of
-             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) options $
+             Nothing -> runSandwich' (Just $ clo { optUserOptions = () }) opts $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
                  $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
-             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) options $ filterTreeToModule x $
+             Just (IndividualTestModuleName x) -> runSandwich' (Just $ clo { optUserOptions = () }) opts $ filterTreeToModule x $
                introduce' cliNodeOptions "some command line options" someCommandLineOptions (pure (SomeCommandLineOptions clo)) (const $ return ())
                  $ introduce' cliNodeOptions "command line options" commandLineOptions (pure clo) (const $ return ()) spec
              Just (IndividualTestMainFn x) -> do
@@ -193,7 +200,25 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 -- may also include other nodes like "introduce" nodes).
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
+  let runId = optionsRunId options
   baseContext <- baseContextFromOptions options
+
+  -- Open late-log file if --log-logs is active
+  maybeLateLogHandle <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+    (Just clo, Just runRoot) | optLogLogs clo -> do
+      h <- openFile (runRoot </> "late-logs.log") AppendMode
+      hSetBuffering h LineBuffering
+      return (Just h)
+    _ -> return Nothing
+
+  let options' = options { optionsLateLogFile = maybeLateLogHandle }
+
+  let milestone msg = do
+        traceMarkerIO [i|sandwich: #{msg}|]
+        now <- getCurrentTime
+        case optionsEventBroadcast options' of
+          Just chan -> atomically $ writeTChan chan (NodeEvent now 0 "sandwich" (EventMilestone msg))
+          Nothing -> return ()
 
   -- To prevent weird errors saving files like "commitAndReleaseBuffer: invalid argument (invalid character)",
   -- especially on Windows
@@ -213,15 +238,46 @@ runSandwich' maybeCommandLineOptions options spec' = do
                         , nodeOptionsCreateFolder = False
                         }) "Finalize test timer" (asks getTestTimer >>= liftIO . finalizeSpeedScopeTestTimer) spec'
 
-  rts <- startSandwichTree' baseContext options spec
+  milestone "startSandwichTree'"
+  rts <- startSandwichTree' baseContext options' spec
 
-  formatterAsyncs <- forM (optionsFormatters options) $ \(SomeFormatter f) -> async $ do
-    let loggingFn = case baseContextRunRoot baseContext of
-          Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
-          Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
+  milestone "spawning formatters"
+  formatterAsyncs <- forM (optionsFormatters options') $ \(SomeFormatter f) ->
+    MA.managedAsync runId (T.pack [i|formatter:#{formatterName f}|]) $ do
+      let loggingFn = case baseContextRunRoot baseContext of
+            Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
+            Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
 
-    loggingFn $
-      runFormatter f rts maybeCommandLineOptions baseContext
+      loggingFn $
+        runFormatter f rts maybeCommandLineOptions baseContext
+
+  -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats, --log-events (managed-asyncs)
+  milestone "spawning file stream asyncs"
+  (fileStreamAsyncs, maybeManagedAsyncStreamAsync) <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+    (Just clo, Just runRoot) -> do
+      others <- fmap catMaybes $ sequence
+        [ if optLogLogs clo
+          then case optionsLogBroadcast options' of
+            Just chan -> Just <$> MA.managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.log") chan)
+            Nothing -> return Nothing
+          else return Nothing
+        , if optLogEvents clo
+          then do
+            writeTreeFile (runRoot </> "events-tree.txt") rts
+            case optionsEventBroadcast options' of
+              Just chan -> Just <$> MA.managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
+              Nothing -> return Nothing
+          else return Nothing
+        , if optLogRtsStats clo
+          then Just <$> MA.managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.log"))
+          else return Nothing
+        ]
+      -- Spawn the managed-async event stream separately so we can cancel it last
+      maybeManagedAsync <- if optLogAsyncs clo
+        then Just <$> MA.managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "asyncs.log") MA.asyncEventBroadcast)
+        else return Nothing
+      return (others, maybeManagedAsync)
+    _ -> return ([], Nothing)
 
   exitReasonRef <- newIORef NormalExit
 
@@ -238,24 +294,50 @@ runSandwich' maybeCommandLineOptions options spec' = do
   _ <- installHandler sigTERM shutdown
 
   -- Wait for the tree to finish
+  milestone "waiting for tree"
   mapM_ waitForTree rts
+  milestone "tree finished"
 
   -- Wait for all formatters to finish
+  milestone "waiting for formatters"
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   let failures = lefts finalResults
   unless (null failures) $
     putStrLn [i|Some formatters failed: '#{failures}'|]
+  milestone "formatters finished"
 
   -- Run finalizeFormatter method on formatters
-  forM_ (optionsFormatters options) $ \(SomeFormatter f) -> do
+  milestone "finalizing formatters"
+  forM_ (optionsFormatters options') $ \(SomeFormatter f) -> do
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
 
     loggingFn $ finalizeFormatter f rts baseContext
 
+  milestone "fixing tree"
   fixedTree <- atomically $ mapM fixRunTree rts
 
+  -- Cancel file stream asyncs (but not the managed-async stream yet)
+  milestone "cancelling file stream asyncs"
+  mapM_ cancel fileStreamAsyncs
+
+  -- Cancel the managed-async stream last, so its finally block captures the final state
+  mapM_ cancel maybeManagedAsyncStreamAsync
+
+  -- Check for stale managed asyncs from this run
+  milestone "checking for stale asyncs"
+  allAsyncs <- MA.getManagedAsyncInfos
+  let staleAsyncs = M.filter (\x -> MA.asyncInfoRunId x == runId) allAsyncs
+  unless (M.null staleAsyncs) $ do
+    putStrLn [i|WARNING: #{M.size staleAsyncs} managed asyncs still running after tree finished:|]
+    forM_ (M.toList staleAsyncs) $ \(tid, x) ->
+      putStrLn [i|  #{tid}: #{MA.asyncInfoName x}|]
+
+  -- Close late-log file handle
+  mapM_ hClose maybeLateLogHandle
+
+  milestone "done"
   exitReason <- readIORef exitReasonRef
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
