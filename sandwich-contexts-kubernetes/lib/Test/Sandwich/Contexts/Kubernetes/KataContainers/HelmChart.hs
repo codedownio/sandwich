@@ -22,7 +22,7 @@ import UnliftIO.Process
 
 withKataContainers :: (
   MonadFail m, MonadLoggerIO m, MonadUnliftIO m
-  , MonadReader context m, HasFile context "helm"
+  , HasBaseContextMonad context m, HasFile context "helm"
   )
   => KubernetesClusterContext
   -> KataContainersOptions
@@ -33,7 +33,7 @@ withKataContainers kcc options action = do
   withKataContainers' helmBinary kcc options action
 
 withKataContainers' :: (
-  MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+  MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   )
   => FilePath
   -> KubernetesClusterContext
@@ -54,7 +54,7 @@ withKataContainers' helmBinary kcc options@(KataContainersOptions {..}) action =
 
   env <- getKubectlEnvironment kcc
 
-  createProcessWithLogging ((proc helmBinary args) { env = Just env })
+  createProcessWithFileLogging ((proc helmBinary args) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   action (KataContainersContext options)
