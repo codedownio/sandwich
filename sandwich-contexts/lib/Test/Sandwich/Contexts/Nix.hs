@@ -83,7 +83,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files.Types
 import Test.Sandwich.Contexts.Util.Aeson
 import qualified Text.Show
-import UnliftIO.Async
+import UnliftIO.Async (Async, wait)
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.MVar (modifyMVar)
@@ -359,7 +359,7 @@ buildNixCallPackageDerivation' nc@(NixContext {..}) derivation = do
     case M.lookup derivation m of
       Just x -> return (m, x)
       Nothing -> do
-        asy <- async $ do
+        asy <- managedAsync "nix-build-call-package" $ do
           maybeNixExpressionDir <- getCurrentFolder >>= \case
             Just dir -> (Just <$>) $ liftIO $ createTempDirectory dir "nix-expression"
             Nothing -> return Nothing
@@ -399,7 +399,7 @@ buildNixExpression' nc@(NixContext {..}) expr = do
     case M.lookup expr m of
       Just x -> return (m, x)
       Nothing -> do
-        asy <- async $ do
+        asy <- managedAsync "nix-build-expression" $ do
           maybeNixExpressionDir <- getCurrentFolder >>= \case
             Just dir -> (Just <$>) $ liftIO $ createTempDirectory dir "nix-expression"
             Nothing -> pure Nothing
@@ -413,7 +413,7 @@ buildNixExpression' nc@(NixContext {..}) expr = do
 --   nc <- getContext nixContext
 --   runNixBuild' nc expr outputPath
 
-runNixBuild' :: (MonadUnliftIO m, MonadLogger m) => NixContext -> Text -> Maybe String -> m String
+runNixBuild' :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => NixContext -> Text -> Maybe String -> m String
 runNixBuild' (NixContext {nixContextNixpkgsDerivation}) expr maybeOutputPath = do
   maybeEnv <- case nixpkgsDerivationAllowUnfree nixContextNixpkgsDerivation of
     False -> pure Nothing
