@@ -123,7 +123,7 @@ waitForPodsToBeReady namespace labels timeInSeconds = do
   kubeConfigFile <- kubernetesClusterKubeConfigPath <$> getContext kubernetesCluster
 
   let labelArgs = [[i|-l #{k}=#{v}|] | (k, v) <- M.toList labels]
-  p <- createProcessWithFileLogging (
+  p <- createProcessWithFileLogging' "kubectl-wait-pods" (
     proc kubectlBinary (
         ["wait", "pods"
         , "--kubeconfig", kubeConfigFile

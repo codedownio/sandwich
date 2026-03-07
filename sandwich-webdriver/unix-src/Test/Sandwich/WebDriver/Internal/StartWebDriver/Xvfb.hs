@@ -101,7 +101,7 @@ createXvfbSession webdriverRoot w h (Fd fd) xvfbToUse xvfbOnDemand = do
 
   -- Start the Xvfb session
   authFile <- liftIO $ writeTempFile webdriverRoot ".Xauthority" ""
-  p <- createProcessWithFileLogging $ (
+  p <- createProcessWithFileLogging' "xvfb" $ (
     proc xvfb [":" <> show serverNum
               , "-screen", "0", [i|#{w}x#{h}x24|]
               , "-displayfd", [i|#{fd}|]

@@ -151,7 +151,7 @@ createKubernetesNamespace'' :: (
 createKubernetesNamespace'' kcc kubectl namespace = do
   let args = ["create", "namespace", toString namespace]
   env <- getKubectlEnvironment kcc
-  createProcessWithFileLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+  createProcessWithFileLogging' "kubectl-create-namespace" ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 -- | Destroy a Kubernetes namespace.
@@ -171,5 +171,5 @@ destroyKubernetesNamespace'' kcc kubectl force namespace = do
   let args = ["delete", "namespace", toString namespace]
            <> if force then ["--force"] else []
   env <- getKubectlEnvironment kcc
-  createProcessWithFileLogging ((proc kubectl args) { env = Just env, delegate_ctlc = True })
+  createProcessWithFileLogging' "kubectl-delete-namespace" ((proc kubectl args) { env = Just env, delegate_ctlc = True })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)

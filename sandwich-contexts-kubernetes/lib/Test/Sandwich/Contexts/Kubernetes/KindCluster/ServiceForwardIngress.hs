@@ -46,7 +46,7 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     let configFile = dir </> "ingress.yaml"
     liftIO $ T.writeFile configFile (ingressConfig service randomHost)
 
-    createProcessWithFileLogging (
+    createProcessWithFileLogging' "kubectl-create-ingress" (
       (proc kubectlBinary ["create"
                           , "--namespace", toString namespace
                           , "-f", configFile]) {

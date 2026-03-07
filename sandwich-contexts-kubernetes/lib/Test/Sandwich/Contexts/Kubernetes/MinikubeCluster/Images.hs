@@ -57,8 +57,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
           withSystemTempDirectory "image-tarball" $ \tempDir -> do
             let tarFile = tempDir </> "image.tar"
             -- TODO: don't depend on external tar file
-            createProcessWithFileLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
-              >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+            _ <- readCreateProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|]) ""
             imageLoad tarFile False
             readImageName (toString image)
         False -> case takeExtension (toString image) of
@@ -68,9 +67,8 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
           ".gz" -> do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
-              -- TODO: don't depend on external gzip file
-              createProcessWithFileLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
-                >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+              -- TODO: don't depend on external gzip binary
+              _ <- readCreateProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|]) ""
               imageLoad tarFile False
               readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
@@ -107,7 +105,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             logFn loc src level str
 
       liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
-        createProcessWithFileLogging (proc minikubeBinary args)
+        createProcessWithFileLogging' "minikube-image-load" (proc minikubeBinary args)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
       stderrOutput <- fromLogStr <$> readIORef stderrOutputVar

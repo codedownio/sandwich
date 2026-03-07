@@ -166,7 +166,7 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     _ <- readCreateProcess (proc "cp" ["-r", toString operatorPath, target]) ""
     _ <- readCreateProcess (proc "chmod" ["-R", "u+w", target]) ""
 
-    let runOperatorCmd cmd extraEnv = createProcessWithFileLogging (
+    let runOperatorCmd cmd extraEnv = createProcessWithFileLogging' "seaweedfs-operator" (
           (shell cmd) {
               env = Just (env <> extraEnv)
               , cwd = Just target
@@ -193,7 +193,7 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     info [i|------------------ Creating SeaweedFS deployment ------------------|]
 
     let val = decodeUtf8 $ A.encode $ example namespace options
-    createProcessWithFileLoggingAndStdin ((shell [i|#{kubectlBinary} create -f -|]) { env = Just env }) val
+    createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((shell [i|#{kubectlBinary} create -f -|]) { env = Just env }) val
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
     action $ SeaweedFSContext {

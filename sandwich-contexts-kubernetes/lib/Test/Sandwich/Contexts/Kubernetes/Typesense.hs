@@ -143,12 +143,12 @@ withTypesense' kcc _kubectlBinary namespace options@(TypesenseOptions {..}) acti
 
   -- Add the Helm repository
   info [i|Adding Typesense Helm repository...|]
-  createProcessWithFileLogging ((proc helmBinary [
+  createProcessWithFileLogging' "helm-repo-add" ((proc helmBinary [
     "repo", "add", "springboard", "https://helm-charts.springboardvr.com"
     ]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  createProcessWithFileLogging ((proc helmBinary ["repo", "update"]) { env = Just env })
+  createProcessWithFileLogging' "helm-repo-update" ((proc helmBinary ["repo", "update"]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   -- Install Typesense via Helm
@@ -170,7 +170,7 @@ withTypesense' kcc _kubectlBinary namespace options@(TypesenseOptions {..}) acti
 
   info [i|helm #{T.intercalate " " (fmap toText helmArgs)}|]
 
-  createProcessWithFileLogging ((proc helmBinary helmArgs) { env = Just env })
+  createProcessWithFileLogging' "helm-install-typesense" ((proc helmBinary helmArgs) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   let serviceName = typesenseReleaseName
@@ -187,7 +187,7 @@ withTypesense' kcc _kubectlBinary namespace options@(TypesenseOptions {..}) acti
 cleanupTypesense :: (MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m) => FilePath -> [(String, String)] -> Text -> Text -> m ()
 cleanupTypesense helmBinary env namespace releaseName = do
   info [i|Cleaning up Typesense release '#{releaseName}' in namespace '#{namespace}'...|]
-  createProcessWithFileLogging ((proc helmBinary [
+  createProcessWithFileLogging' "helm-uninstall-typesense" ((proc helmBinary [
     "uninstall", toString releaseName
     , "--namespace", toString namespace
     ]) { env = Just env })

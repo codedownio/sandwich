@@ -63,7 +63,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
               -- TODO: don't depend on external gzip binary
-              createProcessWithFileLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
+              createProcessWithFileLogging' "kind-image-decompress" (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
               imageLoad tarFile
               readImageName (toString image)
@@ -72,7 +72,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
     ImageLoadSpecDocker image pullPolicy -> do
       _ <- dockerPullIfNecessary image pullPolicy
 
-      createProcessWithFileLogging (
+      createProcessWithFileLogging' "kind-load-docker-image" (
         (shell [i|#{kindBinary} load docker-image #{image} --name #{clusterName}|]) {
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
@@ -86,7 +86,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
       return image
   where
     imageLoad tarFile =
-      createProcessWithFileLogging (
+      createProcessWithFileLogging' "kind-load-image-archive" (
         (shell [i|#{kindBinary} load image-archive #{tarFile} --name #{clusterName}|]) {
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
