@@ -25,7 +25,9 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Images
 import Text.Regex.TDFA
+import UnliftIO.Async
 import UnliftIO.Directory
+import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Temporary
 
@@ -57,7 +59,9 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
           withSystemTempDirectory "image-tarball" $ \tempDir -> do
             let tarFile = tempDir </> "image.tar"
             -- TODO: don't depend on external tar file
-            _ <- readCreateProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|]) ""
+            createProcessWithLogging (shell [i|tar -C "#{image}" --dereference --hard-dereference --xform s:'^./':: -c . > "#{tarFile}"|])
+              >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                                        (cancel asy)
             imageLoad tarFile False
             readImageName (toString image)
         False -> case takeExtension (toString image) of
@@ -68,7 +72,9 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
               -- TODO: don't depend on external gzip binary
-              _ <- readCreateProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|]) ""
+              createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
+                >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                                          (cancel asy)
               imageLoad tarFile False
               readImageName (toString image)
           _ -> expectationFailure [i|Unexpected image extension in #{image}. Wanted .tar, .tar.gz, or uncompressed directory.|]
