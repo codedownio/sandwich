@@ -48,6 +48,7 @@ import Test.Sandwich.WebDriver.Video.Internal
 import Test.Sandwich.WebDriver.Video.Types
 import Test.Sandwich.WebDriver.Windows
 import Test.WebDriver
+import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
 
@@ -61,6 +62,7 @@ type BaseVideoConstraints context m = (
 data VideoProcess = VideoProcess {
   -- | The process handle
   videoProcessProcess :: ProcessHandle
+  , videoProcessAsync :: Async ()
   , videoProcessCreatedFiles :: [FilePath]
   }
 -- defaultVideoProcess :: ProcessHandle -> VideoProcess
@@ -122,15 +124,16 @@ startVideoRecording path (width, height, x, y) vs = do
 
   case logToDisk vs of
     False -> do
-      p <- createProcessWithLogging cp
-      return $ VideoProcess p [videoPath]
+      (p, asy) <- createProcessWithLogging cp
+      return $ VideoProcess p asy [videoPath]
     True -> do
       let stdoutPath = path <.> "stdout" <.> "log"
       let stderrPath = path <.> "stderr" <.> "log"
       liftIO $ bracket (openFile stdoutPath AppendMode) hClose $ \hout ->
         bracket (openFile stderrPath AppendMode) hClose $ \herr -> do
           (_, _, _, p) <- createProcess (cp { std_out = UseHandle hout, std_err = UseHandle herr })
-          return $ VideoProcess p [videoPath, stdoutPath, stderrPath]
+          asy <- async $ return ()
+          return $ VideoProcess p asy [videoPath, stdoutPath, stderrPath]
 
 -- | Gracefully stop the 'ProcessHandle' returned by 'startVideoRecording'.
 endVideoRecording :: (

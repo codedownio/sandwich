@@ -32,10 +32,11 @@ import Test.Sandwich.WebDriver.Internal.Binaries.DetectPlatform
 import UnliftIO.Directory
 
 
-type Constraints m = (
+type Constraints context m = (
   HasCallStack
   , MonadLogger m
   , MonadUnliftIO m
+  , HasBaseContextMonad context m
   )
 
 -- | Manually obtain a chrome binary, according to the 'ChromeToUse' policy,
@@ -108,7 +109,7 @@ obtainChromeDriver (UseChromeDriverFromNixpkgs nixContext) = do
   debug [i|Built chromedriver: #{ret}|]
   return $ Right ret
 
-downloadChromeDriverIfNecessary' :: Constraints m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary' :: Constraints context m => FilePath -> ChromeDriverVersion -> m (Either T.Text FilePath)
 downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
   let chromeDriverPath = getChromeDriverPath toolsDir chromeDriverVersion
 
@@ -118,7 +119,7 @@ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion = runExceptT $ do
 
   return chromeDriverPath
 
-downloadChromeDriverIfNecessary :: Constraints m => FilePath -> FilePath -> m (Either T.Text FilePath)
+downloadChromeDriverIfNecessary :: Constraints context m => FilePath -> FilePath -> m (Either T.Text FilePath)
 downloadChromeDriverIfNecessary chromePath toolsDir = runExceptT $ do
   chromeDriverVersion <- ExceptT $ liftIO $ getChromeDriverVersion chromePath
   ExceptT $ downloadChromeDriverIfNecessary' toolsDir chromeDriverVersion
