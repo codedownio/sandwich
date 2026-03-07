@@ -16,6 +16,7 @@ module Test.Sandwich.Formatters.TerminalUI (
   , terminalUIDefaultEditor
   , terminalUIOpenInEditor
   , terminalUICustomExceptionFormatters
+  , terminalUIDebugSocket
 
   -- * Auxiliary types
   , InitialFolding(..)
@@ -29,13 +30,13 @@ import Brick as B
 import Brick.BChan
 import Brick.Widgets.List
 import Control.Concurrent
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Logger hiding (logError)
 import Control.Monad.Trans
 import Control.Monad.Trans.State hiding (get, put)
+import qualified Data.ByteString.Char8 as BS8
 import Data.Either
 import Data.Foldable
 import qualified Data.List as L
@@ -43,6 +44,7 @@ import Data.Maybe
 import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.String.Interpolate
+import Data.Text (Text)
 import Data.Time
 import qualified Data.Vector as Vec
 import GHC.Stack
@@ -53,6 +55,7 @@ import Safe
 import System.FilePath
 import Test.Sandwich.Formatters.TerminalUI.AttrMap
 import Test.Sandwich.Formatters.TerminalUI.CrossPlatform
+import Test.Sandwich.Formatters.TerminalUI.DebugSocket
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
@@ -60,12 +63,14 @@ import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.Logging
+import Test.Sandwich.ManagedAsync
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Util
+import UnliftIO.Async (cancel)
 import UnliftIO.Exception
 
 
@@ -84,6 +89,13 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   liftIO $ setInitialFolding terminalUIInitialFolding rts
 
   (rtsFixed, initialSomethingRunning) <- liftIO $ atomically $ runStateT (mapM fixRunTree' rts) False
+
+  -- Create debug channel for optional debug socket server
+  debugChan <- liftIO $ newBroadcastTChanIO
+  let debugFn :: Text -> IO ()
+      debugFn msg = do
+        now <- getCurrentTime
+        atomically $ writeTChan debugChan (BS8.pack [i|#{formatTime defaultTimeLocale "%H:%M:%S%3Q" now} #{msg}\n|])
 
   let initialState = updateFilteredTree $
         AppState {
@@ -105,8 +117,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
           , _appShowLogSizes = terminalUIShowLogSizes
 
-          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor (const $ return ())
-          , _appDebug = (const $ return ())
+          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor debugFn
+          , _appDebug = debugFn
           , _appCustomExceptionFormatters = terminalUICustomExceptionFormatters
         }
 
@@ -117,12 +129,15 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   currentFixedTree <- liftIO $ newTVarIO rtsFixed
   let eventAsync = liftIO $ forever $ do
         handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
+          debugFn "eventAsync: waiting for tree change"
           (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
             currentFixed <- lift $ readTVar currentFixedTree
             newFixed <- mapM fixRunTree' rts
             when (fmap getCommons newFixed == fmap getCommons currentFixed) (lift retry)
             lift $ writeTVar currentFixedTree newFixed
             return newFixed
+          let nodeCount = length $ concatMap getCommons newFixedTree
+          debugFn [i|eventAsync: tree changed, nodes=#{nodeCount} somethingRunning=#{somethingRunning}|]
           writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
           threadDelay terminalUIRefreshPeriod
 
@@ -136,12 +151,20 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   let updateCurrentTimeForever period = forever $ do
         now <- getCurrentTime
+        debugFn "CurrentTimeUpdated tick"
         writeBChan eventChan (CurrentTimeUpdated now)
         threadDelay period
 
+  -- Optionally start the debug socket server in the test tree root
+  let runId = baseContextRunId baseContext
+  let withDebugSocket = case (terminalUIDebugSocket, baseContextRunRoot baseContext) of
+        (True, Just runRoot) -> \action -> managedWithAsync_ runId "tui-debug-socket" (debugSocketServer runId (runRoot </> "tui-debug.sock") debugChan) action
+        _ -> id
+
   liftIO $
-    (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> withAsync (updateCurrentTimeForever ts) (\_ -> action)) $
-    withAsync eventAsync $ \_ ->
+    withDebugSocket $
+    (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> managedWithAsync_ runId "tui-clock-update" (updateCurrentTimeForever ts) action) $
+    managedWithAsync_ runId "tui-event-async" eventAsync $
     void $ customMain initialVty buildVty (Just eventChan) app initialState
 
 app :: App AppState AppEvent ClickableName
@@ -188,9 +211,7 @@ appEvent s (AppEvent (RunTreeUpdated newTree somethingRunning)) = do
     & appSomethingRunning .~ somethingRunning
     & updateFilteredTree
 appEvent s (AppEvent (CurrentTimeUpdated ts)) = do
-  continue $ case (s ^. appSomethingRunning) of
-    True -> s & appCurrentTime .~ ts
-    False -> s
+  continue $ s & appCurrentTime .~ ts
 
 appEvent s (MouseDown ColorBar _ _ (B.Location (x, _))) = do
   lookupExtent ColorBar >>= \case
@@ -271,9 +292,10 @@ appEvent s (VtyEvent e) =
           _ -> return ()
     V.EvKey c [] | c == runAllKey -> do
       now <- liftIO getCurrentTime
+      let appRunId = baseContextRunId (s ^. appBaseContext)
       when (all (not . isRunning . runTreeStatus . runNodeCommon) (s ^. appRunTree)) $ liftIO $ do
         mapM_ clearRecursively (s ^. appRunTreeBase)
-        void $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
+        void $ managedAsync appRunId "tui-run-all" $ void $ runNodesSequentially (s ^. appRunTreeBase) (s ^. appBaseContext)
       continue $ s
         & appStartTime .~ now
         & appCurrentTime .~ now
@@ -283,6 +305,7 @@ appEvent s (VtyEvent e) =
         _ -> do
           -- Get the set of IDs for only this node's ancestors and children
           let ancestorIds = S.fromList $ toList $ runTreeAncestors node
+          let appRunId = baseContextRunId (s ^. appBaseContext)
           case findRunNodeChildrenById ident (s ^. appRunTree) of
             Nothing -> continue s
             Just childIds -> do
@@ -292,7 +315,7 @@ appEvent s (VtyEvent e) =
               -- Start a run for all affected nodes
               now <- liftIO getCurrentTime
               let bc = (s ^. appBaseContext) { baseContextOnlyRunIds = Just allIds }
-              void $ liftIO $ async $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
+              void $ liftIO $ managedAsync appRunId "tui-run-selected" $ void $ runNodesSequentially (s ^. appRunTreeBase) bc
               continue $ s
                 & appStartTime .~ now
                 & appCurrentTime .~ now
