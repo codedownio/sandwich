@@ -228,7 +228,7 @@ newtype TreeFilter = TreeFilter { unTreeFilter :: [String] }
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 
 -- | A callback for formatting a log entry to a 'BS8.ByteString'.
-type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
+type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> BS8.ByteString -> BS8.ByteString
 
 -- The defaultLogStr formatter weirdly puts information after the message. Use our own
 defaultLogEntryFormatter :: LogEntryFormatter
@@ -240,7 +240,7 @@ defaultLogEntryFormatter ts loc src level msg = fromLogStr $
   <> toLogStr src
   <> ") "
   <> (if isDefaultLoc loc then "" else "@(" <> toLogStr (BS8.pack fileLocStr) <> ") ")
-  <> msg
+  <> toLogStr msg
   <> "\n"
 
   where
