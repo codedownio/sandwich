@@ -104,23 +104,24 @@ loadImageTests' = do
     -- Wait for service account to exist; see
     -- https://github.com/kubernetes/kubernetes/issues/66689
     waitUntil 60 $
-      createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                    , "get", "serviceaccount", "default"
-                                                    , "-o", "name"]) { env = Just env })
-        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+      void $ readCreateProcessWithLogging (
+        (proc kubectlBinary ["--namespace", namespace
+                            , "get", "serviceaccount", "default"
+                            , "-o", "name"]) { env = Just env }
+        ) ""
 
-    let deletePod = createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                                  , "delete", "pod", podName]) { env = Just env })
-                      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    let deletePod = void $ readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
+                                                                             , "delete", "pod", podName]) { env = Just env }) ""
 
     flip finally deletePod $ do
-      createProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
-                                                    , "run", podName
-                                                    , "--image", toString image
-                                                    , "--image-pull-policy=IfNotPresent"
-                                                    , "--command", "--", "/bin/sh", "-c", "sleep infinity"
-                                                    ]) { env = Just env })
-        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+      _ <- readCreateProcessWithLogging (
+        (proc kubectlBinary ["--namespace", namespace
+                            , "run", podName
+                            , "--image", toString image
+                            , "--image-pull-policy=IfNotPresent"
+                            , "--command", "--", "/bin/sh", "-c", "sleep infinity"
+                            ]) { env = Just env }
+        ) ""
 
       waitUntil 300 $ do
         events <- readCreateProcessWithLogging ((proc kubectlBinary ["--namespace", namespace
