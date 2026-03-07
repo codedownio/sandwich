@@ -5,6 +5,7 @@
 
 module Test.Sandwich.ArgParsing where
 
+import Control.Concurrent.STM
 import Control.Monad.Logger
 import Data.Function
 import qualified Data.List as L
@@ -19,6 +20,7 @@ import Test.Sandwich.Formatters.FailureReport
 import Test.Sandwich.Formatters.MarkdownSummary
 import Test.Sandwich.Formatters.Print.Types
 import Test.Sandwich.Formatters.Silent
+import Test.Sandwich.Formatters.Socket
 import Test.Sandwich.Formatters.TerminalUI
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Internal.Running
@@ -94,6 +96,12 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
   <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
+  <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
+  <*> switch (long "socket" <> help "Enable interactive socket formatter at <test-root>/socket.sock")
+  <*> switch (long "log-logs" <> help "Stream all test logs to <run-root>/logs.txt (for debugging)")
+  <*> switch (long "log-events" <> help "Stream node lifecycle events to <run-root>/events.txt (for debugging)")
+  <*> switch (long "log-rts-stats" <> help "Stream RTS memory stats to <run-root>/rts-stats.txt (for debugging)")
+  <*> switch (long "log-asyncs" <> help "Stream managed async lifecycle events to <run-root>/managed-asyncs.log (for debugging)")
 
   <*> optional (flag False True (long "list-tests" <> help "List individual test modules"))
   <*> optional (flag False True (long "list-tests-json" <> help "List individual test modules in JSON format"))
@@ -253,17 +261,32 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
           printFormatter
         (_, TUI) ->
           let mainTerminalUiFormatter = headMay [x | SomeFormatter (cast -> Just x@(TerminalUIFormatter {})) <- optionsFormatters baseOptions]
-          in SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) { terminalUILogLevel = optLogLevel }
+          in SomeFormatter $ (fromMaybe defaultTerminalUIFormatter mainTerminalUiFormatter) {
+            terminalUILogLevel = optLogLevel
+            , terminalUIDebugSocket = optTuiDebugSocket
+            }
         (_, Print) -> printFormatter
         (_, PrintFailures) -> failureReportFormatter
         (_, Silent) -> silentFormatter
 
   -- Strip out any "main" formatters since the options control that
-  let baseFormatters = optionsFormatters baseOptions
-                     & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
-                     & filter (not . isMainFormatter)
+  (baseFormatters, socketLogBroadcast, socketEventBroadcast) <- optionsFormatters baseOptions
+    & tryAddMarkdownSummaryFormatter optMarkdownSummaryPath
+    & tryAddSocketFormatter optSocketFormatter
+  let baseFormatters' = filter (not . isMainFormatter) baseFormatters
 
-  let finalFormatters = baseFormatters <> [mainFormatter]
+  -- Ensure broadcast channels exist if file logging flags need them
+  maybeLogBroadcast <- case socketLogBroadcast of
+    Just ch -> return (Just ch)
+    Nothing | optLogLogs -> Just <$> newBroadcastTChanIO
+    Nothing -> return Nothing
+
+  maybeEventBroadcast <- case socketEventBroadcast of
+    Just ch -> return (Just ch)
+    Nothing | optLogEvents -> Just <$> newBroadcastTChanIO
+    Nothing -> return Nothing
+
+  let finalFormatters = baseFormatters' <> [mainFormatter]
                       & fmap (setVisibilityThreshold optVisibilityThreshold)
 
   let options = baseOptions {
@@ -282,6 +305,8 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
     , optionsCancelOnLongExecutionMs = (optionsCancelOnLongExecutionMs baseOptions) <|> optCancelOnLongExecutionMs
+    , optionsLogBroadcast = maybeLogBroadcast
+    , optionsEventBroadcast = maybeEventBroadcast
     }
 
   return (options, optRepeatCount)
@@ -318,3 +343,20 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     tryAddMarkdownSummaryFormatter (Just path) xs
       | L.any isMarkdownSummaryFormatter xs = fmap (setMarkdownSummaryFormatterPath path) xs
       | otherwise = (SomeFormatter (defaultMarkdownSummaryFormatter path)) : xs
+
+    isSocketFormatter :: SomeFormatter -> Bool
+    isSocketFormatter (SomeFormatter x) = case cast x of
+      Just (_ :: SocketFormatter) -> True
+      Nothing -> False
+
+    tryAddSocketFormatter :: Bool -> [SomeFormatter] -> IO ([SomeFormatter], Maybe (TChan (Int, String, LogEntry)), Maybe (TChan NodeEvent))
+    tryAddSocketFormatter False xs = return (xs, Nothing, Nothing)
+    tryAddSocketFormatter True xs
+      | L.any isSocketFormatter xs =
+          -- Extract the broadcast channels from the existing formatter
+          let logChan = headMay [socketFormatterLogBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
+              eventChan = headMay [socketFormatterEventBroadcast sf | SomeFormatter (cast -> Just sf@(SocketFormatter {})) <- xs]
+          in return (xs, logChan, eventChan)
+      | otherwise = do
+          sf <- defaultSocketFormatter
+          return ((SomeFormatter sf) : xs, Just (socketFormatterLogBroadcast sf), Just (socketFormatterEventBroadcast sf))
