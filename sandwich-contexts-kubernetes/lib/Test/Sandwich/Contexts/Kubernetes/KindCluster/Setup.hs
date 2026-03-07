@@ -25,12 +25,12 @@ import UnliftIO.Process
 
 
 setUpKindCluster :: (
-  MonadLoggerIO m, MonadUnliftIO m
+  MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m ()
 setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary environmentToUse driver = do
   baseEnv <- maybe getEnvironment return environmentToUse
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
-  let runWithKubeConfig cmd = createProcessWithLogging ((shell cmd) { env = Just env, delegate_ctlc = True })
+  let runWithKubeConfig cmd = createProcessWithFileLogging ((shell cmd) { env = Just env, delegate_ctlc = True })
 
   info [i|Installing ingress-nginx|]
   runWithKubeConfig [i|#{kubectlBinary} apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml|]
