@@ -54,6 +54,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.HttpWaits
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Util.Aeson
+import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
 
@@ -178,8 +179,9 @@ withFakeSMTPServer (FakeSmtpServerOptions {..}) action = do
                                            create_group = True
                                            })
           )
-          (\p -> do
-              void $ liftIO (interruptProcessGroupOf p >> waitForProcess p)
+          (\(p, asy) -> do
+              finally (void $ liftIO (interruptProcessGroupOf p >> waitForProcess p))
+                      (cancel asy)
           )
           (\_ -> do
               let hostname = "localhost"
