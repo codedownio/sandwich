@@ -5,11 +5,8 @@ module Test.Sandwich.Interpreters.RunTree.Util where
 
 import Control.Concurrent.STM
 import Control.Monad.Free
-import Control.Monad.Logger
 import qualified Data.List as L
-import Data.Sequence as Seq hiding ((:>))
 import Data.String.Interpolate
-import Data.Time.Clock
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
@@ -22,13 +19,6 @@ waitForTree node = atomically $
     Done {statusResult} -> return statusResult
     NotStarted {} -> retry
     Running {} -> retry
-
--- | Append a log message outside of ExampleT. Only stored to in-memory logs, not disk.
--- Only for debugging the interpreter, should not be exposed.
-appendLogMessage :: ToLogStr msg => TVar (Seq LogEntry) -> msg -> IO ()
-appendLogMessage logs msg = do
-  ts <- getCurrentTime
-  atomically $ modifyTVar logs (|> LogEntry ts (Loc "" "" "" (0, 0) (0, 0)) "manual" LevelDebug (toLogStr msg))
 
 -- | Count how many folder children are present as children or siblings of the given node.
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int

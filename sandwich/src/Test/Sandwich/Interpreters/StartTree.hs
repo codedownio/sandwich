@@ -346,7 +346,7 @@ markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode co
 markAllChildrenWithResult children baseContext status = do
   now <- liftIO getCurrentTime
   forM_ (L.filter (shouldRunChild' baseContext) $ concatMap getCommons children) $ \child ->
-    liftIO $ atomically $ modifyTVar (runTreeStatus child) $ \case
+    liftIO $ atomically $ modifyTVar' (runTreeStatus child) $ \case
       Running {..} -> Done now statusSetupFinishTime statusTeardownStartTime now status
       done@(Done {}) -> done { statusResult = status }
       _ -> Done now Nothing Nothing now status
@@ -413,13 +413,13 @@ runExampleM' rnc label ex ctx logs exceptionMessage = do
         _ -> GotException Nothing msg (SomeExceptionWithEq e)
 
 addSetupFinishTimeToStatus :: (MonadIO m) => TVar Status -> UTCTime -> m ()
-addSetupFinishTimeToStatus statusVar setupFinishTime = atomically $ modifyTVar statusVar $ \case
+addSetupFinishTimeToStatus statusVar setupFinishTime = atomically $ modifyTVar' statusVar $ \case
   status@(Running {}) -> status { statusSetupFinishTime = Just setupFinishTime }
   status@(Done {}) -> status { statusSetupFinishTime = Just setupFinishTime }
   x -> x
 
 addTeardownStartTimeToStatus :: (MonadIO m) => TVar Status -> UTCTime -> m ()
-addTeardownStartTimeToStatus statusVar t = atomically $ modifyTVar statusVar $ \case
+addTeardownStartTimeToStatus statusVar t = atomically $ modifyTVar' statusVar $ \case
   status@(Running {}) -> status { statusTeardownStartTime = Just t }
   status@(Done {}) -> status { statusTeardownStartTime = Just t }
   x -> x
@@ -432,7 +432,7 @@ recordExceptionInStatus status e = do
         _ -> case fromException e of
           Just (e' :: FailureReason) -> Failure e'
           _ -> Failure (GotException Nothing Nothing (SomeExceptionWithEq e))
-  liftIO $ atomically $ modifyTVar status $ \case
+  liftIO $ atomically $ modifyTVar' status $ \case
     Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime endTime ret
     _ -> Done endTime Nothing Nothing endTime ret
 

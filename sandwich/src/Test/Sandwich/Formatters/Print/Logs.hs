@@ -7,6 +7,7 @@ import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Control.Monad.Logger
 import Control.Monad.Reader
+import qualified Data.ByteString.Char8 as BS8
 import Data.String.Interpolate
 import System.IO
 import Test.Sandwich.Formatters.Print.Color
@@ -30,7 +31,6 @@ printLogs runTreeLogs = do
         forM_ logEntries $ \entry ->
           when (logEntryLevel entry >= logLevel) $ printLogEntry entry
 
-
 printLogEntry :: (
   MonadReader (PrintFormatter, Int, Handle) m, MonadIO m
   ) => LogEntry -> m ()
@@ -53,7 +53,7 @@ printLogEntry (LogEntry {..}) = do
   pc logChColor (show ch)
   p "] "
 
-  p (show logEntryStr)
+  p (BS8.unpack logEntryStr)
 
   p "\n"
 
