@@ -7,6 +7,11 @@ module Test.Sandwich.Logging.ProcessFileLogging (
   , readCreateProcessWithFileLogging
   , createProcessWithFileLoggingAndStdin
   , callCommandWithFileLogging
+
+  , createProcessWithFileLogging'
+  , readCreateProcessWithFileLogging'
+  , createProcessWithFileLoggingAndStdin'
+  , callCommandWithFileLogging'
   ) where
 
 import Control.Concurrent
@@ -47,8 +52,13 @@ processName cp = case cmdspec cp of
 createProcessWithFileLogging :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => CreateProcess -> m ProcessHandle
-createProcessWithFileLogging cp = withFrozenCallStack $ do
-  let name = processName cp
+createProcessWithFileLogging cp = withFrozenCallStack $ createProcessWithFileLogging' (processName cp) cp
+
+-- | Spawn a process with its stdout and stderr logged to files in the test tree.
+createProcessWithFileLogging' :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  ) => FilePath -> CreateProcess -> m ProcessHandle
+createProcessWithFileLogging' name cp = withFrozenCallStack $ do
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|createProcessWithFileLogging: no current folder, so unable to log for '#{name}'.|]
     Just dir ->
@@ -62,8 +72,13 @@ createProcessWithFileLogging cp = withFrozenCallStack $ do
 readCreateProcessWithFileLogging :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   ) => CreateProcess -> String -> m String
-readCreateProcessWithFileLogging cp input = withFrozenCallStack $ do
-  let name = processName cp
+readCreateProcessWithFileLogging cp = withFrozenCallStack $ readCreateProcessWithFileLogging' (processName cp) cp
+
+-- | Like 'readCreateProcessWithFileLogging', but accepting a name to use for the log files.
+readCreateProcessWithFileLogging' :: (
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
+  ) => FilePath -> CreateProcess -> String -> m String
+readCreateProcessWithFileLogging' name cp input = withFrozenCallStack $ do
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|readCreateProcessWithFileLogging: no current folder, so unable to log for '#{name}'.|]
     Just dir ->
@@ -89,8 +104,11 @@ readCreateProcessWithFileLogging cp input = withFrozenCallStack $ do
 -- | Spawn a process with its stdout and stderr logged to files in the test tree,
 -- passing the given string as stdin.
 createProcessWithFileLoggingAndStdin :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> String -> m ProcessHandle
-createProcessWithFileLoggingAndStdin cp input = withFrozenCallStack $ do
-  let name = processName cp
+createProcessWithFileLoggingAndStdin cp = withFrozenCallStack $ createProcessWithFileLoggingAndStdin' (processName cp) cp
+
+-- | Like 'createProcessWithFileLoggingAndStdin', but accepting a name to use for the log files.
+createProcessWithFileLoggingAndStdin' :: (HasCallStack, MonadUnliftIO m, MonadFail m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> CreateProcess -> String -> m ProcessHandle
+createProcessWithFileLoggingAndStdin' name cp input = withFrozenCallStack $ do
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|createProcessWithFileLoggingAndStdin: no current folder, so unable to log for '#{name}'.|]
     Just dir ->
@@ -106,8 +124,11 @@ createProcessWithFileLoggingAndStdin cp input = withFrozenCallStack $ do
 
 -- | Higher level version of 'createProcessWithFileLogging', accepting a shell command.
 callCommandWithFileLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => String -> m ()
-callCommandWithFileLogging cmd = withFrozenCallStack $ do
-  let name = processName (shell cmd)
+callCommandWithFileLogging cmd = withFrozenCallStack $ callCommandWithFileLogging' (processName (shell cmd)) cmd
+
+-- | Like 'callCommandWithFileLogging', but accepting a name to use for the log files.
+callCommandWithFileLogging' :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => FilePath -> String -> m ()
+callCommandWithFileLogging' name cmd = withFrozenCallStack $ do
   getCurrentFolder >>= \case
     Nothing -> expectationFailure [i|callCommandWithFileLogging: no current folder, so unable to log for '#{name}'.|]
     Just dir ->
