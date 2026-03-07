@@ -14,13 +14,13 @@ import Data.Streaming.Network (setAfterBind)
 import Data.String.Interpolate
 import Network.Socket
 import Relude
-import Test.Sandwich (expectationFailure)
-import UnliftIO.Async
+import Test.Sandwich (expectationFailure, HasBaseContextMonad, managedWithAsync_)
+import UnliftIO.Async (concurrently_)
 import UnliftIO.Exception
 import UnliftIO.Timeout
 
 
-withProxyToUnixSocket :: MonadUnliftIO m => FilePath -> (PortNumber -> m a) -> m a
+withProxyToUnixSocket :: (MonadUnliftIO m, HasBaseContextMonad context m) => FilePath -> (PortNumber -> m a) -> m a
 withProxyToUnixSocket socketPath f = do
   portVar <- newEmptyMVar
   let ss = DCN.serverSettings 0 "*"
@@ -30,7 +30,7 @@ withProxyToUnixSocket socketPath f = do
                SockAddrInet6 port _ _ _ -> putMVar portVar port
                x -> expectationFailure [i|withProxyToUnixSocket: expected to bind a TCP socket, but got other addr: #{x}|]
            )
-  withAsync (liftIO $ DCN.runTCPServer ss app `onException` (tryPutMVar portVar (-1))) $ \_ ->
+  managedWithAsync_ "tcp-reverse-proxy" (liftIO $ DCN.runTCPServer ss app `onException` (tryPutMVar portVar (-1))) $
     timeout 60_000_000 (readMVar portVar) >>= \case
       Nothing -> expectationFailure [i|withProxyToUnixSocket: didn't get port within 60s|]
       Just (-1) -> expectationFailure [i|withProxyToUnixSocket: TCP server threw exception|]
