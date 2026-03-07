@@ -56,6 +56,15 @@ module Test.Sandwich (
   , withTimingProfile
   , withTimingProfile'
 
+  -- * Managed async
+  --
+  -- | If you want to run asyncs within your tests, we can help keep track of
+  -- them and make sure they get cleaned up.
+  , managedAsync
+  , managedAsyncWithUnmask
+  , managedWithAsync
+  , managedWithAsync_
+
   -- * Exports
   , module Test.Sandwich.Contexts
   , module Test.Sandwich.Expectations
@@ -105,6 +114,7 @@ import Test.Sandwich.Interpreters.FilterTreeModule
 import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Logging
+import qualified Test.Sandwich.ManagedAsync as MA
 import Test.Sandwich.Misc
 import Test.Sandwich.Nodes
 import Test.Sandwich.Options
@@ -351,3 +361,21 @@ countItNodes (Free (IntroduceWith'' {..})) = countItNodes next + countItNodes su
 countItNodes (Free (Introduce'' {..})) = countItNodes next + countItNodes subspecAugmented
 countItNodes (Free x) = countItNodes (next x) + countItNodes (subspec x)
 countItNodes (Pure _) = 0
+
+-- * Managed async (context-aware aliases)
+
+-- | Launch a managed async thread, tracking it with the run ID from 'BaseContext'.
+managedAsync :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m (Async a)
+managedAsync = MA.managedAsyncContext
+
+-- | Like 'managedAsync', but the action receives an unmask function.
+managedAsyncWithUnmask :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> ((forall b. m b -> m b) -> m a) -> m (Async a)
+managedAsyncWithUnmask = MA.managedAsyncWithUnmaskContext
+
+-- | Run a managed async thread scoped to a callback.
+managedWithAsync :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> (Async a -> m b) -> m b
+managedWithAsync = MA.managedWithAsyncContext
+
+-- | Like 'managedWithAsync', but ignores the 'Async' handle.
+managedWithAsync_ :: (MonadUnliftIO m, HasBaseContextMonad context m) => T.Text -> m a -> m b -> m b
+managedWithAsync_ = MA.managedWithAsyncContext_
