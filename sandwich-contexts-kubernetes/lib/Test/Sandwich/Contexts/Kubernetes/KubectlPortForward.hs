@@ -22,7 +22,6 @@ import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Ports
 import Test.Sandwich.Contexts.Kubernetes.Util.SocketUtil
 import Test.Sandwich.Util.Process (gracefullyStopProcess)
-import UnliftIO.Async
 import UnliftIO.Concurrent
 import UnliftIO.Directory
 import UnliftIO.Exception
@@ -110,7 +109,7 @@ withKubectlPortForward' kubectlBinary kubeConfigFile namespace isAcceptablePort 
                   )
           threadDelay 1_000_000  -- 1 second delay between restarts to ensure we don't spin here
 
-    withAsync restarterThread $ \_ -> do
+    managedWithAsync_ "kubectl-port-forward-restarter" restarterThread $ do
       let policy = constantDelay 100000 <> limitRetries 100
       void $ liftIO $ retrying policy (\_ ret -> return ret) $ \_ -> do
         not <$> isPortOpen (simpleSockAddr (127, 0, 0, 1) port)

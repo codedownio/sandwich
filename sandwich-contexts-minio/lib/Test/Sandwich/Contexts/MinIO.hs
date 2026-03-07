@@ -70,7 +70,7 @@ import Test.Sandwich.Contexts.MinIO.Util
 import Test.Sandwich.Contexts.Nix
 import Test.Sandwich.Contexts.Types.Network
 import Test.Sandwich.Contexts.Types.S3
-import UnliftIO.Async
+
 import UnliftIO.Directory
 import UnliftIO.Exception
 import UnliftIO.Process
@@ -193,7 +193,7 @@ withMinIOViaBinary' minioPath (MinIOContextOptions {..}) action = do
           line <- liftIO $ T.hGetLine hRead
           debug [i|minio: #{line}|]
 
-    withAsync forwardOutput $ \_ -> do
+    managedWithAsync_ "minio-output-forward" forwardOutput $ do
       (hostname, port) <- case uriToUse of
         Nothing -> expectationFailure [i|Couldn't find MinIO URI to use.|]
         Just (URI { uriAuthority=(Just URIAuth {..}) }) -> case readMaybe (L.drop 1 uriPort) of
@@ -286,9 +286,9 @@ withMinIOViaContainer (MinIOContextOptions {..}) (ContainerOptions {..}) action 
 
               info [i|Got command: #{cp}"|]
 
-              createProcessWithLogging cp
+              createProcessWithFileLogging' "minio-server" cp
           )
-          (\_ -> do
+          (\_ ->
               void $ liftIO $ readCreateProcess (shell [i|#{containerOptionsSystem} rm -f --volumes #{containerName}|]) ""
           )
           (\p -> do

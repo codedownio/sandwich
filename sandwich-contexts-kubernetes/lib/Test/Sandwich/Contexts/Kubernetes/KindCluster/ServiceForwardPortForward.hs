@@ -51,3 +51,9 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
       }
 
 withForwardKubernetesService' _ _ _ _ _ = error "withForwardKubernetesService' must be called with a kind KubernetesClusterContext"
+
+withForwardKubernetesServiceFileLogging' :: (
+  MonadUnliftIO m, MonadLoggerIO m
+  , HasBaseContextMonad context m
+  ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
+withForwardKubernetesServiceFileLogging' = withForwardKubernetesService'

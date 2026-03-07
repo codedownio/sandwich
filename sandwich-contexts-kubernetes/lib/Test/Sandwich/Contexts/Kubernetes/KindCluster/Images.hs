@@ -30,7 +30,7 @@ import UnliftIO.Temporary
 
 -- | Load an image into a Kind cluster.
 loadImageKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLoggerIO m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
   )
   -- | Path to @kind@ binary
   => FilePath
@@ -63,7 +63,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
             withSystemTempDirectory "image-tarball" $ \tempDir -> do
               let tarFile = tempDir </> "image.tar"
               -- TODO: don't depend on external gzip binary
-              createProcessWithLogging (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
+              createProcessWithFileLogging' "kind-image-decompress" (shell [i|cat "#{image}" | gzip -d > "#{tarFile}"|])
                 >>= waitForProcess >>= (`shouldBe` ExitSuccess)
               imageLoad tarFile
               readImageName (toString image)
@@ -72,7 +72,7 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
     ImageLoadSpecDocker image pullPolicy -> do
       _ <- dockerPullIfNecessary image pullPolicy
 
-      createProcessWithLogging (
+      createProcessWithFileLogging' "kind-load-docker-image" (
         (shell [i|#{kindBinary} load docker-image #{image} --name #{clusterName}|]) {
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
@@ -86,14 +86,14 @@ loadImageKind kindBinary clusterName imageLoadSpec env = do
       return image
   where
     imageLoad tarFile =
-      createProcessWithLogging (
+      createProcessWithFileLogging' "kind-load-image-archive" (
         (shell [i|#{kindBinary} load image-archive #{tarFile} --name #{clusterName}|]) {
             env = env
             }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
 -- | Get the set of loaded images on the given Kind cluster.
 getLoadedImagesKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   => KubernetesClusterContext
   -- | Driver (should be "docker" or "podman")
@@ -128,7 +128,7 @@ getLoadedImagesKind kcc driver kindBinary env = do
 
 -- | Test if the Kind cluster contains a given image.
 clusterContainsImageKind :: (
-  HasCallStack, MonadUnliftIO m, MonadLogger m
+  HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
   )
   => KubernetesClusterContext
   -- | Driver (should be "docker" or "podman")

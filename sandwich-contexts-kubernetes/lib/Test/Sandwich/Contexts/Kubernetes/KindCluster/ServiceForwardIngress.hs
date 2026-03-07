@@ -34,7 +34,7 @@ import UnliftIO.Timeout
 
 
 withForwardKubernetesService' :: (
-  MonadUnliftIO m, MonadLoggerIO m
+  MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterKind {..}), ..}) kubectlBinary namespace service action = do
   baseEnv <- maybe getEnvironment return kubernetesClusterTypeKindClusterEnvironment
@@ -46,11 +46,12 @@ withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(
     let configFile = dir </> "ingress.yaml"
     liftIO $ T.writeFile configFile (ingressConfig service randomHost)
 
-    createProcessWithLogging ((proc kubectlBinary ["create"
-                                                  , "--namespace", toString namespace
-                                                  , "-f", configFile]) {
-                                 env = Just env
-                                 }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    createProcessWithFileLogging' "kubectl-create-ingress" (
+      (proc kubectlBinary ["create"
+                          , "--namespace", toString namespace
+                          , "-f", configFile]) {
+          env = Just env
+          }) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   -- TODO: wait for ingress to be ready?
   -- Possibly not necessary since the server context waits for 200 after this

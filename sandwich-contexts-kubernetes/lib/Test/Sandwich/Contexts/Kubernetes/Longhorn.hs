@@ -71,14 +71,14 @@ withLonghorn options action = do
   kubectlBinary <- askFile @"kubectl"
   withLonghorn' kcc kubectlBinary options action
 
-withLonghorn' :: forall m a. (
-  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m
+withLonghorn' :: forall context m a. (
+  HasCallStack, MonadFail m, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> String -> LonghornOptions -> (LonghornContext -> m a) -> m a
 withLonghorn' (KubernetesClusterContext {kubernetesClusterKubeConfigPath}) kubectlBinary options@(LonghornOptions {..}) action = do
   baseEnv <- getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
-  createProcessWithLogging ((proc kubectlBinary ["apply", "-f", longhornYaml]) { env = Just env })
+  createProcessWithFileLogging' "longhorn-kubectl-apply" ((proc kubectlBinary ["apply", "-f", longhornYaml]) { env = Just env })
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   action $ LonghornContext options

@@ -23,6 +23,7 @@ import qualified Data.Text as T
 import Data.Time
 import Data.Typeable
 import GHC.Stack
+import System.IO (Handle)
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
@@ -111,12 +112,29 @@ type RunNodeCommon = RunNodeCommonWithStatus (Var Status) (Var (Seq LogEntry)) (
 
 type Var = TVar
 data LogEntry = LogEntry {
-  logEntryTime :: UTCTime
-  , logEntryLoc :: Loc
-  , logEntrySource :: LogSource
-  , logEntryLevel :: LogLevel
-  , logEntryStr :: LogStr
+  logEntryTime :: !UTCTime
+  , logEntryLoc :: !Loc
+  , logEntrySource :: !LogSource
+  , logEntryLevel :: !LogLevel
+  , logEntryStr :: !BS8.ByteString
   } deriving (Show, Eq)
+
+data NodeEvent = NodeEvent {
+  nodeEventTime :: !UTCTime
+  , nodeEventId :: !Int
+  , nodeEventLabel :: !String
+  , nodeEventType :: !NodeEventType
+  } deriving (Show, Eq)
+
+data NodeEventType
+  = EventStarted
+  | EventDone !Result
+  | EventSetupStarted
+  | EventSetupFinished
+  | EventTeardownStarted
+  | EventTeardownFinished
+  | EventMilestone !String
+  deriving (Show, Eq)
 
 -- | Context passed around through the evaluation of a RunTree
 data RunTreeContext = RunTreeContext {
@@ -136,6 +154,7 @@ data BaseContext = BaseContext {
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
+  , baseContextRunId :: T.Text
   }
 
 -- | Has-* class for asserting a 'BaseContext' is available.
@@ -228,7 +247,7 @@ newtype TreeFilter = TreeFilter { unTreeFilter :: [String] }
 type LogFn = Loc -> LogSource -> LogLevel -> LogStr -> IO ()
 
 -- | A callback for formatting a log entry to a 'BS8.ByteString'.
-type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> LogStr -> BS8.ByteString
+type LogEntryFormatter = UTCTime -> Loc -> LogSource -> LogLevel -> BS8.ByteString -> BS8.ByteString
 
 -- The defaultLogStr formatter weirdly puts information after the message. Use our own
 defaultLogEntryFormatter :: LogEntryFormatter
@@ -240,7 +259,7 @@ defaultLogEntryFormatter ts loc src level msg = fromLogStr $
   <> toLogStr src
   <> ") "
   <> (if isDefaultLoc loc then "" else "@(" <> toLogStr (BS8.pack fileLocStr) <> ") ")
-  <> msg
+  <> toLogStr msg
   <> "\n"
 
   where
@@ -295,6 +314,15 @@ data Options = Options {
   -- ^ If set, alerts user to nodes that run for the given number of milliseconds, by writing to a file in the root directory.
   , optionsCancelOnLongExecutionMs :: Maybe Int
   -- ^ Same as 'optionsWarnOnLongExecutionMs', but also cancels the problematic nodes.
+  , optionsLogBroadcast :: Maybe (TChan (Int, String, LogEntry))
+  -- ^ Broadcast channel for streaming log entries to external consumers (e.g. socket formatter).
+  -- Each entry is tagged with (nodeId, nodeLabel, logEntry).
+  , optionsEventBroadcast :: Maybe (TChan NodeEvent)
+  -- ^ Broadcast channel for streaming node lifecycle events (started, done) to external consumers.
+  , optionsLateLogFile :: Maybe Handle
+  -- ^ If set, log writes that occur after a node is already Done will be written to this file handle.
+  , optionsRunId :: T.Text
+  -- ^ An identifier for this test run, used to track managed async threads.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

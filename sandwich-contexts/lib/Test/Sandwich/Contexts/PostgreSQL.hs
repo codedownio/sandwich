@@ -69,6 +69,7 @@ import Test.Sandwich.Contexts.ReverseProxy.TCP
 import Test.Sandwich.Contexts.Types.Network
 import Test.Sandwich.Contexts.UnixSocketPath
 import Test.Sandwich.Contexts.Util.UUID (makeUUID)
+import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.Exception
@@ -261,15 +262,17 @@ withPostgresUnixSocket postgresBinDir username password database extraLines acti
         withTempFile baseDir "pwfile" $ \pwfile h -> do
           liftIO $ T.hPutStrLn h password
           hClose h
-          createProcessWithLogging ((proc (postgresBinDir </> "initdb") [dbDirName
-                                                                          , "--username", toString username
-                                                                          , "-A", "md5"
-                                                                          , "--pwfile", pwfile
-                                                                          ]) {
-                                       cwd = Just dir
-                                       , env = Just env
-                                       })
-            >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+          (ps, asy) <- createProcessWithLogging (
+            (proc (postgresBinDir </> "initdb") [dbDirName
+                                                , "--username", toString username
+                                                , "-A", "md5"
+                                                , "--pwfile", pwfile
+                                                ]) {
+                cwd = Just dir
+                , env = Just env
+                })
+          finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                  (cancel asy)
 
         -- Turn off the TCP interface; we'll have it listen solely on a Unix socket
         withFile (dir </> dbDirName </> "postgresql.conf") AppendMode $ \h -> liftIO $ do
@@ -287,7 +290,8 @@ withPostgresUnixSocket postgresBinDir username password database extraLines acti
                                       , "-o", [i|--unix_socket_directories='#{unixSockDir}'|]
                                       , "start" , "--wait"
                                       ]) { cwd = Just dir })
-          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+          >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                                    (cancel asy)
 
         -- Create the default db
         createProcessWithLogging ((proc (postgresBinDir </> "psql") [
@@ -296,7 +300,8 @@ withPostgresUnixSocket postgresBinDir username password database extraLines acti
                                       [i|postgresql://#{username}:#{password}@/?host=#{unixSockDir}|]
                                       , "-c", [i|CREATE DATABASE #{database};|]
                                       ]) { cwd = Just dir })
-          >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+          >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
+                                    (cancel asy)
 
 
         files <- listDirectory unixSockDir
@@ -356,17 +361,18 @@ withPostgresContainer :: (
   -> m a
 withPostgresContainer options action = do
   bracket (createPostgresDatabase options)
-          (\(containerName, _p) -> timeAction "cleanup Postgres database" $ do
-              info [i|Doing #{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]
-              (exitCode, sout, serr) <-  liftIO $ readCreateProcessWithExitCode (shell [i|#{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]) ""
-              when (exitCode /= ExitSuccess) $
-                expectationFailure [i|Failed to destroy Postgres container. Stdout: '#{sout}'. Stderr: '#{serr}'|]
+          (\(containerName, _p, asy) -> timeAction "cleanup Postgres database" $ do
+              flip finally (cancel asy) $ do
+                info [i|Doing #{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]
+                (exitCode, sout, serr) <-  liftIO $ readCreateProcessWithExitCode (shell [i|#{postgresContainerContainerSystem options} rm -f --volumes #{containerName}|]) ""
+                when (exitCode /= ExitSuccess) $
+                  expectationFailure [i|Failed to destroy Postgres container. Stdout: '#{sout}'. Stderr: '#{serr}'|]
           )
           (waitForPostgresDatabase options >=> action)
 
 createPostgresDatabase :: (
   HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m
-  ) => PostgresContainerOptions -> m (Text, ProcessHandle)
+  ) => PostgresContainerOptions -> m (Text, ProcessHandle, Async ())
 createPostgresDatabase (PostgresContainerOptions {..}) = timeAction "create Postgres database" $ do
   containerName <- maybe (("postgres-" <>) <$> makeUUID) return postgresContainerContainerName
 
@@ -386,13 +392,13 @@ createPostgresDatabase (PostgresContainerOptions {..}) = timeAction "create Post
 
   info [i|cmd: #{containerSystem} #{T.unwords args}|]
 
-  p <- createProcessWithLogging (proc (show containerSystem) (fmap toString args))
-  return (containerName, p)
+  (p, asy) <- createProcessWithLogging (proc (show containerSystem) (fmap toString args))
+  return (containerName, p, asy)
 
 waitForPostgresDatabase :: (
   MonadUnliftIO m, MonadLoggerIO m, MonadMask m
-  ) => PostgresContainerOptions -> (Text, ProcessHandle) -> m PostgresContext
-waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p) = do
+  ) => PostgresContainerOptions -> (Text, ProcessHandle, Async ()) -> m PostgresContext
+waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p, _) = do
   containerID <- waitForProcess p >>= \case
     ExitSuccess -> containerNameToContainerId postgresContainerContainerSystem containerName
     _ -> expectationFailure [i|Failed to start Postgres container.|]

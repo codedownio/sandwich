@@ -206,7 +206,7 @@ withMinioOperator'' kubectlBinary kcc preloadImages extraImages allYaml action =
     forM_ images $ \image ->
       loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
-  let create = createProcessWithLoggingAndStdin ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString allYaml)
+  let create = createProcessWithFileLoggingAndStdin' "minio-operator-kubectl-apply" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString allYaml)
                  >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
   let namespaceToDestroy = fromMaybe "minio-operator" (findNamespace (toText allYaml))
@@ -218,10 +218,12 @@ withMinioOperator'' kubectlBinary kcc preloadImages extraImages allYaml action =
         -- gets deleted first and then subsequent deletes encounter missing objects.
         -- If this doesn't work, we can fall back to just deleting the namespace below.
         -- But I think this will be better because it should pick up CRDs?
-        createProcessWithLoggingAndStdin ((proc kubectlBinary ["delete", "-f", "-"
-                                                              , "--ignore-not-found", "--wait=false", "--all=true"
-                                                              ]) {
-                                             env = Just env, delegate_ctlc = True }) (toString allYaml)
+        createProcessWithFileLoggingAndStdin' "minio-operator-kubectl-delete" (
+          (proc kubectlBinary ["delete", "-f", "-"
+                              , "--ignore-not-found", "--wait=false", "--all=true"
+                              ]) {
+              env = Just env, delegate_ctlc = True
+              }) (toString allYaml)
           >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
         -- createProcessWithLogging ((proc kubectlBinary ["delete", "namespace", toString namespaceToDestroy, "-f"]) {

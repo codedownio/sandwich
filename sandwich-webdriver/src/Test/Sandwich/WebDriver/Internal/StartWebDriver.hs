@@ -17,9 +17,9 @@ import GHC.Stack
 import Test.Sandwich.WebDriver.Internal.Types
 import qualified Test.WebDriver as W
 
-#ifndef mingw32_HOST_OS
-import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
-#endif
+-- #ifndef mingw32_HOST_OS
+-- import Test.Sandwich.WebDriver.Internal.StartWebDriver.Xvfb
+-- #endif
 
 
 type Constraints m = (
