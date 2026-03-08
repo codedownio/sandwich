@@ -134,6 +134,7 @@ data NodeEventType
   | EventTeardownStarted
   | EventTeardownFinished
   | EventMilestone !String
+  | EventEndOfStream
   deriving (Show, Eq)
 
 -- | Context passed around through the evaluation of a RunTree

@@ -129,6 +129,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import UnliftIO.Exception
+import UnliftIO.Timeout (timeout)
 
 #ifdef mingw32_HOST_OS
 import System.Win32.Console (setConsoleOutputCP)
@@ -261,9 +262,9 @@ runSandwich' maybeCommandLineOptions options spec' = do
       loggingFn $
         runFormatter f rts maybeCommandLineOptions baseContext
 
-  -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats, --log-events (managed-asyncs)
+  -- Spawn file writer asyncs for --log-logs, --log-events, --log-rts-stats, --log-asyncs
   milestone "spawning file stream asyncs"
-  (fileStreamAsyncs, maybeManagedAsyncStreamAsync) <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
+  (fileStreamAsyncs, maybeEventStreamAsync, maybeManagedAsyncStreamAsync) <- case (maybeCommandLineOptions, baseContextRunRoot baseContext) of
     (Just clo, Just runRoot) -> do
       others <- fmap catMaybes $ sequence
         [ if optLogLogs clo
@@ -271,23 +272,24 @@ runSandwich' maybeCommandLineOptions options spec' = do
             Just chan -> Just <$> MA.managedAsync runId "stream-logs" (streamLogsToFile (runRoot </> "all-logs.log") chan)
             Nothing -> return Nothing
           else return Nothing
-        , if optLogEvents clo
-          then do
-            writeTreeFile (runRoot </> "events-tree.txt") rts
-            case optionsEventBroadcast options' of
-              Just chan -> Just <$> MA.managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
-              Nothing -> return Nothing
-          else return Nothing
         , if optLogRtsStats clo
           then Just <$> MA.managedAsync runId "stream-rts-stats" (streamRtsStatsToFile (runRoot </> "rts-stats.log"))
           else return Nothing
         ]
+      -- Spawn stream-events separately so we can drain it gracefully via EventEndOfStream
+      maybeEvtAsync <- if optLogEvents clo
+        then do
+          writeTreeFile (runRoot </> "events-tree.txt") rts
+          case optionsEventBroadcast options' of
+            Just chan -> Just <$> MA.managedAsync runId "stream-events" (streamEventsToFile (runRoot </> "events.log") chan)
+            Nothing -> return Nothing
+        else return Nothing
       -- Spawn the managed-async event stream separately so we can cancel it last
       maybeManagedAsync <- if optLogAsyncs clo
         then Just <$> MA.managedAsync runId "stream-managed-asyncs" (streamManagedAsyncEventsToFile (runRoot </> "asyncs.log") MA.asyncEventBroadcast)
         else return Nothing
-      return (others, maybeManagedAsync)
-    _ -> return ([], Nothing)
+      return (others, maybeEvtAsync, maybeManagedAsync)
+    _ -> return ([], Nothing, Nothing)
 
   exitReasonRef <- newIORef NormalExit
 
@@ -317,8 +319,10 @@ runSandwich' maybeCommandLineOptions options spec' = do
   milestone "formatters finished"
 
   -- Run finalizeFormatter method on formatters
-  milestone "finalizing formatters"
+  milestone [i|finalizing formatters: #{optionsFormatters options'}|]
   forM_ (optionsFormatters options') $ \(SomeFormatter f) -> do
+    milestone [i|finalizing formatter: #{f}|]
+
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
@@ -328,8 +332,26 @@ runSandwich' maybeCommandLineOptions options spec' = do
   milestone "fixing tree"
   fixedTree <- atomically $ mapM fixRunTree rts
 
-  -- Cancel file stream asyncs (but not the managed-async stream yet)
-  milestone "cancelling file stream asyncs"
+  -- Close late-log file handle
+  mapM_ hClose maybeLateLogHandle
+
+  -- Emit the "done" milestone before draining the event stream
+  milestone "done"
+
+  -- Signal the event stream to stop and wait for it to drain (with 60s timeout)
+  case optionsEventBroadcast options' of
+    Just chan -> do
+      now <- getCurrentTime
+      atomically $ writeTChan chan (NodeEvent now 0 "sandwich" EventEndOfStream)
+    Nothing -> return ()
+  forM_ maybeEventStreamAsync $ \asy ->
+    timeout 60_000_000 (wait asy) >>= \case
+      Nothing -> do
+        putStrLn "WARNING: stream-events async didn't exit within 60s, cancelling"
+        cancel asy
+      Just _ -> return ()
+
+  -- Cancel remaining file stream asyncs (but not the managed-async stream yet)
   mapM_ cancel fileStreamAsyncs
 
   -- Cancel the managed-async stream last, so its finally block captures the final state
@@ -337,17 +359,12 @@ runSandwich' maybeCommandLineOptions options spec' = do
 
   -- Check for stale managed asyncs from this run
   milestone "checking for stale asyncs"
-  allAsyncs <- MA.getManagedAsyncInfos
-  let staleAsyncs = M.filter (\x -> MA.asyncInfoRunId x == runId) allAsyncs
-  unless (M.null staleAsyncs) $ do
-    putStrLn [i|WARNING: #{M.size staleAsyncs} managed asyncs still running after tree finished:|]
-    forM_ (M.toList staleAsyncs) $ \(tid, x) ->
+  asyncs <- MA.getManagedAsyncInfos
+  unless (M.null asyncs) $ do
+    putStrLn [i|WARNING: #{M.size asyncs} managed asyncs still running after tree finished:|]
+    forM_ (M.toList asyncs) $ \(tid, x) ->
       putStrLn [i|  #{tid}: #{MA.asyncInfoName x}|]
 
-  -- Close late-log file handle
-  mapM_ hClose maybeLateLogHandle
-
-  milestone "done"
   exitReason <- readIORef exitReasonRef
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
