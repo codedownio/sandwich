@@ -62,30 +62,39 @@ streamLogsToFile path broadcastChan = do
       hFlush h
 
 -- | Stream node lifecycle events from a broadcast channel to a file.
+-- Exits cleanly when it receives an 'EventEndOfStream' event.
 streamEventsToFile :: FilePath -> TChan NodeEvent -> IO ()
 streamEventsToFile path broadcastChan = do
   chan <- atomically $ dupTChan broadcastChan
   withFile path AppendMode $ \h -> do
     hSetBuffering h LineBuffering
-    forever $ do
-      NodeEvent {..} <- atomically $ readTChan chan
-      let typeStr :: String
-          typeStr = case nodeEventType of
-            EventStarted -> "STARTED"
-            EventDone Success -> "DONE:OK"
-            EventDone (Failure (Pending {})) -> "DONE:PENDING"
-            EventDone (Failure reason) -> [i|DONE:FAIL: #{showFailureReasonBrief reason}|]
-            EventDone DryRun -> "DONE:DRYRUN"
-            EventDone Cancelled -> "DONE:CANCELLED"
-            EventSetupStarted -> "SETUP:STARTED"
-            EventSetupFinished -> "SETUP:FINISHED"
-            EventTeardownStarted -> "TEARDOWN:STARTED"
-            EventTeardownFinished -> "TEARDOWN:FINISHED"
-            EventMilestone msg -> [i|MILESTONE: #{msg}|]
-          formatted = [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr}\n|]
-      traceMarkerIO [i|[#{nodeEventId}] #{nodeEventLabel}: #{typeStr}|]
-      hPutStr h formatted
-      hFlush h
+    let loop = do
+          NodeEvent {..} <- atomically $ readTChan chan
+          case nodeEventType of
+            EventEndOfStream -> do
+              hPutStr h [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: END_OF_STREAM\n|]
+              hFlush h
+            _ -> do
+              traceMarkerIO [i|[#{nodeEventId}] #{nodeEventLabel}: #{typeStr nodeEventType}|]
+              hPutStr h [i|#{show nodeEventTime} [#{nodeEventId}] #{nodeEventLabel}: #{typeStr nodeEventType}\n|]
+              hFlush h
+              loop
+    loop
+  where
+    typeStr :: NodeEventType -> String
+    typeStr typ = case typ of
+      EventStarted -> "STARTED"
+      EventDone Success -> "DONE:OK"
+      EventDone (Failure (Pending {})) -> "DONE:PENDING"
+      EventDone (Failure reason) -> [i|DONE:FAIL: #{showFailureReasonBrief reason}|]
+      EventDone DryRun -> "DONE:DRYRUN"
+      EventDone Cancelled -> "DONE:CANCELLED"
+      EventSetupStarted -> "SETUP:STARTED"
+      EventSetupFinished -> "SETUP:FINISHED"
+      EventTeardownStarted -> "TEARDOWN:STARTED"
+      EventTeardownFinished -> "TEARDOWN:FINISHED"
+      EventMilestone msg -> [i|MILESTONE: #{msg}|]
+      EventEndOfStream -> "END_OF_STREAM" -- unreachable, handled above
 
 -- | Poll RTS stats every second and append to a file.
 -- Requires the program to be run with +RTS -T for stats to be available.
