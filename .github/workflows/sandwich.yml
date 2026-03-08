@@ -109,6 +109,17 @@ jobs:
         # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
+        echo "Current LDFLAGS: $LDFLAGS"
+        echo "Current CPPFLAGS: $CPPFLAGS"
+
+        echo "LDFLAGS=-L/opt/homebrew/opt/postgresql@18/lib" >> "$GITHUB_ENV"
+        echo "CPPFLAGS=-I/opt/homebrew/opt/postgresql@18/include" >> "$GITHUB_ENV"
+
+        echo "Original PATH: $PATH"
+        export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"
+        echo "New PATH: $PATH"
+        echo "PATH=$PATH" >> "$GITHUB_ENV"
+
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
