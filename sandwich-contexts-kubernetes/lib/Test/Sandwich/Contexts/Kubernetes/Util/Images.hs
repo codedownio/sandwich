@@ -88,17 +88,33 @@ readImageName path = doesDirectoryExist path >>= \case
   where
     extractFromTarball = do
       files <- readCreateProcessWithLogging (proc "tar" ["tf", path]) ""
-      manifestFileName <- case headMay [t | t <- T.words (toText files), "manifest.json" `T.isInfixOf` t] of
-        Just f -> pure $ toString $ T.strip f
-        Nothing -> expectationFailure [i|readImageName: couldn't find manifest file in #{path}|]
-
-      withSystemTempDirectory "manifest.json" $ \dir -> do
-        _ <- readCreateProcessWithLogging ((proc "tar" ["xvf", path, manifestFileName]) { cwd = Just dir }) ""
-        liftIO (BL.readFile (dir </> "manifest.json")) >>= getImageNameFromManifestJson path
+      let fileList = T.words (toText files)
+      case headMay [t | t <- fileList, "manifest.json" `T.isInfixOf` t] of
+        Just manifestFile -> do
+          let manifestFileName = toString $ T.strip manifestFile
+          withSystemTempDirectory "manifest.json" $ \dir -> do
+            _ <- readCreateProcessWithLogging ((proc "tar" ["xvf", path, manifestFileName]) { cwd = Just dir }) ""
+            liftIO (BL.readFile (dir </> "manifest.json")) >>= getImageNameFromManifestJson path
+        Nothing -> case headMay [t | t <- fileList, "index.json" `T.isInfixOf` t] of
+          Just indexFile -> do
+            let indexFileName = toString $ T.strip indexFile
+            withSystemTempDirectory "index.json" $ \dir -> do
+              _ <- readCreateProcessWithLogging ((proc "tar" ["xvf", path, indexFileName]) { cwd = Just dir }) ""
+              liftIO (BL.readFile (dir </> "index.json")) >>= getImageNameFromOciIndex path
+          Nothing -> expectationFailure [i|readImageName: couldn't find manifest.json or index.json in #{path}|]
 
 readUncompressedImageName :: (HasCallStack, MonadIO m) => FilePath -> m Text
-readUncompressedImageName path = liftIO (BL.readFile (path </> "manifest.json")) >>= getImageNameFromManifestJson path
+readUncompressedImageName path = do
+  let manifestPath = path </> "manifest.json"
+  let indexPath = path </> "index.json"
+  liftIO (doesFileExist manifestPath) >>= \case
+    True -> liftIO (BL.readFile manifestPath) >>= getImageNameFromManifestJson path
+    False ->
+      liftIO (doesFileExist indexPath) >>= \case
+        True -> liftIO (BL.readFile indexPath) >>= getImageNameFromOciIndex path
+        False -> expectationFailure [i|readUncompressedImageName: couldn't find manifest.json or index.json in #{path}|]
 
+-- | Read image name from legacy Docker manifest.json
 getImageNameFromManifestJson :: (HasCallStack, MonadIO m) => FilePath -> LByteString -> m Text
 getImageNameFromManifestJson path contents = do
   case A.eitherDecode contents of
@@ -112,6 +128,17 @@ getImageNameFromManifestJson path contents = do
     getRepoTags :: A.Value -> [Text]
     getRepoTags (A.Object (aesonLookup "RepoTags" -> Just (A.Array repoItems))) = [t | A.String t <- V.toList repoItems]
     getRepoTags _ = []
+
+-- | Read image name from OCI index.json
+getImageNameFromOciIndex :: (HasCallStack, MonadIO m) => FilePath -> LByteString -> m Text
+getImageNameFromOciIndex path contents =
+  case A.eitherDecode contents of
+    Right (A.Object (aesonLookup "manifests" -> Just (A.Array manifests))) ->
+      case headMay [name | A.Object (aesonLookup "annotations" -> Just (A.Object (aesonLookup "org.opencontainers.image.ref.name" -> Just (A.String name)))) <- V.toList manifests] of
+        Just name -> pure name
+        Nothing -> expectationFailure [i|Didn't find org.opencontainers.image.ref.name annotation in OCI index at #{path}|]
+    Left err -> expectationFailure [i|Couldn't decode OCI index.json: #{err}|]
+    Right x -> expectationFailure [i|Unexpected OCI index.json format: #{x}|]
 
 imageLoadSpecToImageName :: (MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => ImageLoadSpec -> m Text
 imageLoadSpecToImageName (ImageLoadSpecTarball image) = readImageName image
