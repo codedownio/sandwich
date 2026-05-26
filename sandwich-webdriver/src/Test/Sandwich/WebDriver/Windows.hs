@@ -15,8 +15,10 @@ module Test.Sandwich.WebDriver.Windows (
   ) where
 
 import Control.Monad.IO.Class
+import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Maybe
+import Data.String.Interpolate
 import Test.Sandwich
 import Test.Sandwich.WebDriver.Internal.Types
 import Test.Sandwich.WebDriver.Resolution
@@ -25,7 +27,7 @@ import Test.WebDriver
 
 
 -- | Position the window on the left 50% of the screen.
-setWindowLeftSide :: (WebDriverMonad m context, MonadReader context m, WebDriver m) => m ()
+setWindowLeftSide :: (WebDriverMonad m context, MonadReader context m, MonadLogger m, WebDriver m) => m ()
 setWindowLeftSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -35,10 +37,12 @@ setWindowLeftSide = do
 
   (screenWidth, screenHeight) <- getScreenPixelDimensions width height
 
+  debug [i|setWindowLeftSide: got screen resolution (x, y, w, h) = #{(x, y, width, height)} and pixel dimensions #{(screenWidth, screenHeight)}|]
+
   setWindowRect $ Rect (fromIntegral x) (fromIntegral y) (realToFrac (screenWidth / 2.0)) (realToFrac screenHeight)
 
 -- | Position the window on the right 50% of the screen.
-setWindowRightSide :: (WebDriverMonad m context, MonadReader context m, WebDriver m) => m ()
+setWindowRightSide :: (WebDriverMonad m context, MonadReader context m, MonadLogger m, WebDriver m) => m ()
 setWindowRightSide = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -48,10 +52,12 @@ setWindowRightSide = do
 
   (screenWidth, screenHeight) <- getScreenPixelDimensions width height
 
+  debug [i|setWindowRightSide: got screen resolution (x, y, w, h) = #{(x, y, width, height)} and pixel dimensions #{(screenWidth, screenHeight)}|]
+
   setWindowRect $ Rect (fromIntegral (x + round (screenWidth / 2.0))) (fromIntegral (y + 0)) (realToFrac (screenWidth / 2.0)) (realToFrac screenHeight)
 
 -- | Fullscreen the browser window.
-setWindowFullScreen :: (WebDriverMonad m context, MonadReader context m, WebDriver m) => m ()
+setWindowFullScreen :: (WebDriverMonad m context, MonadReader context m, MonadLogger m, WebDriver m) => m ()
 setWindowFullScreen = do
   sess <- getContext webdriver
   (x, y, width, height) <- case runMode $ wdOptions sess of
@@ -60,6 +66,8 @@ setWindowFullScreen = do
     _ -> getScreenResolution sess
 
   (screenWidth, screenHeight) <- getScreenPixelDimensions width height
+
+  debug [i|setWindowFullScreen: got screen resolution (x, y, w, h) = #{(x, y, width, height)} and pixel dimensions #{(screenWidth, screenHeight)}|]
 
   setWindowRect $ Rect (fromIntegral x) (fromIntegral y) (realToFrac screenWidth) (realToFrac screenHeight)
 
