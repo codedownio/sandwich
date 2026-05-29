@@ -63,7 +63,8 @@ packages:
 extra-deps:
 # For sandwich-webdriver
 
-- webdriver-0.14.0.0
+- git: https://github.com/haskell-webdriver/haskell-webdriver
+  commit: eb260a82b46bf524cacf566a21d2e63ffe881091
 
 # For sandwich-contexts
 
