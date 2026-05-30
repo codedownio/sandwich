@@ -151,8 +151,6 @@ startTree node@(RunNodeIntroduceWith {..}) ctx' = do
     let wrappedAction = do
           didAllocateVar <- liftIO $ newIORef False
           let handler e = do
-                recordExceptionInStatus runTreeStatus e
-
                 liftIO (readIORef didAllocateVar) >>= \case
                   False -> do
                     -- We didn't successfully allocate, so mark the children below this point as failed due to a
@@ -222,16 +220,15 @@ startTree node@(RunNodeAround {..}) ctx' = do
   runInAsync node ctx $ do
     let opts = baseContextOptions (getBaseContext ctx)
     let wrappedAction = do
-          flip withException (\e -> recordExceptionInStatus runTreeStatus e) $ do
-            liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventSetupStarted
-            runNodeActionWith $ do
-              setupFinishTime <- liftIO getCurrentTime
-              addSetupFinishTimeToStatus runTreeStatus setupFinishTime
-              liftIO $ emitEvent opts setupFinishTime runTreeId runTreeLabel EventSetupFinished
-              results <- liftIO $ runNodesSequentially runNodeChildren ctx
-              liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownStarted
-              liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupFinishTime)
-              return results
+          liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventSetupStarted
+          runNodeActionWith $ do
+            setupFinishTime <- liftIO getCurrentTime
+            addSetupFinishTimeToStatus runTreeStatus setupFinishTime
+            liftIO $ emitEvent opts setupFinishTime runTreeId runTreeLabel EventSetupFinished
+            results <- liftIO $ runNodesSequentially runNodeChildren ctx
+            liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownStarted
+            liftIO $ writeIORef didRunWrappedAction (Right results, mkSetupTimingInfo setupFinishTime)
+            return results
 
           liftIO getCurrentTime >>= \t -> liftIO $ emitEvent opts t runTreeId runTreeLabel EventTeardownFinished
           (liftIO $ readIORef didRunWrappedAction) >>= \case
