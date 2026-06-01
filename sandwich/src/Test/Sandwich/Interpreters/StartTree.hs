@@ -390,12 +390,16 @@ shouldRunChild' ctx common = case baseContextOnlyRunIds $ getBaseContext ctx of
 
 -- * Running examples
 
-runExampleM :: HasBaseContext r => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r () -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
+runExampleM :: (
+  HasBaseContext r
+  ) => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r () -> r -> TVar (Seq LogEntry) -> Maybe String -> IO Result
 runExampleM rnc label ex ctx logs exceptionMessage = runExampleM' rnc label ex ctx logs exceptionMessage >>= \case
   Left err -> return $ Failure err
   Right () -> return Success
 
-runExampleM' :: HasBaseContext r => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
+runExampleM' :: (
+  HasBaseContext r
+  ) => RunNodeCommonWithStatus (TVar Status) l t -> String -> ExampleM r a -> r -> TVar (Seq LogEntry) -> Maybe String -> IO (Either FailureReason a)
 runExampleM' rnc label ex ctx logs exceptionMessage = do
   maybeTestDirectory <- getTestDirectory ctx
   let options = baseContextOptions $ getBaseContext ctx
