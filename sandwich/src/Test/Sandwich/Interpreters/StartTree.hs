@@ -102,7 +102,7 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
     let opts = baseContextOptions (getBaseContext ctx)
     liftIO $ E.bracket
       (do
-          let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduceWith #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
+          let asyncExceptionResult e = Failure $ GotAsyncException Nothing (Just [i|introduce #{runTreeLabel} alloc handler got async exception|]) (SomeAsyncExceptionWithEq e)
           let label = runTreeLabel <> " (setup)"
           getCurrentTime >>= \t -> emitEvent opts t runTreeId runTreeLabel EventSetupStarted
           flip withException (\(e :: SomeAsyncException) -> markAllChildrenWithResult runNodeChildrenAugmented ctx (asyncExceptionResult e)) $ do
