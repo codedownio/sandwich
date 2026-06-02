@@ -122,7 +122,7 @@ aroundAsyncExceptionDuringTest = do
   rts <- startSandwichTree defaultOptions $ around "around label" void $ do
     it "does thing 1" $ do
       putMVar mvar ()
-      threadDelay 999999999999999
+      sleepForever
 
   topNode <- case rts of
     [x@(RunNodeAround {runNodeChildren=[RunNodeIt {}]})] -> pure x
