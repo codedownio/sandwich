@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - uses: cachix/install-nix-action@v27
       with:
@@ -26,7 +26,7 @@ jobs:
         enable-stack: true
         stack-version: "latest"
 
-    - uses: actions/cache/restore@v4
+    - uses: actions/cache/restore@v5
       name: Cache restore ~/.stack
       id: cache-restore
       with:
@@ -42,7 +42,7 @@ jobs:
       run: |
         stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
-    - uses: actions/cache/save@v4
+    - uses: actions/cache/save@v5
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
         path: ~/.stack
@@ -87,7 +87,7 @@ jobs:
           ghc: 9.0.2
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - uses: cachix/install-nix-action@v31
       if: runner.os != 'Windows'
@@ -137,7 +137,7 @@ jobs:
     - name: Freeze
       run: cabal freeze
 
-    - uses: actions/cache/restore@v4
+    - uses: actions/cache/restore@v5
       id: cache-restore
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -167,14 +167,14 @@ jobs:
       if: runner.os != 'Windows'
       run: cabal test sandwich-webdriver --test-option="--headless" --test-option="--chrome-no-sandbox"
 
-    - uses: actions/cache/save@v4
+    - uses: actions/cache/save@v5
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
 
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-cabal-${{ runner.os }}-${{ matrix.ghc }}
@@ -207,7 +207,7 @@ jobs:
           yaml: "stack-9.12.2.yaml"
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - uses: cachix/install-nix-action@v31
       with:
@@ -221,7 +221,7 @@ jobs:
         enable-stack: true
         stack-version: "latest"
 
-    - uses: actions/cache/restore@v4
+    - uses: actions/cache/restore@v5
       name: Cache restore ~/.stack
       id: cache-restore
       with:
@@ -269,14 +269,14 @@ jobs:
       if: always() && runner.os != 'Windows'
       run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox --fixed-root sandwich-webdriver/test_runs/run"
 
-    - uses: actions/cache/save@v4
+    - uses: actions/cache/save@v5
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
 
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: always()
       with:
         name: test-results-stack-${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}
