@@ -65,7 +65,7 @@ defaultPostgresK8SOptions namespace = PostgresK8SOptions {
 
 -- | Introduce a PostgreSQL server on a Kubernetes cluster.
 introduceK8SPostgresServer :: (
-  Typeable context, KubectlBasicWithoutReader context m
+  KubectlBasicWithoutReader context m
   )
   -- | Options
   => PostgresK8SOptions
@@ -78,7 +78,7 @@ introduceK8SPostgresServer options =
 
 -- | Same as 'introduceK8SPostgresServer', but allows you to pass in the 'KubernetesClusterContext'.
 introduceK8SPostgresServer' :: (
-  Typeable context, KubectlBasic context m
+  KubectlBasic context m
   )
   => KubernetesClusterContext
   -- | Options
