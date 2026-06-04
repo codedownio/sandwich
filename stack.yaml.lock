@@ -5,16 +5,12 @@
 
 packages:
 - completed:
-    commit: eb260a82b46bf524cacf566a21d2e63ffe881091
-    git: https://github.com/haskell-webdriver/haskell-webdriver
-    name: webdriver
+    hackage: webdriver-0.15.0.0@sha256:27ebd26d67ae99ce56b550d0f70095559aaf7d5c99a1d70cb9cdc54c34c91f43,6557
     pantry-tree:
-      sha256: 4cd6ff71e432ff23285a7c2b9584bf5c55e396e69d83991fe359f2ab976087e9
-      size: 6739
-    version: 0.14.0.0
+      sha256: dd49af2f5f087b1e8a19c49aad3951df65ce0188c48928c8c6b36a6ee6f346bb
+      size: 5700
   original:
-    commit: eb260a82b46bf524cacf566a21d2e63ffe881091
-    git: https://github.com/haskell-webdriver/haskell-webdriver
+    hackage: webdriver-0.15.0.0
 - completed:
     commit: 3e665784228cba7261560c104b8f1d928e7b5bd4
     git: https://github.com/minio/minio-hs
