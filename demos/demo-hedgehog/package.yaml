@@ -19,12 +19,11 @@ default-extensions:
 - FlexibleInstances
 - LambdaCase
 
-ghc-options:
-- -threaded
-- -rtsopts
-- -with-rtsopts=-N
-
 executables:
   demo-hedgehog:
     main: Main.hs
     source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N

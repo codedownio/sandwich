@@ -5,7 +5,6 @@ import Control.Monad.IO.Unlift
 import qualified Data.List as L
 import Data.String.Interpolate
 import Relude
-import System.Exit
 import qualified System.Random as R
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
