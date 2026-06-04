@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -40,8 +41,10 @@ setNoWayland caps = caps
   & over (capabilitiesGoogChromeOptions . _Just . chromeOptionsArgs)
          (Just . ("--ozone-platform=x11" :) . fromMaybe mempty)
 
+#if MIN_VERSION_webdriver(0,15,0)
   & over (capabilitiesMozFirefoxOptions . _Just . firefoxOptionsEnv)
     (Just . (M.insert "MOZ_ENABLE_WAYLAND" "0") . fromMaybe mempty)
+#endif
 
   & return
 
