@@ -1,4 +1,11 @@
 
+-- jose-jwt-0.10.0 (pulled in transitively via haskell-oidc-client) uses memory's
+-- Data.ByteArray.ByteArrayAccess instances on crypton types (HMAC, Ed25519/Ed448 keys).
+-- crypton 1.1.0 dropped its dependency on memory (switched to ram), removing those
+-- instances, so jose-jwt-0.10.0 fails to build against crypton >= 1.1. Cap it until
+-- jose-jwt gains crypton-1.1 support.
+constraints: crypton < 1.1
+
 packages:
     ./sandwich/
   , ./sandwich-contexts/
