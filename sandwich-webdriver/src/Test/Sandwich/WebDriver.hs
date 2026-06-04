@@ -208,6 +208,9 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
             , driverConfigLogDir = runRoot
 #endif
             , driverConfigChromedriverFlags = chromedriverExtraFlags wdOptions
+#if MIN_VERSION_webdriver(0,15,0)
+            , driverConfigChromedriverExtraEnv = mempty
+#endif
             }
       return (caps, driverConfig)
     BrowserDependenciesFirefox {..} -> do
@@ -234,6 +237,9 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
 #endif
             , driverConfigGeckodriverFlags = "--profile-root" : profileRootDir : geckodriverExtraFlags wdOptions
             -- , driverConfigGeckodriverFlags = geckodriverExtraFlags wdOptions
+#if MIN_VERSION_webdriver(0,15,0)
+            , driverConfigGeckodriverExtraEnv = mempty
+#endif
             }
       return (caps, driverConfig)
 
