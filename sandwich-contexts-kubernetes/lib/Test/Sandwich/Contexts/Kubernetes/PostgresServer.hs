@@ -30,7 +30,6 @@ module Test.Sandwich.Contexts.Kubernetes.PostgresServer (
   ) where
 
 import Control.Monad
-import Control.Monad.IO.Unlift
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
@@ -39,10 +38,8 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes
 import Test.Sandwich.Contexts.Kubernetes.Images
-import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.PostgreSQL
-import Test.Sandwich.Contexts.Types.Network
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
@@ -94,7 +91,7 @@ introduceK8SPostgresServer' kcc options =
 
 -- | Bracket-style variant of 'introduceK8SPostgresServer'.
 withK8SPostgresServer :: (
-  Typeable context, MonadFail m, KubernetesBasic context m, HasFile context "kubectl"
+  MonadFail m, KubernetesBasic context m, HasFile context "kubectl"
   )
   => KubernetesClusterContext
   -- | Options
@@ -107,7 +104,7 @@ withK8SPostgresServer kcc options action = do
 
 -- | Same as 'withK8SPostgresServer', but allows you to pass in the @kubectl@ binary.
 withK8SPostgresServer' :: forall m context. (
-  Typeable context, MonadFail m, KubernetesBasic context m
+  MonadFail m, KubernetesBasic context m
   )
   -- | Path to kubectl binary
   => FilePath

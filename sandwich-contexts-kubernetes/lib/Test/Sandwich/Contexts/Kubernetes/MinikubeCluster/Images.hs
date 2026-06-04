@@ -34,7 +34,7 @@ import UnliftIO.Temporary
 
 -- | Load an image onto a cluster. This image can come from a variety of sources, as specified by the 'ImageLoadSpec'.
 loadImageMinikube :: (
-  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, MonadFail m, HasBaseContextMonad context m
+  HasCallStack, MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
   )
   -- | Path to @minikube@ binary
   => FilePath

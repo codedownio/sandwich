@@ -301,7 +301,11 @@ runInAsync node ctx action = do
           _ -> do
             whenJust baseContextErrorSymlinksDir $ \errorsDir ->
               whenJust baseContextPath $ \dir -> do
+#ifndef mingw32_HOST_OS
                 whenJust baseContextRunRoot $ \runRoot -> do
+#else
+                whenJust baseContextRunRoot $ \_runRoot -> do
+#endif
                   let symlinkBaseName = case runTreeLoc of
                         Nothing -> takeFileName dir
                         Just loc -> [i|#{srcLocFile loc}_line#{srcLocStartLine loc}_#{takeFileName dir}|]
