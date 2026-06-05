@@ -1,7 +1,14 @@
 # Changelog for sandwich-webdriver
 
-# Unreleased
-* Put geckodriver --profile-root at run root to deal with long path issues
+# 0.5.0.0
+
+* Support `webdriver-0.15.0.0`.
+* BREAKING CHANGE: remove `capabilities` from `WdOptions`; use `modifyCapabilities` to adjust capabilities before session creation.
+* Add `getWdCapabilities` accessor.
+* Add debug logging to `setWindow*` functions.
+* Remove Chrome user data dirs created in the test artifacts tree.
+* Use the latest `sandwich` process file logging and managed asyncs.
+* Put geckodriver --profile-root at run root to deal with long path issues.
 
 # 0.4.0.2
 
