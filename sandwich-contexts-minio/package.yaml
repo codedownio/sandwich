@@ -1,5 +1,5 @@
 name: sandwich-contexts-minio
-version: 0.1.0.2
+version: 0.1.0.3
 synopsis: Sandwich test contexts for MinIO
 license: BSD3
 description: Please see README.md
@@ -8,7 +8,7 @@ maintainer: tom@codedown.io
 copyright: 2025 Tom McLaughlin
 dependencies:
 - base >= 4.11 && < 5
-- sandwich >= 0.3.0.3
+- sandwich >= 0.3.1.0
 - unliftio
 
 default-extensions:
