@@ -1,5 +1,15 @@
 # Changelog for sandwich-contexts-kubernetes
 
+## 0.1.3.0
+
+* Add `Test.Sandwich.Contexts.Kubernetes.PostgresServer`.
+* Add `Test.Sandwich.Contexts.Kubernetes.Typesense`.
+* Support reading the image name from OCI images.
+* Be able to install the MinIO operator from Nix.
+* Be able to install Kata Containers from a Helm chart, and drop the legacy KataContainers method.
+* Export `KustomizationDir` from `Test.Sandwich.Contexts.Kubernetes.MinioS3Server`.
+* Use the latest `sandwich` process file logging and managed asyncs.
+
 ## 0.1.2.0
 
 * Add `getKubectlEnvironment`, similar to `askKubectlEnvironment` but not requiring reader context.
