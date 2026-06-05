@@ -1,5 +1,18 @@
 # Changelog for sandwich
 
+## 0.3.1.0
+
+* Add a socket formatter (`Test.Sandwich.Formatters.Socket`) and a TUI debug socket (`Test.Sandwich.Formatters.TerminalUI.DebugSocket`).
+* Add process file logging in `Test.Sandwich.Logging.ProcessFileLogging` (`createProcessWithFileLogging`).
+* Add `Test.Sandwich.ManagedAsync`.
+* Add `Test.Sandwich.Instrumentation`.
+* Better avoid hangs from long running nodes (#118, #119).
+* Make `--log-events` capture all the way up to the end of `runSandwich'`.
+* Add `--list-tests-json`.
+* Improve speedscope timing (#114).
+* Fix an exception race and a typo in the introduce async exception handler.
+* Remove spaces from `defaultTestArtifactsDirectory`.
+
 ## 0.3.0.5
 
 * Preserve configured test artifacts directory (#109)
