@@ -1,6 +1,9 @@
 # Changelog for sandwich-slack
 
-## Unreleased changes
+## 0.2.0.0
+
+* BREAKING CHANGE: switch most monads away from using `MonadBaseControl IO` and switch to `MonadUnliftIO`.
+* Windows support improvements.
 
 ## 0.1.2.0
 
