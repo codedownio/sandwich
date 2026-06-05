@@ -1,5 +1,5 @@
 name: sandwich-contexts
-version: 0.3.0.3
+version: 0.3.0.4
 synopsis: Contexts for the Sandwich test library
 license: BSD3
 description: Please see the <https://codedownio.github.io/sandwich documentation>.
@@ -12,7 +12,7 @@ extra-source-files:
 
 dependencies:
 - base >= 4.11 && < 5
-- sandwich >= 0.3.0.0
+- sandwich >= 0.3.1.0
 - unliftio
 
 default-extensions:

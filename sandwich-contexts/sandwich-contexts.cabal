@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           sandwich-contexts
-version:        0.3.0.3
+version:        0.3.0.4
 synopsis:       Contexts for the Sandwich test library
 description:    Please see the <https://codedownio.github.io/sandwich documentation>.
 author:         Tom McLaughlin
@@ -74,7 +74,7 @@ library
     , relude
     , retry
     , safe
-    , sandwich >=0.3.0.0
+    , sandwich >=0.3.1.0
     , streaming-commons >=0.2.3.0
     , string-interpolate
     , temporary
@@ -116,7 +116,7 @@ test-suite tests
       base >=4.11 && <5
     , filepath
     , relude
-    , sandwich >=0.3.0.0
+    , sandwich >=0.3.1.0
     , sandwich-contexts
     , string-interpolate
     , unliftio

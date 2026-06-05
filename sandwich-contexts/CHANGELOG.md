@@ -1,5 +1,12 @@
 # Changelog for sandwich-contexts
 
+## 0.3.0.4
+
+* Use the latest process file logging and managed asyncs from `sandwich`.
+* Use a more modern `fake-smtp-server` derivation.
+* Bump `nixpkgsMaster` (now has Chrome 138).
+* Fix a typo in `introduceBinaryViaNixPackage`.
+
 ## 0.3.0.3
 
 * Use --no-link in Nix builds to avoid unnecessary result symlinks.
