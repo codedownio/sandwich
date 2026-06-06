@@ -27,8 +27,13 @@ fixedHeightOrViewportPercent vpName maxHeightPercent w =
 
     if imageHeight (image result) <= maxHeight
       then return result
-      -- Otherwise put the contents (pre-rendered) in a viewport
-      -- and limit the height to the maximum allowable height.
+      -- Otherwise put the contents in a viewport and limit the height to the
+      -- maximum allowable height. Show a scroll bar on the right so it's clear
+      -- the content is scrollable. Re-render the content slightly narrower than
+      -- the available width so its right border is drawn just left of the
+      -- scroll bar, which occupies the viewport's rightmost column, rather than
+      -- underneath it.
       else render (vLimit maxHeight $
+                   withVScrollBars OnRight $
                    viewport vpName Vertical $
-                   Widget Fixed Fixed $ return result)
+                   hLimit (ctx ^. availWidthL - 2) w)
