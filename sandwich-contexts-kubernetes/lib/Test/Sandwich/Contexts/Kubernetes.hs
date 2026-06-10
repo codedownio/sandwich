@@ -49,6 +49,23 @@ module Test.Sandwich.Contexts.Kubernetes (
   -- * Port forwarding
   , module Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
 
+  -- * Metrics server
+  , installMetricsServer
+  , introduceMetricsServer
+  , withMetricsServer
+  , MetricsServerOptions(..)
+  , MetricsServerManifestSource(..)
+  , defaultMetricsServerOptions
+
+  -- * OOM watcher
+  , checkForOOMKills
+  , withOOMWatcher
+
+  -- * Memory watcher
+  , withMemoryWatcher
+  , MemoryWatcherOptions(..)
+  , defaultMemoryWatcherOptions
+
   -- * Types
   , kubernetesCluster
   , KubernetesClusterContext(..)
@@ -74,6 +91,9 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.KubectlLogs
 import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
+import Test.Sandwich.Contexts.Kubernetes.MemoryWatcher
+import Test.Sandwich.Contexts.Kubernetes.MetricsServer
+import Test.Sandwich.Contexts.Kubernetes.OOMWatcher
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Waits
 
