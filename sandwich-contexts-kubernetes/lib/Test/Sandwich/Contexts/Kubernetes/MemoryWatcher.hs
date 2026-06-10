@@ -61,6 +61,10 @@ data MemoryWatcherOptions = MemoryWatcherOptions {
   memoryWatcherIntervalMicros :: Int
   -- | Whether to render the SVG chart (in addition to the CSV and peak summary).
   , memoryWatcherWriteSvg :: Bool
+  -- | When 'True', use @kubectl top pods --containers@ to break down memory
+  -- by container within each pod. The identifier in output files becomes
+  -- @pod\/container@ instead of just @pod@.
+  , memoryWatcherContainerLevel :: Bool
   } deriving (Show, Eq)
 
 -- | Sample every 5s and render the SVG.
@@ -68,6 +72,7 @@ defaultMemoryWatcherOptions :: MemoryWatcherOptions
 defaultMemoryWatcherOptions = MemoryWatcherOptions {
   memoryWatcherIntervalMicros = 5_000_000
   , memoryWatcherWriteSvg = True
+  , memoryWatcherContainerLevel = False
   }
 
 -- | (elapsedSeconds, cpuMillicores, memoryBytes)
@@ -109,13 +114,17 @@ withMemoryWatcher' kcc kubectlBinary namespace (MemoryWatcherOptions {..}) actio
   startTime <- liftIO getCurrentTime
   samplesRef <- newIORef (M.empty :: Map Text [Sample])
 
+  let topArgs = ["top", "pods", "-n", toString namespace, "--no-headers"]
+               <> ["--containers" | memoryWatcherContainerLevel]
+      parseRow = if memoryWatcherContainerLevel then parseContainerTopOutput else parseTopOutput
+
   let pollOnce = do
         now <- liftIO getCurrentTime
         let elapsed = realToFrac (diffUTCTime now startTime) :: Double
-        (ec, out, _) <- readCreateProcessWithExitCode ((proc kubectlBinary ["top", "pods", "-n", toString namespace, "--no-headers"]) { env = Just env }) ""
+        (ec, out, _) <- readCreateProcessWithExitCode ((proc kubectlBinary topArgs) { env = Just env }) ""
         when (ec == ExitSuccess) $
-          forM_ (parseTopOutput (toText out)) $ \(pod, cpuM, memBytes) ->
-            modifyIORef' samplesRef (M.insertWith (\new old -> old <> new) pod [(elapsed, cpuM, memBytes)])
+          forM_ (parseRow (toText out)) $ \(key, cpuM, memBytes) ->
+            modifyIORef' samplesRef (M.insertWith (\new old -> old <> new) key [(elapsed, cpuM, memBytes)])
 
   let loop = forever $ do
         handleAny (\e -> debug [i|(#{namespace}) kubectl top sample failed: #{e}|]) pollOnce
@@ -163,6 +172,15 @@ parseTopOutput = mapMaybe parseLine . lines
   where
     parseLine l = case words l of
       (name : cpu : mem : _) -> Just (name, parseCpu cpu, parseMem mem)
+      _ -> Nothing
+
+-- | Parse the output of @kubectl top pods --containers --no-headers@ into
+-- @(pod\/container, cpuMillicores, memoryBytes)@ triples.
+parseContainerTopOutput :: Text -> [(Text, Integer, Integer)]
+parseContainerTopOutput = mapMaybe parseLine . lines
+  where
+    parseLine l = case words l of
+      (pod : container : cpu : mem : _) -> Just (pod <> "/" <> container, parseCpu cpu, parseMem mem)
       _ -> Nothing
 
 -- | Parse a kubectl CPU quantity (e.g. @12m@, @1@) into millicores.
