@@ -61,7 +61,7 @@ spec = describe "Kubernetes instrumentation demo" $
 
         info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
         withOOMWatcher demoNamespace $
-          withResourceWatcher demoNamespace defaultResourceWatcherOptions $
+          withResourceWatcher' demoNamespace defaultResourceWatcherOptions $
             threadDelay 60_000_000
 
         getCurrentFolder >>= \case
