@@ -1,14 +1,14 @@
 {-|
 
-Parsers for @kubectl top pods@ output, shared by the memory and CPU watchers
-("Test.Sandwich.Contexts.Kubernetes.MemoryWatcher" and
-"Test.Sandwich.Contexts.Kubernetes.CpuWatcher").
+Helpers for @kubectl top pods@ output and namespace selection, shared by the
+resource watcher ("Test.Sandwich.Contexts.Kubernetes.ResourceWatcher") and the OOM
+watcher ("Test.Sandwich.Contexts.Kubernetes.OOMWatcher").
 
 -}
 
 module Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (
-  parseTopOutput
-  , parseContainerTopOutput
+  namespaceArgs
+  , parseTop
   , parseCpu
   , parseMem
   ) where
@@ -17,22 +17,25 @@ import qualified Data.Text as T
 import Relude
 
 
--- | Parse the output of @kubectl top pods --no-headers@ into
--- @(pod, cpuMillicores, memoryBytes)@ triples.
-parseTopOutput :: Text -> [(Text, Integer, Integer)]
-parseTopOutput = mapMaybe parseLine . lines
-  where
-    parseLine l = case words l of
-      (name : cpu : mem : _) -> Just (name, parseCpu cpu, parseMem mem)
-      _ -> Nothing
+-- | @kubectl@ args selecting a namespace, or all namespaces when 'Nothing'.
+namespaceArgs :: Maybe Text -> [String]
+namespaceArgs = maybe ["--all-namespaces"] (\ns -> ["-n", toString ns])
 
--- | Parse the output of @kubectl top pods --containers --no-headers@ into
--- @(pod\/container, cpuMillicores, memoryBytes)@ triples.
-parseContainerTopOutput :: Text -> [(Text, Integer, Integer)]
-parseContainerTopOutput = mapMaybe parseLine . lines
+-- | Parse @kubectl top pods --no-headers@ output into @(key, cpuMillicores,
+-- memoryBytes)@ triples. The last two columns are always CPU and memory; every
+-- leading column is part of the identifier, joined with @\/@. This handles all
+-- shapes without extra flags:
+--
+--   * @pod@                              (default)
+--   * @pod\/container@                   (@--containers@)
+--   * @namespace\/pod@                   (@--all-namespaces@)
+--   * @namespace\/pod\/container@        (@--all-namespaces --containers@)
+parseTop :: Text -> [(Text, Integer, Integer)]
+parseTop = mapMaybe parseLine . lines
   where
-    parseLine l = case words l of
-      (pod : container : cpu : mem : _) -> Just (pod <> "/" <> container, parseCpu cpu, parseMem mem)
+    parseLine l = case reverse (words l) of
+      (mem : cpu : ident@(_ : _)) ->
+        Just (T.intercalate "/" (reverse ident), parseCpu cpu, parseMem mem)
       _ -> Nothing
 
 -- | Parse a kubectl CPU quantity (e.g. @12m@, @1@) into millicores.

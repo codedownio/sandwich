@@ -16,6 +16,9 @@ its Service endpoint is removed, kube-proxy installs a "no endpoints" REJECT for
 the NodePort, and clients start getting "connection refused". These helpers let
 you detect it explicitly and fail the test instead.
 
+By default the watch covers all namespaces; set 'oomWatcherNamespace' to scope it
+to one (e.g. so a test that deliberately OOMKills a pod elsewhere doesn't trip it).
+
 -}
 
 module Test.Sandwich.Contexts.Kubernetes.OOMWatcher (
@@ -30,6 +33,10 @@ module Test.Sandwich.Contexts.Kubernetes.OOMWatcher (
   , findOOMKilled'
   , checkForOOMKills'
   , withOOMWatcher''
+
+  -- * Options
+  , OOMWatcherOptions(..)
+  , defaultOOMWatcherOptions
   ) where
 
 import Control.Monad
@@ -44,19 +51,35 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
+import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs)
 import UnliftIO.Async (withAsync)
 import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Exception
 import UnliftIO.Process
 
 
--- | One-shot: fail if any container in @namespace@ is/was OOMKilled. Reader-based
--- version that obtains the cluster and @kubectl@ binary from the context.
+data OOMWatcherOptions = OOMWatcherOptions {
+  -- | Namespace to watch, or all namespaces when 'Nothing' (the default).
+  oomWatcherNamespace :: Maybe Text
+  } deriving (Show, Eq)
+
+-- | Watch all namespaces.
+defaultOOMWatcherOptions :: OOMWatcherOptions
+defaultOOMWatcherOptions = OOMWatcherOptions {
+  oomWatcherNamespace = Nothing
+  }
+
+-- | Human-readable description of the watched scope.
+scopeLabel :: Maybe Text -> Text
+scopeLabel = maybe "all namespaces" (\ns -> [i|namespace '#{ns}'|])
+
+-- | One-shot: fail if any container is/was OOMKilled. Reader-based version that
+-- obtains the cluster and @kubectl@ binary from the context.
 checkForOOMKills :: (
   KubectlBasic context m
   )
-  -- | Namespace to check
-  => Text
+  -- | Namespace to check, or all namespaces when 'Nothing'
+  => Maybe Text
   -> m ()
 checkForOOMKills namespace = do
   kcc <- getContext kubernetesCluster
@@ -64,62 +87,60 @@ checkForOOMKills namespace = do
   checkForOOMKills' kcc kubectlBinary namespace
 
 -- | Around-style spec node: run the wrapped subtree with a background pod-status
--- watch on @namespace@, failing the run at the end if any container is observed
--- OOMKilled. The spec-level counterpart to the action-level 'withOOMWatcher'',
--- mirroring 'Test.Sandwich.Contexts.Kubernetes.Namespace.withKubernetesNamespace'.
+-- watch, failing the run at the end if any container is observed OOMKilled. The
+-- spec-level counterpart to the action-level 'withOOMWatcher'', mirroring
+-- 'Test.Sandwich.Contexts.Kubernetes.Namespace.withKubernetesNamespace'.
 withOOMWatcher :: (
   KubectlBasicWithoutReader context m
   )
-  -- | Namespace to watch
-  => Text
+  => OOMWatcherOptions
   -> SpecFree context m ()
   -> SpecFree context m ()
-withOOMWatcher namespace = around [i|Watch for OOMKills in namespace '#{namespace}'|]
-  (void . withOOMWatcher' namespace)
+withOOMWatcher options = around [i|Watch for OOMKills in #{scopeLabel (oomWatcherNamespace options)}|]
+  (void . withOOMWatcher' options)
 
--- | Run @action@ with a background pod-status watch on @namespace@, failing the
--- run at the end if any container is observed OOMKilled. Reader-based version.
+-- | Run @action@ with a background pod-status watch, failing the run at the end
+-- if any container is observed OOMKilled. Reader-based version.
 withOOMWatcher' :: (
   KubectlBasic context m
   )
-  -- | Namespace to watch
-  => Text
+  => OOMWatcherOptions
   -> m a
   -> m a
-withOOMWatcher' namespace action = do
+withOOMWatcher' options action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  withOOMWatcher'' kcc kubectlBinary namespace action
+  withOOMWatcher'' kcc kubectlBinary options action
 
--- | Returns a human-readable pod listing if any container in @namespace@ is (or
--- was, via @lastState@) OOMKilled, else Nothing.
+-- | Returns a human-readable pod listing if any container is (or was, via
+-- @lastState@) OOMKilled, else Nothing. Checks one namespace, or all when 'Nothing'.
 findOOMKilled' :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> Text -> m (Maybe String)
+  ) => KubernetesClusterContext -> FilePath -> Maybe Text -> m (Maybe String)
 findOOMKilled' kcc kubectlBinary namespace = do
   env <- getKubectlEnvironment kcc
   let runK args = readCreateProcessWithFileLogging ((proc kubectlBinary args) { env = Just env }) ""
 
-  reasons <- runK ["get", "pods", "-n", toString namespace, "-o"
-                  , "jsonpath={range .items[*]}{range .status.containerStatuses[*]}{.state.terminated.reason} {.lastState.terminated.reason} {end}{end}"]
+  reasons <- runK (["get", "pods"] <> namespaceArgs namespace <> ["-o"
+                  , "jsonpath={range .items[*]}{range .status.containerStatuses[*]}{.state.terminated.reason} {.lastState.terminated.reason} {end}{end}"])
 
   if "OOMKilled" `L.isInfixOf` reasons
-    then Just <$> runK ["get", "pods", "-n", toString namespace, "-o", "wide"]
+    then Just <$> runK (["get", "pods"] <> namespaceArgs namespace <> ["-o", "wide"])
     else return Nothing
 
--- | One-shot: fail if any container in @namespace@ is/was OOMKilled.
+-- | One-shot: fail if any container is/was OOMKilled (one namespace, or all when 'Nothing').
 checkForOOMKills' :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> Text -> m ()
+  ) => KubernetesClusterContext -> FilePath -> Maybe Text -> m ()
 checkForOOMKills' kcc kubectlBinary namespace =
   findOOMKilled' kcc kubectlBinary namespace >>= \case
     Nothing -> return ()
-    Just detail -> expectationFailure [i|Detected an OOMKilled container in namespace #{namespace} (memory/resource misconfiguration). Pods:\n#{detail}|]
+    Just detail -> expectationFailure [i|Detected an OOMKilled container in #{scopeLabel namespace} (memory/resource misconfiguration). Pods:\n#{detail}|]
 
--- | Run @action@ with a background pod-status *watch* on @namespace@, failing the
--- run at the end if any container is observed OOMKilled.
+-- | Run @action@ with a background pod-status *watch*, failing the run at the end
+-- if any container is observed OOMKilled.
 --
 -- Container OOMKills produce no kubectl event (verified empirically) -- the only
 -- signal is @.status.containerStatuses[].{state,lastState}.terminated.reason@. So
@@ -133,15 +154,18 @@ checkForOOMKills' kcc kubectlBinary namespace =
 withOOMWatcher'' :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> Text -> m a -> m a
-withOOMWatcher'' kcc kubectlBinary namespace action = do
+  ) => KubernetesClusterContext -> FilePath -> OOMWatcherOptions -> m a -> m a
+withOOMWatcher'' kcc kubectlBinary (OOMWatcherOptions {..}) action = do
   env <- getKubectlEnvironment kcc
   oomRef <- newIORef Nothing
+
+  let scope = scopeLabel oomWatcherNamespace
+  let nsArgs = namespaceArgs oomWatcherNamespace
 
   -- Grab a fuller `-o wide` listing for the failure message; fall back to the raw
   -- watch line if that kubectl call fails.
   let snapshot fallback = handleAny (const (return fallback)) $
-        readCreateProcessWithFileLogging ((proc kubectlBinary ["get", "pods", "-n", toString namespace, "-o", "wide"]) { env = Just env }) ""
+        readCreateProcessWithFileLogging ((proc kubectlBinary (["get", "pods"] <> nsArgs <> ["-o", "wide"])) { env = Just env }) ""
 
   let handleLine line = when ("OOMKilled" `L.isInfixOf` line) $ do
         existing <- readIORef oomRef
@@ -150,7 +174,7 @@ withOOMWatcher'' kcc kubectlBinary namespace action = do
   -- One streaming watch attempt: read one table row per pod update until it ends
   -- (EOF). A row whose STATUS is "OOMKilled" means a container was OOM-killed.
   let oneWatch = bracket
-        (createProcess (proc kubectlBinary [ "get", "pods", "-n", toString namespace, "--watch", "--no-headers" ]) { env = Just env, std_out = CreatePipe, std_err = CreatePipe, create_group = True })
+        (createProcess (proc kubectlBinary (["get", "pods"] <> nsArgs <> ["--watch", "--no-headers"])) { env = Just env, std_out = CreatePipe, std_err = CreatePipe, create_group = True })
         (liftIO . cleanupProcess)
         (\(_, mHOut, _, _) -> case mHOut of
             Nothing -> return ()
@@ -162,15 +186,15 @@ withOOMWatcher'' kcc kubectlBinary namespace action = do
 
   -- Watches drop periodically; re-establish until the action finishes (cancel).
   let watchForever = forever $ do
-        handleAny (\e -> debug [i|(#{namespace}) OOM pod-watch ended, re-establishing: #{e}|]) oneWatch
+        handleAny (\e -> debug [i|(#{scope}) OOM pod-watch ended, re-establishing: #{e}|]) oneWatch
         threadDelay 1_000_000
 
   let finalCheck = do
         -- belt and suspenders: also do a one-shot check at teardown
-        direct <- handleAny (const (return Nothing)) (findOOMKilled' kcc kubectlBinary namespace)
+        direct <- handleAny (const (return Nothing)) (findOOMKilled' kcc kubectlBinary oomWatcherNamespace)
         watched <- readIORef oomRef
         case (case watched of { Just d -> Just d; Nothing -> direct }) of
-          Just detail -> expectationFailure [i|Detected an OOMKilled container in namespace #{namespace} during the run (memory/resource misconfiguration). Pods:\n#{detail}|]
+          Just detail -> expectationFailure [i|Detected an OOMKilled container in #{scope} during the run (memory/resource misconfiguration). Pods:\n#{detail}|]
           Nothing -> return ()
 
   finally (withAsync watchForever (const action)) finalCheck

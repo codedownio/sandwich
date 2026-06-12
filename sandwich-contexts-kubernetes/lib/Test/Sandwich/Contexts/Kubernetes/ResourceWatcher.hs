@@ -18,6 +18,9 @@ artifacts are written into the current test folder:
 
 CPU is reported in millicores, exactly as @kubectl top@ reports it (@1000m@ = one core).
 
+By default it watches all namespaces; set 'resourceWatcherNamespace' to scope it to
+one. When watching all namespaces the pod identifier is @namespace\/pod@.
+
 This requires the [metrics-server](https://github.com/kubernetes-sigs/metrics-server)
 to be installed (see "Test.Sandwich.Contexts.Kubernetes.MetricsServer"). If it
 isn't, @kubectl top@ just fails, no samples are collected, and the watcher quietly
@@ -55,7 +58,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (parseContainerTopOutput, parseTopOutput)
+import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs, parseTop)
 import Test.Sandwich.Contexts.Kubernetes.Util.SeriesPlot (renderSeriesSvg)
 import UnliftIO.Async (withAsync)
 import UnliftIO.Concurrent (threadDelay)
@@ -64,26 +67,33 @@ import UnliftIO.Process
 
 
 data ResourceWatcherOptions = ResourceWatcherOptions {
+  -- | Namespace to watch, or all namespaces when 'Nothing' (the default).
+  resourceWatcherNamespace :: Maybe Text
   -- | How often to sample @kubectl top@, in microseconds.
-  resourceWatcherIntervalMicros :: Int
+  , resourceWatcherIntervalMicros :: Int
   -- | Whether to render the SVG charts (in addition to the CSV and peak summaries).
   , resourceWatcherWriteSvg :: Bool
   -- | When 'True', use @kubectl top pods --containers@ to break down usage
-  -- by container within each pod. The identifier in output files becomes
-  -- @pod\/container@ instead of just @pod@.
+  -- by container within each pod. The identifier in output files gains a
+  -- @\/container@ suffix.
   , resourceWatcherContainerLevel :: Bool
   } deriving (Show, Eq)
 
--- | Sample every 5s and render the SVGs.
+-- | Watch all namespaces, sample every 5s, and render the SVGs.
 defaultResourceWatcherOptions :: ResourceWatcherOptions
 defaultResourceWatcherOptions = ResourceWatcherOptions {
-  resourceWatcherIntervalMicros = 5_000_000
+  resourceWatcherNamespace = Nothing
+  , resourceWatcherIntervalMicros = 5_000_000
   , resourceWatcherWriteSvg = True
   , resourceWatcherContainerLevel = False
   }
 
 -- | (elapsedSeconds, cpuMillicores, memoryBytes)
 type Sample = (Double, Integer, Integer)
+
+-- | Human-readable description of the watched scope.
+scopeLabel :: Maybe Text -> Text
+scopeLabel = maybe "all namespaces" (\ns -> [i|namespace '#{ns}'|])
 
 -- | Around-style spec node that records per-pod CPU and memory for the duration
 -- of the wrapped subtree, writing artifacts when it finishes. The spec-level
@@ -93,29 +103,25 @@ type Sample = (Double, Integer, Integer)
 withResourceWatcher :: (
   KubectlBasicWithoutReader context m
   )
-  -- | Namespace to watch
-  => Text
-  -> ResourceWatcherOptions
+  => ResourceWatcherOptions
   -> SpecFree context m ()
   -> SpecFree context m ()
-withResourceWatcher namespace options = around [i|Watch pod CPU + memory in namespace '#{namespace}'|]
-  (void . withResourceWatcher' namespace options)
+withResourceWatcher options = around [i|Watch pod CPU + memory in #{scopeLabel (resourceWatcherNamespace options)}|]
+  (void . withResourceWatcher' options)
 
--- | Run @action@ while sampling per-pod CPU and memory in @namespace@, writing
--- artifacts on completion. Reader-based version that obtains the cluster and
--- @kubectl@ binary from the context.
+-- | Run @action@ while sampling per-pod CPU and memory, writing artifacts on
+-- completion. Reader-based version that obtains the cluster and @kubectl@ binary
+-- from the context.
 withResourceWatcher' :: (
   KubectlBasic context m
   )
-  -- | Namespace to watch
-  => Text
-  -> ResourceWatcherOptions
+  => ResourceWatcherOptions
   -> m a
   -> m a
-withResourceWatcher' namespace options action = do
+withResourceWatcher' options action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  withResourceWatcher'' kcc kubectlBinary namespace options action
+  withResourceWatcher'' kcc kubectlBinary options action
 
 -- | Same as 'withResourceWatcher'', but allows you to pass in the
 -- 'KubernetesClusterContext' and @kubectl@ binary path.
@@ -127,44 +133,42 @@ withResourceWatcher'' :: (
   => KubernetesClusterContext
   -- | Path to the @kubectl@ binary
   -> FilePath
-  -- | Namespace to watch
-  -> Text
   -> ResourceWatcherOptions
   -> m a
   -> m a
-withResourceWatcher'' kcc kubectlBinary namespace (ResourceWatcherOptions {..}) action = do
+withResourceWatcher'' kcc kubectlBinary (ResourceWatcherOptions {..}) action = do
   env <- getKubectlEnvironment kcc
   startTime <- liftIO getCurrentTime
   samplesRef <- newIORef (M.empty :: Map Text [Sample])
 
-  let topArgs = ["top", "pods", "-n", toString namespace, "--no-headers"]
+  let scope = scopeLabel resourceWatcherNamespace
+  let topArgs = ["top", "pods"] <> namespaceArgs resourceWatcherNamespace <> ["--no-headers"]
                <> ["--containers" | resourceWatcherContainerLevel]
-      parseRow = if resourceWatcherContainerLevel then parseContainerTopOutput else parseTopOutput
 
   let pollOnce = do
         now <- liftIO getCurrentTime
         let elapsed = realToFrac (diffUTCTime now startTime) :: Double
         (ec, out, _) <- readCreateProcessWithExitCode ((proc kubectlBinary topArgs) { env = Just env }) ""
         when (ec == ExitSuccess) $
-          forM_ (parseRow (toText out)) $ \(key, cpuM, memBytes) ->
+          forM_ (parseTop (toText out)) $ \(key, cpuM, memBytes) ->
             modifyIORef' samplesRef (M.insertWith (\new old -> old <> new) key [(elapsed, cpuM, memBytes)])
 
   let loop = forever $ do
-        handleAny (\e -> debug [i|(#{namespace}) kubectl top sample failed: #{e}|]) pollOnce
+        handleAny (\e -> debug [i|(#{scope}) kubectl top sample failed: #{e}|]) pollOnce
         threadDelay resourceWatcherIntervalMicros
 
   let writeArtifacts = do
         cleaned <- M.filter (not . null) <$> readIORef samplesRef
         if M.null cleaned
-          then debug [i|(#{namespace}) No pod resource samples collected (is metrics-server installed?); skipping artifacts|]
+          then debug [i|(#{scope}) No pod resource samples collected (is metrics-server installed?); skipping artifacts|]
           else getCurrentFolder >>= \case
-            Nothing -> debug [i|(#{namespace}) No current folder; skipping resource artifacts|]
-            Just dir -> writeAll dir cleaned
+            Nothing -> debug [i|(#{scope}) No current folder; skipping resource artifacts|]
+            Just dir -> writeAll scope dir cleaned
 
   finally (withAsync loop (const action)) writeArtifacts
 
   where
-    writeAll dir cleaned = do
+    writeAll scope dir cleaned = do
       -- Shared CSV with both columns.
       let csvRows = [ [i|#{fmtDouble t},#{pod},#{cpu},#{mem}|]
                     | (pod, pts) <- M.toList cleaned, (t, cpu, mem) <- pts ]
@@ -175,14 +179,14 @@ withResourceWatcher'' kcc kubectlBinary namespace (ResourceWatcherOptions {..}) 
                                          | (pod, pts) <- M.toList cleaned ]
           cpuPeakText = T.unlines [ [i|#{cpu}m\t#{pod}|] | (pod, cpu) <- cpuPeaks ]
       liftIO $ writeFileText (dir </> "pod-cpu-peak.txt") cpuPeakText
-      info [i|Peak pod CPU, millicores (namespace #{namespace}):\n#{cpuPeakText}|]
+      info [i|Peak pod CPU, millicores (#{scope}):\n#{cpuPeakText}|]
 
       -- Peak memory per pod, sorted descending.
       let memPeaks = sortOn (Down . snd) [ (pod, foldl' max 0 [m | (_, _, m) <- pts])
                                          | (pod, pts) <- M.toList cleaned ]
           memPeakText = T.unlines [ [i|#{fmtDouble (mibOf m)} MiB\t#{pod}|] | (pod, m) <- memPeaks ]
       liftIO $ writeFileText (dir </> "pod-memory-peak.txt") memPeakText
-      info [i|Peak pod memory (namespace #{namespace}):\n#{memPeakText}|]
+      info [i|Peak pod memory (#{scope}):\n#{memPeakText}|]
 
       -- SVG charts.
       when resourceWatcherWriteSvg $ do
