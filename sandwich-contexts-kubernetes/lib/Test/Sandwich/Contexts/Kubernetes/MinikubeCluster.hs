@@ -54,6 +54,7 @@ import qualified Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images as Ima
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
 import Test.Sandwich.Contexts.Nix
+import UnliftIO.Directory
 import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.IO
@@ -183,6 +184,17 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
              (\_ -> do
                  info [i|Deleting minikube cluster: #{clusterName}|]
 
+                 -- For container-runtime drivers (docker/podman) minikube creates a volume per node.
+                 -- Capture their names now, while the node containers still exist and carry minikube's
+                 -- labels (see getMinikubeClusterVolumeNames), so we can mop up any volumes that
+                 -- "minikube delete" leaves behind below. VM-based drivers (kvm2, etc.) have no such
+                 -- volumes, so we skip them.
+                 let containerRuntime = fromMaybe "docker" minikubeClusterDriver
+                 let usingContainerDriver = containerRuntime `L.elem` ["docker", "podman"]
+                 volumeNames <- if usingContainerDriver
+                   then getMinikubeClusterVolumeNames containerRuntime clusterName
+                   else pure []
+
                  let extraFlags = case "--rootless" `L.elem` minikubeClusterExtraFlags of
                        True -> ["--rootless"]
                        False -> []
@@ -201,6 +213,12 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                      waitForProcess p >>= \case
                        ExitSuccess -> return ()
                        ExitFailure n -> warn [i|Minikube cluster delete failed with code #{n}.|]
+
+                 -- "minikube delete" sometimes leaves behind the container-runtime volumes and the
+                 -- per-profile state under MINIKUBE_HOME that it created. Remove these best-effort so
+                 -- they don't accumulate as orphans across runs.
+                 deleteClusterVolumes containerRuntime volumeNames
+                 removeMinikubeProfileDirs clusterName
              ))
              (\p -> do
                  waitForProcess p >>= \case
@@ -267,6 +285,55 @@ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (Min
         , std_err = UseHandle logH
         })
   return p
+
+-- | Authoritative source for a cluster's container-runtime volume names. Minikube tags every node
+-- container of a profile with the label @mode.minikube.sigs.k8s.io=<profile>@, and for the docker
+-- and podman drivers each node's persistent volume shares its container's name. So we ask the
+-- runtime (@docker@ or @podman@) for the containers rather than reconstructing minikube's @-mNN@
+-- node-naming scheme. Must be called before "minikube delete", while the containers still exist.
+getMinikubeClusterVolumeNames :: (MonadLoggerIO m, MonadUnliftIO m) => Text -> String -> m [String]
+getMinikubeClusterVolumeNames containerRuntime clusterName =
+  handleAny (\e -> [] <$ warn [i|Couldn't list #{containerRuntime} containers for cluster #{clusterName}: #{e}|]) $
+    readCreateProcessWithExitCode (proc (toString containerRuntime) [
+        "ps", "-a"
+        , "--filter", [i|label=mode.minikube.sigs.k8s.io=#{clusterName}|]
+        , "--format", "{{.Names}}"
+        ]) "" >>= \case
+      (ExitSuccess, out, _) -> pure [toString l | l <- T.lines (toText out), not (T.null (T.strip l))]
+      (ExitFailure _, _, _) -> pure []
+
+-- | Force-remove the given container-runtime volumes ("--force" ignores any that are already gone,
+-- and is supported by both @docker volume rm@ and @podman volume rm@). Best-effort.
+deleteClusterVolumes :: (MonadLoggerIO m, MonadUnliftIO m) => Text -> [String] -> m ()
+deleteClusterVolumes _ [] = return ()
+deleteClusterVolumes containerRuntime volumes = handleAny logErr $ do
+  debug [i|Removing leftover #{containerRuntime} volumes: #{volumes}|]
+  void $ readCreateProcessWithExitCode (proc (toString containerRuntime) (["volume", "rm", "--force"] <> volumes)) ""
+  where
+    logErr :: MonadLoggerIO m => SomeException -> m ()
+    logErr e = warn [i|Error removing #{containerRuntime} volumes #{volumes}: #{e}|]
+
+-- | Remove the per-profile state that "minikube delete" should clean up but sometimes leaves behind:
+-- @<minikube-home>/profiles/<profile>@ and @.../machines/<profile>@. The rest of MINIKUBE_HOME (the
+-- multi-gigabyte image caches, certs, addons) is shared across clusters, so we leave it untouched.
+removeMinikubeProfileDirs :: (MonadLoggerIO m, MonadUnliftIO m) => String -> m ()
+removeMinikubeProfileDirs clusterName = handleAny logErr $ do
+  miniPath <- getMinikubeHome
+  forM_ ["profiles", "machines"] $ \sub -> do
+    let dir = miniPath </> sub </> clusterName
+    whenM (doesPathExist dir) $ do
+      debug [i|Removing leftover minikube state dir: #{dir}|]
+      removePathForcibly dir
+  where
+    logErr :: MonadLoggerIO m => SomeException -> m ()
+    logErr e = warn [i|Error removing minikube state dirs for #{clusterName}: #{e}|]
+
+-- | Resolve MINIKUBE_HOME the same way minikube does (see localpath.MiniPath): default to
+-- @$HOME/.minikube@, honor a @MINIKUBE_HOME@ that already ends in @.minikube@, else append it.
+getMinikubeHome :: MonadIO m => m FilePath
+getMinikubeHome = UnliftIO.Environment.lookupEnv "MINIKUBE_HOME" >>= \case
+  Just p | p /= "" -> return $ if takeFileName p == ".minikube" then p else p </> ".minikube"
+  _ -> (</> ".minikube") <$> getHomeDirectory
 
 -- Debugging (in case of certificate issues such as https://github.com/channable/vaultenv/issues/99)
 -- import Kubernetes.Client.Auth.OIDC

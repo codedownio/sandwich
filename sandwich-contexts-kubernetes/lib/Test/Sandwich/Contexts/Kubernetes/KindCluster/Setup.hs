@@ -18,6 +18,7 @@ import Data.String.Interpolate
 import Relude
 import System.Exit
 import Test.Sandwich
+import Test.Sandwich.Contexts.Kubernetes.MetricsServer
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Waits
 import UnliftIO.Environment
@@ -26,8 +27,8 @@ import UnliftIO.Process
 
 setUpKindCluster :: (
   MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
-  ) => KubernetesClusterContext -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> m ()
-setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary environmentToUse driver = do
+  ) => KubernetesClusterContext -> FilePath -> FilePath -> Maybe [(String, String)] -> Text -> Maybe MetricsServerOptions -> m ()
+setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary environmentToUse driver maybeMetricsServer = do
   baseEnv <- maybe getEnvironment return environmentToUse
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
   let runWithKubeConfig cmd = createProcessWithFileLogging' "kind-setup" ((shell cmd) { env = Just env, delegate_ctlc = True })
@@ -47,15 +48,9 @@ setUpKindCluster kcc@(KubernetesClusterContext {..}) kindBinary kubectlBinary en
                          --timeout=300s|]
     >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  -- info [i|Installing metrics server using helm|]
-  -- void $ runWithKubeConfig [i|helm repo add bitnami https://charts.bitnami.com/bitnami|]
-  -- void $ runWithKubeConfig [i|helm install metrics-server-release bitnami/metrics-server|]
-
-  info [i|Installing metrics server|]
-  runWithKubeConfig [i|#{kubectlBinary} apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.6.4/components.yaml|]
-    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-  runWithKubeConfig [i|#{kubectlBinary} patch -n kube-system deployment metrics-server --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'|]
-    >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  case maybeMetricsServer of
+    Nothing -> info [i|Skipping metrics-server installation|]
+    Just metricsServerOptions -> installMetricsServer' kcc kubectlBinary metricsServerOptions
 
   when (driver == "docker") $ do
     info [i|Fixing perms on /dev/fuse|] -- Needed on NixOS where it gets mounted 0600, don't know why

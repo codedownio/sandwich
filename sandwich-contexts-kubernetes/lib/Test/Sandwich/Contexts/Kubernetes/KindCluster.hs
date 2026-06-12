@@ -52,6 +52,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Config
 import qualified Test.Sandwich.Contexts.Kubernetes.KindCluster.Images as Images
 import Test.Sandwich.Contexts.Kubernetes.KindCluster.Setup
+import Test.Sandwich.Contexts.Kubernetes.MetricsServer (MetricsServerOptions, defaultMetricsServerOptions)
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Container (isInContainer)
 import Test.Sandwich.Contexts.Kubernetes.Util.UUID
@@ -92,6 +93,10 @@ data KindClusterOptions = KindClusterOptions {
   , kindClusterName :: KindClusterName
   -- | Container driver, either "docker" or "podman". Defaults to "docker".
   , kindClusterDriver :: Maybe Text
+  -- | Whether to install the [metrics-server](https://github.com/kubernetes-sigs/metrics-server)
+  -- (so @kubectl top@ / the metrics API work). 'Nothing' skips it. Defaults to
+  -- 'Just' 'defaultMetricsServerOptions'.
+  , kindClusterMetricsServer :: Maybe MetricsServerOptions
   -- , kindClusterCpus :: Maybe Text
   -- , kindClusterMemory :: Maybe Text
   }
@@ -104,6 +109,7 @@ defaultKindClusterOptions = KindClusterOptions {
   , kindClusterExtraMounts = []
   , kindClusterName = KindClusterNameAutogenerate Nothing
   , kindClusterDriver = Nothing
+  , kindClusterMetricsServer = Just defaultMetricsServerOptions
   -- , kindClusterCpus = Nothing
   -- , kindClusterMemory = Nothing
   }
@@ -222,7 +228,7 @@ withKindCluster' kindBinary kubectlBinary opts@(KindClusterOptions {..}) action 
                      })
                void $ waitForProcess ps
            ))
-           (\kcc -> bracket_ (setUpKindCluster kcc kindBinary kubectlBinary environmentToUse driver)
+           (\kcc -> bracket_ (setUpKindCluster kcc kindBinary kubectlBinary environmentToUse driver kindClusterMetricsServer)
                              (return ())
                              (action kcc)
            )
