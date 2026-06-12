@@ -45,16 +45,19 @@ spec = describe "Kubernetes instrumentation demo" $
   -- Minikube doesn't install metrics-server itself, so install it explicitly.
   -- (introduceMetricsServer also brings in a kubectl binary via Nix for children.)
   introduceMetricsServer defaultMetricsServerOptions $
-  -- Sample pod CPU + memory across the whole demo (top-level around node).
-  withResourceWatcher demoNamespace defaultResourceWatcherOptions $ do
+  -- Sample CPU + memory and watch for OOMKills across the whole demo (top-level
+  -- around nodes). Both are scoped to demoNamespace, so the deliberate OOMKill in
+  -- oomNamespace below doesn't trip the OOM watcher.
+  withResourceWatcher demoNamespace defaultResourceWatcherOptions $
+  withOOMWatcher demoNamespace $ do
 
     it "metrics-server is serving `kubectl top`" $ do
       (kubectl, env) <- askKubectlArgs
       out <- readCreateProcess ((proc kubectl ["top", "pods", "--all-namespaces"]) { env = Just env }) ""
       info [i|metrics-server is up. `kubectl top pods --all-namespaces`:\n#{toText out}|]
 
-    -- (a) OOM watcher scoped to the workload namespace; CPU + memory are sampled
-    -- by the top-level withResourceWatcher.
+    -- Workload namespace; CPU + memory and OOM watching are handled by the
+    -- top-level around nodes.
     withKubernetesNamespace demoNamespace $
       it "records per-pod CPU + memory while watching for OOMKills" $ do
         info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
@@ -63,8 +66,7 @@ spec = describe "Kubernetes instrumentation demo" $
                                 , "-n", toString demoNamespace, "--timeout=180s"]
 
         info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
-        withOOMWatcher' demoNamespace $
-          threadDelay 60_000_000
+        threadDelay 60_000_000
 
         info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg into the test tree|]
 
