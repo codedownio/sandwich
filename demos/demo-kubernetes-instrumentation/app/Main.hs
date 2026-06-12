@@ -44,28 +44,29 @@ spec = describe "Kubernetes instrumentation demo" $
   introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $
   -- Minikube doesn't install metrics-server itself, so install it explicitly.
   -- (introduceMetricsServer also brings in a kubectl binary via Nix for children.)
-  introduceMetricsServer defaultMetricsServerOptions $ do
+  introduceMetricsServer defaultMetricsServerOptions $
+  -- Sample pod CPU + memory across the whole demo (top-level around node).
+  withResourceWatcher demoNamespace defaultResourceWatcherOptions $ do
 
     it "metrics-server is serving `kubectl top`" $ do
       (kubectl, env) <- askKubectlArgs
       out <- readCreateProcess ((proc kubectl ["top", "pods", "--all-namespaces"]) { env = Just env }) ""
       info [i|metrics-server is up. `kubectl top pods --all-namespaces`:\n#{toText out}|]
 
-    -- (c) resource watcher + (a) OOM watcher, both scoped to the workload namespace.
-    -- The resource watcher is applied at the spec level (around the whole 'it').
+    -- (a) OOM watcher scoped to the workload namespace; CPU + memory are sampled
+    -- by the top-level withResourceWatcher.
     withKubernetesNamespace demoNamespace $
-      withResourceWatcher demoNamespace defaultResourceWatcherOptions $
-        it "records per-pod CPU + memory while watching for OOMKills" $ do
-          info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
-          kubectlApply (workloadYaml demoNamespace)
-          kubectlAssert "rollout" ["rollout", "status", "deployment/memory-user"
-                                  , "-n", toString demoNamespace, "--timeout=180s"]
+      it "records per-pod CPU + memory while watching for OOMKills" $ do
+        info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
+        kubectlApply (workloadYaml demoNamespace)
+        kubectlAssert "rollout" ["rollout", "status", "deployment/memory-user"
+                                , "-n", toString demoNamespace, "--timeout=180s"]
 
-          info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
-          withOOMWatcher demoNamespace $
-            threadDelay 60_000_000
+        info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
+        withOOMWatcher' demoNamespace $
+          threadDelay 60_000_000
 
-          info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg into the test tree|]
+        info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg into the test tree|]
 
     -- (a) OOM detection, demonstrated positively (without failing the run).
     withKubernetesNamespace oomNamespace $
