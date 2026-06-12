@@ -31,13 +31,13 @@ renderSeriesSvg ::
   -> Map Text [(Double, Double)]
   -> Text
 renderSeriesSvg title emptyMessage samples
-  | M.null nonEmpty = emptySvg
+  | M.null nonEmptySeries = emptySvg
   | otherwise = svg
   where
-    nonEmpty = M.filter (not . null) samples
+    nonEmptySeries = M.filter (not . null) samples
 
     series :: [(Text, [(Double, Double)])] -- (name, [(t, value)])
-    series = [ (name, sortOn fst pts) | (name, pts) <- M.toList nonEmpty ]
+    series = [ (name, sortOn fst pts) | (name, pts) <- M.toList nonEmptySeries ]
 
     allTs = [t | (_, pts) <- series, (t, _) <- pts]
     allMs = [m | (_, pts) <- series, (_, m) <- pts]
@@ -60,7 +60,7 @@ renderSeriesSvg title emptyMessage samples
     palette :: [Text]
     palette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"
               , "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
-    colorFor i = fromMaybe "#000000" (palette !!? (i `mod` length palette))
+    colorFor n = fromMaybe "#000000" (palette !!? (n `mod` length palette))
 
     -- Horizontal gridlines + y labels
     gridDivs = 4 :: Int
