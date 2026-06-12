@@ -61,10 +61,10 @@ module Test.Sandwich.Contexts.Kubernetes (
   , checkForOOMKills
   , withOOMWatcher
 
-  -- * Memory watcher
-  , withMemoryWatcher
-  , MemoryWatcherOptions(..)
-  , defaultMemoryWatcherOptions
+  -- * Resource watcher (CPU + memory)
+  , withResourceWatcher
+  , ResourceWatcherOptions(..)
+  , defaultResourceWatcherOptions
 
   -- * Types
   , kubernetesCluster
@@ -91,9 +91,9 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.KubectlLogs
 import Test.Sandwich.Contexts.Kubernetes.KubectlPortForward
-import Test.Sandwich.Contexts.Kubernetes.MemoryWatcher
 import Test.Sandwich.Contexts.Kubernetes.MetricsServer
 import Test.Sandwich.Contexts.Kubernetes.OOMWatcher
+import Test.Sandwich.Contexts.Kubernetes.ResourceWatcher
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Waits
 

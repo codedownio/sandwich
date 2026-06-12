@@ -2,13 +2,14 @@
 
 {-|
 
-Render a simple, dependency-free SVG line chart of per-pod memory usage over time.
-Used by "Test.Sandwich.Contexts.Kubernetes.MemoryWatcher".
+Render a simple, dependency-free SVG line chart of per-pod time series. Shared by
+the memory and CPU watchers (see "Test.Sandwich.Contexts.Kubernetes.Util.MemoryPlot"
+and "Test.Sandwich.Contexts.Kubernetes.CpuWatcher").
 
 -}
 
-module Test.Sandwich.Contexts.Kubernetes.Util.MemoryPlot (
-  renderMemorySvg
+module Test.Sandwich.Contexts.Kubernetes.Util.SeriesPlot (
+  renderSeriesSvg
   ) where
 
 import qualified Data.Map as M
@@ -17,21 +18,26 @@ import qualified Data.Text as T
 import Relude
 
 
--- | Render an SVG line chart. The input maps each pod name to a time series of
--- @(elapsedSeconds, memoryBytes)@ samples. One colored polyline is drawn per pod,
--- with axes and a legend. Returns the SVG document as 'Text'.
-renderMemorySvg :: Map Text [(Double, Integer)] -> Text
-renderMemorySvg samples
+-- | Render an SVG line chart. The input maps each series name (e.g. a pod) to a
+-- time series of @(elapsedSeconds, value)@ samples, where @value@ is already in
+-- the desired display units. One colored polyline is drawn per series, with axes
+-- and a legend. Returns the SVG document as 'Text'.
+renderSeriesSvg ::
+  -- | Chart title (include the unit, e.g. @"Pod memory usage over time (MiB)"@)
+  Text
+  -- | Message to show when no samples were collected
+  -> Text
+  -- | @seriesName -> [(elapsedSeconds, value)]@
+  -> Map Text [(Double, Double)]
+  -> Text
+renderSeriesSvg title emptyMessage samples
   | M.null nonEmpty = emptySvg
   | otherwise = svg
   where
     nonEmpty = M.filter (not . null) samples
 
-    series :: [(Text, [(Double, Double)])] -- (pod, [(t, MiB)])
-    series = [ (pod, [(t, fromIntegral b / mib) | (t, b) <- sortOn fst pts])
-             | (pod, pts) <- M.toList nonEmpty ]
-
-    mib = 1024 * 1024 :: Double
+    series :: [(Text, [(Double, Double)])] -- (name, [(t, value)])
+    series = [ (name, sortOn fst pts) | (name, pts) <- M.toList nonEmpty ]
 
     allTs = [t | (_, pts) <- series, (t, _) <- pts]
     allMs = [m | (_, pts) <- series, (_, m) <- pts]
@@ -56,7 +62,7 @@ renderMemorySvg samples
               , "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"]
     colorFor i = fromMaybe "#000000" (palette !!? (i `mod` length palette))
 
-    -- Horizontal gridlines + y labels (MiB)
+    -- Horizontal gridlines + y labels
     gridDivs = 4 :: Int
     gridlines = T.concat [ let frac = fromIntegral k / fromIntegral gridDivs
                                y = top + plotH - frac * plotH
@@ -75,18 +81,18 @@ renderMemorySvg samples
     polylines = T.concat [ let pts = T.intercalate " " [[i|#{px (sx t)},#{px (sy m)}|] | (t, m) <- ser]
                            in [i|<polyline fill="none" stroke="#{colorFor idx}" stroke-width="1.5" points="#{pts}" />
 |]
-                         | (idx, (_pod, ser)) <- zip [0 ..] series ]
+                         | (idx, (_name, ser)) <- zip [0 ..] series ]
 
     legend = T.concat [ let y = top + 6 + fromIntegral idx * 18
-                            name = T.take 38 pod
+                            nm = T.take 38 name
                         in [i|<rect x="#{px (left + plotW + 16)}" y="#{px (y - 9)}" width="11" height="11" fill="#{colorFor idx}" />
-<text x="#{px (left + plotW + 32)}" y="#{px y}" font-size="11" fill="\#333">#{name}</text>
+<text x="#{px (left + plotW + 32)}" y="#{px y}" font-size="11" fill="\#333">#{nm}</text>
 |]
-                      | (idx, (pod, _)) <- zip [0 :: Int ..] series ]
+                      | (idx, (name, _)) <- zip [0 :: Int ..] series ]
 
     svg = [i|<svg xmlns="http://www.w3.org/2000/svg" width="#{px width}" height="#{px height}" font-family="sans-serif">
 <rect width="100%" height="100%" fill="white" />
-<text x="#{px left}" y="18" font-size="14" fill="\#222">Pod memory usage over time (MiB)</text>
+<text x="#{px left}" y="18" font-size="14" fill="\#222">#{title}</text>
 #{gridlines}<line x1="#{px left}" y1="#{px top}" x2="#{px left}" y2="#{px (top + plotH)}" stroke="\#999" />
 <line x1="#{px left}" y1="#{px (top + plotH)}" x2="#{px (left + plotW)}" y2="#{px (top + plotH)}" stroke="\#999" />
 #{xticks}#{polylines}#{legend}</svg>
@@ -94,6 +100,6 @@ renderMemorySvg samples
 
     emptySvg = [i|<svg xmlns="http://www.w3.org/2000/svg" width="480" height="80" font-family="sans-serif">
 <rect width="100%" height="100%" fill="white" />
-<text x="12" y="44" font-size="14" fill="\#555">No pod memory samples were collected.</text>
+<text x="12" y="44" font-size="14" fill="\#555">#{emptyMessage}</text>
 </svg>
 |]
