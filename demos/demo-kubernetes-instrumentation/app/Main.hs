@@ -52,21 +52,20 @@ spec = describe "Kubernetes instrumentation demo" $
       info [i|metrics-server is up. `kubectl top pods --all-namespaces`:\n#{toText out}|]
 
     -- (c) resource watcher + (a) OOM watcher, both scoped to the workload namespace.
+    -- The resource watcher is applied at the spec level (around the whole 'it').
     withKubernetesNamespace demoNamespace $
-      it "records per-pod CPU + memory while watching for OOMKills" $ do
-        info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
-        kubectlApply (workloadYaml demoNamespace)
-        kubectlAssert "rollout" ["rollout", "status", "deployment/memory-user"
-                                , "-n", toString demoNamespace, "--timeout=180s"]
+      withResourceWatcher demoNamespace defaultResourceWatcherOptions $
+        it "records per-pod CPU + memory while watching for OOMKills" $ do
+          info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
+          kubectlApply (workloadYaml demoNamespace)
+          kubectlAssert "rollout" ["rollout", "status", "deployment/memory-user"
+                                  , "-n", toString demoNamespace, "--timeout=180s"]
 
-        info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
-        withOOMWatcher demoNamespace $
-          withResourceWatcher' demoNamespace defaultResourceWatcherOptions $
+          info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
+          withOOMWatcher demoNamespace $
             threadDelay 60_000_000
 
-        getCurrentFolder >>= \case
-          Just dir -> info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg to: #{dir}|]
-          Nothing -> info [i|(no current folder, so no artifacts were written)|]
+          info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg into the test tree|]
 
     -- (a) OOM detection, demonstrated positively (without failing the run).
     withKubernetesNamespace oomNamespace $
