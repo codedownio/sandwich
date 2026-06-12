@@ -45,19 +45,18 @@ spec = describe "Kubernetes instrumentation demo" $
   -- Minikube doesn't install metrics-server itself, so install it explicitly.
   -- (introduceMetricsServer also brings in a kubectl binary via Nix for children.)
   introduceMetricsServer defaultMetricsServerOptions $
-  -- Sample CPU + memory and watch for OOMKills across the whole demo (top-level
-  -- around nodes). Both are scoped to demoNamespace, so the deliberate OOMKill in
-  -- oomNamespace below doesn't trip the OOM watcher.
-  withResourceWatcher demoNamespace defaultResourceWatcherOptions $
-  withOOMWatcher demoNamespace $ do
+  -- Sample CPU + memory across the whole demo (top-level around node), scoped to
+  -- the workload namespace.
+  withResourceWatcher (defaultResourceWatcherOptions { resourceWatcherNamespace = Just demoNamespace }) $ do
 
     it "metrics-server is serving `kubectl top`" $ do
       (kubectl, env) <- askKubectlArgs
       out <- readCreateProcess ((proc kubectl ["top", "pods", "--all-namespaces"]) { env = Just env }) ""
       info [i|metrics-server is up. `kubectl top pods --all-namespaces`:\n#{toText out}|]
 
-    -- Workload namespace; CPU + memory and OOM watching are handled by the
-    -- top-level around nodes.
+    -- OOM watcher scoped to the workload namespace (action-level, around the
+    -- sampling window); a cluster-wide watcher would trip on the deliberate
+    -- OOMKill in oomNamespace below. CPU + memory come from the top-level watcher.
     withKubernetesNamespace demoNamespace $
       it "records per-pod CPU + memory while watching for OOMKills" $ do
         info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
@@ -66,7 +65,8 @@ spec = describe "Kubernetes instrumentation demo" $
                                 , "-n", toString demoNamespace, "--timeout=180s"]
 
         info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
-        threadDelay 60_000_000
+        withOOMWatcher' (defaultOOMWatcherOptions { oomWatcherNamespace = Just demoNamespace }) $
+          threadDelay 60_000_000
 
         info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg into the test tree|]
 
@@ -104,7 +104,7 @@ findOOMWithTimeout :: (
   ) => KubernetesClusterContext -> FilePath -> Text -> Int -> m (Maybe String)
 findOOMWithTimeout kcc kubectl ns attempts
   | attempts <= 0 = return Nothing
-  | otherwise = findOOMKilled' kcc kubectl ns >>= \case
+  | otherwise = findOOMKilled' kcc kubectl (Just ns) >>= \case
       Just d -> return (Just d)
       Nothing -> threadDelay 3_000_000 >> findOOMWithTimeout kcc kubectl ns (attempts - 1)
 
