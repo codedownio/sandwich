@@ -19,14 +19,17 @@ you detect it explicitly and fail the test instead.
 -}
 
 module Test.Sandwich.Contexts.Kubernetes.OOMWatcher (
-  -- * Reader-based
-  checkForOOMKills
-  , withOOMWatcher
+  -- * Spec-level (around)
+  withOOMWatcher
+
+  -- * Reader-based (action-level)
+  , checkForOOMKills
+  , withOOMWatcher'
 
   -- * Explicit-argument variants
   , findOOMKilled'
   , checkForOOMKills'
-  , withOOMWatcher'
+  , withOOMWatcher''
   ) where
 
 import Control.Monad
@@ -60,19 +63,33 @@ checkForOOMKills namespace = do
   kubectlBinary <- askFile @"kubectl"
   checkForOOMKills' kcc kubectlBinary namespace
 
+-- | Around-style spec node: run the wrapped subtree with a background pod-status
+-- watch on @namespace@, failing the run at the end if any container is observed
+-- OOMKilled. The spec-level counterpart to the action-level 'withOOMWatcher'',
+-- mirroring 'Test.Sandwich.Contexts.Kubernetes.Namespace.withKubernetesNamespace'.
+withOOMWatcher :: (
+  KubectlBasicWithoutReader context m
+  )
+  -- | Namespace to watch
+  => Text
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+withOOMWatcher namespace = around [i|Watch for OOMKills in namespace '#{namespace}'|]
+  (void . withOOMWatcher' namespace)
+
 -- | Run @action@ with a background pod-status watch on @namespace@, failing the
 -- run at the end if any container is observed OOMKilled. Reader-based version.
-withOOMWatcher :: (
+withOOMWatcher' :: (
   KubectlBasic context m
   )
   -- | Namespace to watch
   => Text
   -> m a
   -> m a
-withOOMWatcher namespace action = do
+withOOMWatcher' namespace action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  withOOMWatcher' kcc kubectlBinary namespace action
+  withOOMWatcher'' kcc kubectlBinary namespace action
 
 -- | Returns a human-readable pod listing if any container in @namespace@ is (or
 -- was, via @lastState@) OOMKilled, else Nothing.
@@ -113,11 +130,11 @@ checkForOOMKills' kcc kubectlBinary namespace =
 -- (e.g. runner pods) that are deleted right after. We scan each streamed row for
 -- "OOMKilled" and re-establish the watch if it drops. (NB: we deliberately do not
 -- use @-o jsonpath@ -- its @--watch@ only prints the initial state, not updates.)
-withOOMWatcher' :: (
+withOOMWatcher'' :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContextMonad context m
   ) => KubernetesClusterContext -> FilePath -> Text -> m a -> m a
-withOOMWatcher' kcc kubectlBinary namespace action = do
+withOOMWatcher'' kcc kubectlBinary namespace action = do
   env <- getKubectlEnvironment kcc
   oomRef <- newIORef Nothing
 
