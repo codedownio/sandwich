@@ -10,8 +10,8 @@ Install the [Kubernetes metrics-server](https://github.com/kubernetes-sigs/metri
 onto a cluster, so that the [Metrics API](https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/)
 (@kubectl top@, @metrics.k8s.io@) becomes available.
 
-This is handy together with "Test.Sandwich.Contexts.Kubernetes.MemoryWatcher",
-which uses @kubectl top@ to record per-pod memory usage over a test.
+This is handy together with "Test.Sandwich.Contexts.Kubernetes.ResourceWatcher",
+which uses @kubectl top@ to record per-pod CPU and memory usage over a test.
 
 For test clusters (kind/Minikube) the kubelet's serving certificate isn't signed
 by the cluster CA, so metrics-server is configured with @--kubelet-insecure-tls@

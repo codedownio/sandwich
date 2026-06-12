@@ -51,7 +51,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs)
+import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs, scopeLabel)
 import UnliftIO.Async (withAsync)
 import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Exception
@@ -68,10 +68,6 @@ defaultOOMWatcherOptions :: OOMWatcherOptions
 defaultOOMWatcherOptions = OOMWatcherOptions {
   oomWatcherNamespace = Nothing
   }
-
--- | Human-readable description of the watched scope.
-scopeLabel :: Maybe Text -> Text
-scopeLabel = maybe "all namespaces" (\ns -> [i|namespace '#{ns}'|])
 
 -- | One-shot: fail if any container is/was OOMKilled. Reader-based version that
 -- obtains the cluster and @kubectl@ binary from the context.
@@ -193,7 +189,7 @@ withOOMWatcher'' kcc kubectlBinary (OOMWatcherOptions {..}) action = do
         -- belt and suspenders: also do a one-shot check at teardown
         direct <- handleAny (const (return Nothing)) (findOOMKilled' kcc kubectlBinary oomWatcherNamespace)
         watched <- readIORef oomRef
-        case (case watched of { Just d -> Just d; Nothing -> direct }) of
+        case watched <|> direct of
           Just detail -> expectationFailure [i|Detected an OOMKilled container in #{scope} during the run (memory/resource misconfiguration). Pods:\n#{detail}|]
           Nothing -> return ()
 

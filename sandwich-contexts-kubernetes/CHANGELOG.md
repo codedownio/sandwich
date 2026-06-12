@@ -1,5 +1,13 @@
 # Changelog for sandwich-contexts-kubernetes
 
+## Unreleased
+
+* Add `Test.Sandwich.Contexts.Kubernetes.MetricsServer` to install the metrics-server (so `kubectl top` / the metrics API work), with configurable manifest source and `--kubelet-insecure-tls`.
+* Add `Test.Sandwich.Contexts.Kubernetes.OOMWatcher` to detect OOMKilled containers, via a streaming pod watch (`withOOMWatcher`) or a one-shot check (`checkForOOMKills`).
+* Add `Test.Sandwich.Contexts.Kubernetes.ResourceWatcher` to record per-pod CPU and memory over a test using `kubectl top`, writing a CSV, peak summaries, and SVG charts. All three watchers default to cluster-wide and can be scoped to a namespace.
+* Make metrics-server installation on kind clusters configurable via `kindClusterMetricsServer` (defaults on, bumped to v0.7.2) instead of always installing v0.6.4.
+* Clean up leftover container-runtime volumes and per-profile state dirs after tearing down a Minikube cluster.
+
 ## 0.1.3.0
 
 * Add `Test.Sandwich.Contexts.Kubernetes.PostgresServer`.
