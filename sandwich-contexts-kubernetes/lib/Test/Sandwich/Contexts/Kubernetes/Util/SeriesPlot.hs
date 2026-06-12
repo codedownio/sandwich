@@ -2,9 +2,9 @@
 
 {-|
 
-Render a simple, dependency-free SVG line chart of per-pod time series. Shared by
-the memory and CPU watchers (see "Test.Sandwich.Contexts.Kubernetes.Util.MemoryPlot"
-and "Test.Sandwich.Contexts.Kubernetes.CpuWatcher").
+Render a simple, dependency-free SVG line chart of per-pod time series. Used by
+the resource watcher (see "Test.Sandwich.Contexts.Kubernetes.ResourceWatcher") to
+plot per-pod CPU and memory over time.
 
 -}
 

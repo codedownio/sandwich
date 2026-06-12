@@ -58,7 +58,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
 import Test.Sandwich.Contexts.Kubernetes.Types
-import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs, parseTop)
+import Test.Sandwich.Contexts.Kubernetes.Util.KubectlTop (namespaceArgs, parseTop, scopeLabel)
 import Test.Sandwich.Contexts.Kubernetes.Util.SeriesPlot (renderSeriesSvg)
 import UnliftIO.Async (withAsync)
 import UnliftIO.Concurrent (threadDelay)
@@ -90,10 +90,6 @@ defaultResourceWatcherOptions = ResourceWatcherOptions {
 
 -- | (elapsedSeconds, cpuMillicores, memoryBytes)
 type Sample = (Double, Integer, Integer)
-
--- | Human-readable description of the watched scope.
-scopeLabel :: Maybe Text -> Text
-scopeLabel = maybe "all namespaces" (\ns -> [i|namespace '#{ns}'|])
 
 -- | Around-style spec node that records per-pod CPU and memory for the duration
 -- of the wrapped subtree, writing artifacts when it finishes. The spec-level
@@ -151,14 +147,15 @@ withResourceWatcher'' kcc kubectlBinary (ResourceWatcherOptions {..}) action = d
         (ec, out, _) <- readCreateProcessWithExitCode ((proc kubectlBinary topArgs) { env = Just env }) ""
         when (ec == ExitSuccess) $
           forM_ (parseTop (toText out)) $ \(key, cpuM, memBytes) ->
-            modifyIORef' samplesRef (M.insertWith (\new old -> old <> new) key [(elapsed, cpuM, memBytes)])
+            -- Prepend (O(1)); writeArtifacts sorts each series back into time order.
+            modifyIORef' samplesRef (M.insertWith (<>) key [(elapsed, cpuM, memBytes)])
 
   let loop = forever $ do
         handleAny (\e -> debug [i|(#{scope}) kubectl top sample failed: #{e}|]) pollOnce
         threadDelay resourceWatcherIntervalMicros
 
   let writeArtifacts = do
-        cleaned <- M.filter (not . null) <$> readIORef samplesRef
+        cleaned <- M.map (sortOn fst3) . M.filter (not . null) <$> readIORef samplesRef
         if M.null cleaned
           then debug [i|(#{scope}) No pod resource samples collected (is metrics-server installed?); skipping artifacts|]
           else getCurrentFolder >>= \case
@@ -199,6 +196,10 @@ withResourceWatcher'' kcc kubectlBinary (ResourceWatcherOptions {..}) action = d
 
     mib = 1024 * 1024 :: Double
     mibOf b = fromIntegral b / mib :: Double
+
+-- | First element of a 'Sample' (its elapsed time), for sorting.
+fst3 :: Sample -> Double
+fst3 (t, _, _) = t
 
 -- | Format a 'Double' with a single decimal place.
 fmtDouble :: Double -> Text
