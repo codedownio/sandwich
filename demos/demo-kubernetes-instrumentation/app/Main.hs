@@ -5,7 +5,7 @@
 -- | Demo exercising the three Kubernetes instrumentation helpers together:
 --
 --   * 'introduceMetricsServer' (installs metrics-server so @kubectl top@ works),
---   * 'withMemoryWatcher' (records per-pod memory over time -> CSV + peak + SVG), and
+--   * 'withResourceWatcher' (records per-pod CPU + memory over time -> CSV + peaks + SVGs), and
 --   * 'withOOMWatcher' / 'findOOMKilled'' (detects OOMKilled containers).
 --
 -- Run it with e.g.:
@@ -51,21 +51,21 @@ spec = describe "Kubernetes instrumentation demo" $
       out <- readCreateProcess ((proc kubectl ["top", "pods", "--all-namespaces"]) { env = Just env }) ""
       info [i|metrics-server is up. `kubectl top pods --all-namespaces`:\n#{toText out}|]
 
-    -- (c) memory watcher + (a) OOM watcher, both scoped to the workload namespace.
+    -- (c) resource watcher + (a) OOM watcher, both scoped to the workload namespace.
     withKubernetesNamespace demoNamespace $
-      it "records per-pod memory while watching for OOMKills" $ do
+      it "records per-pod CPU + memory while watching for OOMKills" $ do
         info [i|Deploying a memory-using workload into namespace '#{demoNamespace}'|]
         kubectlApply (workloadYaml demoNamespace)
         kubectlAssert "rollout" ["rollout", "status", "deployment/memory-user"
                                 , "-n", toString demoNamespace, "--timeout=180s"]
 
-        info [i|Sampling pod memory for 60s (watching for OOMKills the whole time)...|]
+        info [i|Sampling pod CPU + memory for 60s (watching for OOMKills the whole time)...|]
         withOOMWatcher demoNamespace $
-          withMemoryWatcher demoNamespace defaultMemoryWatcherOptions $
+          withResourceWatcher demoNamespace defaultResourceWatcherOptions $
             threadDelay 60_000_000
 
         getCurrentFolder >>= \case
-          Just dir -> info [i|Wrote pod-memory.csv, pod-memory-peak.txt and pod-memory.svg to: #{dir}|]
+          Just dir -> info [i|Wrote pod-resources.csv, pod-{cpu,memory}-peak.txt and pod-{cpu,memory}.svg to: #{dir}|]
           Nothing -> info [i|(no current folder, so no artifacts were written)|]
 
     -- (a) OOM detection, demonstrated positively (without failing the run).
