@@ -63,6 +63,8 @@ module Test.Sandwich.Contexts.Kubernetes (
 
   -- * Resource watcher (CPU + memory)
   , withResourceWatcher
+  , withResourceWatcher'
+  , withResourceWatcher''
   , ResourceWatcherOptions(..)
   , defaultResourceWatcherOptions
 

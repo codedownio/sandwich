@@ -26,11 +26,14 @@ writes nothing -- so it's safe to wrap unconditionally.
 -}
 
 module Test.Sandwich.Contexts.Kubernetes.ResourceWatcher (
-  -- * Reader-based
+  -- * Spec-level (around)
   withResourceWatcher
 
-  -- * Explicit-argument variant
+  -- * Action-level (reader-based)
   , withResourceWatcher'
+
+  -- * Action-level (explicit arguments)
+  , withResourceWatcher''
 
   -- * Options
   , ResourceWatcherOptions(..)
@@ -82,10 +85,26 @@ defaultResourceWatcherOptions = ResourceWatcherOptions {
 -- | (elapsedSeconds, cpuMillicores, memoryBytes)
 type Sample = (Double, Integer, Integer)
 
+-- | Around-style spec node that records per-pod CPU and memory for the duration
+-- of the wrapped subtree, writing artifacts when it finishes. The spec-level
+-- counterpart to the action-level 'withResourceWatcher'', mirroring
+-- 'Test.Sandwich.Contexts.Kubernetes.Namespace.withKubernetesNamespace': drop it
+-- in at the spec level to instrument a whole @describe@ / @it@ subtree.
+withResourceWatcher :: (
+  KubectlBasicWithoutReader context m
+  )
+  -- | Namespace to watch
+  => Text
+  -> ResourceWatcherOptions
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+withResourceWatcher namespace options = around [i|Watch pod CPU + memory in namespace '#{namespace}'|]
+  (void . withResourceWatcher' namespace options)
+
 -- | Run @action@ while sampling per-pod CPU and memory in @namespace@, writing
 -- artifacts on completion. Reader-based version that obtains the cluster and
 -- @kubectl@ binary from the context.
-withResourceWatcher :: (
+withResourceWatcher' :: (
   KubectlBasic context m
   )
   -- | Namespace to watch
@@ -93,14 +112,14 @@ withResourceWatcher :: (
   -> ResourceWatcherOptions
   -> m a
   -> m a
-withResourceWatcher namespace options action = do
+withResourceWatcher' namespace options action = do
   kcc <- getContext kubernetesCluster
   kubectlBinary <- askFile @"kubectl"
-  withResourceWatcher' kcc kubectlBinary namespace options action
+  withResourceWatcher'' kcc kubectlBinary namespace options action
 
--- | Same as 'withResourceWatcher', but allows you to pass in the
+-- | Same as 'withResourceWatcher'', but allows you to pass in the
 -- 'KubernetesClusterContext' and @kubectl@ binary path.
-withResourceWatcher' :: (
+withResourceWatcher'' :: (
   MonadUnliftIO m, MonadLoggerIO m
   , HasBaseContextMonad context m
   )
@@ -113,7 +132,7 @@ withResourceWatcher' :: (
   -> ResourceWatcherOptions
   -> m a
   -> m a
-withResourceWatcher' kcc kubectlBinary namespace (ResourceWatcherOptions {..}) action = do
+withResourceWatcher'' kcc kubectlBinary namespace (ResourceWatcherOptions {..}) action = do
   env <- getKubectlEnvironment kcc
   startTime <- liftIO getCurrentTime
   samplesRef <- newIORef (M.empty :: Map Text [Sample])
