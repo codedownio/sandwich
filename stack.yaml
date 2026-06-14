@@ -30,6 +30,7 @@ packages:
 - ./demos/demo-files
 - ./demos/demo-golden
 - ./demos/demo-hedgehog
+- ./demos/demo-kubernetes-instrumentation
 - ./demos/demo-kubernetes-kata
 - ./demos/demo-kubernetes-kind
 - ./demos/demo-kubernetes-longhorn
