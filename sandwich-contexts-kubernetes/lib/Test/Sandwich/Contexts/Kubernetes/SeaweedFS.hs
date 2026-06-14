@@ -25,6 +25,8 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   , defaultSeaweedFSOptions
   , SeaweedFSCsiDriverOptions(..)
   , defaultSeaweedFSCsiDriverOptions
+  , SeaweedFSS3Options(..)
+  , defaultSeaweedFSS3Options
 
   , seaweedFs
   , SeaweedFSContext(..)
@@ -72,6 +74,11 @@ data SeaweedFSOptions = SeaweedFSOptions {
   , seaweedFsVolumeServerDiskCount :: Int
   , seaweedFsVolumeSizeLimitMb :: Int
   , seaweedFsVolumeStorageRequest :: Text
+  -- | If 'Just', deploy a standalone S3 gateway (@spec.s3@ in the Seaweed CR), exposing the
+  -- S3 API on the @\<baseName\>-s3@ Service at port 8333, with a single admin identity using
+  -- the given credentials. 'Nothing' disables the S3 gateway. Defaults to 'Just'
+  -- 'defaultSeaweedFSS3Options'.
+  , seaweedFsS3 :: Maybe SeaweedFSS3Options
   -- | Whether to install the
   -- [seaweedfs-csi-driver](https://github.com/seaweedfs/seaweedfs-csi-driver),
   -- which provisions Kubernetes @PersistentVolume@s backed by this SeaweedFS
@@ -89,6 +96,7 @@ defaultSeaweedFSOptions = SeaweedFSOptions {
   , seaweedFsVolumeServerDiskCount = 1
   , seaweedFsVolumeSizeLimitMb = 1024
   , seaweedFsVolumeStorageRequest = "2Gi"
+  , seaweedFsS3 = Just defaultSeaweedFSS3Options
   , seaweedFsCsiDriver = Just defaultSeaweedFSCsiDriverOptions
   }
 
@@ -106,6 +114,20 @@ defaultSeaweedFSCsiDriverOptions = SeaweedFSCsiDriverOptions {
 
 seaweedFsStorageClassName :: Text
 seaweedFsStorageClassName = "seaweedfs-storage"
+
+-- | Options for the standalone S3 gateway (see 'seaweedFsS3'). The gateway is provisioned with a
+-- single admin identity using these credentials; consumers that talk to the gateway authenticate
+-- with them.
+data SeaweedFSS3Options = SeaweedFSS3Options {
+  seaweedFsS3AccessKey :: Text
+  , seaweedFsS3SecretKey :: Text
+  } deriving (Show, Eq)
+
+defaultSeaweedFSS3Options :: SeaweedFSS3Options
+defaultSeaweedFSS3Options = SeaweedFSS3Options {
+  seaweedFsS3AccessKey = "seaweedfs"
+  , seaweedFsS3SecretKey = "seaweedfssecretkey"
+  }
 
 -- | The seaweedfs-csi-driver manifest deploys into the @default@ namespace (its RBAC
 -- subjects are hardcoded there), regardless of where the SeaweedFS filer lives.
@@ -194,6 +216,12 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
       , "--for", "condition=Available", "--timeout=300s"
       ]
 
+  -- The S3 gateway mounts this secret as its identities config; create it before the CR so the
+  -- gateway pod can start. Done with @apply@ so a re-run against an existing namespace is fine.
+  whenJust (seaweedFsS3 options) $ \s3Options -> timeAction "Create S3 config secret" $
+    createProcessWithFileLoggingAndStdin' "seaweedfs-s3-secret" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString (s3ConfigSecretYaml namespace (seaweedFsBaseName options) s3Options))
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
   info [i|------------------ Creating SeaweedFS deployment ------------------|]
   timeAction "Create Seaweed CR" $ do
     let val = decodeUtf8 $ A.encode $ example namespace options
@@ -205,6 +233,10 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     forM_ (["master", "volume", "filer"] :: [Text]) $ \component ->
       retryKubectl kubectlBinary env (toString ([i|seaweedfs-wait-#{component}|] :: Text))
         ["rollout", "status", "-n", toString namespace, toString ([i|statefulset/#{seaweedFsBaseName options}-#{component}|] :: Text), "--timeout=300s"]
+    -- The standalone S3 gateway is a stateless Deployment (<baseName>-s3), not a StatefulSet.
+    when (isJust (seaweedFsS3 options)) $
+      retryKubectl kubectlBinary env "seaweedfs-wait-s3"
+        ["rollout", "status", "-n", toString namespace, toString ([i|deployment/#{seaweedFsBaseName options}-s3|] :: Text), "--timeout=300s"]
 
   storageClass <- case seaweedFsCsiDriver options of
     Nothing -> do
@@ -223,7 +255,21 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
 
 example :: Text -> SeaweedFSOptions -> Yaml.Value
 example namespace (SeaweedFSOptions {..}) = let Right x = Yaml.decodeEither' raw in x
- where raw = [i|apiVersion: seaweed.seaweedfs.com/v1
+ where
+  -- Standalone S3 gateway (preferred over the deprecated filer-embedded S3). We turn off the
+  -- embedded IAM (which, with no identities configured, denies everything) and instead point
+  -- the gateway at a config secret holding a single admin identity (see 's3ConfigSecretYaml').
+  s3Block :: Text
+  s3Block = case seaweedFsS3 of
+    Nothing -> ""
+    Just _ -> [i|
+  s3:
+    replicas: 1
+    iam: false
+    configSecret:
+      name: #{seaweedFsBaseName}-s3-config
+      key: config.json|]
+  raw = [i|apiVersion: seaweed.seaweedfs.com/v1
 kind: Seaweed
 metadata:
   namespace: #{namespace}
@@ -244,7 +290,22 @@ spec:
     config: |
       [leveldb2]
       enabled = true
-      dir = "/data/filerldb2"
+      dir = "/data/filerldb2"#{s3Block}
+|]
+
+-- | A @Secret@ holding the SeaweedFS S3 identities config (the @-config@ file for @weed s3@),
+-- with a single admin identity using the gateway's configured credentials. Referenced by the
+-- standalone S3 gateway (see the @s3@ block in 'example').
+s3ConfigSecretYaml :: Text -> Text -> SeaweedFSS3Options -> Text
+s3ConfigSecretYaml namespace baseName (SeaweedFSS3Options {..}) = [i|apiVersion: v1
+kind: Secret
+metadata:
+  name: #{baseName}-s3-config
+  namespace: #{namespace}
+type: Opaque
+stringData:
+  config.json: |
+    {"identities":[{"name":"#{seaweedFsS3AccessKey}","credentials":[{"accessKey":"#{seaweedFsS3AccessKey}","secretKey":"#{seaweedFsS3SecretKey}"}],"actions":["Admin"]}]}
 |]
 
 -- | Install the seaweedfs-csi-driver and point it at this SeaweedFS filer, so that
