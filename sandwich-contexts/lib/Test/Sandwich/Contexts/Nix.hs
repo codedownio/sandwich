@@ -54,6 +54,9 @@ module Test.Sandwich.Contexts.Nix (
   , nixpkgsRelease2405
   , nixpkgsRelease2311
 
+  -- * Lower-level
+  , renderDerivationWithPkgs
+
   -- * Types
   , nixContext
   , NixContext(..)
