@@ -23,6 +23,8 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   -- * Types
   , SeaweedFSOptions(..)
   , defaultSeaweedFSOptions
+  , SeaweedFSCsiDriverOptions(..)
+  , defaultSeaweedFSCsiDriverOptions
 
   , seaweedFs
   , SeaweedFSContext(..)
@@ -30,6 +32,8 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   ) where
 
 import Control.Monad
+import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.Logger (MonadLoggerIO)
 import Data.Aeson as A
 import qualified Data.List as L
 import Data.String.Interpolate
@@ -45,14 +49,18 @@ import Test.Sandwich.Contexts.Kubernetes.Images (loadImage')
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import Test.Sandwich.Contexts.Nix
+import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Environment
+import UnliftIO.Exception (handleAny, throwIO)
 import UnliftIO.IO (withFile)
 import UnliftIO.Process
-import UnliftIO.Temporary
 
 
 data SeaweedFSContext = SeaweedFSContext {
   seaweedFsOptions :: SeaweedFSOptions
+  -- | The name of the @StorageClass@ provisioning SeaweedFS-backed volumes, if the
+  -- CSI driver was installed (see 'seaweedFsCsiDriver')
+  , seaweedFsCsiStorageClass :: Maybe Text
   } deriving (Show)
 
 data SeaweedFSOptions = SeaweedFSOptions {
@@ -64,10 +72,16 @@ data SeaweedFSOptions = SeaweedFSOptions {
   , seaweedFsVolumeServerDiskCount :: Int
   , seaweedFsVolumeSizeLimitMb :: Int
   , seaweedFsVolumeStorageRequest :: Text
+  -- | Whether to install the
+  -- [seaweedfs-csi-driver](https://github.com/seaweedfs/seaweedfs-csi-driver),
+  -- which provisions Kubernetes @PersistentVolume@s backed by this SeaweedFS
+  -- filer (via the @seaweedfs-storage@ 'StorageClass'). Defaults to 'Just'
+  -- 'defaultSeaweedFSCsiDriverOptions'.
+  , seaweedFsCsiDriver :: Maybe SeaweedFSCsiDriverOptions
   } deriving (Show)
 defaultSeaweedFSOptions :: SeaweedFSOptions
 defaultSeaweedFSOptions = SeaweedFSOptions {
-  seaweedFsImage = "chrislusf/seaweedfs:3.73"
+  seaweedFsImage = "chrislusf/seaweedfs:4.33"
   , seaweedFsBaseName = "seaweed1"
   , seaweedFsMasterReplicas = 3
   , seaweedFsFilerReplicas = 2
@@ -75,7 +89,28 @@ defaultSeaweedFSOptions = SeaweedFSOptions {
   , seaweedFsVolumeServerDiskCount = 1
   , seaweedFsVolumeSizeLimitMb = 1024
   , seaweedFsVolumeStorageRequest = "2Gi"
+  , seaweedFsCsiDriver = Just defaultSeaweedFSCsiDriverOptions
   }
+
+-- | Options for installing the SeaweedFS CSI driver.
+data SeaweedFSCsiDriverOptions = SeaweedFSCsiDriverOptions {
+  -- | The seaweedfs-csi-driver release (git tag) whose @deploy/kubernetes/seaweedfs-csi.yaml@
+  -- manifest to install, e.g. @\"v1.4.5\"@.
+  seaweedFsCsiDriverVersion :: Text
+  } deriving (Show, Eq)
+
+defaultSeaweedFSCsiDriverOptions :: SeaweedFSCsiDriverOptions
+defaultSeaweedFSCsiDriverOptions = SeaweedFSCsiDriverOptions {
+  seaweedFsCsiDriverVersion = "v1.4.5"
+  }
+
+seaweedFsStorageClassName :: Text
+seaweedFsStorageClassName = "seaweedfs-storage"
+
+-- | The seaweedfs-csi-driver manifest deploys into the @default@ namespace (its RBAC
+-- subjects are hardcoded there), regardless of where the SeaweedFS filer lives.
+seaweedFsCsiNamespace :: String
+seaweedFsCsiNamespace = "default"
 
 seaweedFs :: Label "seaweedFs" SeaweedFSContext
 seaweedFs = Label
@@ -128,77 +163,63 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   baseEnv <- getEnvironment
 
   NixContext {..} <- getContext nixContext
-
-  let cp = proc nixContextNixBinary [
-        "build", "--impure"
-        , "--extra-experimental-features", "nix-command"
-        , "--expr", seaweedFsOperatorDerivation
-        , "--no-link"
-        , "--json"
-        ]
-
-  operatorJson <- withFile "/dev/null" WriteMode $ \hNull ->
-    readCreateProcess (cp { std_err = UseHandle hNull }) ""
-
-  operatorPath <- case A.eitherDecodeStrict (encodeUtf8 operatorJson) of
-    Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure p
-    x -> expectationFailure [i|Couldn't parse seaweedfs-operator path: #{x}|]
-
-  info [i|Got operator path: #{operatorPath}|]
-
-  -- Build a Nix environment with some tools needed by the operator
-  nixEnvPath <- buildNixSymlinkJoin ["coreutils", "gnumake", "go", "stdenv", "which"]
-  info [i|Built Nix environment for operator builds: #{nixEnvPath}|]
-
-  let originalSearchPathParts = maybe [] splitSearchPath (L.lookup "PATH" baseEnv)
-  let finalPath = (nixEnvPath </> "bin") : takeDirectory kubectlBinary : originalSearchPathParts
-                & fmap toText
-                & T.intercalate (toText [searchPathSeparator])
-                & toString
+  -- Reuse the test's nix context for the nixpkgs pin, rather than pinning our own.
+  let renderWithPkgs = renderDerivationWithPkgs nixContextNixpkgsDerivation
 
   let env = baseEnv
           & (("KUBECONFIG", kubernetesClusterKubeConfigPath) :)
-          & (("PATH", finalPath) :)
           & L.nubBy (\x y -> fst x == fst y)
 
-  withSystemTempDirectory "seaweedfs-operator" $ \dir -> do
-    let target = dir </> "seaweefs-operator"
-    _ <- readCreateProcess (proc "cp" ["-r", toString operatorPath, target]) ""
-    _ <- readCreateProcess (proc "chmod" ["-R", "u+w", target]) ""
+  let runK name args = createProcessWithFileLogging' name ((proc kubectlBinary args) { env = Just env })
+                       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-    let runOperatorCmd cmd extraEnv = createProcessWithFileLogging' "seaweedfs-operator" (
-          (shell cmd) {
-              env = Just (env <> extraEnv)
-              , cwd = Just target
-              }
-          ) >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+  -- The operator manager image, built entirely by Nix (see 'seaweedFsOperatorImageExpr').
+  info [i|------------------ Building and loading SeaweedFS operator image ------------------|]
+  operatorImageTarball <- timeAction "Build operator image (Nix)" $
+    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorImageExpr))
+  newImageName <- timeAction "Load operator image into cluster" $
+    loadImage' kcc (ImageLoadSpecTarball (toString operatorImageTarball))
+  info [i|Loaded operator image into cluster as: #{newImageName}|]
 
-    info [i|------------------ Building and uploading SeaweedFS Docker image ------------------|]
+  -- The operator's CRD + controller manifests, rendered by Nix via kustomize (see
+  -- 'seaweedFsOperatorManifestsExpr') -- no source checkout, temp dir, or @make@ at test time.
+  info [i|------------------ Installing SeaweedFS operator ------------------|]
+  manifestsDir <- timeAction "Render operator manifests (Nix)" $
+    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorManifestsExpr))
+  timeAction "Apply operator manifests" $ do
+    runK "seaweedfs-operator-crds" ["apply", "--server-side", "-f", toString manifestsDir </> "crd.yaml"]
+    runK "seaweedfs-operator-deploy" ["apply", "-f", toString manifestsDir </> "operator.yaml"]
+  timeAction "Wait for operator controller-manager" $
+    runK "seaweedfs-operator-wait" [
+      "wait", "deployment/seaweedfs-operator-controller-manager", "-n", "seaweedfs-operator-system"
+      , "--for", "condition=Available", "--timeout=300s"
+      ]
 
-    let initialImageName = "seaweedfs/seaweedfs-operator:v0.0.1"
-
-    info [i|Doing make docker-build|]
-    runOperatorCmd "make docker-build" [("IMG", toString initialImageName)]
-
-    newImageName <- loadImage' kcc (ImageLoadSpecDocker initialImageName IfNotPresent)
-    info [i|Loaded image into cluster as: #{newImageName}|]
-
-    info [i|------------------ Installing SeaweedFS operator ------------------|]
-
-    info [i|Doing make install|]
-    runOperatorCmd "make install" [("IMG", toString newImageName)]
-    info [i|Doing make deploy|]
-    runOperatorCmd "make deploy" [("IMG", toString newImageName)]
-
-    info [i|------------------ Creating SeaweedFS deployment ------------------|]
-
+  info [i|------------------ Creating SeaweedFS deployment ------------------|]
+  timeAction "Create Seaweed CR" $ do
     let val = decodeUtf8 $ A.encode $ example namespace options
-    createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((shell [i|#{kubectlBinary} create -f -|]) { env = Just env }) val
+    createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((proc kubectlBinary ["create", "-f", "-"]) { env = Just env }) val
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-    action $ SeaweedFSContext {
-      seaweedFsOptions = options
-      }
+  timeAction "Wait for SeaweedFS cluster (master/volume/filer)" $ do
+    info [i|Waiting for the SeaweedFS cluster (master/volume/filer) to be ready|]
+    forM_ (["master", "volume", "filer"] :: [Text]) $ \component ->
+      retryKubectl kubectlBinary env (toString ([i|seaweedfs-wait-#{component}|] :: Text))
+        ["rollout", "status", "-n", toString namespace, toString ([i|statefulset/#{seaweedFsBaseName options}-#{component}|] :: Text), "--timeout=300s"]
+
+  storageClass <- case seaweedFsCsiDriver options of
+    Nothing -> do
+      info [i|Skipping SeaweedFS CSI driver installation|]
+      pure Nothing
+    Just csiOptions -> timeAction "Install CSI driver" $ do
+      info [i|------------------ Installing SeaweedFS CSI driver ------------------|]
+      installSeaweedFsCsiDriver nixContextNixBinary kubectlBinary env namespace (seaweedFsBaseName options) csiOptions
+      pure (Just seaweedFsStorageClassName)
+
+  action $ SeaweedFSContext {
+    seaweedFsOptions = options
+    , seaweedFsCsiStorageClass = storageClass
+    }
 
 
 example :: Text -> SeaweedFSOptions -> Yaml.Value
@@ -227,10 +248,171 @@ spec:
       dir = "/data/filerldb2"
 |]
 
-seaweedFsOperatorDerivation = [__i|with import <nixpkgs> {}; fetchFromGitHub {
-                                     owner = "seaweedfs";
-                                     repo = "seaweedfs-operator";
-                                     rev = "6fa4c24d47c57daa10a084e3a5598efbb8d808c8";
-                                     sha256 = "sha256-gFFIG2tglzvXoqzUvbzWAG2Bg2RwCCsuX0tXwV95D/0=";
-                                   }
-                                  |]
+-- | Install the seaweedfs-csi-driver and point it at this SeaweedFS filer, so that
+-- @PersistentVolumeClaim@s using the @seaweedfs-storage@ 'StorageClass' get provisioned
+-- against it. The driver's controller/node plugins connect to the filer over its gRPC
+-- port (HTTP port + 10000), but the @--filer@ flag takes the HTTP address, so we point
+-- it at @\<baseName\>-filer.\<namespace\>:8888@. Also waits for the SeaweedFS cluster
+-- (master/volume/filer) and the driver to roll out, since provisioning needs the filer
+-- reachable.
+installSeaweedFsCsiDriver :: (
+  MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m, MonadFail m
+  )
+  -- | Path to the @nix@ binary (used to fetch the CSI manifest)
+  => FilePath
+  -- | Path to the @kubectl@ binary
+  -> FilePath
+  -- | Environment to run @kubectl@ with
+  -> [(String, String)]
+  -- | Namespace the SeaweedFS filer lives in
+  -> Text
+  -- | SeaweedFS base name (the filer Service is @\<baseName\>-filer@)
+  -> Text
+  -> SeaweedFSCsiDriverOptions
+  -> m ()
+installSeaweedFsCsiDriver nixBinary kubectlBinary env namespace baseName (SeaweedFSCsiDriverOptions {..}) = do
+  let manifestUrl = [i|https://raw.githubusercontent.com/seaweedfs/seaweedfs-csi-driver/#{seaweedFsCsiDriverVersion}/deploy/kubernetes/seaweedfs-csi.yaml|] :: Text
+  let filerAddress = [i|#{baseName}-filer.#{namespace}:8888|] :: Text
+
+  timeAction "Apply CSI manifest" $ do
+    info [i|Applying seaweedfs-csi-driver #{seaweedFsCsiDriverVersion} manifest, pointing it at filer '#{filerAddress}'|]
+    -- Fetch the manifest (via Nix) and substitute the SEAWEEDFS_FILER placeholder before applying.
+    -- The upstream manifest ships @value: "SEAWEEDFS_FILER:8888"@ as a placeholder on both the
+    -- controller Deployment and node DaemonSet; baking in the real address up front means a single
+    -- rollout. (Patching it after @apply@ with @kubectl set env@ instead double-rolls the controller,
+    -- whose single-replica pod anti-affinity then deadlocks the new pod on a single-node cluster.)
+    manifestPath <- nixBuildExprToPath nixBinary (nixFetchUrlExpr manifestUrl)
+    manifest <- decodeUtf8 <$> readFileBS (toString manifestPath)
+    let substituted = T.replace "SEAWEEDFS_FILER:8888" filerAddress manifest
+    createProcessWithFileLoggingAndStdin' "seaweedfs-csi-apply"
+      ((proc kubectlBinary ["apply", "-n", seaweedFsCsiNamespace, "-f", "-"]) { env = Just env }) (toString substituted)
+      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+  -- Wait for the CSI controller (provisioner) and node plugin. We deliberately skip the
+  -- seaweedfs-mount DaemonSet: it uses updateStrategy OnDelete, for which @kubectl rollout status@
+  -- errors immediately ("only available for RollingUpdate"). Its pod is created on this fresh
+  -- install regardless, and the actual PVC mount exercises it.
+  timeAction "Wait for CSI driver (controller/node)" $ do
+    info [i|Waiting for the seaweedfs-csi-driver to be ready|]
+    forM_ ([("deployment", "seaweedfs-controller"), ("daemonset", "seaweedfs-node")] :: [(String, String)]) $ \(kind, name) ->
+      retryKubectl kubectlBinary env (toString ([i|seaweedfs-wait-#{name}|] :: Text))
+        ["rollout", "status", "-n", seaweedFsCsiNamespace, [i|#{kind}/#{name}|], "--timeout=300s"]
+
+-- | Run a @kubectl@ command, retrying on failure. Used for @rollout status@ on resources
+-- the SeaweedFS operator creates asynchronously, which may not exist the instant we ask.
+retryKubectl :: (
+  MonadUnliftIO m, MonadLoggerIO m, HasBaseContextMonad context m
+  ) => FilePath -> [(String, String)] -> String -> [String] -> m ()
+retryKubectl kubectlBinary env name args = go (2400 :: Int)
+  where
+    go n = handleAny (handler n) $
+      createProcessWithFileLogging' name ((proc kubectlBinary args) { env = Just env })
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+    handler n e
+      | n <= 1 = throwIO e
+      | otherwise = do
+          debug [i|(#{name}) not ready yet (#{n - 1} attempts left): #{e}|]
+          threadDelay 5_000_000
+          go (n - 1)
+
+-- | Run @nix build --expr@ on a Nix expression and return the resulting store path.
+nixBuildExprToPath :: (
+  MonadUnliftIO m, HasBaseContextMonad context m
+  ) => FilePath -> String -> m Text
+nixBuildExprToPath nixBinary expr = do
+  let cp = proc nixBinary [
+        "build", "--impure"
+        , "--extra-experimental-features", "nix-command"
+        , "--expr", expr
+        , "--no-link"
+        , "--json"
+        ]
+  out <- withFile "/dev/null" WriteMode $ \hNull ->
+    readCreateProcess (cp { std_err = UseHandle hNull }) ""
+  case A.eitherDecodeStrict (encodeUtf8 out) of
+    Right (A.Array (V.toList -> ((A.Object (aesonLookup "outputs" -> Just (A.Object (aesonLookup "out" -> Just (A.String p))))):_))) -> pure p
+    x -> expectationFailure [i|Couldn't parse nix build output: #{x}|]
+
+-- | A Nix expression that fetches a URL to a store path, so we can read and tweak the contents
+-- before applying. Impure (no hash) -- fine under the @--impure@ 'nixBuildExprToPath' passes.
+nixFetchUrlExpr :: Text -> String
+nixFetchUrlExpr url = [i|with import <nixpkgs> {}; runCommand "fetched" {} "cp ${builtins.fetchurl "#{url}"} $out"|]
+
+-- | The pinned seaweedfs-operator source, as a @pkgs.fetchFromGitHub@ expression (it expects
+-- @pkgs@ in scope -- see 'renderDerivationWithPkgs'). This is 0.1.28, the latest release. Two
+-- things to know about this pin:
+--
+--   * Its metrics auth-proxy sidecar uses the maintained
+--     registry.k8s.io/kubebuilder/kube-rbac-proxy:v0.16.0. Older revs (e.g. 6fa4c24,
+--     Jan 2025) pinned the since-removed gcr.io/kubebuilder/kube-rbac-proxy:v0.5.0, which
+--     kept the controller-manager pod from starting.
+--
+--   * From PR #248 on, the operator unconditionally renders a security.toml with
+--     @jwt.filer_signing(.read)@ keys even when TLS is off (to register the IAM gRPC
+--     service). On older SeaweedFS images (e.g. 3.73) that makes the filer answer 401
+--     ("wrong jwt") to the plain @GET /@ its own liveness/readiness probes hit, so the
+--     filer CrashLoopBackOffs and never goes Ready (it has no JWT-exempt health route;
+--     see seaweedfs#4891). Current SeaweedFS images (4.x, see 'seaweedFsImage') don't gate
+--     @GET /@ that way -- which is why upstream CI, running @chrislusf/seaweedfs:latest@,
+--     stays green. So this operator must be paired with a current 'seaweedFsImage'.
+--
+-- The Seaweed CRD schema matches what 'example' produces. When bumping the rev/sha256, also bump
+-- 'seaweedFsOperatorVendorHash'.
+seaweedFsOperatorSrc :: Text
+seaweedFsOperatorSrc = [__i|pkgs.fetchFromGitHub {
+                              owner = "seaweedfs";
+                              repo = "seaweedfs-operator";
+                              rev = "58705464c3eccb4894244bb7769e595ad8e23132";
+                              sha256 = "sha256-QKd4s7AzHeKdMKxftNw5LobiGBq3de1MHjGDNgS65Y8=";
+                            }|]
+
+-- | @go.sum@ vendor hash for the operator at 'seaweedFsOperatorSrc'. Bump together with the rev.
+seaweedFsOperatorVendorHash :: Text
+seaweedFsOperatorVendorHash = "sha256-Au2zw9f4e6QMoxrYgieqqZryFpx2eD1uTMokAj70xqU="
+
+-- | Builds the operator's manager image (replacing @make docker-build@, which would otherwise
+-- shell out to @docker buildx@ at test time). Expects @pkgs@ in scope (wrapped by
+-- 'renderDerivationWithPkgs'). Mirrors the upstream Dockerfile: a statically-linked @manager@
+-- binary placed at @/manager@ (the path its Deployment's @command@ invokes), run as nonroot.
+-- Needs Go 1.25, so the nix context's nixpkgs must be recent (>= 25.05). The result is a docker
+-- image tarball, loaded into the cluster via 'ImageLoadSpecTarball'.
+seaweedFsOperatorImageExpr :: Text
+seaweedFsOperatorImageExpr = [__i|
+  let
+    manager = pkgs.buildGo125Module {
+      pname = "seaweedfs-operator-manager";
+      version = "0.1.28";
+      src = #{seaweedFsOperatorSrc};
+      vendorHash = "#{seaweedFsOperatorVendorHash}";
+      subPackages = [ "cmd" ];
+      env.CGO_ENABLED = 0;
+      postInstall = "mv $out/bin/cmd $out/bin/manager";
+    };
+  in
+  pkgs.dockerTools.buildImage {
+    name = "seaweedfs/seaweedfs-operator";
+    tag = "nix";
+    copyToRoot = pkgs.runCommand "seaweedfs-operator-manager-root" {} "mkdir -p $out; cp ${manager}/bin/manager $out/manager";
+    config = {
+      Entrypoint = [ "/manager" ];
+      User = "65532:65532";
+    };
+  }
+  |]
+
+-- | Renders the operator's CRD and controller manifests with kustomize at build time, so at test
+-- time we just @kubectl apply@ them -- no source checkout, temp dir, or @make@ (replacing
+-- @make install@ / @make deploy@). Expects @pkgs@ in scope. Bakes in the @:nix@ image built by
+-- 'seaweedFsOperatorImageExpr', and mirrors @make manifests@' fix of stripping invalid OpenAPI
+-- int32/int64 format fields from the CRDs. Outputs a directory with @crd.yaml@ and @operator.yaml@.
+seaweedFsOperatorManifestsExpr :: Text
+seaweedFsOperatorManifestsExpr = [__i|
+  pkgs.runCommand "seaweedfs-operator-manifests" { nativeBuildInputs = [ pkgs.kustomize pkgs.perl ]; } ''
+    cp -r ${#{seaweedFsOperatorSrc}} src && chmod -R u+w src && cd src
+    perl -i -pe 's/\\s+format: int32\\n//g; s/\\s+format: int64\\n//g' config/crd/bases/*.yaml
+    (cd config/manager && kustomize edit set image controller:latest=seaweedfs/seaweedfs-operator:nix)
+    mkdir -p $out
+    kustomize build config/crd > $out/crd.yaml
+    kustomize build config/default > $out/operator.yaml
+  ''
+|]
