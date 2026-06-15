@@ -23,6 +23,7 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   -- * Types
   , SeaweedFSOptions(..)
   , defaultSeaweedFSOptions
+  , defaultSeaweedFsOperatorImageExpr
   , SeaweedFSCsiDriverOptions(..)
   , defaultSeaweedFSCsiDriverOptions
   , SeaweedFSS3Options(..)
@@ -67,6 +68,12 @@ data SeaweedFSContext = SeaweedFSContext {
 
 data SeaweedFSOptions = SeaweedFSOptions {
   seaweedFsImage :: ImageLoadSpec
+  -- | Extra images to preload into the cluster (so operator-managed pods don't pull them at
+  -- runtime). Defaults to the operator's @kube-rbac-proxy@ sidecar.
+  , seaweedFsExtraImages :: [ImageLoadSpec]
+  -- | The Nix expression (built via the test's nix context) producing the operator manager image
+  -- tarball. Defaults to 'defaultSeaweedFsOperatorImageExpr'.
+  , seaweedFsOperatorImageExpr :: Text
   , seaweedFsBaseName :: Text
   , seaweedFsMasterReplicas :: Int
   , seaweedFsFilerReplicas :: Int
@@ -89,6 +96,8 @@ data SeaweedFSOptions = SeaweedFSOptions {
 defaultSeaweedFSOptions :: SeaweedFSOptions
 defaultSeaweedFSOptions = SeaweedFSOptions {
   seaweedFsImage = ImageLoadSpecDocker "chrislusf/seaweedfs:4.33" IfNotPresent
+  , seaweedFsExtraImages = [ImageLoadSpecDocker "registry.k8s.io/kubebuilder/kube-rbac-proxy:v0.16.0" IfNotPresent]
+  , seaweedFsOperatorImageExpr = defaultSeaweedFsOperatorImageExpr
   , seaweedFsBaseName = "seaweed1"
   , seaweedFsMasterReplicas = 3
   , seaweedFsFilerReplicas = 2
@@ -198,10 +207,20 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   -- The operator manager image, built entirely by Nix (see 'seaweedFsOperatorImageExpr').
   info [i|------------------ Building and loading SeaweedFS operator image ------------------|]
   operatorImageTarball <- timeAction "Build operator image (Nix)" $
-    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorImageExpr))
+    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs (seaweedFsOperatorImageExpr options)))
   operatorImageName <- timeAction "Load operator image into cluster" $
     loadImage' kcc (ImageLoadSpecTarball (toString operatorImageTarball))
   info [i|Loaded operator image into cluster as: #{operatorImageName}|]
+
+  info [i|------------------ Preloading SeaweedFS server image ------------------|]
+  imageName <- timeAction "Preload SeaweedFS server image" $
+    loadImage' kcc (seaweedFsImage options)
+
+  info [i|------------------ Preloading extra images ------------------|]
+  timeAction "Preload extra images" $
+    forM_ (seaweedFsExtraImages options) $ \spec -> do
+      loaded <- loadImage' kcc spec
+      info [i|Preloaded extra image: #{loaded}|]
 
   -- The operator's CRD + controller manifests, rendered by Nix via kustomize
   info [i|------------------ Installing SeaweedFS operator ------------------|]
@@ -221,12 +240,6 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   whenJust (seaweedFsS3 options) $ \s3Options -> timeAction "Create S3 config secret" $
     createProcessWithFileLoggingAndStdin' "seaweedfs-s3-secret" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString (s3ConfigSecretYaml namespace (seaweedFsBaseName options) s3Options))
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-
-  -- Preload the SeaweedFS server image so the operator-spawned master/volume/filer/s3 pods don't
-  -- pull it at runtime (which trips test-side image-pull sanity checks). Mirrors the MinIO operator.
-  info [i|------------------ Preloading SeaweedFS server image ------------------|]
-  imageName <- timeAction "Preload SeaweedFS server image" $
-    loadImage' kcc (seaweedFsImage options)
 
   info [i|------------------ Creating SeaweedFS deployment ------------------|]
   timeAction "Create Seaweed CR" $ do
@@ -442,8 +455,8 @@ seaweedFsOperatorVendorHash = "sha256-Au2zw9f4e6QMoxrYgieqqZryFpx2eD1uTMokAj70xq
 -- binary placed at @/manager@ (the path its Deployment's @command@ invokes), run as nonroot.
 -- Needs Go 1.25, so the nix context's nixpkgs must be recent (>= 25.05). The result is a docker
 -- image tarball, loaded into the cluster via 'ImageLoadSpecTarball'.
-seaweedFsOperatorImageExpr :: Text
-seaweedFsOperatorImageExpr = [__i|
+defaultSeaweedFsOperatorImageExpr :: Text
+defaultSeaweedFsOperatorImageExpr = [__i|
   let
     manager = pkgs.buildGo125Module {
       pname = "seaweedfs-operator-manager";
