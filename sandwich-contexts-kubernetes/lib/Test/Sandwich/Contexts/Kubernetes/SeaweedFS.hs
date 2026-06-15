@@ -66,7 +66,7 @@ data SeaweedFSContext = SeaweedFSContext {
   } deriving (Show)
 
 data SeaweedFSOptions = SeaweedFSOptions {
-  seaweedFsImage :: Text
+  seaweedFsImage :: ImageLoadSpec
   , seaweedFsBaseName :: Text
   , seaweedFsMasterReplicas :: Int
   , seaweedFsFilerReplicas :: Int
@@ -88,7 +88,7 @@ data SeaweedFSOptions = SeaweedFSOptions {
   } deriving (Show)
 defaultSeaweedFSOptions :: SeaweedFSOptions
 defaultSeaweedFSOptions = SeaweedFSOptions {
-  seaweedFsImage = "chrislusf/seaweedfs:4.33"
+  seaweedFsImage = ImageLoadSpecDocker "chrislusf/seaweedfs:4.33" IfNotPresent
   , seaweedFsBaseName = "seaweed1"
   , seaweedFsMasterReplicas = 3
   , seaweedFsFilerReplicas = 2
@@ -199,9 +199,9 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   info [i|------------------ Building and loading SeaweedFS operator image ------------------|]
   operatorImageTarball <- timeAction "Build operator image (Nix)" $
     nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorImageExpr))
-  newImageName <- timeAction "Load operator image into cluster" $
+  operatorImageName <- timeAction "Load operator image into cluster" $
     loadImage' kcc (ImageLoadSpecTarball (toString operatorImageTarball))
-  info [i|Loaded operator image into cluster as: #{newImageName}|]
+  info [i|Loaded operator image into cluster as: #{operatorImageName}|]
 
   -- The operator's CRD + controller manifests, rendered by Nix via kustomize
   info [i|------------------ Installing SeaweedFS operator ------------------|]
@@ -222,9 +222,15 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     createProcessWithFileLoggingAndStdin' "seaweedfs-s3-secret" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString (s3ConfigSecretYaml namespace (seaweedFsBaseName options) s3Options))
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
+  -- Preload the SeaweedFS server image so the operator-spawned master/volume/filer/s3 pods don't
+  -- pull it at runtime (which trips test-side image-pull sanity checks). Mirrors the MinIO operator.
+  info [i|------------------ Preloading SeaweedFS server image ------------------|]
+  imageName <- timeAction "Preload SeaweedFS server image" $
+    loadImage' kcc (seaweedFsImage options)
+
   info [i|------------------ Creating SeaweedFS deployment ------------------|]
   timeAction "Create Seaweed CR" $ do
-    let val = decodeUtf8 $ A.encode $ example namespace options
+    let val = decodeUtf8 $ A.encode $ example namespace imageName options
     createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((proc kubectlBinary ["create", "-f", "-"]) { env = Just env }) val
       >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
@@ -253,8 +259,8 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
     }
 
 
-example :: Text -> SeaweedFSOptions -> Yaml.Value
-example namespace (SeaweedFSOptions {..}) = let Right x = Yaml.decodeEither' raw in x
+example :: Text -> Text -> SeaweedFSOptions -> Yaml.Value
+example namespace imageName (SeaweedFSOptions {..}) = let Right x = Yaml.decodeEither' raw in x
  where
   -- Standalone S3 gateway (preferred over the deprecated filer-embedded S3). We turn off the
   -- embedded IAM (which, with no identities configured, denies everything) and instead point
@@ -275,7 +281,7 @@ metadata:
   namespace: #{namespace}
   name: #{seaweedFsBaseName}
 spec:
-  image: #{seaweedFsImage}
+  image: #{imageName}
   volumeServerDiskCount: #{seaweedFsVolumeServerDiskCount}
   hostSuffix: seaweed.abcdefg.com
   master:
