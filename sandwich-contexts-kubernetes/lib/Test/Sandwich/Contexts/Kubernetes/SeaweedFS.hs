@@ -120,11 +120,24 @@ data SeaweedFSCsiDriverOptions = SeaweedFSCsiDriverOptions {
   -- | The seaweedfs-csi-driver release (git tag) whose @deploy/kubernetes/seaweedfs-csi.yaml@
   -- manifest to install, e.g. @\"v1.4.5\"@.
   seaweedFsCsiDriverVersion :: Text
+  -- | Images referenced by the CSI driver manifest, preloaded into the cluster before applying it
+  -- (the manifest pins @imagePullPolicy: IfNotPresent@, so preloading avoids any runtime pull).
+  -- Must match 'seaweedFsCsiDriverVersion'.
+  , seaweedFsCsiDriverImages :: [ImageLoadSpec]
   } deriving (Show, Eq)
 
 defaultSeaweedFSCsiDriverOptions :: SeaweedFSCsiDriverOptions
 defaultSeaweedFSCsiDriverOptions = SeaweedFSCsiDriverOptions {
   seaweedFsCsiDriverVersion = "v1.4.5"
+  , seaweedFsCsiDriverImages = fmap (`ImageLoadSpecDocker` IfNotPresent) [
+      "chrislusf/seaweedfs-csi-driver:latest"
+      , "chrislusf/seaweedfs-mount:latest"
+      , "registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.8.0"
+      , "registry.k8s.io/sig-storage/csi-provisioner:v3.5.0"
+      , "registry.k8s.io/sig-storage/csi-attacher:v4.3.0"
+      , "registry.k8s.io/sig-storage/csi-resizer:v1.8.0"
+      , "registry.k8s.io/sig-storage/livenessprobe:v2.10.0"
+      ]
   }
 
 seaweedFsStorageClassName :: Text
@@ -268,6 +281,10 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
       info [i|Skipping SeaweedFS CSI driver installation|]
       pure Nothing
     Just csiOptions -> timeAction "Install CSI driver" $ do
+      info [i|------------------ Preloading SeaweedFS CSI driver images ------------------|]
+      forM_ (seaweedFsCsiDriverImages csiOptions) $ \spec -> do
+        loaded <- loadImage' kcc spec
+        info [i|Preloaded CSI image: #{loaded}|]
       info [i|------------------ Installing SeaweedFS CSI driver ------------------|]
       installSeaweedFsCsiDriver nixContextNixBinary kubectlBinary env namespace (seaweedFsBaseName options) csiOptions
       pure (Just seaweedFsStorageClassName)
