@@ -64,6 +64,12 @@ data SeaweedFSContext = SeaweedFSContext {
   -- | The name of the @StorageClass@ provisioning SeaweedFS-backed volumes, if the
   -- CSI driver was installed (see 'seaweedFsCsiDriver')
   , seaweedFsCsiStorageClass :: Maybe Text
+  -- | The operator-generated filer JWT signing keys (security.toml @jwt.filer_signing.key@ /
+  -- @jwt.filer_signing.read.key@), read from the @\<baseName\>-security-config@ ConfigMap. The
+  -- operator renders these unconditionally, so a client talking to the filer HTTP API directly
+  -- must present a JWT signed with these. 'Nothing' if no security ConfigMap was found.
+  , seaweedFsFilerJwtWriteKey :: Maybe Text
+  , seaweedFsFilerJwtReadKey :: Maybe Text
   } deriving (Show)
 
 data SeaweedFSOptions = SeaweedFSOptions {
@@ -266,9 +272,24 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
       installSeaweedFsCsiDriver nixContextNixBinary kubectlBinary env namespace (seaweedFsBaseName options) csiOptions
       pure (Just seaweedFsStorageClassName)
 
+  -- Read the operator-generated security.toml so callers that hit the filer HTTP API directly
+  -- can authenticate (the operator renders jwt.filer_signing(.read) keys unconditionally). The
+  -- ConfigMap is created during reconcile and mounted into the (now-ready) filer, so it exists.
+  (jwtWriteKey, jwtReadKey) <- do
+    let cmName = seaweedFsBaseName options <> "-security-config"
+    securityToml <- handleAny (\_ -> pure "") $ readCreateProcess
+      ((proc kubectlBinary
+        [ "get", "configmap", toString cmName, "-n", toString namespace
+        , "-o", "jsonpath={.data.security\\.toml}" ]) { env = Just env }) ""
+    let keys = parseFilerJwtKeys (T.pack securityToml)
+    info [i|SeaweedFS filer JWT keys present: write=#{isJust (fst keys)} read=#{isJust (snd keys)}|]
+    pure keys
+
   action $ SeaweedFSContext {
     seaweedFsOptions = options
     , seaweedFsCsiStorageClass = storageClass
+    , seaweedFsFilerJwtWriteKey = jwtWriteKey
+    , seaweedFsFilerJwtReadKey = jwtReadKey
     }
 
 
@@ -326,6 +347,26 @@ stringData:
   config.json: |
     {"identities":[{"name":"#{seaweedFsS3AccessKey}","credentials":[{"accessKey":"#{seaweedFsS3AccessKey}","secretKey":"#{seaweedFsS3SecretKey}"}],"actions":["Admin"]}]}
 |]
+
+-- | Extract the filer JWT signing keys (write, read) from a security.toml — the @key = "..."@
+-- under @[jwt.filer_signing]@ and @[jwt.filer_signing.read]@ respectively. Either is 'Nothing'
+-- if its section/key is absent.
+parseFilerJwtKeys :: Text -> (Maybe Text, Maybe Text)
+parseFilerJwtKeys toml =
+  let (_, w, r) = L.foldl' step (Nothing :: Maybe Text, Nothing, Nothing) (fmap T.strip (T.lines toml))
+  in (w, r)
+  where
+    step (sec, w, r) line
+      | "[" `T.isPrefixOf` line = (Just line, w, r)
+      | "key" `T.isPrefixOf` line
+      , Just v <- quoted line = case sec of
+          Just "[jwt.filer_signing]" -> (sec, Just v, r)
+          Just "[jwt.filer_signing.read]" -> (sec, w, Just v)
+          _ -> (sec, w, r)
+      | otherwise = (sec, w, r)
+    quoted line = case T.splitOn "\"" line of
+      (_ : v : _) -> Just v
+      _ -> Nothing
 
 -- | Install the seaweedfs-csi-driver and point it at this SeaweedFS filer, so that
 -- @PersistentVolumeClaim@s using the @seaweedfs-storage@ 'StorageClass' get provisioned
