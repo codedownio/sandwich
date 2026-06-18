@@ -39,11 +39,14 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Logger (MonadLoggerIO)
 import Data.Aeson as A
 import qualified Data.List as L
+import qualified Data.Map as Map
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Data.Yaml as Yaml
 import Relude hiding (withFile)
+import qualified Toml
+import Toml (Table'(MkTable), Value'(..))
 import System.Exit
 import System.FilePath
 import Test.Sandwich
@@ -365,24 +368,25 @@ stringData:
     {"identities":[{"name":"#{seaweedFsS3AccessKey}","credentials":[{"accessKey":"#{seaweedFsS3AccessKey}","secretKey":"#{seaweedFsS3SecretKey}"}],"actions":["Admin"]}]}
 |]
 
--- | Extract the filer JWT signing keys (write, read) from a security.toml — the @key = "..."@
--- under @[jwt.filer_signing]@ and @[jwt.filer_signing.read]@ respectively. Either is 'Nothing'
--- if its section/key is absent.
+-- | Extract the filer JWT signing keys (write, read) from a security.toml: the @key@ under
+-- @[jwt.filer_signing]@ and @[jwt.filer_signing.read]@ respectively. Either is 'Nothing' if its
+-- table/key is absent or the document doesn't parse.
 parseFilerJwtKeys :: Text -> (Maybe Text, Maybe Text)
-parseFilerJwtKeys toml =
-  let (_, w, r) = L.foldl' step (Nothing :: Maybe Text, Nothing, Nothing) (fmap T.strip (T.lines toml))
-  in (w, r)
+parseFilerJwtKeys tomlText = case Toml.parse tomlText of
+  Left _ -> (Nothing, Nothing)
+  Right table ->
+    ( lookupString table ["jwt", "filer_signing", "key"]
+    , lookupString table ["jwt", "filer_signing", "read", "key"]
+    )
   where
-    step (sec, w, r) line
-      | "[" `T.isPrefixOf` line = (Just line, w, r)
-      | "key" `T.isPrefixOf` line
-      , Just v <- quoted line = case sec of
-          Just "[jwt.filer_signing]" -> (sec, Just v, r)
-          Just "[jwt.filer_signing.read]" -> (sec, w, Just v)
-          _ -> (sec, w, r)
-      | otherwise = (sec, w, r)
-    quoted line = case T.splitOn "\"" line of
-      (_ : v : _) -> Just v
+    -- Follow a dotted path of TOML tables to a final string value.
+    lookupString :: Table' a -> [Text] -> Maybe Text
+    lookupString _ [] = Nothing
+    lookupString (MkTable m) [k] = case snd <$> Map.lookup k m of
+      Just (Text' _ s) -> Just s
+      _ -> Nothing
+    lookupString (MkTable m) (k : ks) = case snd <$> Map.lookup k m of
+      Just (Table' _ sub) -> lookupString sub ks
       _ -> Nothing
 
 -- | Install the seaweedfs-csi-driver and point it at this SeaweedFS filer, so that

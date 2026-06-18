@@ -74,6 +74,7 @@ library:
   - temporary
   - text
   - time
+  - toml-parser
   - unliftio
   - unliftio-core
   - vector
