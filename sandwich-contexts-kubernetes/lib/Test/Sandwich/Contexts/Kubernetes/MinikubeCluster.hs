@@ -180,8 +180,8 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
   let deleteLogFile = minikubeDir </> "minikube-delete.log"
 
   withFile startLogFile WriteMode $ \logH ->
-    (bracket (startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile options)
-             (\_ -> do
+    (bracket (timeAction "start Minikube cluster" $ startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile options)
+             (\_ -> timeAction "delete Minikube cluster" $ do
                  info [i|Deleting minikube cluster: #{clusterName}|]
 
                  -- For container-runtime drivers (docker/podman) minikube creates a volume per node.
@@ -220,7 +220,7 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                  deleteClusterVolumes containerRuntime volumeNames
                  removeMinikubeProfileDirs clusterName
              ))
-             (\p -> do
+             (\p -> timeAction "use Minikube cluster" $ do
                  waitForProcess p >>= \case
                    ExitSuccess -> return ()
                    ExitFailure n -> expectationFailure [i|Minikube cluster creation failed with code #{n}.|]
