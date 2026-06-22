@@ -45,7 +45,7 @@ spec = describe "Introducing a Kubernetes cluster" $ do
 
       -- introduceSeaweedFS installs the CSI driver by default (seaweedFsCsiDriver), so
       -- a "seaweedfs-storage" StorageClass is available to back PersistentVolumes.
-      withKubernetesNamespace demoNamespace $ introduceSeaweedFS demoNamespace defaultSeaweedFSOptions $ do
+      withKubernetesNamespace demoNamespace $ introduceSeaweedFS demoNamespace fastSeaweedFSOptions $ do
         it "Has a SeaweedFS context" $ do
           sfs <- getContext seaweedFs
           info [i|Got SeaweedFS context: #{sfs}|]
