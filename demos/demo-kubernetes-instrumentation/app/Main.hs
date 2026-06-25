@@ -5,7 +5,7 @@
 -- | Demo exercising the three Kubernetes instrumentation helpers together:
 --
 --   * 'introduceMetricsServer' (installs metrics-server so @kubectl top@ works),
---   * 'withResourceWatcher' (records per-pod CPU + memory over time -> CSV + peaks + SVGs), and
+--   * 'introduceResourceWatcher' (records per-pod CPU + memory + network over time -> CSV + peaks + SVGs + report), and
 --   * 'withOOMWatcher' / 'findOOMKilled'' (detects OOMKilled containers).
 --
 -- Run it with e.g.:
@@ -45,9 +45,9 @@ spec = describe "Kubernetes instrumentation demo" $
   -- Minikube doesn't install metrics-server itself, so install it explicitly.
   -- (introduceMetricsServer also brings in a kubectl binary via Nix for children.)
   introduceMetricsServer defaultMetricsServerOptions $
-  -- Sample CPU + memory across the whole demo (top-level around node), scoped to
+  -- Sample CPU + memory + network across the whole demo (spec-level node), scoped to
   -- the workload namespace.
-  withResourceWatcher (defaultResourceWatcherOptions { resourceWatcherNamespace = Just demoNamespace }) $ do
+  introduceResourceWatcher (defaultResourceWatcherOptions { resourceWatcherNamespaces = [demoNamespace] }) $ do
 
     it "metrics-server is serving `kubectl top`" $ do
       (kubectl, env) <- askKubectlArgs
