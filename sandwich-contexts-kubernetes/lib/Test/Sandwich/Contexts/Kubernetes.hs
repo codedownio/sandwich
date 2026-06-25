@@ -65,10 +65,13 @@ module Test.Sandwich.Contexts.Kubernetes (
   , OOMWatcherOptions(..)
   , defaultOOMWatcherOptions
 
-  -- * Resource watcher (CPU + memory)
+  -- * Resource watcher (CPU + memory + network, via the kubelet summary API)
+  , introduceResourceWatcher
+  , resourceWatcher
   , withResourceWatcher
   , withResourceWatcher'
-  , withResourceWatcher''
+  , ResourceWatcher(..)
+  , markEvent
   , ResourceWatcherOptions(..)
   , defaultResourceWatcherOptions
 
