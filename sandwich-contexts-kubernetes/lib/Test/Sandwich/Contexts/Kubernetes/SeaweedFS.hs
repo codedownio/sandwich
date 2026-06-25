@@ -100,6 +100,11 @@ data SeaweedFSOptions = SeaweedFSOptions {
   -- Defaults to 'False' (ordered startup).
   , seaweedFsMasterConcurrentStart :: Bool
   , seaweedFsServerExtraArgs :: [Text]
+  -- | Raw @filer.toml@ for the filer metadata store, dropped verbatim into the Seaweed CR's
+  -- @spec.filer.config@. 'Nothing' uses the operator default (embedded @leveldb2@). Supply a
+  -- @[leveldb3]@\/@[postgres]@\/@[redis2]@ etc. block to select another store; for external
+  -- stores you must run the backing DB and (for SQL) create the table yourself.
+  , seaweedFsFilerConfig :: Maybe Text
   , seaweedFsMasterReadinessProbe :: Maybe SeaweedFSProbeOverride
   , seaweedFsVolumeReadinessProbe :: Maybe SeaweedFSProbeOverride
   , seaweedFsFilerReadinessProbe :: Maybe SeaweedFSProbeOverride
@@ -131,6 +136,7 @@ defaultSeaweedFSOptions = SeaweedFSOptions {
   , seaweedFsVolumeReplicas = 1
   , seaweedFsMasterConcurrentStart = False
   , seaweedFsServerExtraArgs = []
+  , seaweedFsFilerConfig = Nothing
   , seaweedFsMasterReadinessProbe = Nothing
   , seaweedFsVolumeReadinessProbe = Nothing
   , seaweedFsFilerReadinessProbe = Nothing
@@ -394,6 +400,12 @@ example namespace imageName (SeaweedFSOptions {..}) = let Right x = Yaml.decodeE
     configSecret:
       name: #{seaweedFsBaseName}-s3-config
       key: config.json|]
+  -- The filer.toml store config, indented under @config: |@ (6 spaces, matching the post-dedent
+  -- nesting). Defaults to the operator's embedded leveldb2.
+  filerConfigBlock :: Text
+  filerConfigBlock =
+    let toml = fromMaybe "[leveldb2]\nenabled = true\ndir = \"/data/filerldb2\"" seaweedFsFilerConfig
+    in mconcat ["\n      " <> l | l <- T.lines toml]
   -- See 'seaweedFsMasterConcurrentStart'.
   concurrentStartBlock :: Text
   concurrentStartBlock = if seaweedFsMasterConcurrentStart then "\n    concurrentStart: true" else ""
@@ -433,10 +445,7 @@ example namespace imageName (SeaweedFSOptions {..}) = let Right x = Yaml.decodeE
                    storage: #{seaweedFsVolumeStorageRequest}
                filer:
                  replicas: #{seaweedFsFilerReplicas}#{extraArgsBlock}#{probeBlock "readinessProbe" seaweedFsFilerReadinessProbe}#{probeBlock "livenessProbe" seaweedFsFilerLivenessProbe}
-                 config: |
-                   [leveldb2]
-                   enabled = true
-                   dir = "/data/filerldb2"#{s3Block}
+                 config: |#{filerConfigBlock}#{s3Block}
              |]
 
 -- | A @Secret@ holding the SeaweedFS S3 identities config (the @-config@ file for @weed s3@),
