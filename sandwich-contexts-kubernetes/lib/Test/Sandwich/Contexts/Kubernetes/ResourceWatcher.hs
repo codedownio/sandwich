@@ -187,15 +187,20 @@ withResourceWatcher' kcc kubectlBinary opts@(ResourceWatcherOptions {..}) action
 
   let keep ns = null resourceWatcherNamespaces || ns `elem` resourceWatcherNamespaces
 
+  -- Bound every kubectl call with --request-timeout so a poll can't block indefinitely. Without it, a
+  -- call made while the cluster is tearing down can wedge, and cancelling the loop (withAsync) then
+  -- blocks forever in cleanupProcess/waitForProcess, hanging the whole teardown. With it, kubectl exits
+  -- on its own and the loop is always promptly cancellable.
+  let reqTimeout = "--request-timeout=10s"
   let pollOnce = do
         now <- liftIO getCurrentTime
         let elapsed = realToFrac (diffUTCTime now startTime) :: Double
         (ec, nodesOut, _) <- readCreateProcessWithExitCode
-          ((proc kubectlBinary ["get", "nodes", "-o", "name"]) { env = Just env }) ""
+          ((proc kubectlBinary ["get", "nodes", "-o", "name", reqTimeout]) { env = Just env }) ""
         when (ec == ExitSuccess) $
           forM_ (nodeNames (toText nodesOut)) $ \node -> do
             (ec2, out, _) <- readCreateProcessWithExitCode
-              ((proc kubectlBinary ["get", "--raw", [i|/api/v1/nodes/#{node}/proxy/stats/summary|]]) { env = Just env }) ""
+              ((proc kubectlBinary ["get", "--raw", [i|/api/v1/nodes/#{node}/proxy/stats/summary|], reqTimeout]) { env = Just env }) ""
             when (ec2 == ExitSuccess) $
               forM_ (parseSamples resourceWatcherContainerLevel (encodeUtf8 (toText out))) $ \(ns, key, ccns, cn, mem, rx, tx) ->
                 when (keep ns) $
