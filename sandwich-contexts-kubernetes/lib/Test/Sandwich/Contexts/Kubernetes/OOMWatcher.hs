@@ -47,6 +47,7 @@ import Data.String.Interpolate
 import Relude
 import System.IO (hGetLine)
 import System.Process (cleanupProcess)
+import Test.Sandwich.Util.Process (gracefullyStopProcess)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes.Kubectl
@@ -171,7 +172,10 @@ withOOMWatcher'' kcc kubectlBinary (OOMWatcherOptions {..}) action = do
   -- (EOF). A row whose STATUS is "OOMKilled" means a container was OOM-killed.
   let oneWatch = bracket
         (createProcess (proc kubectlBinary (["get", "pods"] <> nsArgs <> ["--watch", "--no-headers"])) { env = Just env, std_out = CreatePipe, std_err = CreatePipe, create_group = True })
-        (liftIO . cleanupProcess)
+        -- `kubectl ... --watch` does not reliably exit on SIGTERM when its target is being torn down, so
+        -- a plain cleanupProcess (terminate + blocking wait) hangs teardown. Stop the process group
+        -- gracefully first (SIGINT, escalating to SIGKILL after the grace period), then clean up handles.
+        (\tup@(_, _, _, ph) -> gracefullyStopProcess ph 5_000_000 >> liftIO (cleanupProcess tup))
         (\(_, mHOut, _, _) -> case mHOut of
             Nothing -> return ()
             Just hOut ->
