@@ -91,7 +91,7 @@ runWithIndentation frf@(FailureReportFormatter {..}) idToLabel node = do
     RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
     _ -> forM_ (runNodeChildren node) (runWithIndentation frf idToLabel)
 
-  result <- liftIO $ waitForTree node
+  result <- liftIO $ waitForTreeLoggingStuck node
 
   -- Print the failure reason
   case result of

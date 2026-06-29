@@ -7,6 +7,7 @@ import Control.Concurrent.STM
 import Control.Monad.Free
 import qualified Data.List as L
 import Data.String.Interpolate
+import System.IO
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
@@ -19,6 +20,24 @@ waitForTree node = atomically $
     Done {statusResult} -> return statusResult
     NotStarted {} -> retry
     Running {} -> retry
+
+-- | Like 'waitForTree', but DEBUG: if the node isn't 'Done' yet, log its id/label/status to
+-- stderr once, then block (retry) exactly as 'waitForTree' does. Intended only for the
+-- failure-report finalize walk, which is the post-run consumer that can hang forever on a
+-- node whose status TVar never transitions to 'Done'. This is NOT for the normal tree-wait
+-- ('mapM_ waitForTree rts'), where nodes are legitimately not-Done while still running.
+waitForTreeLoggingStuck :: RunNode context -> IO Result
+waitForTreeLoggingStuck node = do
+  let common = runNodeCommon node
+  readTVarIO (runTreeStatus common) >>= \case
+    Done {} -> return ()
+    status -> hPutStrLn stderr [i|FailureReport finalize: node id #{runTreeId common} (#{runTreeLabel common}) not yet Done (status: #{showStatusForLog status}); blocking until it is...|]
+  waitForTree node
+  where
+    showStatusForLog :: Status -> String
+    showStatusForLog NotStarted = "NOT STARTED"
+    showStatusForLog (Running {}) = "RUNNING"
+    showStatusForLog (Done {}) = "DONE"
 
 -- | Count how many folder children are present as children or siblings of the given node.
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int
