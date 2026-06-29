@@ -1,12 +1,15 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE NumericUnderscores #-}
 
 module Test.Sandwich.Interpreters.RunTree.Util where
 
+import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Monad.Free
 import qualified Data.List as L
 import Data.String.Interpolate
+import System.IO
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Text.Printf
@@ -19,6 +22,31 @@ waitForTree node = atomically $
     Done {statusResult} -> return statusResult
     NotStarted {} -> retry
     Running {} -> retry
+
+-- | Like 'waitForTree', but never blocks: if the node hasn't reached 'Done', report it
+-- (node id, label, and current status) on stderr and treat it as 'Cancelled'.
+--
+-- Some node types (e.g. parallel/semaphore wrappers) can be left with a status TVar that
+-- never transitions to 'Done' even after the run unwinds. A consumer that blocks on
+-- 'waitForTree' during finalization (e.g. the failure-report formatter) would then hang
+-- forever. Use this when reading results post-run, where blocking is never the right answer.
+waitForTreeNonBlocking :: RunNode context -> IO Result
+waitForTreeNonBlocking node = do
+  let common = runNodeCommon node
+  status <- readTVarIO (runTreeStatus common)
+  case status of
+    Done {statusResult} -> return statusResult
+    _ -> do
+      hPutStrLn stderr [i|waitForTreeNonBlocking: node id #{runTreeId common} (#{runTreeLabel common}) never reached Done (status: #{showStatusForLog status}); treating as Cancelled.|]
+      -- Throttle: the report walks the whole tree, so if several nodes are stuck this would
+      -- otherwise flood stderr. A short delay keeps the output readable as it streams.
+      threadDelay 5_000_000
+      return Cancelled
+  where
+    showStatusForLog :: Status -> String
+    showStatusForLog NotStarted = "NOT STARTED"
+    showStatusForLog (Running {}) = "RUNNING"
+    showStatusForLog (Done {}) = "DONE"
 
 -- | Count how many folder children are present as children or siblings of the given node.
 countImmediateFolderChildren :: Free (SpecCommand context m) a -> Int

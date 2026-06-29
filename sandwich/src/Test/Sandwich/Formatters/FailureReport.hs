@@ -91,7 +91,9 @@ runWithIndentation frf@(FailureReportFormatter {..}) idToLabel node = do
     RunNodeIntroduceWith {..} -> forM_ runNodeChildrenAugmented (runWithIndentation frf idToLabel)
     _ -> forM_ (runNodeChildren node) (runWithIndentation frf idToLabel)
 
-  result <- liftIO $ waitForTree node
+  -- Non-blocking: a node whose status TVar never reached Done (e.g. a parallel/semaphore
+  -- wrapper) would otherwise hang finalization forever. Report it and move on.
+  result <- liftIO $ waitForTreeNonBlocking node
 
   -- Print the failure reason
   case result of
