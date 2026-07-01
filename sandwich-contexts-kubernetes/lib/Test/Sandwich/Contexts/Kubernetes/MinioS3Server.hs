@@ -171,7 +171,7 @@ withK8SMinioS3Server' kubectlBinary kcc@(KubernetesClusterContext {..}) MinioOpe
             loadImageIfNecessary' kcc (ImageLoadSpecDocker image IfNotPresent)
 
           debug [i|Preloading image: #{busyboxImage}|]
-          loadImageIfNecessary' kcc (ImageLoadSpecDocker busyboxImage IfNotPresent)
+          void $ loadImageIfNecessary' kcc (ImageLoadSpecDocker busyboxImage IfNotPresent)
 
         (userAndPassword@(username, password), finalYaml) <- case transformKustomizeChunks (toString minioS3ServerNamespace) (toString deploymentName) (T.splitOn "---\n" (toText allYaml)) of
           Left err -> expectationFailure [i|Couldn't transform kustomize chunks: #{err}|]

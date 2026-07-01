@@ -120,7 +120,8 @@ loadImageIfNecessary :: (
   )
   -- | Image load spec
   => ImageLoadSpec
-  -> m ()
+  -- | The transformed image name
+  -> m Text
 loadImageIfNecessary image = do
   kcc <- getContext kubernetesCluster
   loadImageIfNecessary' kcc image
@@ -134,10 +135,12 @@ loadImageIfNecessary' :: (
   -- | Image load spec
   -> ImageLoadSpec
   -- | The transformed image name
-  -> m ()
+  -> m Text
 loadImageIfNecessary' kcc imageLoadSpec = do
-  unlessM (imageLoadSpecToImageName imageLoadSpec >>= clusterContainsImage' kcc) $
+  imageName <- imageLoadSpecToImageName imageLoadSpec
+  unlessM (clusterContainsImage' kcc imageName) $
     void $ loadImage' kcc imageLoadSpec
+  return imageName
 
 -- | Load an image into a Kubernetes cluster. This will load the image onto the cluster
 -- and return the modified image name (i.e. the name by which the cluster knows the image).

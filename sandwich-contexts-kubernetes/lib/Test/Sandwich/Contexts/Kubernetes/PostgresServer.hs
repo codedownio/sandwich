@@ -122,7 +122,7 @@ withK8SPostgresServer' kubectlBinary kcc@(KubernetesClusterContext {..}) (Postgr
 
   when postgresK8SPreloadImage $ do
     debug [i|Preloading postgres image: #{postgresK8SImage}|]
-    loadImageIfNecessary' kcc (ImageLoadSpecDocker postgresK8SImage IfNotPresent)
+    void $ loadImageIfNecessary' kcc (ImageLoadSpecDocker postgresK8SImage IfNotPresent)
 
   let yaml = postgresYaml deploymentName postgresK8SNamespace postgresK8SImage
                           postgresK8SUsername postgresK8SPassword postgresK8SDatabase

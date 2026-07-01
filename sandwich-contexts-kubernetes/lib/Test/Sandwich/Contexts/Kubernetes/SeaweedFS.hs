@@ -56,7 +56,7 @@ import System.Exit
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Kubernetes.Images (loadImage')
+import Test.Sandwich.Contexts.Kubernetes.Images (loadImage', loadImageIfNecessary')
 import Test.Sandwich.Contexts.Kubernetes.Types
 import Test.Sandwich.Contexts.Kubernetes.Util.Aeson
 import Test.Sandwich.Contexts.Nix
@@ -306,8 +306,10 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   info [i|Loaded operator image into cluster as: #{operatorImageName}|]
 
   info [i|------------------ Preloading SeaweedFS server image ------------------|]
+  -- Load conditionally so a baked-in image (e.g. from a minikube preload) is skipped; either way we
+  -- get back the ref to configure the SeaweedFS CR with.
   imageName <- timeAction "Preload SeaweedFS server image" $
-    loadImage' kcc (seaweedFsImage options)
+    loadImageIfNecessary' kcc (seaweedFsImage options)
 
   info [i|------------------ Preloading extra images ------------------|]
   timeAction "Preload extra images" $
