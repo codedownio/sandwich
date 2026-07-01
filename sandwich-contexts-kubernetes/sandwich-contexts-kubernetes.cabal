@@ -29,6 +29,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.PostgresServer
       Test.Sandwich.Contexts.Kubernetes.ResourceWatcher
       Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+      Test.Sandwich.Contexts.Kubernetes.SeaweedFSMini
       Test.Sandwich.Contexts.Kubernetes.Typesense
   other-modules:
       Test.Sandwich.Contexts.Kubernetes.FindImages

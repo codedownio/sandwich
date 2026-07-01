@@ -17,6 +17,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Kubernetes
 import Test.Sandwich.Contexts.Kubernetes.Namespace
 import Test.Sandwich.Contexts.Kubernetes.SeaweedFS
+import Test.Sandwich.Contexts.Kubernetes.SeaweedFSMini
 import Test.Sandwich.Contexts.Nix
 import UnliftIO.Process
 
@@ -38,43 +39,41 @@ spec = describe "Introducing a Kubernetes cluster" $ do
     introduceNixContext nixpkgsReleaseDefault $
     introduceBinaryViaNixPackage @"kubectl" "kubectl" $
     introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $
-    -- Monitor per-pod CPU/memory/network in the demo namespace for the whole run (incl. SeaweedFS
-    -- bringup + the read/write jobs). Writes pod-resources.csv / -summary.json / .svg charts /
-    -- -report.html into this node's test folder; the markEvent calls below land as timeline markers.
-    introduceResourceWatcher (defaultResourceWatcherOptions { resourceWatcherNamespaces = [demoNamespace] }) $ do
+    withKubernetesNamespace demoNamespace $
+    introduceResourceWatcher (defaultResourceWatcherOptions { resourceWatcherNamespaces = [demoNamespace] }) $
+    introduceSeaweedFSMini demoNamespace defaultSeaweedFSMiniOptions $ do
+    -- introduceSeaweedFS demoNamespace defaultSeaweedFSOptions $ do
       it "prints the cluster info" $ do
         kcc <- getContext kubernetesCluster
         info [i|export KUBECONFIG='#{kubernetesClusterKubeConfigPath kcc}'|]
         info [i|Got Kubernetes cluster context: #{kcc}|]
 
-      -- introduceSeaweedFS installs the CSI driver by default (seaweedFsCsiDriver), so
-      -- a "seaweedfs-storage" StorageClass is available to back PersistentVolumes.
-      withKubernetesNamespace demoNamespace $ introduceSeaweedFS demoNamespace fastSeaweedFSOptions $ do
-        it "Has a SeaweedFS context" $ do
-          sfs <- getContext seaweedFs
-          info [i|Got SeaweedFS context: #{sfs}|]
 
-        before "Provision a SeaweedFS-backed PVC" createSharedPvc $ do
-          it "writes a file to the volume from one pod" $ do
-            mon <- getContext resourceWatcher
-            markEvent mon "write job: submit"
-            applyYaml "seaweed-writer-job" $
-              jobYaml "seaweed-writer" [i|echo '#{magicString}' > /data/hello.txt && sync && ls -la /data/hello.txt|]
-            waitForJobComplete "seaweed-writer"
-            markEvent mon "write job: complete"
-            info [i|Wrote '#{magicString}' to /data/hello.txt on the SeaweedFS volume|]
+      it "Has a SeaweedFS context" $ do
+        sfs <- getContext seaweedFs
+        info [i|Got SeaweedFS context: #{sfs}|]
 
-          it "reads the file back from a second pod" $ do
-            mon <- getContext resourceWatcher
-            markEvent mon "read job: submit"
-            applyYaml "seaweed-reader-job" $
-              jobYaml "seaweed-reader" [i|cat /data/hello.txt|]
-            waitForJobComplete "seaweed-reader"
-            markEvent mon "read job: complete"
-            output <- toText <$> kubectlCapture ["logs", "-n", toString demoNamespace, "job/seaweed-reader"]
-            info [i|Reader pod output: #{output}|]
-            unless (magicString `T.isInfixOf` output) $
-              expectationFailure [i|Expected to read '#{magicString}' back from the SeaweedFS volume, but got: #{output}|]
+      before "Provision a SeaweedFS-backed PVC" createSharedPvc $ do
+        it "writes a file to the volume from one pod" $ do
+          mon <- getContext resourceWatcher
+          markEvent mon "write job: submit"
+          applyYaml "seaweed-writer-job" $
+            jobYaml "seaweed-writer" [i|echo '#{magicString}' > /data/hello.txt && sync && ls -la /data/hello.txt|]
+          waitForJobComplete "seaweed-writer"
+          markEvent mon "write job: complete"
+          info [i|Wrote '#{magicString}' to /data/hello.txt on the SeaweedFS volume|]
+
+        it "reads the file back from a second pod" $ do
+          mon <- getContext resourceWatcher
+          markEvent mon "read job: submit"
+          applyYaml "seaweed-reader-job" $
+            jobYaml "seaweed-reader" [i|cat /data/hello.txt|]
+          waitForJobComplete "seaweed-reader"
+          markEvent mon "read job: complete"
+          output <- toText <$> kubectlCapture ["logs", "-n", toString demoNamespace, "job/seaweed-reader"]
+          info [i|Reader pod output: #{output}|]
+          unless (magicString `T.isInfixOf` output) $
+            expectationFailure [i|Expected to read '#{magicString}' back from the SeaweedFS volume, but got: #{output}|]
 
 
 -- | Create the ReadWriteMany PVC the two pods share, on the StorageClass the SeaweedFS

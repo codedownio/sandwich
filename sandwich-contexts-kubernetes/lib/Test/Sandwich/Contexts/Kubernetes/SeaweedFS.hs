@@ -39,6 +39,13 @@ module Test.Sandwich.Contexts.Kubernetes.SeaweedFS (
   , seaweedFs
   , SeaweedFSContext(..)
   , HasSeaweedFSContext
+
+  -- * Shared internals (used by "Test.Sandwich.Contexts.Kubernetes.SeaweedFSMini")
+  , ContextWithSeaweedFS
+  , seaweedFsStorageClassName
+  , s3ConfigSecretYaml
+  , installSeaweedFsCsiDriver
+  , retryKubectl
   ) where
 
 import Control.Monad
@@ -297,86 +304,89 @@ withSeaweedFS' kcc@(KubernetesClusterContext {kubernetesClusterKubeConfigPath}) 
   let runK name args = createProcessWithFileLogging' name ((proc kubectlBinary args) { env = Just env })
                        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
 
-  -- The operator manager image, built entirely by Nix (see 'seaweedFsOperatorImageExpr').
-  info [i|------------------ Building and loading SeaweedFS operator image ------------------|]
-  operatorImageTarball <- timeAction "Build operator image (Nix)" $
-    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs (seaweedFsOperatorImageExpr options)))
-  operatorImageName <- timeAction "Load operator image into cluster" $
-    loadImage' kcc (ImageLoadSpecTarball (toString operatorImageTarball))
-  info [i|Loaded operator image into cluster as: #{operatorImageName}|]
+  (storageClass, jwtWriteKey, jwtReadKey) <- timeAction "SeaweedFS setup" $ do
+    -- The operator manager image, built entirely by Nix (see 'seaweedFsOperatorImageExpr').
+    info [i|------------------ Building and loading SeaweedFS operator image ------------------|]
+    operatorImageTarball <- timeAction "Build operator image (Nix)" $
+      nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs (seaweedFsOperatorImageExpr options)))
+    operatorImageName <- timeAction "Load operator image into cluster" $
+      loadImage' kcc (ImageLoadSpecTarball (toString operatorImageTarball))
+    info [i|Loaded operator image into cluster as: #{operatorImageName}|]
 
-  info [i|------------------ Preloading SeaweedFS server image ------------------|]
-  -- Load conditionally so a baked-in image (e.g. from a minikube preload) is skipped; either way we
-  -- get back the ref to configure the SeaweedFS CR with.
-  imageName <- timeAction "Preload SeaweedFS server image" $
-    loadImageIfNecessary' kcc (seaweedFsImage options)
+    info [i|------------------ Preloading SeaweedFS server image ------------------|]
+    -- Load conditionally so a baked-in image (e.g. from a minikube preload) is skipped; either way we
+    -- get back the ref to configure the SeaweedFS CR with.
+    imageName <- timeAction "Preload SeaweedFS server image" $
+      loadImageIfNecessary' kcc (seaweedFsImage options)
 
-  info [i|------------------ Preloading extra images ------------------|]
-  timeAction "Preload extra images" $
-    forM_ (seaweedFsExtraImages options) $ \spec -> do
-      loaded <- loadImage' kcc spec
-      info [i|Preloaded extra image: #{loaded}|]
-
-  -- The operator's CRD + controller manifests, rendered by Nix via kustomize
-  info [i|------------------ Installing SeaweedFS operator ------------------|]
-  manifestsDir <- timeAction "Render operator manifests (Nix)" $
-    nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorManifestsExpr))
-  timeAction "Apply operator manifests" $ do
-    runK "seaweedfs-operator-crds" ["apply", "--server-side", "-f", toString manifestsDir </> "crd.yaml"]
-    runK "seaweedfs-operator-deploy" ["apply", "-f", toString manifestsDir </> "operator.yaml"]
-  timeAction "Wait for operator controller-manager" $
-    runK "seaweedfs-operator-wait" [
-      "wait", "deployment/seaweedfs-operator-controller-manager", "-n", "seaweedfs-operator-system"
-      , "--for", "condition=Available", "--timeout=300s"
-      ]
-
-  -- The S3 gateway mounts this secret as its identities config; create it before the CR so the
-  -- gateway pod can start. Done with @apply@ so a re-run against an existing namespace is fine.
-  whenJust (seaweedFsS3 options) $ \s3Options -> timeAction "Create S3 config secret" $
-    createProcessWithFileLoggingAndStdin' "seaweedfs-s3-secret" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString (s3ConfigSecretYaml namespace (seaweedFsBaseName options) s3Options))
-      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-
-  info [i|------------------ Creating SeaweedFS deployment ------------------|]
-  timeAction "Create Seaweed CR" $ do
-    let val = decodeUtf8 $ A.encode $ example namespace imageName options
-    createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((proc kubectlBinary ["create", "-f", "-"]) { env = Just env }) val
-      >>= waitForProcess >>= (`shouldBe` ExitSuccess)
-
-  timeAction "Wait for SeaweedFS cluster (master/volume/filer)" $ do
-    info [i|Waiting for the SeaweedFS cluster (master/volume/filer) to be ready|]
-    forM_ (["master", "volume", "filer"] :: [Text]) $ \component ->
-      retryKubectl kubectlBinary env (toString ([i|seaweedfs-wait-#{component}|] :: Text))
-        ["rollout", "status", "-n", toString namespace, toString ([i|statefulset/#{seaweedFsBaseName options}-#{component}|] :: Text), "--timeout=300s"]
-    -- The standalone S3 gateway is a stateless Deployment (<baseName>-s3), not a StatefulSet.
-    when (isJust (seaweedFsS3 options)) $
-      retryKubectl kubectlBinary env "seaweedfs-wait-s3"
-        ["rollout", "status", "-n", toString namespace, toString ([i|deployment/#{seaweedFsBaseName options}-s3|] :: Text), "--timeout=300s"]
-
-  storageClass <- case seaweedFsCsiDriver options of
-    Nothing -> do
-      info [i|Skipping SeaweedFS CSI driver installation|]
-      pure Nothing
-    Just csiOptions -> timeAction "Install CSI driver" $ do
-      info [i|------------------ Preloading SeaweedFS CSI driver images ------------------|]
-      forM_ (seaweedFsCsiDriverImages csiOptions) $ \spec -> do
+    info [i|------------------ Preloading extra images ------------------|]
+    timeAction "Preload extra images" $
+      forM_ (seaweedFsExtraImages options) $ \spec -> do
         loaded <- loadImage' kcc spec
-        info [i|Preloaded CSI image: #{loaded}|]
-      info [i|------------------ Installing SeaweedFS CSI driver ------------------|]
-      installSeaweedFsCsiDriver nixContextNixBinary nixContextNixpkgsDerivation kubectlBinary env namespace (seaweedFsBaseName options) csiOptions
-      pure (Just seaweedFsStorageClassName)
+        info [i|Preloaded extra image: #{loaded}|]
 
-  -- Read the operator's security.toml (a base64-encoded @Secret@) so callers can present the
-  -- @jwt.filer_signing.key@ write key to the filer HTTP API. No read key is emitted, so it stays
-  -- 'Nothing'.
-  (jwtWriteKey, jwtReadKey) <- do
-    let secretName = seaweedFsBaseName options <> "-security-config"
-    securityToml <- handleAny (\_ -> pure "") $ readCreateProcess
-      ((proc kubectlBinary
-        [ "get", "secret", toString secretName, "-n", toString namespace
-        , "-o", "go-template={{ index .data \"security.toml\" | base64decode }}" ]) { env = Just env }) ""
-    let keys = parseFilerJwtKeys (T.pack securityToml)
-    info [i|SeaweedFS filer JWT keys present: write=#{isJust (fst keys)} read=#{isJust (snd keys)}|]
-    pure keys
+    -- The operator's CRD + controller manifests, rendered by Nix via kustomize
+    info [i|------------------ Installing SeaweedFS operator ------------------|]
+    manifestsDir <- timeAction "Render operator manifests (Nix)" $
+      nixBuildExprToPath nixContextNixBinary (toString (renderWithPkgs seaweedFsOperatorManifestsExpr))
+    timeAction "Apply operator manifests" $ do
+      runK "seaweedfs-operator-crds" ["apply", "--server-side", "-f", toString manifestsDir </> "crd.yaml"]
+      runK "seaweedfs-operator-deploy" ["apply", "-f", toString manifestsDir </> "operator.yaml"]
+    timeAction "Wait for operator controller-manager" $
+      runK "seaweedfs-operator-wait" [
+        "wait", "deployment/seaweedfs-operator-controller-manager", "-n", "seaweedfs-operator-system"
+        , "--for", "condition=Available", "--timeout=300s"
+        ]
+
+    -- The S3 gateway mounts this secret as its identities config; create it before the CR so the
+    -- gateway pod can start. Done with @apply@ so a re-run against an existing namespace is fine.
+    whenJust (seaweedFsS3 options) $ \s3Options -> timeAction "Create S3 config secret" $
+      createProcessWithFileLoggingAndStdin' "seaweedfs-s3-secret" ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env }) (toString (s3ConfigSecretYaml namespace (seaweedFsBaseName options) s3Options))
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+    info [i|------------------ Creating SeaweedFS deployment ------------------|]
+    timeAction "Create Seaweed CR" $ do
+      let val = decodeUtf8 $ A.encode $ example namespace imageName options
+      createProcessWithFileLoggingAndStdin' "seaweedfs-kubectl-create" ((proc kubectlBinary ["create", "-f", "-"]) { env = Just env }) val
+        >>= waitForProcess >>= (`shouldBe` ExitSuccess)
+
+    timeAction "Wait for SeaweedFS cluster (master/volume/filer)" $ do
+      info [i|Waiting for the SeaweedFS cluster (master/volume/filer) to be ready|]
+      forM_ (["master", "volume", "filer"] :: [Text]) $ \component ->
+        retryKubectl kubectlBinary env (toString ([i|seaweedfs-wait-#{component}|] :: Text))
+          ["rollout", "status", "-n", toString namespace, toString ([i|statefulset/#{seaweedFsBaseName options}-#{component}|] :: Text), "--timeout=300s"]
+      -- The standalone S3 gateway is a stateless Deployment (<baseName>-s3), not a StatefulSet.
+      when (isJust (seaweedFsS3 options)) $
+        retryKubectl kubectlBinary env "seaweedfs-wait-s3"
+          ["rollout", "status", "-n", toString namespace, toString ([i|deployment/#{seaweedFsBaseName options}-s3|] :: Text), "--timeout=300s"]
+
+    storageClass <- case seaweedFsCsiDriver options of
+      Nothing -> do
+        info [i|Skipping SeaweedFS CSI driver installation|]
+        pure Nothing
+      Just csiOptions -> timeAction "Install CSI driver" $ do
+        info [i|------------------ Preloading SeaweedFS CSI driver images ------------------|]
+        forM_ (seaweedFsCsiDriverImages csiOptions) $ \spec -> do
+          loaded <- loadImage' kcc spec
+          info [i|Preloaded CSI image: #{loaded}|]
+        info [i|------------------ Installing SeaweedFS CSI driver ------------------|]
+        installSeaweedFsCsiDriver nixContextNixBinary nixContextNixpkgsDerivation kubectlBinary env namespace (seaweedFsBaseName options) csiOptions
+        pure (Just seaweedFsStorageClassName)
+
+    -- Read the operator's security.toml (a base64-encoded @Secret@) so callers can present the
+    -- @jwt.filer_signing.key@ write key to the filer HTTP API. No read key is emitted, so it stays
+    -- 'Nothing'.
+    (jwtWriteKey, jwtReadKey) <- do
+      let secretName = seaweedFsBaseName options <> "-security-config"
+      securityToml <- handleAny (\_ -> pure "") $ readCreateProcess
+        ((proc kubectlBinary
+          [ "get", "secret", toString secretName, "-n", toString namespace
+          , "-o", "go-template={{ index .data \"security.toml\" | base64decode }}" ]) { env = Just env }) ""
+      let keys = parseFilerJwtKeys (T.pack securityToml)
+      info [i|SeaweedFS filer JWT keys present: write=#{isJust (fst keys)} read=#{isJust (snd keys)}|]
+      pure keys
+
+    return (storageClass, jwtWriteKey, jwtReadKey)
 
   action $ SeaweedFSContext {
     seaweedFsOptions = options
