@@ -85,7 +85,7 @@ getLoadedImages' kcc@(KubernetesClusterContext {kubernetesClusterType, kubernete
         -- Note: don't pass minikubeFlags here. These are pretty much intended for "minikube start" only.
         -- TODO: clarify the documentation and possibly add an extra field where extra options can be passed
         -- to "minikube image" commands.
-        Minikube.getLoadedImagesMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName []
+        Minikube.getLoadedImagesMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] kubernetesClusterTypeMinikubeExtraEnvironment
 
 -- | Test if a cluster has a given image loaded.
 clusterContainsImage :: (
@@ -112,7 +112,7 @@ clusterContainsImage' kcc@(KubernetesClusterContext {kubernetesClusterType, kube
     KubernetesClusterKind {..} ->
       Kind.clusterContainsImageKind kcc kubernetesClusterTypeKindClusterDriver kubernetesClusterTypeKindBinary kubernetesClusterTypeKindClusterEnvironment image
     KubernetesClusterMinikube {..} ->
-      Minikube.clusterContainsImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] image
+      Minikube.clusterContainsImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] kubernetesClusterTypeMinikubeExtraEnvironment image
 
 -- | Same as 'loadImage', but first checks if the given image is already present on the cluster.
 loadImageIfNecessary :: (
@@ -170,7 +170,7 @@ loadImage' (KubernetesClusterContext {kubernetesClusterType, kubernetesClusterNa
         Kind.loadImageKind kubernetesClusterTypeKindBinary kubernetesClusterTypeKindClusterName imageLoadSpec kubernetesClusterTypeKindClusterEnvironment
       (KubernetesClusterMinikube {..}) ->
         -- Don't pass minikubeFlags; see comment above.
-        Minikube.loadImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] imageLoadSpec
+        Minikube.loadImageMinikube kubernetesClusterTypeMinikubeBinary kubernetesClusterName [] kubernetesClusterTypeMinikubeExtraEnvironment imageLoadSpec
 
         -- Because of the possible silent failure in "minikube image load", confirm that this
         -- image made it onto the cluster.

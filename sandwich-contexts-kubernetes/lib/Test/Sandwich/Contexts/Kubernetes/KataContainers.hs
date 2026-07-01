@@ -98,10 +98,11 @@ withKataContainers' kcc@(KubernetesClusterContext {..}) helmBinary options actio
   case kubernetesClusterType of
     KubernetesClusterKind {} -> expectationFailure [i|Can't install Kata Containers on Kind at presenpt.|]
     KubernetesClusterMinikube {..} -> do
-      output <- readCreateProcessWithLogging (proc kubernetesClusterTypeMinikubeBinary [
+      sshEnv <- minikubeProcEnv kubernetesClusterTypeMinikubeExtraEnvironment
+      output <- readCreateProcessWithLogging ((proc kubernetesClusterTypeMinikubeBinary [
                                                  "--profile", toString kubernetesClusterTypeMinikubeProfileName
                                                  , "ssh", [i|egrep -c 'vmx|svm' /proc/cpuinfo|]
-                                                 ]) ""
+                                                 ]) { env = sshEnv }) ""
       case readMay output of
         Just (0 :: Int) -> expectationFailure [i|Preflight check: didn't find "vmx" or "svm" in /proc/cpuinfo. Please make sure virtualization support is enabled.|]
         Just _ -> return ()

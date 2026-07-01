@@ -31,7 +31,7 @@ withForwardKubernetesService' :: (
   HasCallStack, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesService' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) profile namespace service action = do
-  baseEnv <- liftIO getEnvironment
+  baseEnv <- addOrReplaceEnv kubernetesClusterTypeMinikubeExtraEnvironment <$> liftIO getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
   let extraFlags = case "--rootless" `L.elem` kubernetesClusterTypeMinikubeFlags of
@@ -82,7 +82,7 @@ withForwardKubernetesServiceFileLogging' :: (
   HasCallStack, MonadLoggerIO m, MonadUnliftIO m, HasBaseContextMonad context m
   ) => KubernetesClusterContext -> Text -> Text -> Text -> (URI -> m a) -> m a
 withForwardKubernetesServiceFileLogging' (KubernetesClusterContext {kubernetesClusterType=(KubernetesClusterMinikube {..}), ..}) profile namespace service action = do
-  baseEnv <- liftIO getEnvironment
+  baseEnv <- addOrReplaceEnv kubernetesClusterTypeMinikubeExtraEnvironment <$> liftIO getEnvironment
   let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", kubernetesClusterKubeConfigPath) : baseEnv)
 
   let extraFlags = case "--rootless" `L.elem` kubernetesClusterTypeMinikubeFlags of

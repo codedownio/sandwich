@@ -68,6 +68,11 @@ data MinikubeClusterOptions = MinikubeClusterOptions {
   , minikubeClusterDriver :: Maybe Text
   , minikubeClusterCpus :: Maybe Text
   , minikubeClusterMemory :: Maybe Text
+  -- | Extra environment variables to set on every @minikube@ invocation for this cluster
+  -- (start, delete, image loads, service forwards, @ssh@). These are merged over (and override)
+  -- the ambient process environment. Use this to scope e.g. @MINIKUBE_HOME@ to a single cluster
+  -- instead of mutating the global process environment.
+  , minikubeClusterExtraEnv :: [(String, String)]
   }
 defaultMinikubeClusterOptions :: MinikubeClusterOptions
 defaultMinikubeClusterOptions = MinikubeClusterOptions {
@@ -77,6 +82,7 @@ defaultMinikubeClusterOptions = MinikubeClusterOptions {
   , minikubeClusterDriver = Nothing
   , minikubeClusterCpus = Nothing
   , minikubeClusterMemory = Nothing
+  , minikubeClusterExtraEnv = []
   }
 
 -- * Introduce
@@ -199,6 +205,7 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                        True -> ["--rootless"]
                        False -> []
 
+                 deleteEnv <- addOrReplaceEnv minikubeClusterExtraEnv <$> getEnvironment
                  withFile deleteLogFile WriteMode $ \deleteH -> do
                    let deleteCp = (proc minikubeBinary (["delete"
                                                         , "--profile", clusterName
@@ -206,6 +213,7 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                                                         ] <> extraFlags)) {
                          delegate_ctlc = True
                          , create_group = True
+                         , env = Just deleteEnv
                          , std_out = UseHandle deleteH
                          , std_err = UseHandle deleteH
                          }
@@ -218,7 +226,7 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                  -- per-profile state under MINIKUBE_HOME that it created. Remove these best-effort so
                  -- they don't accumulate as orphans across runs.
                  deleteClusterVolumes containerRuntime volumeNames
-                 removeMinikubeProfileDirs clusterName
+                 removeMinikubeProfileDirs clusterName minikubeClusterExtraEnv
              ))
              (\p -> timeAction "use Minikube cluster" $ do
                  waitForProcess p >>= \case
@@ -237,6 +245,7 @@ withMinikubeCluster'' clusterName minikubeBinary options@(MinikubeClusterOptions
                        kubernetesClusterTypeMinikubeBinary = minikubeBinary
                        , kubernetesClusterTypeMinikubeProfileName = toText clusterName
                        , kubernetesClusterTypeMinikubeFlags = minikubeClusterExtraFlags
+                       , kubernetesClusterTypeMinikubeExtraEnvironment = minikubeClusterExtraEnv
                        }
                    }
              )
@@ -246,7 +255,7 @@ startMinikubeCluster :: (
   ) => FilePath -> Handle -> String -> String -> MinikubeClusterOptions -> m ProcessHandle
 startMinikubeCluster minikubeBinary logH clusterName minikubeKubeConfigFile (MinikubeClusterOptions {..}) = do
   baseEnv <- getEnvironment
-  let env = L.nubBy (\x y -> fst x == fst y) (("KUBECONFIG", minikubeKubeConfigFile) : baseEnv)
+  let env = addOrReplaceEnv minikubeClusterExtraEnv (("KUBECONFIG", minikubeKubeConfigFile) : baseEnv)
 
   -- Note: this doesn't actually work! These options actually go to the docker daemon, not the "start" operation.
   -- It may not be possible to get a label on the Docker container in current minikube.
@@ -316,9 +325,9 @@ deleteClusterVolumes containerRuntime volumes = handleAny logErr $ do
 -- | Remove the per-profile state that "minikube delete" should clean up but sometimes leaves behind:
 -- @<minikube-home>/profiles/<profile>@ and @.../machines/<profile>@. The rest of MINIKUBE_HOME (the
 -- multi-gigabyte image caches, certs, addons) is shared across clusters, so we leave it untouched.
-removeMinikubeProfileDirs :: (MonadLoggerIO m, MonadUnliftIO m) => String -> m ()
-removeMinikubeProfileDirs clusterName = handleAny logErr $ do
-  miniPath <- getMinikubeHome
+removeMinikubeProfileDirs :: (MonadLoggerIO m, MonadUnliftIO m) => String -> [(String, String)] -> m ()
+removeMinikubeProfileDirs clusterName extraEnv = handleAny logErr $ do
+  miniPath <- getMinikubeHome extraEnv
   forM_ ["profiles", "machines"] $ \sub -> do
     let dir = miniPath </> sub </> clusterName
     whenM (doesPathExist dir) $ do
@@ -330,10 +339,19 @@ removeMinikubeProfileDirs clusterName = handleAny logErr $ do
 
 -- | Resolve MINIKUBE_HOME the same way minikube does (see localpath.MiniPath): default to
 -- @$HOME/.minikube@, honor a @MINIKUBE_HOME@ that already ends in @.minikube@, else append it.
-getMinikubeHome :: MonadIO m => m FilePath
-getMinikubeHome = UnliftIO.Environment.lookupEnv "MINIKUBE_HOME" >>= \case
-  Just p | p /= "" -> return $ if takeFileName p == ".minikube" then p else p </> ".minikube"
-  _ -> (</> ".minikube") <$> getHomeDirectory
+-- A @MINIKUBE_HOME@ in the passed cluster-scoped env takes precedence over the ambient process env,
+-- so profile cleanup targets the same home the cluster was actually started with.
+getMinikubeHome :: MonadIO m => [(String, String)] -> m FilePath
+getMinikubeHome extraEnv = resolve (L.lookup "MINIKUBE_HOME" extraEnv) >>= \case
+  Just p -> return p
+  Nothing -> UnliftIO.Environment.lookupEnv "MINIKUBE_HOME" >>= resolve >>= \case
+    Just p -> return p
+    Nothing -> (</> ".minikube") <$> getHomeDirectory
+  where
+    resolve :: MonadIO m => Maybe String -> m (Maybe FilePath)
+    resolve = \case
+      Just p | p /= "" -> return $ Just $ if takeFileName p == ".minikube" then p else p </> ".minikube"
+      _ -> return Nothing
 
 -- Debugging (in case of certificate issues such as https://github.com/channable/vaultenv/issues/99)
 -- import Kubernetes.Client.Auth.OIDC

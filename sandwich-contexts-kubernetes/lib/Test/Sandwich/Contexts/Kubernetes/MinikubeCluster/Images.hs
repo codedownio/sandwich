@@ -42,11 +42,13 @@ loadImageMinikube :: (
   -> Text
   -- | Extra flags to pass to @minikube@
   -> [Text]
+  -- | Extra environment variables to add over the ambient environment (empty = inherit unchanged)
+  -> [(String, String)]
   -- | Image load spec
   -> ImageLoadSpec
   -- | Returns transformed image name
   -> m Text
-loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
+loadImageMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv imageLoadSpec = do
   case imageLoadSpec of
     ImageLoadSpecTarball image -> do
       -- File or directory image
@@ -102,6 +104,8 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
 
       debug [i|#{minikubeBinary} #{T.unwords $ fmap toText args}|]
 
+      procEnv <- minikubeProcEnv minikubeExtraEnv
+
       -- Gather stderr output while also logging it
       logFn <- askLoggerIO
       ctx <- ask
@@ -111,7 +115,7 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags imageLoadSpec = do
             logFn loc src level str
 
       liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
-        createProcessWithLogging (proc minikubeBinary args)
+        createProcessWithLogging ((proc minikubeBinary args) { env = procEnv })
           >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
                                     (cancel asy)
 
@@ -146,13 +150,16 @@ getLoadedImagesMinikube :: (
   -> Text
   -- | Extra flags to pass to @minikube@
   -> [Text]
+  -- | Extra environment variables to add over the ambient environment (empty = inherit unchanged)
+  -> [(String, String)]
   -> m (Set Text)
-getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags = do
+getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv = do
+  procEnv <- minikubeProcEnv minikubeExtraEnv
   -- TODO: use "--format json" and parse?
   (Set.fromList . T.words . toText) <$> readCreateProcessWithLogging (
-    proc minikubeBinary (["image", "ls"
-                         , "--profile", toString clusterName
-                         ] <> fmap toString minikubeFlags)) ""
+    (proc minikubeBinary (["image", "ls"
+                          , "--profile", toString clusterName
+                          ] <> fmap toString minikubeFlags)) { env = procEnv }) ""
 
 -- | Test if the cluster contains a given image, by cluster name.
 clusterContainsImageMinikube :: (
@@ -164,15 +171,17 @@ clusterContainsImageMinikube :: (
   -> Text
   -- | Extra flags to pass to @minikube@
   -> [Text]
+  -- | Extra environment variables to add over the ambient environment (empty = inherit unchanged)
+  -> [(String, String)]
   -- | Image name
   -> Text
   -> m Bool
-clusterContainsImageMinikube minikubeBinary clusterName minikubeFlags image = do
+clusterContainsImageMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv image = do
   imageName <- case isAbsolute (toString image) of
     False -> pure image
     True -> readImageName (toString image)
 
-  loadedImages <- getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags
+  loadedImages <- getLoadedImagesMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv
 
   return (
     imageName `Set.member` loadedImages
