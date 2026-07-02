@@ -120,20 +120,20 @@ withK8SPostgresServer' kubectlBinary kcc@(KubernetesClusterContext {..}) (Postgr
 
   let postgresPort = 5432 :: Int
 
-  when postgresK8SPreloadImage $ do
+  when postgresK8SPreloadImage $ timeAction "Preload PostgreSQL image" $ do
     debug [i|Preloading postgres image: #{postgresK8SImage}|]
     void $ loadImageIfNecessary' kcc (ImageLoadSpecDocker postgresK8SImage IfNotPresent)
 
   let yaml = postgresYaml deploymentName postgresK8SNamespace postgresK8SImage
                           postgresK8SUsername postgresK8SPassword postgresK8SDatabase
 
-  let create = do
+  let create = timeAction "Creating PostgreSQL" $ do
         (ps, _) <- createProcessWithLoggingAndStdin
           ((proc kubectlBinary ["apply", "-f", "-"]) { env = Just env })
           (toString yaml)
         waitForProcess ps >>= (`shouldBe` ExitSuccess)
 
-  let destroy = do
+  let destroy = timeAction "Destroying PostgreSQL" $ do
         info [i|Destroying PostgreSQL K8S resources|]
         (ps, _) <- createProcessWithLoggingAndStdin
           ((proc kubectlBinary ["delete", "-f", "-", "--ignore-not-found"]) { env = Just env })
@@ -149,12 +149,13 @@ withK8SPostgresServer' kubectlBinary kcc@(KubernetesClusterContext {..}) (Postgr
                    , "--timeout=120s"
                    , "--kubeconfig", kubernetesClusterKubeConfigPath
                    ]
-    timeout 150_000_000 (do
-      (ps, _) <- createProcessWithLogging ((proc kubectlBinary waitArgs) { env = Just env })
-      waitForProcess ps >>= (`shouldBe` ExitSuccess)
-      ) >>= \case
-        Just () -> return ()
-        Nothing -> expectationFailure [i|Timed out waiting for PostgreSQL pod to be ready|]
+    timeAction "Waiting for PostgreSQL" $
+      timeout 150_000_000 (do
+        (ps, _) <- createProcessWithLogging ((proc kubectlBinary waitArgs) { env = Just env })
+        waitForProcess ps >>= (`shouldBe` ExitSuccess)
+        ) >>= \case
+          Just () -> return ()
+          Nothing -> expectationFailure [i|Timed out waiting for PostgreSQL pod to be ready|]
 
     let serviceName = [i|service/#{deploymentName}|] :: Text
     withKubectlPortForward' kubectlBinary kubernetesClusterKubeConfigPath postgresK8SNamespace
