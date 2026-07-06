@@ -7,6 +7,7 @@ module Test.Sandwich.WebDriver.Config (
   , defaultWdOptions
   , runMode
   , httpRetryCount
+  , webDriverResponseMaxLogLength
   , geckodriverExtraFlags
   , chromedriverExtraFlags
   , modifyCapabilities

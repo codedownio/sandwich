@@ -271,7 +271,7 @@ allocateWebDriver wdOptions (OnDemandOptions {..}) = do
 
 -- | Clean up the given WebDriver.
 cleanupWebDriver :: (BaseMonad m context) => TestWebDriverContext -> ExampleT context m ()
-cleanupWebDriver sess = do
+cleanupWebDriver sess = pushContext webdriver sess $ do
   closeAllSessions sess
   stopWebDriver sess
 

@@ -33,17 +33,19 @@ type ToolsRoot = FilePath
 
 data WhenToSave = Always | OnException | Never deriving (Show, Eq)
 
--- | Headless and Xvfb modes are useful because they allow you to run tests in the background, without popping up browser windows.
--- This is useful for development or for running on a CI server, and is also more reproducible since the screen resolution can be fixed.
--- In addition, Xvfb mode allows videos to be recorded of tests.
+-- | Headless and Xvfb modes are useful because they allow you to run tests in
+-- the background, without popping up browser windows. This is useful for
+-- development or for running on a CI server, and is also more reproducible
+-- since the screen resolution can be fixed. In addition, Xvfb mode allows
+-- videos to be recorded of tests.
 data RunMode =
   Normal
   -- ^ Normal Selenium behavior; will pop up a web browser.
   | RunHeadless HeadlessConfig
   -- ^ Run with a headless browser. Supports screenshots but videos will be black.
   | RunInXvfb XvfbConfig
-  -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in their own X11 display.
-  -- The @Xvfb@ binary must be installed and on the PATH.
+  -- ^ Run inside <https://en.wikipedia.org/wiki/Xvfb Xvfb> so that tests run in
+  -- their own X11 display. The @Xvfb@ binary must be installed and on the PATH.
 
 data WdOptions = WdOptions {
   -- | How to handle opening the browser (in a popup window, headless, etc.).
@@ -52,7 +54,19 @@ data WdOptions = WdOptions {
   -- | Number of times to retry an HTTP request if it times out.
   , httpRetryCount :: Int
 
-  -- | Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix).
+  -- | We include WebDriver requests and responses in debug logs. This can
+  -- create a lot of logs if they aren't truncated, especially if you do things
+  -- like save screenshots.
+  --
+  -- This option defines the maximum number of characters of WebDriver HTTP
+  -- bodies to include.
+  --
+  -- Set to 'Just 0' to skip this logging.
+  -- Set to 'Nothing' to not truncate at all.
+  , webDriverResponseMaxLogLength :: Maybe Int
+
+  -- | Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when
+  -- installing Chrome via Nix).
   , chromeNoSandbox :: Bool
 
   -- | Extra flags to pass to chromedriver.
@@ -65,8 +79,8 @@ data WdOptions = WdOptions {
   , modifyCapabilities :: W.Capabilities -> IO W.Capabilities
   }
 
--- | How to obtain certain binaries "on demand". These may or not be needed based on 'WdOptions', so
--- they will be obtained as needed.
+-- | How to obtain certain binaries "on demand". These may or not be needed
+-- based on 'WdOptions', so they will be obtained as needed.
 data OnDemandOptions = OnDemandOptions {
   -- | How to obtain ffmpeg binary.
   ffmpegToUse :: FfmpegToUse
@@ -108,6 +122,7 @@ defaultWdOptions :: WdOptions
 defaultWdOptions = WdOptions {
   runMode = Normal
   , httpRetryCount = 0
+  , webDriverResponseMaxLogLength = Just 300
   , chromeNoSandbox = False
   , chromedriverExtraFlags = []
   , geckodriverExtraFlags = []

@@ -61,8 +61,8 @@ claimWebdriver spec = introduceWith' (
     wrappedAction action = do
       pool <- getContext webDriverPool
 
-      withResource pool $ \webdriver ->
-        void (action webdriver) `finally` closeAllSessions webdriver
+      withResource pool $ \wd ->
+        void (action wd) `finally` (pushContext webdriver wd $ closeAllSessions wd)
 
 -- * Tests
 
