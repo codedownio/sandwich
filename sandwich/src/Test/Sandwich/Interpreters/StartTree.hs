@@ -395,7 +395,10 @@ cancelAllChildrenWith children e = do
       NotStarted -> do
         now <- getCurrentTime
         let reason = GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e)
-        atomically $ writeTVar (runTreeStatus $ runNodeCommon node) (Done now Nothing Nothing now (Failure reason))
+        forM_ (getCommons node) $ \common ->
+          atomically $ modifyTVar' (runTreeStatus common) $ \case
+            NotStarted -> Done now Nothing Nothing now (Failure reason)
+            status -> status
       _ -> return ()
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
