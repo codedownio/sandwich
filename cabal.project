@@ -39,6 +39,7 @@ packages:
   , ./demos/demo-nix-binary/
   , ./demos/demo-nix-derivation/
   , ./demos/demo-paralleln/
+  , ./demos/demo-mysql/
   , ./demos/demo-postgres/
   , ./demos/demo-processes/
   , ./demos/demo-quickcheck/
