@@ -15,7 +15,7 @@ import Data.String.Interpolate
 import Network.Socket
 import Relude
 import Test.Sandwich (expectationFailure, HasBaseContextMonad, managedWithAsync_)
-import UnliftIO.Async (concurrently_)
+import UnliftIO.Async (race_)
 import UnliftIO.Exception
 import UnliftIO.Timeout
 
@@ -37,7 +37,9 @@ withProxyToUnixSocket socketPath f = do
       Just port -> f port
 
   where
+    -- Use race_ (not concurrently_) so that when either direction closes, the
+    -- other is torn down and the peer socket is closed.
     app appdata = DCNU.runUnixClient (DCNU.clientSettings socketPath) $ \appdataServer ->
-      concurrently_
+      race_
         (runConduit $ DCN.appSource appdata .| DCN.appSink appdataServer)
         (runConduit $ DCN.appSource appdataServer .| DCN.appSink appdata)
