@@ -10,11 +10,13 @@
       let
         pkgs = import nixpkgs { inherit system; };
         pkgsMaster = import nixpkgsMaster { inherit system; };
+
+        ghcName = "ghc9124";
       in
         {
           packages = {
             inherit (pkgsMaster) node2nix;
-            inherit (pkgsMaster.haskell.packages.ghc964) weeder;
+            inherit (pkgsMaster.haskell.packages.${ghcName}) weeder;
 
             test = pkgs.writeShellScriptBin "stack-test" ''
               export NIX_PATH=nixpkgs=${pkgs.path}
@@ -25,7 +27,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            buildInputs = with pkgs; [
+            buildInputs = (with pkgs; [
               nodejs
 
               gmp
@@ -35,11 +37,11 @@
               pkg-config
               postgresql
               zlib
-
-              haskell.compiler.ghc9122
+            ]) ++ (with pkgsMaster; [
+              haskell.compiler.${ghcName}
               cabal-install
               hlint
-            ];
+            ]);
           };
         });
 }
