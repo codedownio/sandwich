@@ -64,6 +64,13 @@ packages:
   original:
     hackage: kubernetes-api-client-0.6.1.2
 - completed:
+    hackage: toml-parser-2.0.1.0@sha256:13b6e9987e26a41e57f8e57dacf4ff069cc076f61be366ee8c9e6da5d61771d4,4017
+    pantry-tree:
+      sha256: 818b421f25a591de087be80d1101b8d41bc3d350199d90bf480068600b2a3cdf
+      size: 2305
+  original:
+    hackage: toml-parser-2.0.1.0
+- completed:
     commit: 2d19db09bf13f02f49248f7b21703b2c59e06ecc
     git: https://github.com/krdlab/haskell-oidc-client
     name: oidc-client

@@ -12,6 +12,34 @@
         pkgsMaster = import nixpkgsMaster { inherit system; };
 
         ghcName = "ghc9124";
+
+        compilers = {
+          ghc8107 = pkgs.haskell.compiler.ghc8107;
+          ghc902 = pkgs.haskell.compiler.ghc902;
+          ghc967 = pkgsMaster.haskell.compiler.ghc967;
+          ghc984 = pkgsMaster.haskell.compiler.ghc984;
+          ghc9124 = pkgsMaster.haskell.compiler.ghc9124;
+        };
+
+        mkDevShell = ghc: pkgs.mkShell {
+          buildInputs = (with pkgs; [
+            nodejs
+
+            gmp
+
+            ncurses
+            pcre
+            pkg-config
+            postgresql
+            zlib
+
+            stack
+          ]) ++ [
+            ghc
+            pkgsMaster.cabal-install
+            pkgsMaster.hlint
+          ];
+        };
       in
         {
           packages = {
@@ -26,22 +54,8 @@
             nixpkgsPath = pkgs.writeShellScriptBin "nixpkgsPath.sh" "echo -n ${pkgs.path}";
           };
 
-          devShells.default = pkgs.mkShell {
-            buildInputs = (with pkgs; [
-              nodejs
-
-              gmp
-
-              ncurses
-              pcre
-              pkg-config
-              postgresql
-              zlib
-            ]) ++ (with pkgsMaster; [
-              haskell.compiler.${ghcName}
-              cabal-install
-              hlint
-            ]);
+          devShells = (builtins.mapAttrs (_: mkDevShell) compilers) // {
+            default = mkDevShell compilers.${ghcName};
           };
         });
 }

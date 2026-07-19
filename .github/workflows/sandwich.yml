@@ -58,7 +58,7 @@ jobs:
         ghc:
         # - "8.6.5"
         # - "8.8.4"
-        - "8.10.7"
+        # - "8.10.7"
         - "9.0.2"
         - "9.2.8"
         - "9.4.8"
@@ -81,8 +81,6 @@ jobs:
 
         # These don't work on GitHub CI anymore because they need llvm@13, which became
         # disabled on 12/31/2024
-        - os: macOS-latest
-          ghc: 8.10.7
         - os: macOS-latest
           ghc: 9.0.2
 
@@ -132,6 +130,14 @@ jobs:
       run: |
         # Disable demo-postgres since it requires unix sockets
         sed -i 's|, ./demos/demo-postgres|-- , ./demos/demo-postgres|g' cabal.project
+        cat cabal.project
+
+    - name: Disable demo-mysql (GHC < 9.2)
+      if: matrix.ghc == '9.0.2'
+      run: |
+        # mysql-haskell needs deepseq >= 1.4.6 (GHC >= 9.2); the older mysql-haskell that
+        # would build needs word24, which caps base < 4.15. Neither resolves on GHC 9.0.2.
+        sed -i 's|, ./demos/demo-mysql|-- , ./demos/demo-mysql|g' cabal.project
         cat cabal.project
 
     - name: Freeze
