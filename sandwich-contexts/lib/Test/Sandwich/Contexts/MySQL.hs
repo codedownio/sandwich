@@ -26,6 +26,7 @@ module Test.Sandwich.Contexts.MySQL (
   -- * Options
   , MysqlNixOptions(..)
   , defaultMysqlNixOptions
+  , MysqlAuthPlugin(..)
 
   -- * Types
   , mysql
@@ -74,6 +75,9 @@ data MysqlNixOptions = MysqlNixOptions {
   , mysqlNixPassword :: Text
   -- | Database to create. Default @test@.
   , mysqlNixDatabase :: Text
+  -- | Auth plugin for the created user, on the Oracle MySQL flavor only (MariaDB
+  -- always uses native password). Default 'NativePassword'.
+  , mysqlNixAuthPlugin :: MysqlAuthPlugin
   }
 defaultMysqlNixOptions :: MysqlNixOptions
 defaultMysqlNixOptions = MysqlNixOptions {
@@ -81,7 +85,15 @@ defaultMysqlNixOptions = MysqlNixOptions {
   , mysqlNixUsername = "test"
   , mysqlNixPassword = "test"
   , mysqlNixDatabase = "test"
+  , mysqlNixAuthPlugin = NativePassword
   }
+
+-- | MySQL authentication plugin for the created user. MySQL 8 defaults new users
+-- to @caching_sha2_password@; 'NativePassword' forces the simpler
+-- @mysql_native_password@ (what most lightweight clients and credential-forwarding
+-- proxies speak).
+data MysqlAuthPlugin = NativePassword | CachingSha2Password
+  deriving (Show, Eq)
 
 -- | Which flavor of server a Nix package provides.
 data MysqlVariant = MariaDB | MySQL
@@ -200,9 +212,9 @@ withMysqlViaNix' nc (MysqlNixOptions {..}) action = do
               , mysqlConnString = [i|mysql://#{mysqlNixUsername}:#{mysqlNixPassword}@localhost:#{port}/#{mysqlNixDatabase}|]
               })
   where
-    -- MySQL 8 defaults new users to caching_sha2_password; force mysql_native_password
-    -- so simple clients (and credential-forwarding proxies) can authenticate. MariaDB
-    -- already defaults to native password auth.
+    -- MariaDB always uses native password auth. On MySQL, the auth plugin is chosen
+    -- by 'mysqlNixAuthPlugin' (default native, so lightweight clients and
+    -- credential-forwarding proxies can authenticate; caching_sha2 is opt-in).
     setupSql variant = T.concat
       [ "CREATE DATABASE IF NOT EXISTS ", mysqlNixDatabase, "; "
       , "CREATE USER '", mysqlNixUsername, "'@'%' ", authClause variant, "; "
@@ -212,7 +224,9 @@ withMysqlViaNix' nc (MysqlNixOptions {..}) action = do
       , "FLUSH PRIVILEGES;"
       ]
     authClause MariaDB = "IDENTIFIED BY '" <> mysqlNixPassword <> "'"
-    authClause MySQL = "IDENTIFIED WITH mysql_native_password BY '" <> mysqlNixPassword <> "'"
+    authClause MySQL = "IDENTIFIED WITH " <> pluginName mysqlNixAuthPlugin <> " BY '" <> mysqlNixPassword <> "'"
+    pluginName NativePassword = "mysql_native_password"
+    pluginName CachingSha2Password = "caching_sha2_password"
 
 -- | Detect the server flavor from the package's binaries: only MariaDB ships
 -- @mariadb-install-db@.
