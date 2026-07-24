@@ -1,5 +1,9 @@
 # Changelog for sandwich-webdriver
 
+# Unreleased
+
+* Fix a `wdSessionMap` desync in `closeSession`/`closeAllSessionsExcept`: drop a session from the map only once its WebDriver-side close succeeds, and bound each close with a timeout. Previously an interrupted close could leave `wdSessionMap` out of sync with the driver's session map, causing `SessionNameAlreadyExists` on a later create of the same session name.
+
 # 0.5.0.0
 
 * Support `webdriver-0.15.0.0`.
