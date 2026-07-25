@@ -156,7 +156,16 @@ data BaseContext = BaseContext {
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
+  -- | Limit on the number of children the next 'parallel' node should run at
+  -- once. Set by introducing a 'ParallelismLimit', and consumed (and cleared)
+  -- by the next 'Test.Sandwich.Types.Spec.Parallel'' node below.
+  , baseContextParallelismLimit :: Maybe Int
   }
+
+-- | Introduce this value to limit the number of children the next 'parallel'
+-- node runs at once. See 'Test.Sandwich.ParallelN.parallelN'.
+newtype ParallelismLimit = ParallelismLimit Int
+  deriving (Show, Eq)
 
 -- | Has-* class for asserting a 'BaseContext' is available.
 class HasBaseContext a where

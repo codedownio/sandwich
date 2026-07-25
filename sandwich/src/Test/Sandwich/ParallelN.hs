@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Wrapper around 'parallel' for limiting the threads using a semaphore.
+-- | Wrapper around 'parallel' for limiting the number of children that run at once.
 
 module Test.Sandwich.ParallelN (
   parallelN
@@ -16,83 +16,77 @@ module Test.Sandwich.ParallelN (
   , defaultParallelNodeOptions
 
   -- * Types
-  , parallelSemaphore
-  , HasParallelSemaphore
+  , parallelismLimit
+  , HasParallelismLimit
+  , ParallelismLimit(..)
   ) where
 
-import Control.Concurrent.QSem
-import Control.Monad
-import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
 import Test.Sandwich.Contexts
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
-import UnliftIO.Exception
 
 
 -- * Types
 
-parallelSemaphore :: Label "parallelSemaphore" QSem
-parallelSemaphore = Label
+parallelismLimit :: Label "parallelismLimit" ParallelismLimit
+parallelismLimit = Label
 
-type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
+type HasParallelismLimit context = HasLabel context "parallelismLimit" ParallelismLimit
 
 defaultParallelNodeOptions :: NodeOptions
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
 
 -- * Functions
 
--- | Wrapper around 'parallel'. Introduces a semaphore to limit the parallelism to N threads.
+-- | Wrapper around 'parallel' which limits the parallelism to N children at a time.
 parallelN :: (
-  MonadUnliftIO m
-  ) => Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m () -> SpecFree context m ()
+  Monad m
+  ) => Int -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m () -> SpecFree context m ()
 parallelN = parallelN' defaultParallelNodeOptions
 
 parallelN' :: (
-  MonadUnliftIO m
+  Monad m
   )
   -- | Node options
   => NodeOptions
-  -- | Number of threads
+  -- | Number of children to run at once
   -> Int
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
+  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
   -> SpecFree context m ()
-parallelN' nodeOptions n = parallelN'' nodeOptions (liftIO $ newQSem n)
+parallelN' nodeOptions n = parallelN'' nodeOptions (pure n)
 
--- | Same as 'parallelN', but extracts the semaphore size from the command line options.
+-- | Same as 'parallelN', but extracts the limit from the command line options.
 parallelNFromArgs :: forall context a m. (
-  MonadUnliftIO m, HasCommandLineOptions context a
+  Monad m, HasCommandLineOptions context a
   )
-  -- | Callback to extract the semaphore size
+  -- | Callback to extract the limit
   => (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
+  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
   -> SpecFree context m ()
 parallelNFromArgs = parallelNFromArgs' @context @a defaultParallelNodeOptions
 
 parallelNFromArgs' :: forall context a m. (
-  MonadUnliftIO m, HasCommandLineOptions context a
+  Monad m, HasCommandLineOptions context a
   )
   -- | Node options
   => NodeOptions
-  -- | Callback to extract the semaphore size
+  -- | Callback to extract the limit
   -> (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
+  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
   -> SpecFree context m ()
-parallelNFromArgs' nodeOptions getParallelism = parallelN'' nodeOptions f
-  where
-    f = getContext commandLineOptions >>= (liftIO . newQSem) . getParallelism
+parallelNFromArgs' nodeOptions getParallelism = parallelN'' nodeOptions (getParallelism <$> getContext commandLineOptions)
 
 parallelN'' :: (
-  MonadUnliftIO m
+  Monad m
   )
   => NodeOptions
-  -> ExampleT context m QSem
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> context) m ()
+  -> ExampleT context m Int
+  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
   -> SpecFree context m ()
-parallelN'' nodeOptions makeQSem children = introduce "Introduce parallel semaphore" parallelSemaphore makeQSem (const $ return ()) $
-  parallel' nodeOptions $ aroundEach "Take parallel semaphore" claimRunSlot children
-  where
-    claimRunSlot f = do
-      s <- getContext parallelSemaphore
-      bracket_ (liftIO $ waitQSem s) (liftIO $ signalQSem s) (void f)
+parallelN'' nodeOptions getLimit children =
+  -- Introducing a 'ParallelismLimit' is picked up by the 'parallel' node, which
+  -- uses it to run at most N children at a time (and to share test timer
+  -- profiles between them).
+  introduce "Introduce parallelism limit" parallelismLimit (ParallelismLimit <$> getLimit) (const $ return ()) $
+    parallel' nodeOptions children

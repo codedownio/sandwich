@@ -3,6 +3,10 @@
 ## Unreleased
 
 * TUI: be able to press 'S' to open the speedscope profile in a browser.
+* `parallelN` now only creates N test timer profiles instead of one per child.
+  Breaking: the `parallelSemaphore` label (`QSem`) is replaced by
+  `parallelismLimit` (`ParallelismLimit`), so `parallelN`'s child spec type
+  changes.
 
 ## 0.3.1.0
 

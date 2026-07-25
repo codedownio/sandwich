@@ -123,6 +123,7 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
     , baseContextRunId = runId
+    , baseContextParallelismLimit = Nothing
     }
 
 

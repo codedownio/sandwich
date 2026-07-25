@@ -9,6 +9,7 @@ module Test.Sandwich.Interpreters.StartTree (
 
 
 import Control.Concurrent.MVar
+import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
@@ -54,6 +55,15 @@ import UnliftIO.STM
 baseContextFromCommon :: RunNodeCommonWithStatus s l t -> BaseContext -> BaseContext
 baseContextFromCommon (RunNodeCommonWithStatus {..}) bc@(BaseContext {}) =
   bc { baseContextPath = runTreeFolder }
+
+-- | Special hack to modify parts of the 'BaseContext' via an introduce, without
+-- needing to track them everywhere. It would be better to track these at the
+-- type level.
+applyMagicIntroduce :: (HasBaseContext context, Typeable intro) => intro -> context -> context
+applyMagicIntroduce intro ctx
+  | Just (TestTimerProfile t) <- cast intro = modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
+  | Just (ParallelismLimit n) <- cast intro = modifyBaseContext ctx (\bc -> bc { baseContextParallelismLimit = Just n })
+  | otherwise = ctx
 
 startTree :: (MonadIO m, HasBaseContext context) => RunNode context -> context -> m (Async Result)
 startTree node@(RunNodeBefore {..}) ctx' = do
@@ -133,13 +143,7 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
               -- TODO: add note about failure in allocation
               markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
             Right intro -> do
-              -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
-              -- It would be better to track the profile at the type level
-              let ctxFinal = case cast intro of
-                    Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-                    Nothing -> ctx
-
-              void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
+              void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> applyMagicIntroduce intro ctx)
       )
     readIORef result
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
@@ -358,24 +362,46 @@ runNodesSequentially children ctx =
     forM (L.filter (shouldRunChild ctx) children) $ \child ->
       startTree child ctx >>= wait
 
--- | Run a list of children concurrently, cancelling everything on async exception
+-- | Run a list of children concurrently, cancelling everything on async exception.
+-- If a 'ParallelismLimit' was introduced above us, run at most that many children at a time.
 runNodesConcurrently :: forall context. HasBaseContext context => RunNodeCommon -> [RunNode context] -> context -> IO [Result]
 runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) children ctx =
   flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
-    mapM wait =<< sequence [startTree child (modifyTimingProfile ix ctx)
+    case baseContextParallelismLimit (getBaseContext ctx) of
+      Nothing -> do
+        asyncs <- sequence [startTree child (childContext ix ctx)
                            | (child, ix) <- L.zip runnableChildren [0..]]
+        -- If we stop waiting early because one child threw, take the others down with us;
+        -- the handler above only fires for async exceptions.
+        mapM wait asyncs `onException` mapM_ cancel asyncs
+      Just n -> do
+        -- Every child gets one of the n lanes, claimed just before it starts and released once
+        -- it's finished. Since a lane is held for the entire lifetime of a child, the children
+        -- sharing a lane don't overlap, so they can also share a test timer profile.
+        lanes <- newTVarIO [0 .. (max 1 n) - 1]
+        let claimLane = atomically $ readTVar lanes >>= \case
+              [] -> retry
+              (lane:rest) -> writeTVar lanes rest >> return lane
+        let releaseLane lane = atomically $ modifyTVar' lanes (lane :)
+
+        forConcurrently runnableChildren $ \child ->
+          bracket claimLane releaseLane $ \lane -> do
+            a <- startTree child (childContext lane ctx)
+            -- If we get killed while waiting (because a sibling threw), take the child with us,
+            -- so we don't release the lane while it's still running.
+            wait a `onException` cancel a
   where
     runnableChildren = L.filter (shouldRunChild ctx) children
 
     leftPadWithZeros :: Int -> String
     leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
 
-    modifyTimingProfile :: Int -> context -> context
-    modifyTimingProfile n = flip modifyBaseContext (modifyTimingProfile' n)
-
-    modifyTimingProfile' :: Int -> BaseContext -> BaseContext
-    modifyTimingProfile' n bc@(BaseContext {..}) = bc {
+    -- Give each child its own test timer profile, since they can't share one without messing up
+    -- the nesting of the profile's frames. Also clear the parallelism limit, since we've consumed it.
+    childContext :: Int -> context -> context
+    childContext n = flip modifyBaseContext $ \bc@(BaseContext {..}) -> bc {
       baseContextTestTimerProfile = baseContextTestTimerProfile <> [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
+      , baseContextParallelismLimit = Nothing
       }
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
