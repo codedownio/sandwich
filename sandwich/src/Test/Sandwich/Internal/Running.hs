@@ -124,6 +124,8 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextTestTimer = testTimer
     , baseContextRunId = runId
     , baseContextParallelismLimit = Nothing
+    , baseContextLanePool = Nothing
+    , baseContextCurrentLane = Nothing
     }
 
 

@@ -62,8 +62,9 @@ timeAction :: (MonadUnliftIO m, HasBaseContextMonad context m, HasTestTimer cont
   -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
-  BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
-  timeAction' tt baseContextTestTimerProfile eventName action
+  bc <- asks getBaseContext
+  profile <- currentTestTimerProfile bc
+  timeAction' tt profile eventName action
 
 -- | Time a given action with a given profile name and event name. Use when you
 -- want to manually specify the profile name.

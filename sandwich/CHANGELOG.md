@@ -3,9 +3,16 @@
 ## Unreleased
 
 * TUI: be able to press 'S' to open the speedscope profile in a browser.
-* Add `parallelNWithLanes`, which limits a parallel node to N children at a time and gives you N
-  test timer profiles instead of one per child. Unlike `parallelN`, it bounds only the children of
-  the node it wraps, so nested `parallel` nodes below it aren't limited.
+* `parallelN` now limits with a pool of lanes rather than a semaphore. The bound is still global
+  over the whole subtree, including nested `parallel` nodes, but each lane is also a test timer
+  profile, so you get N profiles instead of one per test.
+  * Breaking: the `parallelSemaphore` label (`QSem`) is gone. To claim a lane yourself, wrap the
+    work in `withParallelLane` instead of taking the `QSem`; it's re-entrant, so hooks that apply
+    at several depths only claim once.
+  * `parallelN` now needs `HasBaseContext context`, which specs written against `TopSpec` already
+    have.
+* Add `parallelNWithLanes`, which limits a single parallel node to N children at a time (setup
+  included) rather than bounding the subtree.
 * Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0

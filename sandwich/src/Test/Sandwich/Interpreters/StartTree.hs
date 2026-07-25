@@ -59,11 +59,25 @@ baseContextFromCommon (RunNodeCommonWithStatus {..}) bc@(BaseContext {}) =
 -- | Special hack to modify parts of the 'BaseContext' via an introduce, without
 -- needing to track them everywhere. It would be better to track these at the
 -- type level.
-applyMagicIntroduce :: (HasBaseContext context, Typeable intro) => intro -> context -> context
-applyMagicIntroduce intro ctx
-  | Just (TestTimerProfile t) <- cast intro = modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-  | Just (ParallelismLimit n) <- cast intro = modifyBaseContext ctx (\bc -> bc { baseContextParallelismLimit = Just n })
-  | otherwise = ctx
+applyMagicIntroduce :: (HasBaseContext context, Typeable intro) => RunNodeCommonWithStatus s l t -> intro -> context -> IO context
+applyMagicIntroduce (RunNodeCommonWithStatus {runTreeId}) intro ctx
+  | Just (TestTimerProfile t) <- cast intro =
+      pure $ modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
+  | Just (ParallelismLimit n) <- cast intro =
+      pure $ modifyBaseContext ctx (\bc -> bc { baseContextParallelismLimit = Just n })
+  | Just (ParallelLanes n) <- cast intro = do
+      let numLanes = max 1 n
+      free <- newTVarIO [0 .. numLanes - 1]
+      baseProfile <- currentTestTimerProfile (getBaseContext ctx)
+      let names = [baseProfile <> [i|-lane-#{runTreeId}-#{leftPadWithZerosTo numLanes lane}|]
+                  | lane <- [0 .. numLanes - 1]]
+      pure $ modifyBaseContext ctx (\bc -> bc { baseContextLanePool = Just (LanePool free names) })
+  | otherwise = pure ctx
+
+-- | Pad a number with zeros so that all numbers less than the given total have the same width.
+leftPadWithZerosTo :: Int -> Int -> String
+leftPadWithZerosTo total num =
+  L.replicate (L.length (show (total - 1)) - L.length (show num)) '0' <> show num
 
 startTree :: (MonadIO m, HasBaseContext context) => RunNode context -> context -> m (Async Result)
 startTree node@(RunNodeBefore {..}) ctx' = do
@@ -143,7 +157,8 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
               -- TODO: add note about failure in allocation
               markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
             Right intro -> do
-              void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> applyMagicIntroduce intro ctx)
+              ctxFinal <- applyMagicIntroduce runNodeCommon intro ctx
+              void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
       )
     readIORef result
 startTree node@(RunNodeIntroduceWith {..}) ctx' = do
@@ -282,13 +297,19 @@ runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context 
 runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
-  let timerFn = if runTreeRecordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel) else id
   let asyncName = T.pack [i|node #{runTreeId}, #{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
   myAsync <- liftIO $ managedAsyncWithUnmask baseContextRunId asyncName $ \unmask -> do
     flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
       readMVar mvar
+      -- Resolve the timing profile now rather than when this node was created, since a lane may
+      -- have been claimed for us in the meantime.
+      timerFn <- case runTreeRecordTime of
+        False -> pure id
+        True -> do
+          profile <- currentTestTimerProfile bc
+          pure $ timeAction' (getTestTimer bc) profile (T.pack runTreeLabel)
       (result, extraTimingInfo) <- timerFn action
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime (setupFinishTime extraTimingInfo) (teardownStartTime extraTimingInfo) endTime result
@@ -369,7 +390,7 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
   flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
     case baseContextParallelismLimit (getBaseContext ctx) of
       Nothing -> do
-        asyncs <- sequence [startTree child (childContext ix ctx)
+        asyncs <- sequence [startTree child =<< childContext ix
                            | (child, ix) <- L.zip runnableChildren [0..]]
         -- If we stop waiting early because one child threw, take the others down with us;
         -- the handler above only fires for async exceptions.
@@ -386,7 +407,7 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
 
         forConcurrently runnableChildren $ \child ->
           bracket claimLane releaseLane $ \lane -> do
-            a <- startTree child (childContext lane ctx)
+            a <- startTree child =<< childContext lane
             -- If we get killed while waiting (because a sibling threw), take the child with us,
             -- so we don't release the lane while it's still running.
             wait a `onException` cancel a
@@ -398,11 +419,27 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
 
     -- Give each child its own test timer profile, since they can't share one without messing up
     -- the nesting of the profile's frames. Also clear the parallelism limit, since we've consumed it.
-    childContext :: Int -> context -> context
-    childContext n = flip modifyBaseContext $ \bc@(BaseContext {..}) -> bc {
-      baseContextTestTimerProfile = baseContextTestTimerProfile <> [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
-      , baseContextParallelismLimit = Nothing
-      }
+    --
+    -- Each child gets a fresh cell for the lane it's holding. If we're already inside a lane, the
+    -- children inherit it (so they don't try to claim a second one and deadlock), but with their
+    -- own suffix, since they run concurrently and so can't share a profile either.
+    childContext :: Int -> IO context
+    childContext n = do
+      parentLane <- case baseContextCurrentLane (getBaseContext ctx) of
+        Nothing -> pure Nothing
+        Just v -> readTVarIO v
+      currentLane <- newTVarIO (bumpProfile n <$> parentLane)
+      return $ modifyBaseContext ctx $ \bc -> bc {
+        baseContextTestTimerProfile = baseContextTestTimerProfile bc <> suffix n
+        , baseContextParallelismLimit = Nothing
+        , baseContextCurrentLane = Just currentLane
+        }
+
+    suffix :: Int -> T.Text
+    suffix n = [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
+
+    bumpProfile :: Int -> LaneState -> LaneState
+    bumpProfile n ls = ls { laneStateProfile = laneStateProfile ls <> suffix n }
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithResult children baseContext status = do
@@ -532,8 +569,12 @@ recordExceptionInStatus status e = do
     _ -> Done endTime Nothing Nothing endTime ret
 
 timed :: forall m a s l t. (MonadUnliftIO m) => RunNodeCommonWithStatus s l t -> Bool -> BaseContext -> String -> m a -> m (a, UTCTime, UTCTime)
-timed _rnc recordTime bc@(BaseContext {..}) label action = do
-  let timerFn = if recordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack label) else id
+timed _rnc recordTime bc@(BaseContext {}) label action = do
+  timerFn <- case recordTime of
+    False -> pure id
+    True -> do
+      profile <- currentTestTimerProfile bc
+      pure $ timeAction' (getTestTimer bc) profile (T.pack label)
 
   startTime <- liftIO getCurrentTime
   ret <- timerFn action
