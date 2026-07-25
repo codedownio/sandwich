@@ -24,7 +24,10 @@ spec = describe "Introducing PostgreSQL on Kubernetes" $ do
     introduceMinikubeClusterViaNix defaultMinikubeClusterOptions $
     introduceBinaryViaNixPackage @"kubectl" "kubectl" $
     withKubernetesNamespace "postgres-demo" $
-    introduceK8SPostgresServer (defaultPostgresK8SOptions "postgres-demo") $ do
+    introduceK8SPostgresServer ((defaultPostgresK8SOptions "postgres-demo") {
+        postgresK8SImage = "docker.io/bitnami/postgresql@sha256:e93732718bf7fafa61a04abaa437fc601c80a791857105fd6fca18407b5725c9"
+        , postgresK8SExtraEnv = [("POSTGRES_MAX_CONNECTIONS", "400")]
+        }) $ do
       it "prints the server info" $ do
         server@(PostgresContext {..}) <- getContext postgres
         info [i|Got PostgreSQL server: #{server}|]
@@ -38,6 +41,9 @@ spec = describe "Introducing PostgreSQL on Kubernetes" $ do
         now <- selectUtcNow (encodeUtf8 postgresConnString)
         info [i|Got now: #{now}|]
 
+      it "uses the configured max_connections" $ do
+        PostgresContext {..} <- getContext postgres
+        selectMaxConnections (encodeUtf8 postgresConnString) >>= (`shouldBe` "400")
 
 selectTwoPlusTwo :: MonadIO m => ByteString -> m Int
 selectTwoPlusTwo connString = liftIO $ do
@@ -49,6 +55,12 @@ selectUtcNow :: MonadIO m => ByteString -> m UTCTime
 selectUtcNow connString = liftIO $ do
   conn <- connectPostgreSQL connString
   [Only n] <- query_ conn "select now()"
+  return n
+
+selectMaxConnections :: MonadIO m => ByteString -> m Text
+selectMaxConnections connString = liftIO $ do
+  conn <- connectPostgreSQL connString
+  [Only n] <- query_ conn "show max_connections"
   return n
 
 

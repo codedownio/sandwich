@@ -30,6 +30,7 @@ module Test.Sandwich.Contexts.Kubernetes.PostgresServer (
   ) where
 
 import Control.Monad
+import qualified Data.Aeson as A
 import Data.String.Interpolate
 import Data.Text as T
 import Relude
@@ -52,6 +53,7 @@ data PostgresK8SOptions = PostgresK8SOptions {
   , postgresK8SPassword :: Text
   , postgresK8SDatabase :: Text
   , postgresK8SPreloadImage :: Bool
+  , postgresK8SExtraEnv :: [(Text, Text)]
   }
 defaultPostgresK8SOptions :: Text -> PostgresK8SOptions
 defaultPostgresK8SOptions namespace = PostgresK8SOptions {
@@ -61,6 +63,7 @@ defaultPostgresK8SOptions namespace = PostgresK8SOptions {
   , postgresK8SPassword = "postgres"
   , postgresK8SDatabase = "test"
   , postgresK8SPreloadImage = True
+  , postgresK8SExtraEnv = []
   }
 
 -- | Introduce a PostgreSQL server on a Kubernetes cluster.
@@ -126,6 +129,7 @@ withK8SPostgresServer' kubectlBinary kcc@(KubernetesClusterContext {..}) (Postgr
 
   let yaml = postgresYaml deploymentName postgresK8SNamespace postgresK8SImage
                           postgresK8SUsername postgresK8SPassword postgresK8SDatabase
+                          postgresK8SExtraEnv
 
   let create = timeAction "Creating PostgreSQL" $ do
         (ps, _) <- createProcessWithLoggingAndStdin
@@ -174,8 +178,8 @@ withK8SPostgresServer' kubectlBinary kcc@(KubernetesClusterContext {..}) (Postgr
       void $ action ctx
 
 
-postgresYaml :: Text -> Text -> Text -> Text -> Text -> Text -> Text
-postgresYaml name namespace image username password database = [__i|
+postgresYaml :: Text -> Text -> Text -> Text -> Text -> Text -> [(Text, Text)] -> Text
+postgresYaml name namespace image username password database extraEnv = [__i|
   apiVersion: v1
   kind: Pod
   metadata:
@@ -194,7 +198,7 @@ postgresYaml name namespace image username password database = [__i|
       - name: POSTGRES_PASSWORD
         value: "#{password}"
       - name: POSTGRES_DB
-        value: "#{database}"
+        value: "#{database}"#{extraEnvLines}
       ports:
       - containerPort: 5432
       readinessProbe:
@@ -218,3 +222,7 @@ postgresYaml name namespace image username password database = [__i|
     - port: 5432
       targetPort: 5432
   |]
+  where
+    extraEnvLines :: Text
+    extraEnvLines = mconcat [ "\n    - name: " <> k <> "\n      value: " <> decodeUtf8 (A.encode v)
+                            | (k, v) <- extraEnv ]
