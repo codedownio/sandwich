@@ -7,7 +7,6 @@
 -- | Wrappers around 'parallel' for limiting the threads using a semaphore.
 
 module Test.Sandwich.ParallelN (
-  -- * Limiting with lanes shared by the whole subtree
   parallelN
   , parallelN'
 
@@ -15,13 +14,6 @@ module Test.Sandwich.ParallelN (
   , parallelNFromArgs'
 
   , withParallelLane
-
-  -- * Limiting a single parallel node
-  , parallelNWithLanes
-  , parallelNWithLanes'
-
-  , parallelNWithLanesFromArgs
-  , parallelNWithLanesFromArgs'
 
   , defaultParallelNodeOptions
 
@@ -32,10 +24,6 @@ module Test.Sandwich.ParallelN (
   , parallelLanes
   , HasParallelLanes
   , ParallelLanes(..)
-
-  , parallelismLimit
-  , HasParallelismLimit
-  , ParallelismLimit(..)
   ) where
 
 import Control.Concurrent.QSem
@@ -64,11 +52,6 @@ parallelLanes :: Label "parallelLanes" ParallelLanes
 parallelLanes = Label
 
 type HasParallelLanes context = HasLabel context "parallelLanes" ParallelLanes
-
-parallelismLimit :: Label "parallelismLimit" ParallelismLimit
-parallelismLimit = Label
-
-type HasParallelismLimit context = HasLabel context "parallelismLimit" ParallelismLimit
 
 defaultParallelNodeOptions :: NodeOptions
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
@@ -191,69 +174,3 @@ releaseLane (LanePool {lanePoolSem, lanePoolFree}) lane = liftIO $ do
 
 laneProfileName :: LanePool -> Int -> T.Text
 laneProfileName (LanePool {lanePoolProfileNames}) lane = lanePoolProfileNames !! lane
-
--- | Wrapper around 'parallel' which runs at most N of its own children at a time. Each child runs
--- in one of N lanes, claimed just before it starts and released once it's finished, and the
--- children sharing a lane share a test timer profile. So you get N profiles rather than one per
--- child, which is much easier to read in the speedscope viewer.
---
--- Note that this bounds the children of this node only, which is a different thing from what
--- 'parallelN' bounds:
---
---   * Setup nodes inside a child count against the limit, since a lane is held for the child's
---     whole lifetime.
---
---   * 'parallel' nodes nested below a child are /not/ bounded. If your tree is assembled from
---     nested parallel nodes (for example by 'Test.Sandwich.TH.getSpecFromFolder' with a parallel
---     combiner), use 'parallelN' instead, or the limit will only apply to the top level.
-parallelNWithLanes :: (
-  Monad m
-  ) => Int -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m () -> SpecFree context m ()
-parallelNWithLanes = parallelNWithLanes' defaultParallelNodeOptions
-
-parallelNWithLanes' :: (
-  Monad m
-  )
-  -- | Node options
-  => NodeOptions
-  -- | Number of lanes
-  -> Int
-  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
-  -> SpecFree context m ()
-parallelNWithLanes' nodeOptions n = parallelNWithLanes'' nodeOptions (pure n)
-
--- | Same as 'parallelNWithLanes', but extracts the number of lanes from the command line options.
-parallelNWithLanesFromArgs :: forall context a m. (
-  Monad m, HasCommandLineOptions context a
-  )
-  -- | Callback to extract the number of lanes
-  => (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
-  -> SpecFree context m ()
-parallelNWithLanesFromArgs = parallelNWithLanesFromArgs' @context @a defaultParallelNodeOptions
-
-parallelNWithLanesFromArgs' :: forall context a m. (
-  Monad m, HasCommandLineOptions context a
-  )
-  -- | Node options
-  => NodeOptions
-  -- | Callback to extract the number of lanes
-  -> (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
-  -> SpecFree context m ()
-parallelNWithLanesFromArgs' nodeOptions getParallelism =
-  parallelNWithLanes'' nodeOptions (getParallelism <$> getContext commandLineOptions)
-
-parallelNWithLanes'' :: (
-  Monad m
-  )
-  => NodeOptions
-  -> ExampleT context m Int
-  -> SpecFree (LabelValue "parallelismLimit" ParallelismLimit :> context) m ()
-  -> SpecFree context m ()
-parallelNWithLanes'' nodeOptions getLimit children =
-  -- Introducing a 'ParallelismLimit' is picked up by the 'parallel' node just below, which uses it
-  -- to run at most N children at a time (and to share test timer profiles between them). The node
-  -- clears it for its own children, so a nested 'parallel' doesn't claim it a second time.
-  introduce "Introduce parallelism limit" parallelismLimit (ParallelismLimit <$> getLimit) (const $ return ()) $
-    parallel' nodeOptions children

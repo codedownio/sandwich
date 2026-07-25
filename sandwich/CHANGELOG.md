@@ -13,8 +13,6 @@
     specs that are polymorphic in their context.
   * `parallelN` now needs `HasBaseContext context`, which specs written against `TopSpec` already
     have.
-* Add `parallelNWithLanes`, which limits a single parallel node to N children at a time (setup
-  included) rather than bounding the subtree.
 * Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0

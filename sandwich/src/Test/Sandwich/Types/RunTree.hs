@@ -157,10 +157,6 @@ data BaseContext = BaseContext {
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
-  -- | Limit on the number of children the next 'parallel' node should run at
-  -- once. Set by introducing a 'ParallelismLimit', and consumed (and cleared)
-  -- by the next 'Test.Sandwich.Types.Spec.Parallel'' node below.
-  , baseContextParallelismLimit :: Maybe Int
   -- | Lanes shared by everything below this point, claimed with
   -- 'Test.Sandwich.ParallelN.withParallelLane'. Set by introducing 'ParallelLanes'.
   , baseContextLanePool :: Maybe LanePool
@@ -168,11 +164,6 @@ data BaseContext = BaseContext {
   -- own cell, so only one thread writes this at a time.
   , baseContextCurrentLane :: Maybe (TVar (Maybe LaneState))
   }
-
--- | Introduce this value to limit the number of children the next 'parallel'
--- node runs at once. See 'Test.Sandwich.ParallelN.parallelNWithLanes'.
-newtype ParallelismLimit = ParallelismLimit Int
-  deriving (Show, Eq)
 
 -- | Introduce this value to make a pool of N lanes available to the spec tree below, to be
 -- claimed with 'Test.Sandwich.ParallelN.withParallelLane'. See 'Test.Sandwich.ParallelN.parallelN'.

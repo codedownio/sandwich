@@ -10,7 +10,6 @@ module Test.Sandwich.Interpreters.StartTree (
 
 import Control.Concurrent.MVar
 import Control.Concurrent.QSem
-import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
@@ -64,8 +63,6 @@ applyMagicIntroduce :: (HasBaseContext context, Typeable intro) => RunNodeCommon
 applyMagicIntroduce (RunNodeCommonWithStatus {runTreeId}) intro ctx
   | Just (TestTimerProfile t) <- cast intro =
       pure $ modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-  | Just (ParallelismLimit n) <- cast intro =
-      pure $ modifyBaseContext ctx (\bc -> bc { baseContextParallelismLimit = Just n })
   | Just (ParallelLanes n) <- cast intro = do
       let numLanes = max 1 n
       sem <- newQSem numLanes
@@ -385,34 +382,15 @@ runNodesSequentially children ctx =
     forM (L.filter (shouldRunChild ctx) children) $ \child ->
       startTree child ctx >>= wait
 
--- | Run a list of children concurrently, cancelling everything on async exception.
--- If a 'ParallelismLimit' was introduced above us, run at most that many children at a time.
+-- | Run a list of children concurrently, cancelling everything on async exception
 runNodesConcurrently :: forall context. HasBaseContext context => RunNodeCommon -> [RunNode context] -> context -> IO [Result]
 runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) children ctx =
-  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
-    case baseContextParallelismLimit (getBaseContext ctx) of
-      Nothing -> do
-        asyncs <- sequence [startTree child =<< childContext ix
-                           | (child, ix) <- L.zip runnableChildren [0..]]
-        -- If we stop waiting early because one child threw, take the others down with us;
-        -- the handler above only fires for async exceptions.
-        mapM wait asyncs `onException` mapM_ cancel asyncs
-      Just n -> do
-        -- Every child gets one of the n lanes, claimed just before it starts and released once
-        -- it's finished. Since a lane is held for the entire lifetime of a child, the children
-        -- sharing a lane don't overlap, so they can also share a test timer profile.
-        lanes <- newTVarIO [0 .. (max 1 n) - 1]
-        let claimLane = atomically $ readTVar lanes >>= \case
-              [] -> retry
-              (lane:rest) -> writeTVar lanes rest >> return lane
-        let releaseLane lane = atomically $ modifyTVar' lanes (lane :)
-
-        forConcurrently runnableChildren $ \child ->
-          bracket claimLane releaseLane $ \lane -> do
-            a <- startTree child =<< childContext lane
-            -- If we get killed while waiting (because a sibling threw), take the child with us,
-            -- so we don't release the lane while it's still running.
-            wait a `onException` cancel a
+  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $ do
+    asyncs <- sequence [startTree child =<< childContext ix
+                       | (child, ix) <- L.zip runnableChildren [0..]]
+    -- If we stop waiting early because one child threw, take the others down with us;
+    -- the handler above only fires for async exceptions.
+    mapM wait asyncs `onException` mapM_ cancel asyncs
   where
     runnableChildren = L.filter (shouldRunChild ctx) children
 
@@ -420,11 +398,11 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
     leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
 
     -- Give each child its own test timer profile, since they can't share one without messing up
-    -- the nesting of the profile's frames. Also clear the parallelism limit, since we've consumed it.
+    -- the nesting of the profile's frames.
     --
-    -- Each child gets a fresh cell for the lane it's holding. If we're already inside a lane, the
-    -- children inherit it (so they don't try to claim a second one and deadlock), but with their
-    -- own suffix, since they run concurrently and so can't share a profile either.
+    -- Each child also gets a fresh cell for the lane it's holding. If we're already inside a lane,
+    -- the children inherit it (so they don't try to claim a second one and deadlock), but with
+    -- their own suffix, since they run concurrently and so can't share a profile either.
     childContext :: Int -> IO context
     childContext n = do
       parentLane <- case baseContextCurrentLane (getBaseContext ctx) of
@@ -433,7 +411,6 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
       currentLane <- newTVarIO (bumpProfile n <$> parentLane)
       return $ modifyBaseContext ctx $ \bc -> bc {
         baseContextTestTimerProfile = baseContextTestTimerProfile bc <> suffix n
-        , baseContextParallelismLimit = Nothing
         , baseContextCurrentLane = Just currentLane
         }
 
