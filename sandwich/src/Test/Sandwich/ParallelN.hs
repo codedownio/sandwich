@@ -26,6 +26,9 @@ module Test.Sandwich.ParallelN (
   , defaultParallelNodeOptions
 
   -- * Types
+  , parallelSemaphore
+  , HasParallelSemaphore
+
   , parallelLanes
   , HasParallelLanes
   , ParallelLanes(..)
@@ -35,6 +38,7 @@ module Test.Sandwich.ParallelN (
   , ParallelismLimit(..)
   ) where
 
+import Control.Concurrent.QSem
 import Control.Concurrent.STM (retry)
 import Control.Monad
 import Control.Monad.IO.Class
@@ -50,6 +54,11 @@ import UnliftIO.STM
 
 
 -- * Types
+
+parallelSemaphore :: Label "parallelSemaphore" QSem
+parallelSemaphore = Label
+
+type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
 
 parallelLanes :: Label "parallelLanes" ParallelLanes
 parallelLanes = Label
@@ -77,9 +86,14 @@ defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold
 --
 -- Each lane is also a test timer profile, so the profile stays readable: you get N profiles rather
 -- than one per test.
+--
+-- The bound is also available as a plain 'QSem' under the 'parallelSemaphore' label. Claiming it
+-- with 'waitQSem' limits you against the same pool, but doesn't switch the timer profile, and
+-- isn't re-entrant the way 'withParallelLane' is: don't do it underneath something that already
+-- holds a lane, or you'll wait for a lane only you can release.
 parallelN :: (
   MonadUnliftIO m, HasBaseContext context
-  ) => Int -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m () -> SpecFree context m ()
+  ) => Int -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m () -> SpecFree context m ()
 parallelN = parallelN' defaultParallelNodeOptions
 
 parallelN' :: (
@@ -89,7 +103,7 @@ parallelN' :: (
   => NodeOptions
   -- | Number of lanes
   -> Int
-  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelN' nodeOptions n = parallelN'' nodeOptions (pure n)
 
@@ -99,7 +113,7 @@ parallelNFromArgs :: forall context a m. (
   )
   -- | Callback to extract the number of lanes
   => (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelNFromArgs = parallelNFromArgs' @context @a defaultParallelNodeOptions
 
@@ -110,7 +124,7 @@ parallelNFromArgs' :: forall context a m. (
   => NodeOptions
   -- | Callback to extract the number of lanes
   -> (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelNFromArgs' nodeOptions getParallelism =
   parallelN'' nodeOptions (getParallelism <$> getContext commandLineOptions)
@@ -120,16 +134,24 @@ parallelN'' :: (
   )
   => NodeOptions
   -> ExampleT context m Int
-  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelN'' nodeOptions getLanes children =
   introduce "Introduce parallel lanes" parallelLanes (ParallelLanes <$> getLanes) (const $ return ()) $
-    parallel' nodeOptions $
-      aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
+    -- Hand out the pool's semaphore under the old label, so specs can still claim the bound
+    -- directly. They just don't get the lane's timer profile if they do.
+    introduce "Introduce parallel semaphore" parallelSemaphore getPoolSemaphore (const $ return ()) $
+      parallel' nodeOptions $
+        aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
   where
     -- Don't time this node: it starts before we have a lane, so its frame would have to go in a
     -- profile of its own, which is exactly the clutter the lanes are meant to avoid.
     laneNodeOptions = defaultNodeOptions { nodeOptionsRecordTime = False }
+
+    getPoolSemaphore = asks (baseContextLanePool . getBaseContext) >>= \case
+      Just pool -> pure (lanePoolSem pool)
+      -- Can't happen: the introduce above always installs a pool.
+      Nothing -> getContext parallelLanes >>= \(ParallelLanes n) -> liftIO (newQSem (max 1 n))
 
 -- | Claim one of the lanes introduced by 'parallelN', run the given action, and release it. Blocks
 -- until a lane is free.
@@ -155,12 +177,17 @@ withParallelLane action = do
                  action
 
 claimLane :: (MonadIO m) => LanePool -> m Int
-claimLane (LanePool {lanePoolFree}) = atomically $ readTVar lanePoolFree >>= \case
-  [] -> retry
-  (lane:rest) -> writeTVar lanePoolFree rest >> return lane
+claimLane (LanePool {lanePoolSem, lanePoolFree}) = liftIO $ do
+  waitQSem lanePoolSem
+  flip onException (signalQSem lanePoolSem) $ atomically $ readTVar lanePoolFree >>= \case
+    -- Can't happen: the semaphore already limits us to the number of lanes.
+    [] -> retry
+    (lane:rest) -> writeTVar lanePoolFree rest >> return lane
 
 releaseLane :: (MonadIO m) => LanePool -> Int -> m ()
-releaseLane (LanePool {lanePoolFree}) lane = atomically $ modifyTVar' lanePoolFree (lane :)
+releaseLane (LanePool {lanePoolSem, lanePoolFree}) lane = liftIO $ do
+  atomically $ modifyTVar' lanePoolFree (lane :)
+  signalQSem lanePoolSem
 
 laneProfileName :: LanePool -> Int -> T.Text
 laneProfileName (LanePool {lanePoolProfileNames}) lane = lanePoolProfileNames !! lane

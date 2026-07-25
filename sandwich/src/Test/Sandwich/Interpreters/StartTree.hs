@@ -9,6 +9,7 @@ module Test.Sandwich.Interpreters.StartTree (
 
 
 import Control.Concurrent.MVar
+import Control.Concurrent.QSem
 import Control.Concurrent.STM (retry)
 import qualified Control.Exception as E
 import Control.Monad
@@ -67,11 +68,12 @@ applyMagicIntroduce (RunNodeCommonWithStatus {runTreeId}) intro ctx
       pure $ modifyBaseContext ctx (\bc -> bc { baseContextParallelismLimit = Just n })
   | Just (ParallelLanes n) <- cast intro = do
       let numLanes = max 1 n
+      sem <- newQSem numLanes
       free <- newTVarIO [0 .. numLanes - 1]
       baseProfile <- currentTestTimerProfile (getBaseContext ctx)
       let names = [baseProfile <> [i|-lane-#{runTreeId}-#{leftPadWithZerosTo numLanes lane}|]
                   | lane <- [0 .. numLanes - 1]]
-      pure $ modifyBaseContext ctx (\bc -> bc { baseContextLanePool = Just (LanePool free names) })
+      pure $ modifyBaseContext ctx (\bc -> bc { baseContextLanePool = Just (LanePool sem free names) })
   | otherwise = pure ctx
 
 -- | Pad a number with zeros so that all numbers less than the given total have the same width.

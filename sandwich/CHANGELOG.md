@@ -6,9 +6,11 @@
 * `parallelN` now limits with a pool of lanes rather than a semaphore. The bound is still global
   over the whole subtree, including nested `parallel` nodes, but each lane is also a test timer
   profile, so you get N profiles instead of one per test.
-  * Breaking: the `parallelSemaphore` label (`QSem`) is gone. To claim a lane yourself, wrap the
-    work in `withParallelLane` instead of taking the `QSem`; it's re-entrant, so hooks that apply
-    at several depths only claim once.
+  * The `parallelSemaphore` label still hands out a `QSem`, and it's the pool's own semaphore, so
+    claiming it directly is bounded by the same thing. To also get the lane's timer profile (and
+    re-entrancy, for hooks that apply at several depths), claim with `withParallelLane` instead.
+  * `parallelN`'s child spec type has an extra `parallelLanes` label in it, which is inferred for
+    specs that are polymorphic in their context.
   * `parallelN` now needs `HasBaseContext context`, which specs written against `TopSpec` already
     have.
 * Add `parallelNWithLanes`, which limits a single parallel node to N children at a time (setup

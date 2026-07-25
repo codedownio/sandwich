@@ -10,6 +10,7 @@
 module Test.Sandwich.Types.RunTree where
 
 import Control.Concurrent.Async
+import Control.Concurrent.QSem
 import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
@@ -181,7 +182,12 @@ newtype ParallelLanes = ParallelLanes Int
 -- | A pool of lanes. A lane is held by one part of the tree at a time, and carries a test timer
 -- profile name, so everything that runs in it shares a profile.
 data LanePool = LanePool {
-  lanePoolFree :: TVar [Int]
+  -- | The bound itself. Also handed out under the
+  -- 'Test.Sandwich.ParallelN.parallelSemaphore' label, so that code claiming the semaphore
+  -- directly is limited by the same thing as code using
+  -- 'Test.Sandwich.ParallelN.withParallelLane'.
+  lanePoolSem :: QSem
+  , lanePoolFree :: TVar [Int]
   , lanePoolProfileNames :: [T.Text]
   }
 
