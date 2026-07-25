@@ -32,10 +32,9 @@
             pkg-config
             postgresql
             zlib
-
-            stack
           ]) ++ [
             ghc
+            pkgsMaster.stack
             pkgsMaster.cabal-install
             pkgsMaster.hlint
           ];
@@ -48,7 +47,7 @@
 
             test = pkgs.writeShellScriptBin "stack-test" ''
               export NIX_PATH=nixpkgs=${pkgs.path}
-              ${pkgs.stack}/bin/stack test
+              ${pkgsMaster.stack}/bin/stack test
             '';
 
             nixpkgsPath = pkgs.writeShellScriptBin "nixpkgsPath.sh" "echo -n ${pkgs.path}";
