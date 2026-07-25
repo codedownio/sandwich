@@ -3,10 +3,10 @@
 ## Unreleased
 
 * TUI: be able to press 'S' to open the speedscope profile in a browser.
-* `parallelN` now only creates N test timer profiles instead of one per child.
-  Breaking: the `parallelSemaphore` label (`QSem`) is replaced by
-  `parallelismLimit` (`ParallelismLimit`), so `parallelN`'s child spec type
-  changes.
+* Add `parallelNWithLanes`, which limits a parallel node to N children at a time and gives you N
+  test timer profiles instead of one per child. Unlike `parallelN`, it bounds only the children of
+  the node it wraps, so nested `parallel` nodes below it aren't limited.
+* Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0
 
