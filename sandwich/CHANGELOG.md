@@ -13,6 +13,11 @@
     specs that are polymorphic in their context.
   * `parallelN` now needs `HasBaseContext context`, which specs written against `TopSpec` already
     have.
+* Add `withParallelLanes`/`withParallelLanesFromArgs` to introduce a lane pool over a spec tree you
+  can't wrap with `parallelN`, plus `takeParallelLane` to claim a lane for a whole spec (shaped for
+  `getSpecIndividualSpecHooks`) and `withParallelLane` to claim one inside a handler.
+* Add `withTimingLane`, `inTimingLane` and `newTimingLaneSource` to `Test.Sandwich.TestTimer`, for
+  switching the test timer profile of a whole subtree from an `around` handler.
 * Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0

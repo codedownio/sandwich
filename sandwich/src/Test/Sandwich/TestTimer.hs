@@ -14,6 +14,10 @@ module Test.Sandwich.TestTimer (
   , withTimingProfile
   , withTimingProfile'
 
+  , newTimingLaneSource
+  , withTimingLane
+  , inTimingLane
+
   , newSpeedScopeTestTimer
   , finalizeSpeedScopeTestTimer
   , renderSpeedScopeFile
@@ -32,6 +36,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time
 import Data.Time.Clock.POSIX
+import Data.Unique
 import Lens.Micro
 import System.Directory
 import System.FilePath
@@ -40,6 +45,7 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
+import UnliftIO.STM
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
@@ -95,6 +101,47 @@ withTimingProfile' :: (Monad m)
   -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m ()
   -> SpecFree context m ()
 withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer profile to dynamic value|] testTimerProfile (TestTimerProfile <$> getName) (\_ -> return ())
+
+-- * Timing lanes
+
+-- | Make a new source of timing lanes. Anything claiming a lane with 'withTimingLane' should pass
+-- the same source, so that nested claims from that source can be detected.
+newTimingLaneSource :: MonadIO m => m TimingLaneSource
+newTimingLaneSource = TimingLaneSource <$> liftIO newUnique
+
+-- | Record this action, and everything below it in the test tree, under the given profile.
+--
+-- This is how something that hands out lanes (see 'Test.Sandwich.ParallelN.parallelN') gets
+-- everything running in a lane to share a profile: nodes read the profile when they start, so
+-- unlike 'withTimingProfile' this works from an 'around' handler, without changing the type of the
+-- spec underneath.
+--
+-- Concurrent branches of the tree never share the profile set here; a 'Test.Sandwich.parallel'
+-- node below gives each of its children a suffixed profile of its own, so their frames can't
+-- interleave.
+withTimingLane :: (MonadUnliftIO m, HasBaseContextMonad context m)
+  -- | Who's handing out the lane
+  => TimingLaneSource
+  -- | Profile name for the lane
+  -> ProfileName
+  -> m a
+  -> m a
+withTimingLane source profileName action = do
+  BaseContext {baseContextCurrentTimingLane} <- asks getBaseContext
+  previous <- readTVarIO baseContextCurrentTimingLane
+  let held = TimingLaneState (source : maybe [] timingLaneSources previous) profileName
+  bracket_ (atomically $ writeTVar baseContextCurrentTimingLane (Just held))
+           (atomically $ writeTVar baseContextCurrentTimingLane previous)
+           action
+
+-- | Whether this branch of the tree is already inside a lane from the given source. Claiming a
+-- second lane from the same source would deadlock.
+inTimingLane :: (MonadIO m, HasBaseContextMonad context m) => TimingLaneSource -> m Bool
+inTimingLane source = do
+  BaseContext {baseContextCurrentTimingLane} <- asks getBaseContext
+  readTVarIO baseContextCurrentTimingLane >>= \case
+    Just (TimingLaneState {timingLaneSources}) -> pure (source `elem` timingLaneSources)
+    Nothing -> pure False
 
 -- * Core
 

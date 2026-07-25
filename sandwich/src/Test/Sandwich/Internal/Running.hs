@@ -114,6 +114,9 @@ baseContextFromOptions options@(Options {..}) = do
 
   let errorSymlinksDir = (</> "errors") <$> runRoot
   whenJust errorSymlinksDir $ createDirectoryIfMissing True
+
+  currentTimingLane <- newTVarIO Nothing
+
   return $ BaseContext {
     baseContextPath = mempty
     , baseContextOptions = options
@@ -123,8 +126,7 @@ baseContextFromOptions options@(Options {..}) = do
     , baseContextTestTimerProfile = defaultProfileName
     , baseContextTestTimer = testTimer
     , baseContextRunId = runId
-    , baseContextLanePool = Nothing
-    , baseContextCurrentLane = Nothing
+    , baseContextCurrentTimingLane = currentTimingLane
     }
 
 

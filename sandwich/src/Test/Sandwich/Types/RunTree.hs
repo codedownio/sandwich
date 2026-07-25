@@ -10,7 +10,6 @@
 module Test.Sandwich.Types.RunTree where
 
 import Control.Concurrent.Async
-import Control.Concurrent.QSem
 import Control.Concurrent.STM
 import Control.Monad.Catch
 import Control.Monad.IO.Class
@@ -157,47 +156,17 @@ data BaseContext = BaseContext {
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
-  -- | Lanes shared by everything below this point, claimed with
-  -- 'Test.Sandwich.ParallelN.withParallelLane'. Set by introducing 'ParallelLanes'.
-  , baseContextLanePool :: Maybe LanePool
-  -- | The lanes held on this branch of the tree, if any. Concurrent branches always get their
-  -- own cell, so only one thread writes this at a time.
-  , baseContextCurrentLane :: Maybe (TVar (Maybe LaneState))
-  }
-
--- | Introduce this value to make a pool of N lanes available to the spec tree below, to be
--- claimed with 'Test.Sandwich.ParallelN.withParallelLane'. See 'Test.Sandwich.ParallelN.parallelN'.
-newtype ParallelLanes = ParallelLanes Int
-  deriving (Show, Eq)
-
--- | A pool of lanes. A lane is held by one part of the tree at a time, and carries a test timer
--- profile name, so everything that runs in it shares a profile.
-data LanePool = LanePool {
-  -- | The bound itself. Also handed out under the
-  -- 'Test.Sandwich.ParallelN.parallelSemaphore' label, so that code claiming the semaphore
-  -- directly is limited by the same thing as code using
-  -- 'Test.Sandwich.ParallelN.withParallelLane'.
-  lanePoolSem :: QSem
-  , lanePoolFree :: TVar [Int]
-  , lanePoolProfileNames :: [T.Text]
-  }
-
--- | The lanes held on one branch of the tree.
-data LaneState = LaneState {
-  -- | The pools we're already holding a lane from. Claiming a second lane from the same pool
-  -- would deadlock, since we'd be waiting for a lane that only we can release.
-  laneStateHeldPools :: [TVar [Int]]
-  -- | The test timer profile for the innermost lane we hold.
-  , laneStateProfile :: T.Text
+  -- | The timing lanes held on this branch of the tree. Branches that run concurrently always get
+  -- their own cell. See 'Test.Sandwich.TestTimer.withTimingLane'.
+  , baseContextCurrentTimingLane :: TVar (Maybe TimingLaneState)
   }
 
 -- | The test timer profile to record frames under right now: the lane's profile if this branch is
 -- holding one, and the node's own profile otherwise.
 currentTestTimerProfile :: MonadIO m => BaseContext -> m T.Text
-currentTestTimerProfile (BaseContext {..}) = case baseContextCurrentLane of
-  Nothing -> pure baseContextTestTimerProfile
-  Just v -> liftIO (readTVarIO v) >>= \case
-    Just (LaneState {laneStateProfile}) -> pure laneStateProfile
+currentTestTimerProfile (BaseContext {..}) =
+  liftIO (readTVarIO baseContextCurrentTimingLane) >>= \case
+    Just (TimingLaneState {timingLaneProfile}) -> pure timingLaneProfile
     Nothing -> pure baseContextTestTimerProfile
 
 -- | Has-* class for asserting a 'BaseContext' is available.

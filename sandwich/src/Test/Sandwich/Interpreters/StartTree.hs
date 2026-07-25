@@ -9,7 +9,6 @@ module Test.Sandwich.Interpreters.StartTree (
 
 
 import Control.Concurrent.MVar
-import Control.Concurrent.QSem
 import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.IO.Class
@@ -55,28 +54,6 @@ import UnliftIO.STM
 baseContextFromCommon :: RunNodeCommonWithStatus s l t -> BaseContext -> BaseContext
 baseContextFromCommon (RunNodeCommonWithStatus {..}) bc@(BaseContext {}) =
   bc { baseContextPath = runTreeFolder }
-
--- | Special hack to modify parts of the 'BaseContext' via an introduce, without
--- needing to track them everywhere. It would be better to track these at the
--- type level.
-applyMagicIntroduce :: (HasBaseContext context, Typeable intro) => RunNodeCommonWithStatus s l t -> intro -> context -> IO context
-applyMagicIntroduce (RunNodeCommonWithStatus {runTreeId}) intro ctx
-  | Just (TestTimerProfile t) <- cast intro =
-      pure $ modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-  | Just (ParallelLanes n) <- cast intro = do
-      let numLanes = max 1 n
-      sem <- newQSem numLanes
-      free <- newTVarIO [0 .. numLanes - 1]
-      baseProfile <- currentTestTimerProfile (getBaseContext ctx)
-      let names = [baseProfile <> [i|-lane-#{runTreeId}-#{leftPadWithZerosTo numLanes lane}|]
-                  | lane <- [0 .. numLanes - 1]]
-      pure $ modifyBaseContext ctx (\bc -> bc { baseContextLanePool = Just (LanePool sem free names) })
-  | otherwise = pure ctx
-
--- | Pad a number with zeros so that all numbers less than the given total have the same width.
-leftPadWithZerosTo :: Int -> Int -> String
-leftPadWithZerosTo total num =
-  L.replicate (L.length (show (total - 1)) - L.length (show num)) '0' <> show num
 
 startTree :: (MonadIO m, HasBaseContext context) => RunNode context -> context -> m (Async Result)
 startTree node@(RunNodeBefore {..}) ctx' = do
@@ -156,7 +133,12 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
               -- TODO: add note about failure in allocation
               markAllChildrenWithResult runNodeChildrenAugmented ctx (Failure $ GetContextException Nothing (SomeExceptionWithEq $ toException failureReason))
             Right intro -> do
-              ctxFinal <- applyMagicIntroduce runNodeCommon intro ctx
+              -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
+              -- It would be better to track the profile at the type level
+              let ctxFinal = case cast intro of
+                    Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
+                    Nothing -> ctx
+
               void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
       )
     readIORef result
@@ -400,25 +382,24 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
     -- Give each child its own test timer profile, since they can't share one without messing up
     -- the nesting of the profile's frames.
     --
-    -- Each child also gets a fresh cell for the lane it's holding. If we're already inside a lane,
-    -- the children inherit it (so they don't try to claim a second one and deadlock), but with
-    -- their own suffix, since they run concurrently and so can't share a profile either.
+    -- Each child also gets its own cell for the timing lanes it holds. If we're already inside a
+    -- lane, the children inherit it (so a claim from the same source knows not to take a second
+    -- one and deadlock), but with their own suffix, since they run concurrently and so can't share
+    -- a profile either.
     childContext :: Int -> IO context
     childContext n = do
-      parentLane <- case baseContextCurrentLane (getBaseContext ctx) of
-        Nothing -> pure Nothing
-        Just v -> readTVarIO v
-      currentLane <- newTVarIO (bumpProfile n <$> parentLane)
+      parentLane <- readTVarIO (baseContextCurrentTimingLane (getBaseContext ctx))
+      currentTimingLane <- newTVarIO (bumpProfile n <$> parentLane)
       return $ modifyBaseContext ctx $ \bc -> bc {
         baseContextTestTimerProfile = baseContextTestTimerProfile bc <> suffix n
-        , baseContextCurrentLane = Just currentLane
+        , baseContextCurrentTimingLane = currentTimingLane
         }
 
     suffix :: Int -> T.Text
     suffix n = [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
 
-    bumpProfile :: Int -> LaneState -> LaneState
-    bumpProfile n ls = ls { laneStateProfile = laneStateProfile ls <> suffix n }
+    bumpProfile :: Int -> TimingLaneState -> TimingLaneState
+    bumpProfile n ls = ls { timingLaneProfile = timingLaneProfile ls <> suffix n }
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithResult children baseContext status = do

@@ -14,6 +14,7 @@ import qualified Data.List as L
 import Data.Sequence
 import qualified Data.Text as T
 import Data.Time.Clock.POSIX
+import Data.Unique
 import Lens.Micro.TH
 import System.IO
 import Test.Sandwich.Types.Spec
@@ -136,3 +137,20 @@ testTimerProfile :: Label "testTimerProfile" TestTimerProfile
 testTimerProfile = Label :: Label "testTimerProfile" TestTimerProfile
 
 newtype TestTimerProfile = TestTimerProfile T.Text
+
+-- * Timing lanes
+
+-- | Identifies whoever is handing out timing lanes, so that a claim from the same source can tell
+-- it's already inside one of its own lanes. See 'Test.Sandwich.TestTimer.newTimingLaneSource'.
+newtype TimingLaneSource = TimingLaneSource Unique
+  deriving (Eq)
+
+-- | The timing lanes held on one branch of the test tree. Branches that run concurrently always
+-- get their own copy of this, so only one thread writes it at a time.
+data TimingLaneState = TimingLaneState {
+  -- | The sources we're already holding a lane from. Claiming a second lane from the same source
+  -- would deadlock, since we'd be waiting for a lane only we can release.
+  timingLaneSources :: [TimingLaneSource]
+  -- | The profile to record frames under while we hold these lanes.
+  , timingLaneProfile :: T.Text
+  }
