@@ -156,13 +156,12 @@ data BaseContext = BaseContext {
   , baseContextTestTimerProfile :: T.Text
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
-  -- | The timing lanes held on this branch of the tree. Branches that run concurrently always get
-  -- their own cell. See 'Test.Sandwich.TestTimer.withTimingLane'.
+  -- | The timing lanes held on this branch of the tree. See
+  -- 'Test.Sandwich.TestTimer.withTimingLane'.
   , baseContextCurrentTimingLane :: TVar (Maybe TimingLaneState)
   }
 
--- | The test timer profile to record frames under right now: the lane's profile if this branch is
--- holding one, and the node's own profile otherwise.
+-- | The profile to record frames under right now: the lane's, if this branch holds one.
 currentTestTimerProfile :: MonadIO m => BaseContext -> m T.Text
 currentTestTimerProfile (BaseContext {..}) =
   liftIO (readTVarIO baseContextCurrentTimingLane) >>= \case

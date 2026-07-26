@@ -140,17 +140,16 @@ newtype TestTimerProfile = TestTimerProfile T.Text
 
 -- * Timing lanes
 
--- | Identifies whoever is handing out timing lanes, so that a claim from the same source can tell
--- it's already inside one of its own lanes. See 'Test.Sandwich.TestTimer.newTimingLaneSource'.
+-- | Identifies whoever is handing out timing lanes. See
+-- 'Test.Sandwich.TestTimer.newTimingLaneSource'.
 newtype TimingLaneSource = TimingLaneSource Unique
   deriving (Eq)
 
--- | The timing lanes held on one branch of the test tree. Branches that run concurrently always
--- get their own copy of this, so only one thread writes it at a time.
+-- | The timing lanes held on one branch of the test tree. Concurrent branches always get their own
+-- copy, so only one thread writes it at a time.
 data TimingLaneState = TimingLaneState {
-  -- | The sources we're already holding a lane from. Claiming a second lane from the same source
-  -- would deadlock, since we'd be waiting for a lane only we can release.
+  -- | The sources we're holding a lane from. Claiming a second lane from one of these would
+  -- deadlock, since only we can release it.
   timingLaneSources :: [TimingLaneSource]
-  -- | The profile to record frames under while we hold these lanes.
   , timingLaneProfile :: T.Text
   }

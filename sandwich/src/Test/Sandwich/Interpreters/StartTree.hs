@@ -379,13 +379,10 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
     leftPadWithZeros :: Int -> String
     leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
 
-    -- Give each child its own test timer profile, since they can't share one without messing up
-    -- the nesting of the profile's frames.
-    --
-    -- Each child also gets its own cell for the timing lanes it holds. If we're already inside a
-    -- lane, the children inherit it (so a claim from the same source knows not to take a second
-    -- one and deadlock), but with their own suffix, since they run concurrently and so can't share
-    -- a profile either.
+    -- Give each child its own test timer profile, since sharing one would mess up the nesting of
+    -- the profile's frames, and its own cell for the timing lanes it holds. Children inherit any
+    -- lane we're already in (so they don't claim a second one and deadlock), but with their own
+    -- profile suffix.
     childContext :: Int -> IO context
     childContext n = do
       parentLane <- readTVarIO (baseContextCurrentTimingLane (getBaseContext ctx))

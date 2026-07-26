@@ -14,12 +14,12 @@ module Test.Sandwich.ParallelN (
   , parallelNFromArgs
   , parallelNFromArgs'
 
-  -- * Limiting a spec tree you can't wrap directly
+  -- * Claiming lanes yourself
   , withParallelLanes
   , withParallelLanesFromArgs
 
-  , takeParallelLane
   , withParallelLane
+  , takeParallelLane
 
   , defaultParallelNodeOptions
 
@@ -49,13 +49,11 @@ import UnliftIO.STM
 
 -- * Types
 
--- | A pool of lanes, introduced by 'parallelN' or 'withParallelLanes'. A lane is held by one part
--- of the tree at a time, and carries a test timer profile name, so everything running in it shares
--- a profile.
+-- | A pool of lanes. Each lane is held by one part of the tree at a time, and has a test timer
+-- profile of its own.
 data ParallelLanes = ParallelLanes {
   parallelLanesSource :: TimingLaneSource
-  -- | The bound itself. Handing lanes out in wait order is nicer than having everyone race for a
-  -- free slot, so we gate on this before touching the free list.
+  -- | The bound. Gating on this first hands lanes out in wait order.
   , parallelLanesSem :: QSem
   , parallelLanesFree :: TVar [Int]
   , parallelLanesProfileNames :: [T.Text]
@@ -69,9 +67,8 @@ type HasParallelLanes context = HasLabel context "parallelLanes" ParallelLanes
 defaultParallelNodeOptions :: NodeOptions
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
 
--- | Options for the nodes that only exist to introduce or claim lanes. Timing them would put a
--- frame outside every lane, which forces a test timer profile of its own -- exactly the clutter
--- lanes are meant to avoid.
+-- Options for nodes that only introduce or claim lanes. Timing them would put a frame outside
+-- every lane, forcing a profile of its own.
 laneNodeOptions :: NodeOptions
 laneNodeOptions = defaultNodeOptions {
   nodeOptionsRecordTime = False
@@ -81,17 +78,13 @@ laneNodeOptions = defaultNodeOptions {
 
 -- * Functions
 
--- | Wrapper around 'parallel'. Introduces a pool of N lanes and has each test claim one while it
--- runs, so no more than N tests run at once.
+-- | Wrapper around 'parallel' which limits the parallelism to N tests at a time.
 --
--- The pool is shared by the whole subtree, no matter how deeply nested, so nested 'parallel' nodes
--- are limited too.
+-- Introduces a pool of N lanes, one of which each test claims while it runs. The pool is shared by
+-- the whole subtree, so nested 'parallel' nodes are limited too, and each lane is a test timer
+-- profile, so you get N profiles rather than one per test.
 --
--- Each lane is also a test timer profile, so the timing profile stays readable: you get N profiles
--- rather than one per test.
---
--- If your specs come from somewhere this can't wrap directly, such as
--- 'Test.Sandwich.TH.getSpecFromFolder', use 'withParallelLanes' and 'takeParallelLane' instead.
+-- To limit specs this can't wrap directly, see 'withParallelLanes'.
 parallelN :: (
   MonadUnliftIO m, HasBaseContext context
   )
@@ -146,12 +139,11 @@ parallelN'' nodeOptions getLanes children =
     parallel' nodeOptions $
       aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
 
--- | Introduce a pool of N lanes for the spec tree below, to be claimed with 'takeParallelLane' or
--- 'withParallelLane'. Nothing is limited until something claims a lane.
+-- | Introduce a pool of N lanes, to be claimed with 'withParallelLane' or 'takeParallelLane'.
+-- Nothing is limited until something claims one.
 --
--- Use this when the tests you want to limit aren't in one place you can wrap with 'parallelN' --
--- for example when they come from 'Test.Sandwich.TH.getSpecFromFolder', where you can pass
--- 'takeParallelLane' as the individual spec hook.
+-- Use this when the tests to limit aren't in one place you can wrap with 'parallelN', such as ones
+-- from 'Test.Sandwich.TH.getSpecFromFolder'.
 withParallelLanes :: (
   MonadIO m, HasBaseContext context
   )
@@ -197,28 +189,11 @@ withParallelLanes'' getLanes =
     leftPadWithZeros total num =
       L.replicate (L.length (show (total - 1)) - L.length (show num)) '0' <> show num
 
--- | Claim a lane for a whole spec tree. Shaped to be passed as
--- 'Test.Sandwich.TH.getSpecIndividualSpecHooks', so it takes (and ignores) the discovered module's
--- path.
+-- | Claim a lane, run the action, and release it. Blocks until a lane is free. Everything the
+-- action runs, at any depth, is timed under the lane's profile.
 --
--- Put this above the node you want inside the lane rather than inside it: anything above the claim
--- can't be in the lane, and gets a test timer profile of its own.
-takeParallelLane :: (
-  MonadUnliftIO m, HasBaseContext context, HasParallelLanes context
-  )
-  -- | Ignored
-  => FilePath
-  -> SpecFree context m ()
-  -> SpecFree context m ()
-takeParallelLane _ = around' laneNodeOptions "Take parallel lane" (withParallelLane . void)
-
--- | Claim one of the lanes introduced by 'parallelN' or 'withParallelLanes', run the given action,
--- and release it. Blocks until a lane is free.
---
--- Everything the action runs, at any depth, is timed under the lane's test timer profile.
---
--- If this part of the tree is already holding a lane from the same pool, the action just runs:
--- claiming a second one while holding one could deadlock, so nesting is allowed and ignored.
+-- A no-op if this part of the tree already holds a lane from the same pool, since claiming a
+-- second one could deadlock.
 withParallelLane :: (
   MonadUnliftIO m, HasBaseContextMonad context m, HasParallelLanes context
   ) => m a -> m a
@@ -228,6 +203,19 @@ withParallelLane action = do
     True -> action
     False -> bracket (claimLane pool) (releaseLane pool) $ \lane ->
       withTimingLane (parallelLanesSource pool) (parallelLanesProfileNames pool !! lane) action
+
+-- | 'withParallelLane' as a spec node, shaped for
+-- 'Test.Sandwich.TH.getSpecIndividualSpecHooks' (hence the ignored 'FilePath').
+--
+-- Put it above the node you want in the lane; anything above the claim gets its own profile.
+takeParallelLane :: (
+  MonadUnliftIO m, HasBaseContext context, HasParallelLanes context
+  )
+  -- | Ignored
+  => FilePath
+  -> SpecFree context m ()
+  -> SpecFree context m ()
+takeParallelLane _ = around' laneNodeOptions "Take parallel lane" (withParallelLane . void)
 
 claimLane :: (MonadIO m) => ParallelLanes -> m Int
 claimLane (ParallelLanes {parallelLanesSem, parallelLanesFree}) = liftIO $ do

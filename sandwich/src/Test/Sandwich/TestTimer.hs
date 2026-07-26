@@ -105,21 +105,15 @@ withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer p
 
 -- * Timing lanes
 
--- | Make a new source of timing lanes. Anything claiming a lane with 'withTimingLane' should pass
--- the same source, so that nested claims from that source can be detected.
+-- | Make a new source of timing lanes. Pass the same one to 'withTimingLane' and 'inTimingLane'.
 newTimingLaneSource :: MonadIO m => m TimingLaneSource
 newTimingLaneSource = TimingLaneSource <$> liftIO newUnique
 
--- | Record this action, and everything below it in the test tree, under the given profile.
+-- | Record this action, and everything below it in the tree, under the given profile. Unlike
+-- 'withTimingProfile' this works from an 'around' handler, without changing the spec's type.
 --
--- This is how something that hands out lanes (see 'Test.Sandwich.ParallelN.parallelN') gets
--- everything running in a lane to share a profile: nodes read the profile when they start, so
--- unlike 'withTimingProfile' this works from an 'around' handler, without changing the type of the
--- spec underneath.
---
--- Concurrent branches of the tree never share the profile set here; a 'Test.Sandwich.parallel'
--- node below gives each of its children a suffixed profile of its own, so their frames can't
--- interleave.
+-- A 'Test.Sandwich.parallel' node below gives each of its children a suffixed profile of their
+-- own, so concurrent branches never share one.
 withTimingLane :: (MonadUnliftIO m, HasBaseContextMonad context m)
   -- | Who's handing out the lane
   => TimingLaneSource
@@ -135,8 +129,7 @@ withTimingLane source profileName action = do
            (atomically $ writeTVar baseContextCurrentTimingLane previous)
            action
 
--- | Whether this branch of the tree is already inside a lane from the given source. Claiming a
--- second lane from the same source would deadlock.
+-- | Whether this branch of the tree already holds a lane from the given source.
 inTimingLane :: (MonadIO m, HasBaseContextMonad context m) => TimingLaneSource -> m Bool
 inTimingLane source = do
   BaseContext {baseContextCurrentTimingLane} <- asks getBaseContext
