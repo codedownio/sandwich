@@ -27,9 +27,6 @@ module Test.Sandwich.ParallelN (
   , ParallelLanes
   , parallelLanes
   , HasParallelLanes
-
-  , parallelSemaphore
-  , HasParallelSemaphore
   ) where
 
 import Control.Concurrent.QSem
@@ -57,8 +54,8 @@ import UnliftIO.STM
 -- a profile.
 data ParallelLanes = ParallelLanes {
   parallelLanesSource :: TimingLaneSource
-  -- | The bound itself. Also handed out under the 'parallelSemaphore' label, so that code claiming
-  -- the semaphore directly is limited by the same thing as code using 'withParallelLane'.
+  -- | The bound itself. Handing lanes out in wait order is nicer than having everyone race for a
+  -- free slot, so we gate on this before touching the free list.
   , parallelLanesSem :: QSem
   , parallelLanesFree :: TVar [Int]
   , parallelLanesProfileNames :: [T.Text]
@@ -68,11 +65,6 @@ parallelLanes :: Label "parallelLanes" ParallelLanes
 parallelLanes = Label
 
 type HasParallelLanes context = HasLabel context "parallelLanes" ParallelLanes
-
-parallelSemaphore :: Label "parallelSemaphore" QSem
-parallelSemaphore = Label
-
-type HasParallelSemaphore context = HasLabel context "parallelSemaphore" QSem
 
 defaultParallelNodeOptions :: NodeOptions
 defaultParallelNodeOptions = defaultNodeOptions { nodeOptionsVisibilityThreshold = 70 }
@@ -105,7 +97,7 @@ parallelN :: (
   )
   -- | Number of lanes
   => Int
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelN = parallelN' defaultParallelNodeOptions
 
@@ -116,7 +108,7 @@ parallelN' :: (
   => NodeOptions
   -- | Number of lanes
   -> Int
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelN' nodeOptions n = parallelN'' nodeOptions (pure n)
 
@@ -126,7 +118,7 @@ parallelNFromArgs :: forall context a m. (
   )
   -- | Callback to extract the number of lanes
   => (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelNFromArgs = parallelNFromArgs' @context @a defaultParallelNodeOptions
 
@@ -137,7 +129,7 @@ parallelNFromArgs' :: forall context a m. (
   => NodeOptions
   -- | Callback to extract the number of lanes
   -> (CommandLineOptions a -> Int)
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelNFromArgs' nodeOptions getParallelism =
   parallelN'' nodeOptions (getParallelism <$> getContext commandLineOptions)
@@ -147,15 +139,12 @@ parallelN'' :: (
   )
   => NodeOptions
   -> ExampleT context m Int
-  -> SpecFree (LabelValue "parallelSemaphore" QSem :> LabelValue "parallelLanes" ParallelLanes :> context) m ()
+  -> SpecFree (LabelValue "parallelLanes" ParallelLanes :> context) m ()
   -> SpecFree context m ()
 parallelN'' nodeOptions getLanes children =
   withParallelLanes'' getLanes $
-    -- Hand out the pool's semaphore under the old label, so specs can still claim the bound
-    -- directly. They just don't get the lane's timer profile if they do.
-    introduce' laneNodeOptions "Introduce parallel semaphore" parallelSemaphore (parallelLanesSem <$> getContext parallelLanes) (const $ return ()) $
-      parallel' nodeOptions $
-        aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
+    parallel' nodeOptions $
+      aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
 
 -- | Introduce a pool of N lanes for the spec tree below, to be claimed with 'takeParallelLane' or
 -- 'withParallelLane'. Nothing is limited until something claims a lane.
