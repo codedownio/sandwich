@@ -72,6 +72,7 @@ library
       Test.Sandwich.Formatters.TerminalUI.Filter
       Test.Sandwich.Formatters.TerminalUI.Keys
       Test.Sandwich.Formatters.TerminalUI.OpenInEditor
+      Test.Sandwich.Formatters.TerminalUI.SpeedScope
       Test.Sandwich.Formatters.TerminalUI.Types
       Test.Sandwich.Golden.Update
       Test.Sandwich.Instrumentation

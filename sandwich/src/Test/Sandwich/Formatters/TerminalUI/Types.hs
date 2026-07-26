@@ -14,8 +14,10 @@ import Data.Time
 import GHC.Stack
 import Lens.Micro.TH
 import Test.Sandwich.Formatters.TerminalUI.OpenInEditor
+import Test.Sandwich.Formatters.TerminalUI.SpeedScope
 import Test.Sandwich.RunTree
 import Test.Sandwich.Types.RunTree
+import UnliftIO.MVar
 
 
 data TerminalUIFormatter = TerminalUIFormatter {
@@ -141,7 +143,8 @@ data AppState = AppState {
   , _appShowLogSizes :: Bool
 
   , _appOpenInEditor :: SrcLoc -> IO ()
-  , _appDebug :: T.Text -> IO ()
+  , _appSpeedScopeServer :: MVar (Maybe SpeedScopeServer)
+  , _appDebug :: UTCTime -> T.Text -> IO ()
   , _appCustomExceptionFormatters :: CustomExceptionFormatters
   }
 

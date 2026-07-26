@@ -45,6 +45,7 @@ import qualified Data.Sequence as Seq
 import qualified Data.Set as S
 import Data.String.Interpolate
 import Data.Text (Text)
+import qualified Data.Text.Encoding as TE
 import Data.Time
 import qualified Data.Vector as Vec
 import GHC.Stack
@@ -59,6 +60,7 @@ import Test.Sandwich.Formatters.TerminalUI.DebugSocket
 import Test.Sandwich.Formatters.TerminalUI.Draw
 import Test.Sandwich.Formatters.TerminalUI.Filter
 import Test.Sandwich.Formatters.TerminalUI.Keys
+import Test.Sandwich.Formatters.TerminalUI.SpeedScope
 import Test.Sandwich.Formatters.TerminalUI.Types
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
@@ -92,10 +94,13 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   -- Create debug channel for optional debug socket server
   debugChan <- liftIO $ newBroadcastTChanIO
-  let debugFn :: Text -> IO ()
-      debugFn msg = do
-        now <- getCurrentTime
+  let debugFn :: UTCTime -> Text -> IO ()
+      debugFn now msg =
         atomically $ writeTChan debugChan (BS8.pack [i|#{formatTime defaultTimeLocale "%H:%M:%S%3Q" now} #{msg}\n|])
+  let debugFnNow :: Text -> IO ()
+      debugFnNow msg = getCurrentTime >>= flip debugFn msg
+
+  speedScopeServer <- liftIO $ newMVar Nothing
 
   let initialState = updateFilteredTree $
         AppState {
@@ -117,7 +122,8 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
           , _appShowVisibilityThresholds = terminalUIShowVisibilityThresholds
           , _appShowLogSizes = terminalUIShowLogSizes
 
-          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor debugFn
+          , _appOpenInEditor = terminalUIOpenInEditor terminalUIDefaultEditor debugFnNow
+          , _appSpeedScopeServer = speedScopeServer
           , _appDebug = debugFn
           , _appCustomExceptionFormatters = terminalUICustomExceptionFormatters
         }
@@ -129,7 +135,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
   currentFixedTree <- liftIO $ newTVarIO rtsFixed
   let eventAsync = liftIO $ forever $ do
         handleAny (\e -> flip runLoggingT logFn (logError [i|Got exception in event async: #{e}|]) >> threadDelay terminalUIRefreshPeriod) $ do
-          debugFn "eventAsync: waiting for tree change"
+          debugFnNow "eventAsync: waiting for tree change"
           (newFixedTree, somethingRunning) <- atomically $ flip runStateT False $ do
             currentFixed <- lift $ readTVar currentFixedTree
             newFixed <- mapM fixRunTree' rts
@@ -137,7 +143,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
             lift $ writeTVar currentFixedTree newFixed
             return newFixed
           let nodeCount = length $ concatMap getCommons newFixedTree
-          debugFn [i|eventAsync: tree changed, nodes=#{nodeCount} somethingRunning=#{somethingRunning}|]
+          debugFnNow [i|eventAsync: tree changed, nodes=#{nodeCount} somethingRunning=#{somethingRunning}|]
           writeBChan eventChan (RunTreeUpdated newFixedTree somethingRunning)
           threadDelay terminalUIRefreshPeriod
 
@@ -151,7 +157,7 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
 
   let updateCurrentTimeForever period = forever $ do
         now <- getCurrentTime
-        debugFn "CurrentTimeUpdated tick"
+        debugFn now "CurrentTimeUpdated tick"
         writeBChan eventChan (CurrentTimeUpdated now)
         threadDelay period
 
@@ -332,6 +338,9 @@ appEvent s (VtyEvent e) =
         whenJust folderPath $ liftIO . openFileExplorerFolderPortable
     V.EvKey c [] | c == openTestRootKey -> withContinueS s $
       whenJust (baseContextRunRoot (s ^. appBaseContext)) $ liftIO . openFileExplorerFolderPortable
+    V.EvKey c [] | c == openSpeedScopeKey -> withContinueS s $ liftIO $
+      flip runLoggingT (\_ _ _ x -> getCurrentTime >>= \now -> (s ^. appDebug) now (TE.decodeUtf8 (fromLogStr x))) $
+        openSpeedScope (s ^. appSpeedScopeServer) (s ^. appBaseContext)
     V.EvKey c [] | c == openTestInEditorKey -> case listSelectedElement (s ^. appMainList) of
       Just (_i, MainListElem {node=(runTreeLoc -> Just loc)}) -> openSrcLoc s loc
       _ -> continue s
