@@ -16,6 +16,7 @@ module Test.Sandwich.TestTimer (
 
   , newSpeedScopeTestTimer
   , finalizeSpeedScopeTestTimer
+  , renderSpeedScopeFile
   ) where
 
 import Control.Monad.IO.Class
@@ -51,7 +52,9 @@ allTestsEventName = "All tests"
 
 -- * User functions
 
--- | Time a given action with a given event name. This name will be the "stack frame" of the given action in the profiling results. This function will use the current timing profile name.
+-- | Time a given action with a given event name. This name will be the "stack
+-- frame" of the given action in the profiling results. This function will use
+-- the current timing profile name.
 timeAction :: (MonadUnliftIO m, HasBaseContextMonad context m, HasTestTimer context)
   -- | Event name
   => EventName
@@ -62,7 +65,8 @@ timeAction eventName action = do
   BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
   timeAction' tt baseContextTestTimerProfile eventName action
 
--- | Time a given action with a given profile name and event name. Use when you want to manually specify the profile name.
+-- | Time a given action with a given profile name and event name. Use when you
+-- want to manually specify the profile name.
 timeActionByProfile :: (MonadUnliftIO m, MonadReader context m, HasTestTimer context)
   -- | Profile name
   => ProfileName
@@ -82,7 +86,8 @@ withTimingProfile :: (Monad m)
   -> SpecFree context m ()
 withTimingProfile pn = introduce' timingNodeOptions [i|Switch test timer profile to '#{pn}'|] testTimerProfile (pure $ TestTimerProfile pn) (\_ -> return ())
 
--- | Introduce a new timing profile name dynamically. The given 'ExampleT' should come up with the name and return it.
+-- | Introduce a new timing profile name dynamically. The given 'ExampleT'
+-- should come up with the name and return it.
 withTimingProfile' :: (Monad m)
   -- | Callback to generate the profile name
   => ExampleT context m ProfileName
@@ -117,12 +122,22 @@ newSpeedScopeTestTimer path writeRawTimings = do
 
 finalizeSpeedScopeTestTimer :: TestTimer -> IO ()
 finalizeSpeedScopeTestTimer NullTestTimer = return ()
-finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
-  endTime <- liftIO getPOSIXTime
-
-  speedScopeFile <- readMVar testTimerSpeedScopeFile
+finalizeSpeedScopeTestTimer tt@(SpeedScopeTestTimer {..}) = do
+  contents <- renderSpeedScopeFile tt
 
   whenJust testTimerHandle hClose
+
+  whenJust contents $ BL.writeFile (testTimerBasePath </> "speedscope.json")
+
+-- | Render the current state of the test timer as a speedscope profile. Any
+-- frames that are still open are closed off at the current time, so this can be
+-- called while tests are running.
+renderSpeedScopeFile :: MonadIO m => TestTimer -> m (Maybe BL.ByteString)
+renderSpeedScopeFile NullTestTimer = return Nothing
+renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
+  endTime <- getPOSIXTime
+
+  speedScopeFile <- readMVar testTimerSpeedScopeFile
 
   -- Wrap every test profile in an overall frame called 'allTestsEventName'. If
   -- we don't do this, the speedscope viewer will show each profile as if it
@@ -133,10 +148,27 @@ finalizeSpeedScopeTestTimer (SpeedScopeTestTimer {..}) = do
            & prependSpeedScopeEvent testTimerStartTime profileName allTestsEventName SpeedScopeEventTypeOpen
            & appendSpeedScopeEvent endTime profileName allTestsEventName SpeedScopeEventTypeClose
         )
-        speedScopeFile
+        (closeOpenFrames endTime speedScopeFile)
         (fmap (^. name) (speedScopeFile ^. profiles))
 
-  BL.writeFile (testTimerBasePath </> "speedscope.json") $ A.encode finalSpeedScopeFile
+  return $ Just $ A.encode finalSpeedScopeFile
+
+  where
+    closeOpenFrames :: POSIXTime -> SpeedScopeFile -> SpeedScopeFile
+    closeOpenFrames time = over profiles (fmap closeProfile)
+      where
+        closeProfile :: SpeedScopeProfile -> SpeedScopeProfile
+        closeProfile p = p
+          & over events (<> S.fromList [SpeedScopeEvent SpeedScopeEventTypeClose frameID time
+                                       | frameID <- openFrames (p ^. events)])
+          & over endValue (max time)
+
+        openFrames :: S.Seq SpeedScopeEvent -> [Int]
+        openFrames = L.foldl' step []
+          where
+            step open (SpeedScopeEvent SpeedScopeEventTypeOpen frameID _) = frameID : open
+            step (_:rest) (SpeedScopeEvent SpeedScopeEventTypeClose _ _) = rest
+            step [] (SpeedScopeEvent SpeedScopeEventTypeClose _ _) = []
 
 timeAction' :: (MonadUnliftIO m) => TestTimer -> T.Text -> T.Text -> m a -> m a
 timeAction' NullTestTimer _ _ = id
@@ -192,8 +224,9 @@ prependSpeedScopeEvent time profileName eventName eventType initialFile = flip e
   modify' $ over (profiles . ix profileIndex . events) ((SpeedScopeEvent eventType frameID time) S.<|)
           . over (profiles . ix profileIndex . startValue) (min time)
 
--- | TODO: maybe use an intermediate format so the frames (and possibly profiles) aren't stored as lists,
--- so we don't have to do O(N) L.length and S.findIndexL
+-- | TODO: maybe use an intermediate format so the frames (and possibly
+-- profiles) aren't stored as lists, so we don't have to do O(N) L.length and
+-- S.findIndexL
 getFrameIDAndProfileIndex :: POSIXTime -> T.Text -> T.Text -> State SpeedScopeFile (Int, Int)
 getFrameIDAndProfileIndex time profileName eventName = do
   frameID <- get >>= \f -> case S.findIndexL (== SpeedScopeFrame eventName) (f ^. shared . frames) of

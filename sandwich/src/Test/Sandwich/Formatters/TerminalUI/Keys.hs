@@ -26,6 +26,7 @@ openTestRootKey = V.KChar 'O'
 openTestInEditorKey = V.KChar 't'
 openFailureInEditorKey = V.KChar 'f'
 openLogsInEditorKey = V.KChar 'l'
+openSpeedScopeKey = V.KChar 'S'
 
 -- Column 3
 cycleVisibilityThresholdKey = V.KChar 'v'

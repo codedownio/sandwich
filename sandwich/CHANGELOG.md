@@ -1,5 +1,9 @@
 # Changelog for sandwich
 
+## Unreleased
+
+* TUI: be able to press 'S' to open the speedscope profile in a browser.
+
 ## 0.3.1.0
 
 * Add a socket formatter (`Test.Sandwich.Formatters.Socket`) and a TUI debug socket (`Test.Sandwich.Formatters.TerminalUI.DebugSocket`).

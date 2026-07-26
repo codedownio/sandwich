@@ -118,6 +118,13 @@ topBox app = hBox [columnPadding settingsColumn
                                               , str "] "
                                               , str "Log level"]
 
+                                       , hBox [str "["
+                                              , highlightKeyIfPredicate (const True) app (str $ showKey openSpeedScopeKey)
+                                              , str "] "
+                                              , withAttr hotkeyMessageAttr $ str "Open "
+                                              , highlightMessageIfPredicate (const True) app (str "speedscope")
+                                              ]
+
                                        , keyIndicator "q" "Exit"]
 
 scrollNodeLabel :: String
