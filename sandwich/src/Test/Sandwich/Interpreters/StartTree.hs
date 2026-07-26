@@ -135,9 +135,13 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
             Right intro -> do
               -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
               -- It would be better to track the profile at the type level
-              let ctxFinal = case cast intro of
-                    Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-                    Nothing -> ctx
+              ctxFinal <- case cast intro of
+                Just (TestTimerProfile t) -> do
+                  -- A fresh cell, so we rename the profile for our children only.
+                  current <- readTVarIO (baseContextTimingProfile (getBaseContext ctx))
+                  timingProfile <- newTVarIO (current { timingProfileName = t })
+                  return $ modifyBaseContext ctx (\bc -> bc { baseContextTimingProfile = timingProfile })
+                Nothing -> return ctx
 
               void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
       )
@@ -379,24 +383,17 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
     leftPadWithZeros :: Int -> String
     leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
 
-    -- Give each child its own test timer profile, since sharing one would mess up the nesting of
-    -- the profile's frames, and its own cell for the timing lanes it holds. Children inherit any
-    -- lane we're already in (so they don't claim a second one and deadlock), but with their own
-    -- profile suffix.
+    -- Give each child its own test timer profile, since sharing one would mess up the nesting of the
+    -- profile's frames. Children keep any lanes we're already holding, so they don't claim a second
+    -- one and deadlock.
     childContext :: Int -> IO context
     childContext n = do
-      parentLane <- readTVarIO (baseContextCurrentTimingLane (getBaseContext ctx))
-      currentTimingLane <- newTVarIO (bumpProfile n <$> parentLane)
-      return $ modifyBaseContext ctx $ \bc -> bc {
-        baseContextTestTimerProfile = baseContextTestTimerProfile bc <> suffix n
-        , baseContextCurrentTimingLane = currentTimingLane
-        }
+      current <- readTVarIO (baseContextTimingProfile (getBaseContext ctx))
+      timingProfile <- newTVarIO (current { timingProfileName = timingProfileName current <> suffix n })
+      return $ modifyBaseContext ctx $ \bc -> bc { baseContextTimingProfile = timingProfile }
 
     suffix :: Int -> T.Text
     suffix n = [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
-
-    bumpProfile :: Int -> TimingLaneState -> TimingLaneState
-    bumpProfile n ls = ls { timingLaneProfile = timingLaneProfile ls <> suffix n }
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithResult children baseContext status = do

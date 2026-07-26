@@ -122,20 +122,18 @@ withTimingLane :: (MonadUnliftIO m, HasBaseContextMonad context m)
   -> m a
   -> m a
 withTimingLane source profileName action = do
-  BaseContext {baseContextCurrentTimingLane} <- asks getBaseContext
-  previous <- readTVarIO baseContextCurrentTimingLane
-  let held = TimingLaneState (source : maybe [] timingLaneSources previous) profileName
-  bracket_ (atomically $ writeTVar baseContextCurrentTimingLane (Just held))
-           (atomically $ writeTVar baseContextCurrentTimingLane previous)
+  BaseContext {baseContextTimingProfile} <- asks getBaseContext
+  previous <- readTVarIO baseContextTimingProfile
+  let held = TimingProfile profileName (source : timingProfileLanes previous)
+  bracket_ (atomically $ writeTVar baseContextTimingProfile held)
+           (atomically $ writeTVar baseContextTimingProfile previous)
            action
 
 -- | Whether this branch of the tree already holds a lane from the given source.
 inTimingLane :: (MonadIO m, HasBaseContextMonad context m) => TimingLaneSource -> m Bool
 inTimingLane source = do
-  BaseContext {baseContextCurrentTimingLane} <- asks getBaseContext
-  readTVarIO baseContextCurrentTimingLane >>= \case
-    Just (TimingLaneState {timingLaneSources}) -> pure (source `elem` timingLaneSources)
-    Nothing -> pure False
+  BaseContext {baseContextTimingProfile} <- asks getBaseContext
+  (source `elem`) . timingProfileLanes <$> readTVarIO baseContextTimingProfile
 
 -- * Core
 

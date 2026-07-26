@@ -145,11 +145,9 @@ newtype TestTimerProfile = TestTimerProfile T.Text
 newtype TimingLaneSource = TimingLaneSource Unique
   deriving (Eq)
 
--- | The timing lanes held on one branch of the test tree. Concurrent branches always get their own
--- copy, so only one thread writes it at a time.
-data TimingLaneState = TimingLaneState {
-  -- | The sources we're holding a lane from. Claiming a second lane from one of these would
-  -- deadlock, since only we can release it.
-  timingLaneSources :: [TimingLaneSource]
-  , timingLaneProfile :: T.Text
+-- | The test timer profile in effect on one branch of the test tree, and the timing lanes it's holding. Concurrent branches always get their own copy, so only one thread writes it at a time.
+data TimingProfile = TimingProfile {
+  timingProfileName :: T.Text
+  -- | The sources we're holding a lane from. Claiming a second lane from one of these would deadlock, since only we can release it.
+  , timingProfileLanes :: [TimingLaneSource]
   }

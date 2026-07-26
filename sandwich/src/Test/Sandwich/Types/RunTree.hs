@@ -153,20 +153,14 @@ data BaseContext = BaseContext {
   , baseContextErrorSymlinksDir :: Maybe FilePath
   , baseContextOptions :: Options
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
-  , baseContextTestTimerProfile :: T.Text
+  , baseContextTimingProfile :: TVar TimingProfile
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
-  -- | The timing lanes held on this branch of the tree. See
-  -- 'Test.Sandwich.TestTimer.withTimingLane'.
-  , baseContextCurrentTimingLane :: TVar (Maybe TimingLaneState)
   }
 
--- | The profile to record frames under right now: the lane's, if this branch holds one.
+-- | The profile to record frames under right now.
 currentTestTimerProfile :: MonadIO m => BaseContext -> m T.Text
-currentTestTimerProfile (BaseContext {..}) =
-  liftIO (readTVarIO baseContextCurrentTimingLane) >>= \case
-    Just (TimingLaneState {timingLaneProfile}) -> pure timingLaneProfile
-    Nothing -> pure baseContextTestTimerProfile
+currentTestTimerProfile (BaseContext {..}) = timingProfileName <$> liftIO (readTVarIO baseContextTimingProfile)
 
 -- | Has-* class for asserting a 'BaseContext' is available.
 class HasBaseContext a where
