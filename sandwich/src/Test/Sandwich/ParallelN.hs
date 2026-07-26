@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | Wrappers around 'parallel' for limiting how much runs at once.
+-- | Limiting how much of a test tree runs at once.
 
 module Test.Sandwich.ParallelN (
   -- * Limiting a parallel node
@@ -14,7 +14,7 @@ module Test.Sandwich.ParallelN (
   , parallelNFromArgs
   , parallelNFromArgs'
 
-  -- * Claiming lanes yourself
+  -- * Lower-level
   , withParallelLanes
   , withParallelLanesFromArgs
 
@@ -78,13 +78,11 @@ laneNodeOptions = defaultNodeOptions {
 
 -- * Functions
 
--- | Wrapper around 'parallel' which limits the parallelism to N tests at a time.
+-- | Like 'parallel', but limits the parallelism to N tests at a time.
 --
 -- Introduces a pool of N lanes, one of which each test claims while it runs. The pool is shared by
 -- the whole subtree, so nested 'parallel' nodes are limited too, and each lane is a test timer
 -- profile, so you get N profiles rather than one per test.
---
--- To limit specs this can't wrap directly, see 'withParallelLanes'.
 parallelN :: (
   MonadUnliftIO m, HasBaseContext context
   )
@@ -140,7 +138,6 @@ parallelN'' nodeOptions getLanes children =
       aroundEach' Nothing laneNodeOptions "Take parallel lane" (withParallelLane . void) children
 
 -- | Introduce a pool of N lanes, to be claimed with 'withParallelLane' or 'takeParallelLane'.
--- Nothing is limited until something claims one.
 --
 -- Use this when the tests to limit aren't in one place you can wrap with 'parallelN', such as ones
 -- from 'Test.Sandwich.TH.getSpecFromFolder'.
@@ -204,10 +201,8 @@ withParallelLane action = do
     False -> bracket (claimLane pool) (releaseLane pool) $ \lane ->
       withTimingLane (parallelLanesSource pool) (parallelLanesProfileNames pool !! lane) action
 
--- | 'withParallelLane' as a spec node, shaped for
--- 'Test.Sandwich.TH.getSpecIndividualSpecHooks' (hence the ignored 'FilePath').
---
--- Put it above the node you want in the lane; anything above the claim gets its own profile.
+-- | 'withParallelLane' as a spec node, designed for use with
+-- 'Test.Sandwich.TH.getSpecIndividualSpecHooks'.
 takeParallelLane :: (
   MonadUnliftIO m, HasBaseContext context, HasParallelLanes context
   )

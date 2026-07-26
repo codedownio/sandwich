@@ -52,7 +52,7 @@ module Test.Sandwich (
   , parallelNFromArgs'
   , defaultParallelNodeOptions
 
-  -- ** Claiming lanes yourself
+  -- ** Lower-level
   , withParallelLanes
   , withParallelLanesFromArgs
   , withParallelLane

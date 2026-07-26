@@ -46,9 +46,9 @@ import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
-import UnliftIO.STM
 import UnliftIO.Concurrent
 import UnliftIO.Exception
+import UnliftIO.STM
 
 
 type EventName = T.Text
@@ -171,9 +171,9 @@ finalizeSpeedScopeTestTimer tt@(SpeedScopeTestTimer {..}) = do
 
   whenJust contents $ BL.writeFile (testTimerBasePath </> "speedscope.json")
 
--- | Render the current state of the test timer as a speedscope profile. Any
--- frames that are still open are closed off at the current time, so this can be
--- called while tests are running.
+-- | Render the current state of the test timer as a speedscope profile. Frames
+-- that are still open are closed off at the current time, so this can be called
+-- while tests are running.
 renderSpeedScopeFile :: MonadIO m => TestTimer -> m (Maybe BL.ByteString)
 renderSpeedScopeFile NullTestTimer = return Nothing
 renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
