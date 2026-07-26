@@ -46,7 +46,6 @@ import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.ArgParsing
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
-import Test.Sandwich.Types.TestTimer
 import UnliftIO.Exception
 import UnliftIO.STM
 

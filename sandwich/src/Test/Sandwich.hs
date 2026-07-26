@@ -56,6 +56,15 @@ module Test.Sandwich (
   , withTimingProfile
   , withTimingProfile'
 
+  -- ** Timing lanes
+  --
+  -- | For giving a whole subtree a different profile from an 'around' handler. Used by
+  -- 'withParallelLane'; you only need these if you're building something like it.
+  , TimingLaneSource
+  , newTimingLaneSource
+  , withTimingLane
+  , inTimingLane
+
   -- * Managed async
   --
   -- | If you want to run asyncs within your tests, we can help keep track of

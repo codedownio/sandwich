@@ -14,6 +14,7 @@ module Test.Sandwich.TestTimer (
   , withTimingProfile
   , withTimingProfile'
 
+  , TimingLaneSource
   , newTimingLaneSource
   , withTimingLane
   , inTimingLane
