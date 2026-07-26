@@ -3,21 +3,10 @@
 ## Unreleased
 
 * TUI: be able to press 'S' to open the speedscope profile in a browser.
-* `parallelN` now limits with a pool of lanes rather than a semaphore. The bound is still global
-  over the whole subtree, including nested `parallel` nodes, but each lane is also a test timer
-  profile, so you get N profiles instead of one per test.
-  * Breaking: the `parallelSemaphore` label and `HasParallelSemaphore` are gone; the semaphore now
-    lives inside the pool. Claim with `withParallelLane` instead of taking the `QSem` yourself.
-    It's also re-entrant, so hooks that apply at several depths only claim once.
-  * `parallelN`'s child spec type now has a `parallelLanes` label rather than a `parallelSemaphore`
-    one; either way it's inferred for specs that are polymorphic in their context.
-  * `parallelN` now needs `HasBaseContext context`, which specs written against `TopSpec` already
-    have.
-* Add `withParallelLanes`/`withParallelLanesFromArgs` to introduce a lane pool over a spec tree you
-  can't wrap with `parallelN`, plus `takeParallelLane` to claim a lane for a whole spec (shaped for
-  `getSpecIndividualSpecHooks`) and `withParallelLane` to claim one inside a handler.
-* Add `withTimingLane`, `inTimingLane` and `newTimingLaneSource` to `Test.Sandwich.TestTimer`, for
-  switching the test timer profile of a whole subtree from an `around` handler.
+* `parallelN` now limits with a pool of lanes instead of a semaphore, so a run produces N test timer profiles rather than one per test. The bound still covers the whole subtree, including nested `parallel` nodes.
+* BREAKING CHANGE: `parallelN` introduces `parallelLanes` instead of `parallelSemaphore`, and requires `HasBaseContext`. Claim a lane with `withParallelLane` rather than taking the `QSem` yourself; unlike the semaphore, it's re-entrant.
+* Add `withParallelLanes`, `withParallelLanesFromArgs` and `takeParallelLane`, for limiting a spec tree you can't wrap with `parallelN` (such as one from `getSpecFromFolder`).
+* Add `withTimingLane`, `inTimingLane` and `newTimingLaneSource`, for switching a subtree's test timer profile from an `around` handler.
 * Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0
