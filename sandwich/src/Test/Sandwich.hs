@@ -46,7 +46,21 @@ module Test.Sandwich (
   , aroundEach
 
   -- * Parallel nodes
-  , module Test.Sandwich.ParallelN
+  , parallelN
+  , parallelN'
+  , parallelNFromArgs
+  , parallelNFromArgs'
+  , defaultParallelNodeOptions
+
+  -- ** Claiming lanes yourself
+  , withParallelLanes
+  , withParallelLanesFromArgs
+  , withParallelLane
+  , takeParallelLane
+
+  , ParallelLanes
+  , parallelLanes
+  , HasParallelLanes
 
   -- * Timing
   --
