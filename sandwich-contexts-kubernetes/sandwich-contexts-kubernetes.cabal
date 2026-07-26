@@ -47,6 +47,7 @@ library
       Test.Sandwich.Contexts.Kubernetes.Longhorn
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Forwards
       Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images
+      Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Remove
       Test.Sandwich.Contexts.Kubernetes.MinioS3Server.Parsing
       Test.Sandwich.Contexts.Kubernetes.Run
       Test.Sandwich.Contexts.Kubernetes.Types
