@@ -30,6 +30,7 @@ import Control.Monad.Reader
 import Control.Monad.Trans.State
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
+import Data.Foldable (toList)
 import qualified Data.List as L
 import qualified Data.Sequence as S
 import Data.String.Interpolate
@@ -175,9 +176,14 @@ finalizeSpeedScopeTestTimer tt@(SpeedScopeTestTimer {..}) = do
 renderSpeedScopeFile :: MonadIO m => TestTimer -> m (Maybe BL.ByteString)
 renderSpeedScopeFile NullTestTimer = return Nothing
 renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
-  endTime <- getPOSIXTime
+  now <- getPOSIXTime
 
-  speedScopeFile <- readMVar testTimerSpeedScopeFile
+  speedScopeFile <- closeOpenFrames now <$> readMVar testTimerSpeedScopeFile
+
+  -- End at the last thing that happened, rather than at the current time, so that a profile
+  -- rendered after the tests are done doesn't include all the time since.
+  let endTime = L.foldl' max testTimerStartTime [time | p <- speedScopeFile ^. profiles
+                                                      , SpeedScopeEvent _ _ time <- toList (p ^. events)]
 
   -- Wrap every test profile in an overall frame called 'allTestsEventName'. If
   -- we don't do this, the speedscope viewer will show each profile as if it
@@ -188,7 +194,7 @@ renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
            & prependSpeedScopeEvent testTimerStartTime profileName allTestsEventName SpeedScopeEventTypeOpen
            & appendSpeedScopeEvent endTime profileName allTestsEventName SpeedScopeEventTypeClose
         )
-        (closeOpenFrames endTime speedScopeFile)
+        speedScopeFile
         (fmap (^. name) (speedScopeFile ^. profiles))
 
   return $ Just $ A.encode finalSpeedScopeFile
@@ -201,7 +207,6 @@ renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
         closeProfile p = p
           & over events (<> S.fromList [SpeedScopeEvent SpeedScopeEventTypeClose frameID time
                                        | frameID <- openFrames (p ^. events)])
-          & over endValue (max time)
 
         openFrames :: S.Seq SpeedScopeEvent -> [Int]
         openFrames = L.foldl' step []
