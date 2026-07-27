@@ -6,7 +6,6 @@
 * `parallelN` now limits with a pool of lanes instead of a semaphore, so a run produces N test timer profiles rather than one per test. The bound still covers the whole subtree, including nested `parallel` nodes.
 * BREAKING CHANGE: `parallelN` introduces `parallelLanes` instead of `parallelSemaphore`, and requires `HasBaseContext`. Claim a lane with `withParallelLane` rather than taking the `QSem` yourself; unlike the semaphore, it's re-entrant.
 * Add `withParallelLanes`, `withParallelLanesFromArgs` and `takeParallelLane`, for limiting a spec tree you can't wrap with `parallelN` (such as one from `getSpecFromFolder`).
-* Add `withTimingLane`, `inTimingLane` and `newTimingLaneSource`, for switching a subtree's test timer profile from an `around` handler.
 * Don't leave children running when a `parallel` node stops waiting on them early.
 
 ## 0.3.1.0
