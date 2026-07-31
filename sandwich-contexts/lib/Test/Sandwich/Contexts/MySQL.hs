@@ -208,8 +208,10 @@ withMysqlViaNix' nc (MysqlNixOptions {..}) action = do
               , mysqlPassword = mysqlNixPassword
               , mysqlDatabase = mysqlNixDatabase
               , mysqlVariant = variant
-              , mysqlAddress = NetworkAddressTCP "localhost" (fromIntegral port)
-              , mysqlConnString = [i|mysql://#{mysqlNixUsername}:#{mysqlNixPassword}@localhost:#{port}/#{mysqlNixDatabase}|]
+              -- 127.0.0.1 rather than "localhost"; same reason as Postgres. The
+              -- setup SQL grants to '%' as well as 'localhost', so this still matches.
+              , mysqlAddress = NetworkAddressTCP "127.0.0.1" (fromIntegral port)
+              , mysqlConnString = [i|mysql://#{mysqlNixUsername}:#{mysqlNixPassword}@127.0.0.1:#{port}/#{mysqlNixDatabase}|]
               })
   where
     -- MariaDB always uses native password auth. On MySQL, the auth plugin is chosen

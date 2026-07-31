@@ -23,7 +23,9 @@ import UnliftIO.Timeout
 withProxyToUnixSocket :: (MonadUnliftIO m, HasBaseContextMonad context m) => FilePath -> (PortNumber -> m a) -> m a
 withProxyToUnixSocket socketPath f = do
   portVar <- newEmptyMVar
-  let ss = DCN.serverSettings 0 "*"
+  -- Loopback only: this fronts a test database, so there's no reason to accept
+  -- connections from the network.
+  let ss = DCN.serverSettings 0 "127.0.0.1"
          & setAfterBind (\sock -> do
              getSocketName sock >>= \case
                SockAddrInet port _ -> putMVar portVar port
