@@ -171,8 +171,12 @@ withPostgresViaNix' nc opts@(PostgresNixOptions {..}) action = do
         postgresUsername = postgresNixUsername
         , postgresPassword = postgresNixPassword
         , postgresDatabase = postgresNixDatabase
-        , postgresAddress = NetworkAddressTCP "localhost" port
-        , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@localhost:#{port}/#{postgresNixDatabase}|]
+        -- 127.0.0.1, not "localhost": the proxy binds IPv4 loopback, and
+        -- "localhost" resolves to ::1 first wherever IPv6 is up (e.g. a k8s pod,
+        -- whose /etc/hosts maps both), which strands clients that try only the
+        -- first resolved address.
+        , postgresAddress = NetworkAddressTCP "127.0.0.1" port
+        , postgresConnString = [i|postgresql://#{postgresNixUsername}:#{postgresNixPassword}@127.0.0.1:#{port}/#{postgresNixDatabase}|]
         , postgresContainerAddress = Nothing
         }
 
@@ -413,8 +417,9 @@ waitForPostgresDatabase (PostgresContainerOptions {..}) (containerName, p, _) = 
         postgresUsername = postgresContainerUser
         , postgresPassword = postgresContainerPassword
         , postgresDatabase = postgresContainerUser
-        , postgresAddress = NetworkAddressTCP "localhost" localPort
-        , postgresConnString = [i|postgresql://#{postgresContainerUser}:#{postgresContainerPassword}@localhost:#{localPort}/#{postgresContainerUser}|]
+        -- 127.0.0.1 rather than "localhost"; see the note in withPostgresViaNix'.
+        , postgresAddress = NetworkAddressTCP "127.0.0.1" localPort
+        , postgresConnString = [i|postgresql://#{postgresContainerUser}:#{postgresContainerPassword}@127.0.0.1:#{localPort}/#{postgresContainerUser}|]
         , postgresContainerAddress = Just $ NetworkAddressTCP (toString containerName) 5432
         }
 
