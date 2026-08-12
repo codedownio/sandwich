@@ -209,6 +209,9 @@ miniManifestsYaml namespace imageName (SeaweedFSMiniOptions {..}) =
          <> seaweedFsMiniExtraArgs
   argsYaml = "[" <> T.intercalate ", " ["\"" <> a <> "\"" | a <- args] <> "]"
 
+  readinessCheck :: Text
+  readinessCheck = if s3Enabled then "tcpSocket: { port: 8333 }" else "httpGet: { path: /, port: 8888 }"
+
   s3PortLine, s3VolumeMount, s3Volume :: Text
   s3PortLine = if s3Enabled then "\n        - { containerPort: 8333 }" else ""
   s3VolumeMount = if s3Enabled then "\n        - name: s3-config\n          mountPath: /etc/seaweedfs/s3\n          readOnly: true" else ""
@@ -244,9 +247,7 @@ miniManifestsYaml namespace imageName (SeaweedFSMiniOptions {..}) =
                             - { containerPort: 8888 }
                             - { containerPort: 18888 }#{s3PortLine}
                             readinessProbe:
-                              httpGet:
-                                path: /
-                                port: 8888
+                              #{readinessCheck}
                               initialDelaySeconds: 2
                               periodSeconds: 2
                             volumeMounts:
