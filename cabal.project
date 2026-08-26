@@ -1,10 +1,10 @@
 
--- jose-jwt-0.10.0 (pulled in transitively via haskell-oidc-client) uses memory's
--- Data.ByteArray.ByteArrayAccess instances on crypton types (HMAC, Ed25519/Ed448 keys).
--- crypton 1.1.0 dropped its dependency on memory (switched to ram), removing those
--- instances, so jose-jwt-0.10.0 fails to build against crypton >= 1.1. Cap it until
--- jose-jwt gains crypton-1.1 support.
-constraints: crypton < 1.1
+-- hoauth2-2.15.2 switched from memory to ram for its Data.ByteArray instances, but its
+-- cabal file still allows crypton >= 0.32. crypton only provides ram's ByteArrayAccess
+-- instances from 1.1.0 on, so hoauth2-2.15.2 picked together with crypton 1.0.x fails to
+-- compile. Force the whole tree onto crypton >= 1.1 (which also gets us jose-jwt >= 0.11,
+-- the first version that builds against it).
+constraints: crypton >= 1.1
 
 packages:
     ./sandwich/
