@@ -153,10 +153,14 @@ data BaseContext = BaseContext {
   , baseContextErrorSymlinksDir :: Maybe FilePath
   , baseContextOptions :: Options
   , baseContextOnlyRunIds :: Maybe (S.Set Int)
-  , baseContextTestTimerProfile :: T.Text
+  , baseContextTimingProfile :: TVar TimingProfile
   , baseContextTestTimer :: TestTimer
   , baseContextRunId :: T.Text
   }
+
+-- | The profile to record frames under right now.
+currentTestTimerProfile :: MonadIO m => BaseContext -> m T.Text
+currentTestTimerProfile (BaseContext {..}) = timingProfileName <$> liftIO (readTVarIO baseContextTimingProfile)
 
 -- | Has-* class for asserting a 'BaseContext' is available.
 class HasBaseContext a where

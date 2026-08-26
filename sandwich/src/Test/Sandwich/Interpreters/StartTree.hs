@@ -135,9 +135,13 @@ startTree node@(RunNodeIntroduce {..}) ctx' = do
             Right intro -> do
               -- Special hack to modify the test timer profile via an introduce, without needing to track it everywhere.
               -- It would be better to track the profile at the type level
-              let ctxFinal = case cast intro of
-                    Just (TestTimerProfile t) -> modifyBaseContext ctx (\bc -> bc { baseContextTestTimerProfile = t })
-                    Nothing -> ctx
+              ctxFinal <- case cast intro of
+                Just (TestTimerProfile t) -> do
+                  -- A fresh cell, so we rename the profile for our children only.
+                  current <- readTVarIO (baseContextTimingProfile (getBaseContext ctx))
+                  timingProfile <- newTVarIO (current { timingProfileName = t })
+                  return $ modifyBaseContext ctx (\bc -> bc { baseContextTimingProfile = timingProfile })
+                Nothing -> return ctx
 
               void $ runNodesSequentially runNodeChildrenAugmented ((LabelValue intro) :> ctxFinal)
       )
@@ -278,13 +282,19 @@ runInAsync :: (HasBaseContext context, MonadIO m) => RunNode context -> context 
 runInAsync node ctx action = do
   let RunNodeCommonWithStatus {..} = runNodeCommon node
   let bc@(BaseContext {..}) = getBaseContext ctx
-  let timerFn = if runTreeRecordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack runTreeLabel) else id
   let asyncName = T.pack [i|node #{runTreeId}, #{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
   myAsync <- liftIO $ managedAsyncWithUnmask baseContextRunId asyncName $ \unmask -> do
     flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
       readMVar mvar
+      -- Resolve the timing profile now rather than when this node was created, since a lane may
+      -- have been claimed for us in the meantime.
+      timerFn <- case runTreeRecordTime of
+        False -> pure id
+        True -> do
+          profile <- currentTestTimerProfile bc
+          pure $ timeAction' (getTestTimer bc) profile (T.pack runTreeLabel)
       (result, extraTimingInfo) <- timerFn action
       endTime <- liftIO getCurrentTime
       liftIO $ atomically $ writeTVar runTreeStatus $ Done startTime (setupFinishTime extraTimingInfo) (teardownStartTime extraTimingInfo) endTime result
@@ -361,22 +371,29 @@ runNodesSequentially children ctx =
 -- | Run a list of children concurrently, cancelling everything on async exception
 runNodesConcurrently :: forall context. HasBaseContext context => RunNodeCommon -> [RunNode context] -> context -> IO [Result]
 runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) children ctx =
-  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $
-    mapM wait =<< sequence [startTree child (modifyTimingProfile ix ctx)
-                           | (child, ix) <- L.zip runnableChildren [0..]]
+  flip withException (\(e :: SomeAsyncException) -> cancelAllChildrenWith children e) $ do
+    asyncs <- sequence [startTree child =<< childContext ix
+                       | (child, ix) <- L.zip runnableChildren [0..]]
+    -- If we stop waiting early because one child threw, take the others down with us;
+    -- the handler above only fires for async exceptions.
+    mapM wait asyncs `onException` mapM_ cancel asyncs
   where
     runnableChildren = L.filter (shouldRunChild ctx) children
 
     leftPadWithZeros :: Int -> String
     leftPadWithZeros num = L.replicate (L.length (show (L.length runnableChildren)) - L.length (show num)) '0' <> show num
 
-    modifyTimingProfile :: Int -> context -> context
-    modifyTimingProfile n = flip modifyBaseContext (modifyTimingProfile' n)
+    -- Give each child its own test timer profile, since sharing one would mess up the nesting of the
+    -- profile's frames. Children keep any lanes we're already holding, so they don't claim a second
+    -- one and deadlock.
+    childContext :: Int -> IO context
+    childContext n = do
+      current <- readTVarIO (baseContextTimingProfile (getBaseContext ctx))
+      timingProfile <- newTVarIO (current { timingProfileName = timingProfileName current <> suffix n })
+      return $ modifyBaseContext ctx $ \bc -> bc { baseContextTimingProfile = timingProfile }
 
-    modifyTimingProfile' :: Int -> BaseContext -> BaseContext
-    modifyTimingProfile' n bc@(BaseContext {..}) = bc {
-      baseContextTestTimerProfile = baseContextTestTimerProfile <> [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
-      }
+    suffix :: Int -> T.Text
+    suffix n = [i|-#{runTreeLabel}-#{runTreeId}-#{leftPadWithZeros n}|]
 
 markAllChildrenWithResult :: (MonadIO m, HasBaseContext context') => [RunNode context] -> context' -> Result -> m ()
 markAllChildrenWithResult children baseContext status = do
@@ -506,8 +523,12 @@ recordExceptionInStatus status e = do
     _ -> Done endTime Nothing Nothing endTime ret
 
 timed :: forall m a s l t. (MonadUnliftIO m) => RunNodeCommonWithStatus s l t -> Bool -> BaseContext -> String -> m a -> m (a, UTCTime, UTCTime)
-timed _rnc recordTime bc@(BaseContext {..}) label action = do
-  let timerFn = if recordTime then timeAction' (getTestTimer bc) baseContextTestTimerProfile (T.pack label) else id
+timed _rnc recordTime bc@(BaseContext {}) label action = do
+  timerFn <- case recordTime of
+    False -> pure id
+    True -> do
+      profile <- currentTestTimerProfile bc
+      pure $ timeAction' (getTestTimer bc) profile (T.pack label)
 
   startTime <- liftIO getCurrentTime
   ret <- timerFn action

@@ -14,6 +14,11 @@ module Test.Sandwich.TestTimer (
   , withTimingProfile
   , withTimingProfile'
 
+  , TimingLaneSource
+  , newTimingLaneSource
+  , withTimingLane
+  , inTimingLane
+
   , newSpeedScopeTestTimer
   , finalizeSpeedScopeTestTimer
   , renderSpeedScopeFile
@@ -25,6 +30,7 @@ import Control.Monad.Reader
 import Control.Monad.Trans.State
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
+import Data.Foldable (toList)
 import qualified Data.List as L
 import qualified Data.Sequence as S
 import Data.String.Interpolate
@@ -32,6 +38,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Time
 import Data.Time.Clock.POSIX
+import Data.Unique
 import Lens.Micro
 import System.Directory
 import System.FilePath
@@ -42,6 +49,7 @@ import Test.Sandwich.Types.TestTimer
 import Test.Sandwich.Util (whenJust)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
+import UnliftIO.STM
 
 
 type EventName = T.Text
@@ -62,8 +70,9 @@ timeAction :: (MonadUnliftIO m, HasBaseContextMonad context m, HasTestTimer cont
   -> m a
 timeAction eventName action = do
   tt <- asks getTestTimer
-  BaseContext {baseContextTestTimerProfile} <- asks getBaseContext
-  timeAction' tt baseContextTestTimerProfile eventName action
+  bc <- asks getBaseContext
+  profile <- currentTestTimerProfile bc
+  timeAction' tt profile eventName action
 
 -- | Time a given action with a given profile name and event name. Use when you
 -- want to manually specify the profile name.
@@ -94,6 +103,38 @@ withTimingProfile' :: (Monad m)
   -> SpecFree (LabelValue "testTimerProfile" TestTimerProfile :> context) m ()
   -> SpecFree context m ()
 withTimingProfile' getName = introduce' timingNodeOptions [i|Switch test timer profile to dynamic value|] testTimerProfile (TestTimerProfile <$> getName) (\_ -> return ())
+
+-- * Timing lanes
+
+-- | Make a new source of timing lanes. Pass the same one to 'withTimingLane' and 'inTimingLane'.
+newTimingLaneSource :: MonadIO m => m TimingLaneSource
+newTimingLaneSource = TimingLaneSource <$> liftIO newUnique
+
+-- | Record this action, and everything below it in the tree, under the given profile. Unlike
+-- 'withTimingProfile' this works from an 'around' handler, without changing the spec's type.
+--
+-- A 'Test.Sandwich.parallel' node below gives each of its children a suffixed profile of their
+-- own, so concurrent branches never share one.
+withTimingLane :: (MonadUnliftIO m, HasBaseContextMonad context m)
+  -- | Who's handing out the lane
+  => TimingLaneSource
+  -- | Profile name for the lane
+  -> ProfileName
+  -> m a
+  -> m a
+withTimingLane source profileName action = do
+  BaseContext {baseContextTimingProfile} <- asks getBaseContext
+  previous <- readTVarIO baseContextTimingProfile
+  let held = TimingProfile profileName (source : timingProfileLanes previous)
+  bracket_ (atomically $ writeTVar baseContextTimingProfile held)
+           (atomically $ writeTVar baseContextTimingProfile previous)
+           action
+
+-- | Whether this branch of the tree already holds a lane from the given source.
+inTimingLane :: (MonadIO m, HasBaseContextMonad context m) => TimingLaneSource -> m Bool
+inTimingLane source = do
+  BaseContext {baseContextTimingProfile} <- asks getBaseContext
+  (source `elem`) . timingProfileLanes <$> readTVarIO baseContextTimingProfile
 
 -- * Core
 
@@ -129,15 +170,20 @@ finalizeSpeedScopeTestTimer tt@(SpeedScopeTestTimer {..}) = do
 
   whenJust contents $ BL.writeFile (testTimerBasePath </> "speedscope.json")
 
--- | Render the current state of the test timer as a speedscope profile. Any
--- frames that are still open are closed off at the current time, so this can be
--- called while tests are running.
+-- | Render the current state of the test timer as a speedscope profile. Frames
+-- that are still open are closed off at the current time, so this can be called
+-- while tests are running.
 renderSpeedScopeFile :: MonadIO m => TestTimer -> m (Maybe BL.ByteString)
 renderSpeedScopeFile NullTestTimer = return Nothing
 renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
-  endTime <- getPOSIXTime
+  now <- getPOSIXTime
 
-  speedScopeFile <- readMVar testTimerSpeedScopeFile
+  speedScopeFile <- closeOpenFrames now <$> readMVar testTimerSpeedScopeFile
+
+  -- End at the last thing that happened, rather than at the current time, so that a profile
+  -- rendered after the tests are done doesn't include all the time since.
+  let endTime = L.foldl' max testTimerStartTime [time | p <- speedScopeFile ^. profiles
+                                                      , SpeedScopeEvent _ _ time <- toList (p ^. events)]
 
   -- Wrap every test profile in an overall frame called 'allTestsEventName'. If
   -- we don't do this, the speedscope viewer will show each profile as if it
@@ -148,7 +194,7 @@ renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
            & prependSpeedScopeEvent testTimerStartTime profileName allTestsEventName SpeedScopeEventTypeOpen
            & appendSpeedScopeEvent endTime profileName allTestsEventName SpeedScopeEventTypeClose
         )
-        (closeOpenFrames endTime speedScopeFile)
+        speedScopeFile
         (fmap (^. name) (speedScopeFile ^. profiles))
 
   return $ Just $ A.encode finalSpeedScopeFile
@@ -161,7 +207,6 @@ renderSpeedScopeFile (SpeedScopeTestTimer {..}) = liftIO $ do
         closeProfile p = p
           & over events (<> S.fromList [SpeedScopeEvent SpeedScopeEventTypeClose frameID time
                                        | frameID <- openFrames (p ^. events)])
-          & over endValue (max time)
 
         openFrames :: S.Seq SpeedScopeEvent -> [Int]
         openFrames = L.foldl' step []
