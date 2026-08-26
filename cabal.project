@@ -13,6 +13,18 @@ constraints: crypton >= 1.1
 -- Windows / GHC 9.10.3 it hit the 4000-backjump limit before finding its way back out.
 constraints: transformers-compat < 0.8
 
+-- kubernetes-api's UseKatip flag defaults to on, but every katip release caps Win32 < 2.14
+-- and GHC 9.12 on Windows ships Win32-2.14.1.0 as a boot library, so katip can't be used
+-- there at all. The flag only picks kubernetes-api's internal logging backend, and the
+-- alternative (monad-logger) is already in our dependency tree, so just turn it off
+-- everywhere rather than making the solver rediscover this per platform.
+constraints: kubernetes-api -usekatip
+
+-- We keep tripping the default 4000-backjump limit on Windows: the solver commits to a
+-- dead end early and runs out of budget before it can unwind. The constraints above kill
+-- the dead ends we know about; this is headroom for the ones we don't.
+max-backjumps: 20000
+
 packages:
     ./sandwich/
   , ./sandwich-contexts/
