@@ -6,6 +6,13 @@
 -- the first version that builds against it).
 constraints: crypton >= 1.1
 
+-- microlens-mtl allows transformers-compat < 1, so the solver is free to try the new
+-- transformers-compat-0.8. But monad-control-1.0.3.1 (the latest) still caps it at < 0.8,
+-- and monad-logger needs monad-control >= 1.0, so no plan containing transformers-compat
+-- 0.8 can work. Saying so up front keeps the solver from exploring that dead end -- on
+-- Windows / GHC 9.10.3 it hit the 4000-backjump limit before finding its way back out.
+constraints: transformers-compat < 0.8
+
 packages:
     ./sandwich/
   , ./sandwich-contexts/
