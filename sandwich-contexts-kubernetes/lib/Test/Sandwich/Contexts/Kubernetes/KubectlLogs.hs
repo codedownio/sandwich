@@ -29,7 +29,8 @@ data KubectlLogsContext = KubectlLogsContext {
 
 -- * Implementation
 
--- | Run a @kubectl logs@ process, placing the logs in a file in the current test node directory.
+-- | Run a @kubectl logs --follow@ process, placing the logs in a file in the current test node
+-- directory. Lines are prefixed with an RFC3339 timestamp.
 --
 -- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
 -- If this happens, a rerun of the command is needed to resume log forwarding.
@@ -54,6 +55,10 @@ withKubectlLogs kubeConfigFile namespace target maybeContainer interruptWhenDone
   kubectlBinary <- askFile @"kubectl"
 
   let args = ["logs", toString target
+             -- Without --follow, kubectl dumps whatever is buffered and exits
+             -- immediately, so the log file only ever covers the pod's startup.
+             , "--follow"
+             , "--timestamps"
              , "--namespace", toString namespace
              , "--kubeconfig", kubeConfigFile]
              <> (maybe [] (\x -> ["--container", toString x]) maybeContainer)
