@@ -100,10 +100,9 @@ waitUntilRunning status = atomically $ do
     Running {} -> return ()
     _ -> retry
 
--- | Poll until every node in the trees has a terminal status, giving up after the given number
--- of microseconds. Returns the labels and statuses of whatever is still un-'Done'.
---
--- Nodes can still be unwinding when the root finishes, so a plain snapshot is too eager.
+-- | Poll until every node has a terminal status, giving up after the given number of
+-- microseconds. Returns whatever is still un-'Done'. Polls because nodes can still be unwinding
+-- when the root finishes.
 waitForAllNodesDone :: Int -> [RunNode context] -> IO [(String, Status)]
 waitForAllNodesDone timeoutMicros rts = go (timeoutMicros `div` pollMicros)
   where

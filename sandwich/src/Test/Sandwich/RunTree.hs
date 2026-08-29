@@ -31,12 +31,9 @@ import Test.Sandwich.Types.Spec
 -- | Give a terminal status to every node in the subtree that doesn't have one yet, leaving
 -- nodes that are already 'Done' alone.
 --
--- Call this once a subtree can't make any more progress: after cancelling its async, or after
--- deciding it will never start. A node normally records its own result, but the handler that
--- does so isn't installed for the first instants of the thread's life, so an exception
--- delivered in that window kills the thread with the node still 'Running'. A node left
--- 'Running' or 'NotStarted' blocks 'Test.Sandwich.Interpreters.RunTree.Util.waitForTree'
--- forever.
+-- Call this once a subtree can't make any more progress. A node normally records its own
+-- result, but the handler that does so isn't installed for the first instants of the thread's
+-- life, so an exception delivered in that window kills the thread with the node still 'Running'.
 markUnfinishedNodesDone :: RunNode context -> Result -> IO ()
 markUnfinishedNodesDone node result = do
   now <- getCurrentTime

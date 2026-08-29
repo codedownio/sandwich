@@ -26,13 +26,9 @@ main = mainWith tests
 
 -- * Tests
 
--- | With @--cancel-on-long-execution-ms@, the cancel fires on every node whose body has been
--- running too long, including a wrapper around the whole spec. When that happens the tree gets
--- torn down from several places at once, and a node's async can be killed before it has
--- installed the handler that records its result -- leaving the node 'Running' for good.
---
--- Nothing ever clears that, so 'waitForTree' on it blocks forever. That's what hung the
--- @--print-failures@ formatter, which walks the whole tree waiting on every node.
+-- | With @--cancel-on-long-execution-ms@ the tree gets torn down from several places at once, and
+-- a node's async can be killed before it has installed the handler that records its result,
+-- leaving the node 'Running' for good.
 cancelOnLongExecutionLeavesNothingUnfinished :: (HasCallStack) => IO ()
 cancelOnLongExecutionLeavesNothingUnfinished =
   forM_ [1 .. 20 :: Int] $ \iteration -> do
@@ -44,8 +40,8 @@ cancelOnLongExecutionLeavesNothingUnfinished =
   where
     options = defaultOptions { optionsCancelOnLongExecutionMs = Just 200 }
 
--- | Everything wrapped in one introduceWith, with a lane pool inside it holding back most of
--- the tests, so nodes are constantly starting when the cancel fires.
+-- | A lane pool holds back most of the tests, so nodes are constantly starting when the cancel
+-- fires on the wrapper.
 spec :: CoreSpec
 spec = introduceWith "wrapper" fakeDatabaseLabel (\action -> void $ action FakeDatabase) $
   parallelN 8 $

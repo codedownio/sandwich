@@ -422,12 +422,9 @@ cancelAllChildrenWith children e = cancelEach `finally` finalizeEach
         _ -> return ()
 
     -- 'cancelWith' doesn't return until the async has finished, and a node that hasn't started
-    -- under a cancelled parent never will, so anything not 'Done' by now never will be.
-    --
-    -- This has to happen even if we're interrupted partway through the cancelling above, which
-    -- is likely: we're already unwinding from an async exception and the cancel may well be
-    -- cascading from further up the tree. Any node left 'Running' or 'NotStarted' blocks
-    -- 'waitForTree' forever.
+    -- under a cancelled parent never will, so anything not 'Done' by now never will be. We're
+    -- already unwinding from an async exception here and can easily be interrupted partway
+    -- through the cancelling above, so this has to happen either way.
     finalizeEach = uninterruptibleMask_ $ forM_ children $ \node ->
       markUnfinishedNodesDone node (Failure $ GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e))
 
