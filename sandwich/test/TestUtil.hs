@@ -107,10 +107,9 @@ waitForAllNodesDone timeoutMicros rts = do
 
   -- The transaction reads every status, so it retries exactly when one of them is written
   atomically $ do
-    notDone <- filter (not . isDoneStatus . snd) <$> mapM readCommon (concatMap getCommons rts)
-    case notDone of
+    (filter (not . isDoneStatus . snd) <$> mapM readCommon (concatMap getCommons rts)) >>= \case
       [] -> return []
-      _ -> readTVar timedOut >>= \case
+      notDone -> readTVar timedOut >>= \case
         True -> return notDone
         False -> retry
 

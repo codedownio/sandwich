@@ -356,18 +356,15 @@ runInAsync node ctx action = do
               printLogs runTreeLogs
 
       return result
-  -- Only claim the node if nothing has given it a terminal status yet. If the tree is coming
-  -- down around us, an ancestor may have already finalized this subtree while we were starting
-  -- it, and a 'Running' written on top of that would never be cleared.
-  started <- liftIO $ atomically $ readTVar runTreeStatus >>= \case
-    NotStarted -> do
-      writeTVar runTreeStatus $ Running startTime Nothing Nothing myAsync
-      return True
-    _ -> return False
+  -- Only claim the node if nothing has given it a terminal status yet. If the tree is coming down
+  -- around us, an ancestor may have finalized this subtree while we were starting it, and a
+  -- 'Running' written on top of that would never be cleared.
+  liftIO $ atomically $ modifyTVar' runTreeStatus $ \case
+    NotStarted -> Running startTime Nothing Nothing myAsync
+    status -> status
 
   liftIO $ emitEvent baseContextOptions startTime runTreeId runTreeLabel EventStarted
   liftIO $ putMVar mvar ()
-  unless started $ liftIO $ cancel myAsync
   return myAsync
 
 -- | Run a list of children sequentially, cancelling everything on async exception
