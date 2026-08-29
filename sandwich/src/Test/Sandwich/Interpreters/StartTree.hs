@@ -356,10 +356,19 @@ runInAsync node ctx action = do
               printLogs runTreeLogs
 
       return result
-  liftIO $ atomically $ writeTVar runTreeStatus $ Running startTime Nothing Nothing myAsync
+  -- Only claim the node if nothing has given it a terminal status yet. If the tree is coming
+  -- down around us, an ancestor may have already finalized this subtree while we were starting
+  -- it, and a 'Running' written on top of that would never be cleared.
+  started <- liftIO $ atomically $ readTVar runTreeStatus >>= \case
+    NotStarted -> do
+      writeTVar runTreeStatus $ Running startTime Nothing Nothing myAsync
+      return True
+    _ -> return False
+
   liftIO $ emitEvent baseContextOptions startTime runTreeId runTreeLabel EventStarted
   liftIO $ putMVar mvar ()
-  return myAsync  -- TODO: fix race condition with writing to runTreeStatus (here and above)
+  unless started $ liftIO $ cancel myAsync
+  return myAsync
 
 -- | Run a list of children sequentially, cancelling everything on async exception
 runNodesSequentially :: HasBaseContext context => [RunNode context] -> context -> IO [Result]
@@ -376,7 +385,7 @@ runNodesConcurrently (RunNodeCommonWithStatus {runTreeLabel, runTreeId}) childre
                        | (child, ix) <- L.zip runnableChildren [0..]]
     -- If we stop waiting early because one child threw, take the others down with us;
     -- the handler above only fires for async exceptions.
-    mapM wait asyncs `onException` mapM_ cancel asyncs
+    mapM wait asyncs `onException` cancelAllChildrenWith runnableChildren (SomeAsyncException AsyncCancelled)
   where
     runnableChildren = L.filter (shouldRunChild ctx) children
 
@@ -405,18 +414,22 @@ markAllChildrenWithResult children baseContext status = do
       _ -> Done now Nothing Nothing now status
 
 cancelAllChildrenWith :: [RunNode context] -> SomeAsyncException -> IO ()
-cancelAllChildrenWith children e = do
-  forM_ children $ \node ->
-    readTVarIO (runTreeStatus $ runNodeCommon node) >>= \case
-      Running {..} -> cancelWith statusAsync e
-      NotStarted -> do
-        now <- getCurrentTime
-        let reason = GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e)
-        forM_ (getCommons node) $ \common ->
-          atomically $ modifyTVar' (runTreeStatus common) $ \case
-            NotStarted -> Done now Nothing Nothing now (Failure reason)
-            status -> status
-      _ -> return ()
+cancelAllChildrenWith children e = cancelEach `finally` finalizeEach
+  where
+    cancelEach = forM_ children $ \node ->
+      readTVarIO (runTreeStatus $ runNodeCommon node) >>= \case
+        Running {..} -> cancelWith statusAsync e
+        _ -> return ()
+
+    -- 'cancelWith' doesn't return until the async has finished, and a node that hasn't started
+    -- under a cancelled parent never will, so anything not 'Done' by now never will be.
+    --
+    -- This has to happen even if we're interrupted partway through the cancelling above, which
+    -- is likely: we're already unwinding from an async exception and the cancel may well be
+    -- cascading from further up the tree. Any node left 'Running' or 'NotStarted' blocks
+    -- 'waitForTree' forever.
+    finalizeEach = uninterruptibleMask_ $ forM_ children $ \node ->
+      markUnfinishedNodesDone node (Failure $ GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e))
 
 shouldRunChild :: (HasBaseContext ctx) => ctx -> RunNodeWithStatus context s l t -> Bool
 shouldRunChild ctx node = shouldRunChild' ctx (runNodeCommon node)

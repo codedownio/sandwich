@@ -290,6 +290,7 @@ executable sandwich-test
   other-modules:
       Around
       Before
+      CancelOnLongExecution
       Describe
       Introduce
       IntroduceWith
@@ -358,6 +359,7 @@ test-suite sandwich-test-suite
   other-modules:
       Around
       Before
+      CancelOnLongExecution
       Describe
       Introduce
       IntroduceWith

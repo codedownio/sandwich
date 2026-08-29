@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RankNTypes #-}
 
 module TestUtil where
 
 import Control.Concurrent.STM
+import UnliftIO.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -97,6 +99,28 @@ waitUntilRunning status = atomically $ do
   readTVar status >>= \case
     Running {} -> return ()
     _ -> retry
+
+-- | Poll until every node in the trees has a terminal status, giving up after the given number
+-- of microseconds. Returns the labels and statuses of whatever is still un-'Done'.
+--
+-- Nodes can still be unwinding when the root finishes, so a plain snapshot is too eager.
+waitForAllNodesDone :: Int -> [RunNode context] -> IO [(String, Status)]
+waitForAllNodesDone timeoutMicros rts = go (timeoutMicros `div` pollMicros)
+  where
+    pollMicros = 20_000
+
+    go :: Int -> IO [(String, Status)]
+    go remainingPolls = do
+      fixedTree <- fixTree rts
+      case [x | x@(_, status) <- concatMap getStatuses fixedTree, not (isDoneStatus status)] of
+        [] -> return []
+        notDone
+          | remainingPolls <= 0 -> return notDone
+          | otherwise -> threadDelay pollMicros >> go (remainingPolls - 1)
+
+    isDoneStatus :: Status -> Bool
+    isDoneStatus (Done {}) = True
+    isDoneStatus _ = False
 
 -- printFixedRunTree :: RunNodeFixed -> IO ()
 -- printFixedRunTree = printFixedRunTree' 0
