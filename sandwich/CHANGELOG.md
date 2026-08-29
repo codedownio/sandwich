@@ -7,7 +7,7 @@
 * BREAKING CHANGE: `parallelN` introduces `parallelLanes` instead of `parallelSemaphore`, and requires `HasBaseContext`. Claim a lane with `withParallelLane` rather than taking the `QSem` yourself; unlike the semaphore, it's re-entrant.
 * Add `withParallelLanes`, `withParallelLanesFromArgs` and `takeParallelLane`, for limiting a spec tree you can't wrap with `parallelN` (such as one from `getSpecFromFolder`).
 * Don't leave children running when a `parallel` node stops waiting on them early.
-* Fix nodes being left `Running` forever when a subtree is cancelled, which hung the `--print-failures` formatter (and anything else that calls `waitForTree`).
+* Fix nodes being left `Running` or `NotStarted` forever when a subtree is cancelled, which hung the `--print-failures` formatter (and anything else that calls `waitForTree`).
 * Export `optionsWarnOnLongExecutionMs` and `optionsCancelOnLongExecutionMs`, which previously could only be set from the command line.
 
 ## 0.3.1.0

@@ -285,8 +285,8 @@ runInAsync node ctx action = do
   let asyncName = T.pack [i|node #{runTreeId}, #{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
-  myAsync <- liftIO $ managedAsyncWithUnmask baseContextRunId asyncName $ \unmask -> do
-    flip withException (recordExceptionInStatus runTreeStatus) $ unmask $ do
+  myAsync <- liftIO $ managedAsyncWithUnmaskAndHandler baseContextRunId asyncName (recordExceptionInStatus runTreeStatus) $ \unmask ->
+    unmask $ do
       readMVar mvar
       -- Resolve the timing profile now rather than when this node was created, since a lane may
       -- have been claimed for us in the meantime.
@@ -421,10 +421,10 @@ cancelAllChildrenWith children e = cancelEach `finally` finalizeEach
         Running {..} -> cancelWith statusAsync e
         _ -> return ()
 
-    -- 'cancelWith' doesn't return until the async has finished, and a node that hasn't started
-    -- under a cancelled parent never will, so anything not 'Done' by now never will be. We're
-    -- already unwinding from an async exception here and can easily be interrupted partway
-    -- through the cancelling above, so this has to happen either way.
+    -- Nodes record their own results, but ones that never started have nobody to do it for them,
+    -- and 'cancelWith' doesn't return until the async has finished. We're already unwinding from
+    -- an async exception here and can easily be interrupted partway through the cancelling
+    -- above, so this has to happen either way.
     finalizeEach = uninterruptibleMask_ $ forM_ children $ \node ->
       markUnfinishedNodesDone node (Failure $ GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e))
 

@@ -4,6 +4,7 @@ module Test.Sandwich.ManagedAsync (
   -- * With explicit run ID
   managedAsync
   , managedAsyncWithUnmask
+  , managedAsyncWithUnmaskAndHandler
   , managedWithAsync
   , managedWithAsync_
 
@@ -62,6 +63,15 @@ managedAsyncWithUnmask :: MonadUnliftIO m => T.Text -> T.Text -> ((forall b. m b
 managedAsyncWithUnmask runId name action = do
   parentThreadId <- liftIO myThreadId
   asyncWithUnmask $ \unmask -> bracketedAction parentThreadId runId name (action unmask)
+
+-- | Like 'managedAsyncWithUnmask', but the handler wraps the entire thread body, including this
+-- module's own bookkeeping. That bookkeeping contains an interruptible 'atomically', so a handler
+-- installed inside it can be skipped entirely by an exception delivered as the thread starts.
+managedAsyncWithUnmaskAndHandler :: (MonadUnliftIO m, Exception e) => T.Text -> T.Text -> (e -> m b) -> ((forall c. m c -> m c) -> m a) -> m (Async a)
+managedAsyncWithUnmaskAndHandler runId name handler action = do
+  parentThreadId <- liftIO myThreadId
+  asyncWithUnmask $ \unmask ->
+    flip withException handler $ bracketedAction parentThreadId runId name (action unmask)
 
 managedWithAsync :: MonadUnliftIO m => T.Text -> T.Text -> m a -> (Async a -> m b) -> m b
 managedWithAsync runId name action cb = do

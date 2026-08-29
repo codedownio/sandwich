@@ -1,11 +1,9 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE RankNTypes #-}
 
 module TestUtil where
 
 import Control.Concurrent.STM
-import UnliftIO.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class
 import Control.Monad.Logger
@@ -100,22 +98,26 @@ waitUntilRunning status = atomically $ do
     Running {} -> return ()
     _ -> retry
 
--- | Poll until every node has a terminal status, giving up after the given number of
--- microseconds. Returns whatever is still un-'Done'. Polls because nodes can still be unwinding
+-- | Wait until every node has a terminal status, giving up after the given number of
+-- microseconds. Returns whatever is still un-'Done'. Waits because nodes can still be unwinding
 -- when the root finishes.
 waitForAllNodesDone :: Int -> [RunNode context] -> IO [(String, Status)]
-waitForAllNodesDone timeoutMicros rts = go (timeoutMicros `div` pollMicros)
-  where
-    pollMicros = 20_000
+waitForAllNodesDone timeoutMicros rts = do
+  timedOut <- registerDelay timeoutMicros
 
-    go :: Int -> IO [(String, Status)]
-    go remainingPolls = do
-      fixedTree <- fixTree rts
-      case [x | x@(_, status) <- concatMap getStatuses fixedTree, not (isDoneStatus status)] of
-        [] -> return []
-        notDone
-          | remainingPolls <= 0 -> return notDone
-          | otherwise -> threadDelay pollMicros >> go (remainingPolls - 1)
+  -- The transaction reads every status, so it retries exactly when one of them is written
+  atomically $ do
+    notDone <- filter (not . isDoneStatus . snd) <$> mapM readCommon (concatMap getCommons rts)
+    case notDone of
+      [] -> return []
+      _ -> readTVar timedOut >>= \case
+        True -> return notDone
+        False -> retry
+
+  where
+    readCommon common = do
+      status <- readTVar (runTreeStatus common)
+      return (runTreeLabel common, status)
 
     isDoneStatus :: Status -> Bool
     isDoneStatus (Done {}) = True
