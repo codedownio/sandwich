@@ -28,6 +28,10 @@ module Test.Sandwich.Options (
   -- * Timing
   , optionsTestTimerType
 
+  -- * Long-running nodes
+  , optionsWarnOnLongExecutionMs
+  , optionsCancelOnLongExecutionMs
+
   -- * Dry run
   , optionsDryRun
 

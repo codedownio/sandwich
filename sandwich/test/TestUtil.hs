@@ -98,6 +98,30 @@ waitUntilRunning status = atomically $ do
     Running {} -> return ()
     _ -> retry
 
+-- | Wait until every node has a terminal status, giving up after the given number of
+-- microseconds. Returns whatever is still un-'Done'. Waits because nodes can still be unwinding
+-- when the root finishes.
+waitForAllNodesDone :: Int -> [RunNode context] -> IO [(String, Status)]
+waitForAllNodesDone timeoutMicros rts = do
+  timedOut <- registerDelay timeoutMicros
+
+  -- The transaction reads every status, so it retries exactly when one of them is written
+  atomically $ do
+    (filter (not . isDoneStatus . snd) <$> mapM readCommon (concatMap getCommons rts)) >>= \case
+      [] -> return []
+      notDone -> readTVar timedOut >>= \case
+        True -> return notDone
+        False -> retry
+
+  where
+    readCommon common = do
+      status <- readTVar (runTreeStatus common)
+      return (runTreeLabel common, status)
+
+    isDoneStatus :: Status -> Bool
+    isDoneStatus (Done {}) = True
+    isDoneStatus _ = False
+
 -- printFixedRunTree :: RunNodeFixed -> IO ()
 -- printFixedRunTree = printFixedRunTree' 0
 --   where

@@ -9,6 +9,8 @@ module Test.Sandwich.RunTree (
   , extractValuesControlRecurse
   , getCommons
 
+  , markUnfinishedNodesDone
+
   , isDone
   , isFailure
   , isRunning
@@ -18,11 +20,27 @@ module Test.Sandwich.RunTree (
   ) where
 
 import Control.Concurrent.STM
+import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Trans.State
+import Data.Time
 import Test.Sandwich.Types.RunTree
 import Test.Sandwich.Types.Spec
 
+
+-- | Give a terminal status to every node in the subtree that doesn't have one yet, leaving
+-- nodes that are already 'Done' alone.
+--
+-- Call this once a subtree can't make any more progress: nodes record their own results, but
+-- ones that never started have nobody to do it for them.
+markUnfinishedNodesDone :: RunNode context -> Result -> IO ()
+markUnfinishedNodesDone node result = do
+  now <- getCurrentTime
+  forM_ (getCommons node) $ \common ->
+    atomically $ modifyTVar' (runTreeStatus common) $ \case
+      done@(Done {}) -> done
+      Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime now result
+      NotStarted -> Done now Nothing Nothing now result
 
 extractValues :: (forall ctx. RunNodeWithStatus ctx s l t -> a) -> RunNodeWithStatus context s l t -> [a]
 extractValues f node@(RunNodeIt {}) = [f node]
