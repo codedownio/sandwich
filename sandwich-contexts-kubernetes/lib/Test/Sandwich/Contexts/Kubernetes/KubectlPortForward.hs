@@ -39,8 +39,8 @@ newtype KubectlPortForwardContext = KubectlPortForwardContext {
 
 -- | Run a @kubectl port-forward@ process, making the port available in the 'KubectlPortForwardContext'.
 --
--- Note that this will stop working if the pod you're talking to goes away (even if you do it against a service).
--- If this happens, a rerun of the command is needed to resume port forwarding.
+-- Note that the forward stops working if the pod you're talking to goes away (even if you do it
+-- against a service), so a background thread reruns the command whenever it exits.
 withKubectlPortForward :: (
   HasCallStack, KubectlBasic context m
   )
@@ -93,20 +93,24 @@ withKubectlPortForward' kubectlBinary kubeConfigFile namespace isAcceptablePort 
   let logPath = dir </> toString (T.replace "/" "_" targetName) <.> "port-forwarding.log"
 
   withFile logPath WriteMode $ \h -> do
-    let restarterThread = forever $ do
-          bracket (createProcess ((proc kubectlBinary args) {
-                                     std_out = UseHandle h
-                                     , std_err = UseHandle h
-                                     , create_group = True
-                                     }))
-                  (\(_, _, _, ps) -> gracefullyStopProcess ps 30_000_000)
-                  (\(_, _, _, ps) -> do
-                      pid <- liftIO $ getPid ps
-                      info [i|Got pid for kubectl port forward: #{pid}|]
+    -- createProcess_ rather than createProcess: the latter closes the handles it's given, so every
+    -- restart after the first would get an already-closed one.
+    let runOnce = bracket (createProcess_ "kubectl port-forward" ((proc kubectlBinary args) {
+                                             std_out = UseHandle h
+                                             , std_err = UseHandle h
+                                             , create_group = True
+                                             }))
+                          (\(_, _, _, ps) -> gracefullyStopProcess ps 30_000_000)
+                          (\(_, _, _, ps) -> do
+                              pid <- liftIO $ getPid ps
+                              info [i|Got pid for kubectl port forward: #{pid}|]
 
-                      code <- waitForProcess ps
-                      warn [i|kubectl port-forward #{targetName} #{port}:#{targetPort} exited with code: #{code}. Restarting...|]
-                  )
+                              code <- waitForProcess ps
+                              warn [i|kubectl port-forward #{targetName} #{port}:#{targetPort} exited with code: #{code}. Restarting...|]
+                          )
+
+    let restarterThread = forever $ do
+          handleAny (\e -> warn [i|Failed to run kubectl port-forward #{targetName} #{port}:#{targetPort}: #{e}. Restarting...|]) runOnce
           threadDelay 1_000_000  -- 1 second delay between restarts to ensure we don't spin here
 
     managedWithAsync_ "kubectl-port-forward-restarter" restarterThread $ do

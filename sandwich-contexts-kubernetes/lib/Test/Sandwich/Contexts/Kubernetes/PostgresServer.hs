@@ -202,15 +202,8 @@ postgresYaml name namespace image username password database extraEnv = [__i|
       ports:
       - containerPort: 5432
       readinessProbe:
-        exec:
-          command:
-          - pg_isready
-          \# Without -h this checks the Unix socket, which initdb's temporary
-          \# server answers before 5432 is open.
-          - -h
-          - 127.0.0.1
-          - -U
-          - "#{username}"
+        tcpSocket:
+          port: 5432
         initialDelaySeconds: 5
         periodSeconds: 2
   ---

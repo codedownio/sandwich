@@ -7,6 +7,8 @@
 * Add `Test.Sandwich.Contexts.Kubernetes.ResourceWatcher` to record per-pod CPU and memory over a test using `kubectl top`, writing a CSV, peak summaries, and SVG charts. All three watchers default to cluster-wide and can be scoped to a namespace.
 * Make metrics-server installation on kind clusters configurable via `kindClusterMetricsServer` (defaults on, bumped to v0.7.2) instead of always installing v0.6.4.
 * Clean up leftover container-runtime volumes and per-profile state dirs after tearing down a Minikube cluster.
+* Fix `withKubectlPortForward` never restarting the forward after it exits, leaving the local port unbound for the rest of the run.
+* Gate the Postgres readiness probe on the pod IP, so it doesn't report ready against the temporary server the entrypoint runs during setup.
 
 ## 0.1.3.0
 
