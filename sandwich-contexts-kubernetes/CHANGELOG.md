@@ -9,6 +9,7 @@
 * Clean up leftover container-runtime volumes and per-profile state dirs after tearing down a Minikube cluster.
 * Fix `withKubectlPortForward` never restarting the forward after it exits, leaving the local port unbound for the rest of the run.
 * Gate the Postgres readiness probe on the pod IP, so it doesn't report ready against the temporary server the entrypoint runs during setup.
+* Retry `minikube image load` when it reports a transient push failure, instead of failing the cluster context outright.
 
 ## 0.1.3.0
 

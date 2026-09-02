@@ -91,7 +91,18 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv imag
 
   where
     imageLoad :: (MonadLoggerIO m, HasBaseContextMonad context m, HasCallStack) => String -> Bool -> m ()
-    imageLoad toLoad daemon = do
+    imageLoad toLoad daemon = go (3 :: Int)
+      where
+        go attemptsLeft = imageLoadOnce toLoad daemon >>= \case
+          Nothing -> return ()
+          Just details
+            | attemptsLeft <= 1 -> expectationFailure [i|minikube image load failed; error output detected (#{details})|]
+            | otherwise -> do
+                warn [i|minikube image load failed (#{details}); retrying|]
+                go (attemptsLeft - 1)
+
+    imageLoadOnce :: (MonadLoggerIO m, HasBaseContextMonad context m, HasCallStack) => String -> Bool -> m (Maybe Text)
+    imageLoadOnce toLoad daemon = do
       let extraFlags = case "--rootless" `L.elem` minikubeFlags of
                          True -> ["--rootless"]
                          False -> []
@@ -114,18 +125,21 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv imag
             modifyIORef' stderrOutputVar (<> str)
             logFn loc src level str
 
-      liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
+      exitCode <- liftIO $ flip runLoggingT customLogFn $ flip runReaderT ctx $
         createProcessWithLogging ((proc minikubeBinary args) { env = procEnv })
-          >>= \(ps, asy) -> finally (waitForProcess ps >>= (`shouldBe` ExitSuccess))
-                                    (cancel asy)
+          >>= \(ps, asy) -> finally (waitForProcess ps) (cancel asy)
 
       stderrOutput <- fromLogStr <$> readIORef stderrOutputVar
 
-      let ef (details :: Text) = expectationFailure [i|minikube image load failed; error output detected (#{details})|]
+      return $ failureReason exitCode stderrOutput
 
-      when (check1 stderrOutput) $ ef "Contained 'Failed to load cached images for profile' message"
-      when (check2 stderrOutput) $ ef "Contained 'ctr: failed to ingest' message"
-      when (check3 stderrOutput) $ ef "Contained 'failed pushing to' message"
+    failureReason :: ExitCode -> ByteString -> Maybe Text
+    failureReason exitCode stderrOutput
+      | exitCode /= ExitSuccess = Just [i|Exited with #{exitCode}|]
+      | check1 stderrOutput = Just "Contained 'Failed to load cached images for profile' message"
+      | check2 stderrOutput = Just "Contained 'ctr: failed to ingest' message"
+      | check3 stderrOutput = Just "Contained 'failed pushing to' message"
+      | otherwise = Nothing
 
     -- This is crazy, but minikube image load sometimes fails silently.
     -- One example: https://github.com/kubernetes/minikube/issues/16032
