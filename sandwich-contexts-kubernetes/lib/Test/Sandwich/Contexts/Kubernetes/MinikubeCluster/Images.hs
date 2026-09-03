@@ -1,6 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
@@ -12,6 +13,7 @@ module Test.Sandwich.Contexts.Kubernetes.MinikubeCluster.Images (
 import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger
+import Control.Retry
 import qualified Data.Aeson as A
 import qualified Data.ByteString as B
 import qualified Data.List as L
@@ -31,6 +33,9 @@ import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Temporary
 
+
+imageLoadRetryPolicy :: Monad m => RetryPolicyM m
+imageLoadRetryPolicy = capDelay 15_000_000 (exponentialBackoff 1_000_000) <> limitRetries 5
 
 -- | Load an image onto a cluster. This image can come from a variety of sources, as specified by the 'ImageLoadSpec'.
 loadImageMinikube :: (
@@ -90,16 +95,19 @@ loadImageMinikube minikubeBinary clusterName minikubeFlags minikubeExtraEnv imag
       imageLoad (toString image) True >> return image
 
   where
+    -- The usual reason a load fails is that containerd inside the node isn't serving yet:
+    -- @ctr: cannot access socket /run/containerd/containerd.sock: no such file or directory@.
+    -- That needs time rather than another immediate attempt, so back off between tries.
     imageLoad :: (MonadLoggerIO m, HasBaseContextMonad context m, HasCallStack) => String -> Bool -> m ()
-    imageLoad toLoad daemon = go (3 :: Int)
+    imageLoad toLoad daemon =
+      retrying imageLoadRetryPolicy shouldRetry (const (imageLoadOnce toLoad daemon)) >>= \case
+        Nothing -> return ()
+        Just details -> expectationFailure [i|minikube image load failed; error output detected (#{details})|]
       where
-        go attemptsLeft = imageLoadOnce toLoad daemon >>= \case
-          Nothing -> return ()
-          Just details
-            | attemptsLeft <= 1 -> expectationFailure [i|minikube image load failed; error output detected (#{details})|]
-            | otherwise -> do
-                warn [i|minikube image load failed (#{details}); retrying|]
-                go (attemptsLeft - 1)
+        shouldRetry _ Nothing = return False
+        shouldRetry _ (Just details) = do
+          warn [i|minikube image load failed (#{details}); retrying|]
+          return True
 
     imageLoadOnce :: (MonadLoggerIO m, HasBaseContextMonad context m, HasCallStack) => String -> Bool -> m (Maybe Text)
     imageLoadOnce toLoad daemon = do
