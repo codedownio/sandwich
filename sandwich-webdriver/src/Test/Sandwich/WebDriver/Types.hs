@@ -70,10 +70,22 @@ instance (MonadIO m, HasWebDriverSessionContext context) => W.SessionState (Exam
 
 -- This implementation of 'W.WebDriverBase' provides logging for the requests/responses.
 instance (MonadUnliftIO m, HasTestWebDriverContext context) => W.WebDriverBase (ExampleT context m) where
+#if MIN_VERSION_webdriver(0,16,0)
+  doCommandBase driver maybeResponseTimeout method path args = do
+#else
   doCommandBase driver method path args = do
+#endif
     truncationLength <- (webDriverResponseMaxLogLength . wdOptions) <$> getContext webdriver
 
-    let req = W.mkDriverRequest driver method path args
+    let baseReq = W.mkDriverRequest driver method path args
+#if MIN_VERSION_webdriver(0,16,0)
+    -- Set per command so that whichever WebDriver timeout governs this request expires first and
+    -- the server can answer with a protocol error; see 'W.responseTimeoutForCommand'. Commands with
+    -- no WebDriver-side timeout pass Nothing and keep the manager's default.
+    let req = maybe baseReq (\t -> baseReq { HC.responseTimeout = t }) maybeResponseTimeout
+#else
+    let req = baseReq
+#endif
 
     when (truncationLength /= Just 0) $
       debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{truncateForLogging truncationLength (showRequestBody (HC.requestBody req))})|]
