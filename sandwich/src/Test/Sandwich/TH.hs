@@ -31,8 +31,10 @@ import Test.Sandwich.TH.ModuleMap
 import Test.Sandwich.Types.Spec hiding (location)
 
 
-constId :: b -> a -> a
-constId = const id
+-- | The default 'getSpecIndividualSpecHooks'. Takes a 'FilePath' rather than any @b@ so the
+-- file name 'getSpecFromFolder' passes in doesn't need defaulting under @OverloadedStrings@.
+ignoreFileName :: FilePath -> a -> a
+ignoreFileName = const id
 
 data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
   getSpecCombiner :: Name
@@ -45,7 +47,7 @@ data GetSpecFromFolderOptions = GetSpecFromFolderOptions {
 defaultGetSpecFromFolderOptions :: GetSpecFromFolderOptions
 defaultGetSpecFromFolderOptions = GetSpecFromFolderOptions {
   getSpecCombiner = 'describe
-  , getSpecIndividualSpecHooks = 'constId
+  , getSpecIndividualSpecHooks = 'ignoreFileName
   , getSpecWarnOnParseError = WarnOnParseError
   }
 
@@ -125,10 +127,13 @@ getMaybeMainFunction importedName = do
 mangleFolderName :: String -> String
 mangleFolderName = T.unpack . wordify . T.pack . takeBaseName
 
--- | Convert a string like "TeamTests" to "Team tests"
+-- | Convert a string like "TeamTests" to "Team tests", leaving acronyms alone:
+-- "LSP" stays "LSP" and "HTTPClient" becomes "HTTP client".
 wordify :: T.Text -> T.Text
-wordify t = T.intercalate " " $ capitalizeFirst $ fmap (T.toLower . T.pack) parts
-  where parts = splitR (\c -> isUpper c || isDigit c) $ T.unpack t
+wordify = T.intercalate " " . capitalizeFirst . fmap (unCamel . T.pack) . splitWords . T.unpack
+  where
+    unCamel w | T.length w > 1, T.all isUpper w = w
+              | otherwise = T.toLower w
 
 capitalizeFirst :: [T.Text] -> [T.Text]
 capitalizeFirst [] = []
@@ -138,15 +143,23 @@ capitalize :: T.Text -> T.Text
 capitalize t | T.length t == 1 = T.toUpper t
 capitalize t = toUpper (T.head t) `T.cons` (T.tail t)
 
-splitR :: (Char -> Bool) -> String -> [String]
-splitR _ [] = []
-splitR p s =
-  let
-    go :: Char -> String -> [String]
-    go m s' = case L.break p s' of
-      (b', [])     -> [ m:b' ]
-      (b', x:xs) -> ( m:b' ) : go x xs
-  in case L.break p s of
-    (b,  [])    -> [ b ]
-    ([], h:t) -> go h t
-    (b,  h:t) -> b : go h t
+-- | Split a camel-cased name into words, treating a run of capitals as one word and
+-- starting a new word at a digit.
+splitWords :: String -> [String]
+splitWords = go . L.groupBy ((==) `on` charClass)
+  where
+    go (ups@(u:_) : word@(w:_) : rest)
+      | charClass u == ClassUpper, charClass w == ClassLower = case ups of
+          -- The last capital of a run starts the word after it.
+          [_] -> (ups <> word) : go rest
+          _ -> L.init ups : (L.last ups : word) : go rest
+    go (g : rest) = g : go rest
+    go [] = []
+
+data CharClass = ClassUpper | ClassLower | ClassDigit
+  deriving (Eq)
+
+charClass :: Char -> CharClass
+charClass c | isUpper c = ClassUpper
+            | isDigit c = ClassDigit
+            | otherwise = ClassLower
