@@ -128,9 +128,7 @@ data NixpkgsDerivation =
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
--- | Nixpkgs master, accessed 10\/22\/2026. This carries @google-chrome@ 155.0.8059.84,
--- matching the @chromedriver@ in the same revision. The revision is the one the
--- @nixos-unstable@ channel pointed at, so its closure is in the binary cache.
+-- | Nixpkgs master, accessed 10\/22\/2026.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev master
 nixpkgsMaster :: NixpkgsDerivation
