@@ -54,7 +54,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        # macOS is pinned to 15 because macos-latest moved to an Xcode 26 image whose SDK .tbd
+        # files declare an arm64e.x1 architecture that the ld shipped with these GHCs can't parse.
+        os: [ubuntu-latest, macos-15, windows-latest]
         ghc:
         # - "8.6.5"
         # - "8.8.4"
@@ -68,7 +70,7 @@ jobs:
         - "9.12.2"
         exclude:
         # We just want to test basic 8.8.4 compatibility on Linux; these fail.
-        - os: macOS-latest
+        - os: macos-15
           ghc: 8.8.4
         - os: windows-latest
           ghc: 8.8.4
@@ -81,7 +83,7 @@ jobs:
 
         # These don't work on GitHub CI anymore because they need llvm@13, which became
         # disabled on 12/31/2024
-        - os: macOS-latest
+        - os: macos-15
           ghc: 9.0.2
 
     steps:
@@ -273,7 +275,8 @@ jobs:
 
     - name: Test (sandwich-webdriver)
       if: always() && runner.os != 'Windows'
-      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox --fixed-root sandwich-webdriver/test_runs/run"
+      # --fixed-root is relative to the test's cwd, which stack sets to the package directory.
+      run: stack test sandwich-webdriver --stack-yaml stack/${{matrix.yaml}} --system-ghc --ta="--headless --chrome-no-sandbox --fixed-root test_runs/run"
 
     - uses: actions/cache/save@v5
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'

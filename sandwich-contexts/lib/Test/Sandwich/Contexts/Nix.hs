@@ -128,15 +128,15 @@ data NixpkgsDerivation =
     , nixpkgsDerivationAllowUnfree :: Bool
     } deriving (Show, Eq)
 
--- | Nixpkgs master, accessed 6\/28\/2025.
+-- | Nixpkgs master, accessed 10\/22\/2026.
 -- You can compute updated values for this release (or others) by running
 -- nix-prefetch-github NixOS nixpkgs --rev master
 nixpkgsMaster :: NixpkgsDerivation
 nixpkgsMaster = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "40a8fd31ccc6d87eff8e8aae833d213b10bb9f50"
-  , nixpkgsDerivationSha256 = "sha256-HXlk/16dnoQqy2wjizF1uA7b1gNS8iYFq7vSAG2P8dk="
+  , nixpkgsDerivationRev = "02c087f3fe673c9e317f206a627cb6b910336dbe"
+  , nixpkgsDerivationSha256 = "sha256-IoNisKcGbUjdd45qCqywGMCYmZ5EnkxezvLII0FWwNA="
   , nixpkgsDerivationAllowUnfree = False
   }
 

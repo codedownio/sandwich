@@ -15,13 +15,13 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BL
 
 
--- We use nixpkgsRelease2405 here, because Chrome/chromedriver > 131 seems to have a bug where we get
--- a message like this in CI:
---
--- session not created: probably user data directory is already in use, please specify a unique value for --user-data-dir argument, or don't use --user-data-dir
+-- We use nixpkgsMaster rather than a release pin because google-chrome is unfree, so it isn't in
+-- the Nix binary cache and has to be downloaded from Google. Google only serves the current couple
+-- of Chrome releases, so the google-chrome in an older pin fails to fetch with a 404. Bump
+-- nixpkgsMaster whenever that happens.
 
 spec :: TopSpecWithOptions
-spec = introduceNixContext (nixpkgsRelease2505 { nixpkgsDerivationAllowUnfree = True }) $
+spec = introduceNixContext (nixpkgsMaster { nixpkgsDerivationAllowUnfree = True }) $
   introduceWebDriverViaNix defaultWdOptions $ do
     it "opens Xkcd and presses the prev button" $ withSession1 $ do
       openPage [i|https://www.xkcd.com|]

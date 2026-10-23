@@ -1,5 +1,9 @@
 # Changelog for sandwich-contexts
 
+## Unreleased
+
+* Bump `nixpkgsMaster` to a commit from 10/22/2026.
+
 ## 0.3.0.4
 
 * Use the latest process file logging and managed asyncs from `sandwich`.
