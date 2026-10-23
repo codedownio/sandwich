@@ -1,5 +1,10 @@
 # Changelog for sandwich-contexts
 
+## Unreleased
+
+* Bump `nixpkgsMaster` (now has Chrome 155). The previous revision's `google-chrome` is no longer
+  downloadable from Google.
+
 ## 0.3.0.4
 
 * Use the latest process file logging and managed asyncs from `sandwich`.
