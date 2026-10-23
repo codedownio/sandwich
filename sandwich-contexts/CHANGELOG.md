@@ -2,8 +2,7 @@
 
 ## Unreleased
 
-* Bump `nixpkgsMaster` (now has Chrome 155). The previous revision's `google-chrome` is no longer
-  downloadable from Google.
+* Bump `nixpkgsMaster` to a commit from 10/22/2026.
 
 ## 0.3.0.4
 
