@@ -7,7 +7,6 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans.Writer
 import qualified Data.List as L
 import Data.String.Interpolate
-import GHC.Stack
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Internal
@@ -17,11 +16,40 @@ import UnliftIO.Exception
 
 tests :: MonadIO m => WriterT [SomeException] m ()
 tests = do
-  run deepTreeFitsMaxLength
-  run shallowNamesAreKept
-  run siblingsStayUnique
-  run noMaxLengthLeavesNamesAlone
-  run tinyMaxLengthUsesShortestNames
+  -- Deep tree fits the max length
+  run $ do
+    folders <- getFolders (Just 150)
+    forM_ folders $ \(_, folder) ->
+      unless (L.length folder <= 150) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
+    uncapped <- getFolders Nothing
+    unless (L.any (\(_, f) -> L.length f > 150) uncapped) $ expectationFailure "Expected the uncapped tree to exceed the max length"
+
+  -- Shallow names are kept
+  run $ do
+    folders <- getFolders (Just 150)
+    case L.lookup "does a shallow thing with a fairly long but harmless label" folders of
+      Nothing -> expectationFailure "Couldn't find shallow node"
+      Just f -> takeFileName f `mustBe` "does a shallow thing with a fairly long but harmless label"
+
+  -- Siblings stay unique
+  run $ do
+    paths <- fmap snd <$> getFolders (Just 150)
+    L.length (L.nub paths) `mustBe` L.length paths
+
+  -- No max length leaves names alone
+  run $ do
+    folders <- getFolders Nothing
+    case L.lookup (longLabel 1) folders of
+      Nothing -> expectationFailure "Couldn't find deep node"
+      Just f -> takeFileName f `mustBe` ("1_" <> longLabel 1)
+
+  -- A tiny max length uses the shortest names
+  run $ do
+    paths <- fmap snd <$> getFolders (Just 50)
+    L.length (L.nub paths) `mustBe` L.length paths
+    let deepest = L.maximumBy (\a b -> compare (L.length (splitDirectories a)) (L.length (splitDirectories b))) paths
+    forM_ (splitDirectories (makeRelative "/root/results" deepest)) $ \component ->
+      unless (L.length component <= 9) $ expectationFailure [i|Expected the shortest names, got: #{deepest}|]
 
 main :: IO ()
 main = mainWith tests
@@ -47,38 +75,3 @@ getFolders :: Maybe Int -> IO [(String, FilePath)]
 getFolders maxLength = do
   tree <- getRunTree (defaultOptions { optionsMaxFolderPathLength = maxLength }) deepSpec
   return [(label, folder) | (label, Just folder) <- concatMap (extractValues (\n -> (runTreeLabel (runNodeCommon n), runTreeFolder (runNodeCommon n)))) tree]
-
-deepTreeFitsMaxLength :: (HasCallStack) => IO ()
-deepTreeFitsMaxLength = do
-  folders <- getFolders (Just 150)
-  forM_ folders $ \(_, folder) ->
-    unless (L.length folder <= 150) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
-  uncapped <- getFolders Nothing
-  unless (L.any (\(_, f) -> L.length f > 150) uncapped) $ expectationFailure "Expected the uncapped tree to exceed the max length"
-
-shallowNamesAreKept :: (HasCallStack) => IO ()
-shallowNamesAreKept = do
-  folders <- getFolders (Just 150)
-  case L.lookup "does a shallow thing with a fairly long but harmless label" folders of
-    Nothing -> expectationFailure "Couldn't find shallow node"
-    Just f -> takeFileName f `mustBe` "does a shallow thing with a fairly long but harmless label"
-
-siblingsStayUnique :: (HasCallStack) => IO ()
-siblingsStayUnique = do
-  paths <- fmap snd <$> getFolders (Just 150)
-  L.length (L.nub paths) `mustBe` L.length paths
-
-noMaxLengthLeavesNamesAlone :: (HasCallStack) => IO ()
-noMaxLengthLeavesNamesAlone = do
-  folders <- getFolders Nothing
-  case L.lookup (longLabel 1) folders of
-    Nothing -> expectationFailure "Couldn't find deep node"
-    Just f -> takeFileName f `mustBe` ("1_" <> longLabel 1)
-
-tinyMaxLengthUsesShortestNames :: (HasCallStack) => IO ()
-tinyMaxLengthUsesShortestNames = do
-  paths <- fmap snd <$> getFolders (Just 50)
-  L.length (L.nub paths) `mustBe` L.length paths
-  let deepest = L.maximumBy (\a b -> compare (L.length (splitDirectories a)) (L.length (splitDirectories b))) paths
-  forM_ (splitDirectories (makeRelative "/root/results" deepest)) $ \component ->
-    unless (L.length component <= 9) $ expectationFailure [i|Expected the shortest names, got: #{deepest}|]
