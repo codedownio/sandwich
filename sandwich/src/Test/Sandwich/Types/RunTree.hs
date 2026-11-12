@@ -17,7 +17,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS8
-import qualified Data.Map as M
 import Data.Sequence hiding ((:>))
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -142,7 +141,6 @@ data NodeEventType
 data RunTreeContext = RunTreeContext {
   runTreeCurrentAncestors :: Seq Int
   , runTreeRootFolderAndNumChildren :: Maybe (FilePath, Int)
-  , runTreeFolderNameCaps :: M.Map Int Int
   }
 
 -- * Base context

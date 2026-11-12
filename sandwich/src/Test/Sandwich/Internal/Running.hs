@@ -17,15 +17,14 @@ import qualified Data.Text as T
 import System.Directory
 import System.Exit
 import System.FilePath
-import System.IO (hPutStrLn, stderr)
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PruneTree
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.ManagedAsync
 import Test.Sandwich.Options
-import Test.Sandwich.RunTree (unFixRunTree)
 import Test.Sandwich.TestTimer
 import Test.Sandwich.Types.General
 import Test.Sandwich.Types.RunTree
@@ -42,14 +41,11 @@ startSandwichTree options spec = do
 startSandwichTree' :: BaseContext -> Options -> CoreSpec -> IO [RunNode BaseContext]
 startSandwichTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpts), optionsFilterTree=(unwrapTreeFilter -> filterOpts), optionsDryRun}) spec = do
   let runId = baseContextRunId baseContext
-  let (fixedRunTree, warnings) = spec
-        & (\tree -> L.foldl' pruneTree tree pruneOpts)
-        & (\tree -> L.foldl' filterTree tree filterOpts)
-        & specToRunTreeWithWarnings baseContext
-  forM_ warnings $ \w -> do
-    hPutStrLn stderr [i|Warning: #{w}|]
-    whenJust (baseContextRunRoot baseContext) $ \root -> appendFile (root </> "warnings.txt") (w <> "\n")
-  runTree <- atomically $ mapM unFixRunTree fixedRunTree
+  runTree <- spec
+    & (\tree -> L.foldl' pruneTree tree pruneOpts)
+    & (\tree -> L.foldl' filterTree tree filterOpts)
+    & fitFolderPaths baseContext
+    & atomically . specToRunTreeVariable baseContext
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
      | otherwise -> void $ managedAsync runId [i|root-nodes:#{runId}|] $ void $ runNodesSequentially runTree baseContext

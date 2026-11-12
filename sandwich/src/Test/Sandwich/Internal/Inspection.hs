@@ -10,6 +10,7 @@ import Test.Sandwich.Internal.Running
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PruneTree
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Types.RunTree
 
 
@@ -24,6 +25,7 @@ getRunTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> pruneOpt
   spec
     & (\tree -> L.foldl' pruneTree tree pruneOpts)
     & (\tree -> L.foldl' filterTree tree filterOpts)
+    & fitFolderPaths baseContext
     & specToRunTreeM baseContext
 
 printRunTree :: [RunNodeFixed ctx] -> IO ()

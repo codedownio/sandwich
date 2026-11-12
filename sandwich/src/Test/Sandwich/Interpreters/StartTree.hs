@@ -36,7 +36,6 @@ import Test.Sandwich.Formatters.Print.FailureReason
 import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Interpreters.RunTree.Logging
-import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.ManagedAsync
 import Test.Sandwich.RunTree
@@ -320,8 +319,7 @@ runInAsync node ctx action = do
                   let symlinkBaseName = case runTreeLoc of
                         Nothing -> takeFileName dir
                         Just loc -> [i|#{srcLocFile loc}_line#{srcLocStartLine loc}_#{takeFileName dir}|]
-                  let symlinkNameCap = nameCapWithinDirectory (optionsMaxFolderPathLength baseContextOptions) errorsDir 0 9999999 runTreeId
-                  let symlinkPath = errorsDir </> (nodeToFolderNameCapped symlinkNameCap symlinkBaseName 9999999 runTreeId)
+                  let symlinkPath = errorsDir </> (nodeToFolderName symlinkBaseName 9999999 runTreeId)
 
                   -- Delete the symlink if it's already present. This can happen when re-running
                   -- a previously failed test
@@ -561,8 +559,7 @@ withMaybeWarnOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {..
       whenJust baseContextRunRoot $ \runRoot -> do
         let dir = runRoot </> "long-execution-warnings"
         createDirectoryIfMissing True dir
-        let nameCap = nameCapWithinDirectory (optionsMaxFolderPathLength baseContextOptions) dir 4 1 0
-        writeInfoToFile rnc maxTimeMs (dir </> (nodeToFolderNameCapped nameCap [i|#{micros}-#{runTreeId}-warn-#{label}|] 1 0) <.> "log") label
+        writeInfoToFile rnc maxTimeMs (dir </> (nodeToFolderName [i|#{micros}-#{runTreeId}-warn-#{label}|] 1 0) <.> "log") label
 
 withMaybeCancelOnLongExecution :: (MonadUnliftIO m) => BaseContext -> RunNodeCommonWithStatus s l t -> String -> m a -> m a
 withMaybeCancelOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {..}) label inner = case optionsCancelOnLongExecutionMs baseContextOptions of
@@ -574,8 +571,7 @@ withMaybeCancelOnLongExecution (BaseContext {..}) rnc@(RunNodeCommonWithStatus {
         whenJust baseContextRunRoot $ \runRoot -> do
           let dir = runRoot </> "long-execution-warnings"
           createDirectoryIfMissing True dir
-          let nameCap = nameCapWithinDirectory (optionsMaxFolderPathLength baseContextOptions) dir 4 1 0
-          writeInfoToFile rnc maxTimeMs (dir </> (nodeToFolderNameCapped nameCap [i|#{micros}-#{runTreeId}-cancel-#{label}|] 1 0) <.> "log") label
+          writeInfoToFile rnc maxTimeMs (dir </> (nodeToFolderName [i|#{micros}-#{runTreeId}-cancel-#{label}|] 1 0) <.> "log") label
         throwIO $ Reason (Just callStack) $ [i|Timed out long-running node|]
       Right x -> return x
   where
