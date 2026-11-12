@@ -127,6 +127,14 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         cabal-version: "latest"
 
+    - name: Install gold linker (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        # The GHC 9.2/9.4 bindists link with ld.gold. Ubuntu 26.04 moved it out of
+        # binutils into binutils-gold, which the runner image doesn't install.
+        sudo apt-get update
+        sudo apt-get install -y binutils-gold
+
     - name: Disable demo-postgres (Windows)
       if: runner.os == 'Windows'
       run: |
