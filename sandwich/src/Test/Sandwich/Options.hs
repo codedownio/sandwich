@@ -72,7 +72,7 @@ defaultOptions = Options {
   , optionsMaxFolderPathLength = defaultMaxFolderPathLength
   }
 
--- | 200 on Windows, which leaves room under @MAX_PATH@ (260) for files inside the folders. Unlimited elsewhere.
+-- | 200 on Windows, which leaves 59 characters for files under @MAX_PATH@ (260, including the terminating NUL). Unlimited elsewhere.
 defaultMaxFolderPathLength :: Maybe Int
 #ifdef mingw32_HOST_OS
 defaultMaxFolderPathLength = Just 200

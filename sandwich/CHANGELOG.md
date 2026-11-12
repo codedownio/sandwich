@@ -11,7 +11,7 @@
 * Export `optionsWarnOnLongExecutionMs` and `optionsCancelOnLongExecutionMs`, which previously could only be set from the command line.
 * Keep acronyms intact in discovered folder names (#137).
 * `createProcessWithLogging` and `readCreateProcessWithLogging` close the parent's copy of the logging pipe's write end and spawn with `close_fds`, so the log reader reaches EOF when the process exits (avoids hang on Windows).
-* Shorten test folder names to keep paths under Windows' `MAX_PATH`, preserving the tree structure. Configure with `optionsMaxFolderPathLength`/`--max-folder-path-length` (default 200 on Windows; 0 disables).
+* Shorten test folder names to keep paths under Windows' `MAX_PATH`, preserving the tree structure. Configure with `optionsMaxFolderPathLength`/`--max-folder-path-length` (0 disables). It defaults to 200 on Windows, leaving 59 characters for files under `MAX_PATH` (260, including the terminating NUL).
 
 ## 0.3.1.0
 

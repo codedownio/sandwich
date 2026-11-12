@@ -95,7 +95,7 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
   <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
   <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
-  <*> optional (option auto (long "max-folder-path-length" <> help "Shorten test folder names to keep folder paths at most this long; 0 for no limit (default 200 on Windows, 0 elsewhere)" <> metavar "INT"))
+  <*> optional (option auto (long "max-folder-path-length" <> help "Shorten test folder names to keep folder paths at most this long; 0 for no limit. Defaults to 200 on Windows, which leaves 59 characters for files under MAX_PATH (260, including the terminating NUL), and 0 elsewhere." <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
   <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
   <*> switch (long "socket" <> help "Enable interactive socket formatter at <test-root>/socket.sock")
