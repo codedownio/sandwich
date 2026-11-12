@@ -10,6 +10,7 @@
 * Fix nodes being left `Running` or `NotStarted` forever when a subtree is cancelled, which hung the `--print-failures` formatter (and anything else that calls `waitForTree`).
 * Export `optionsWarnOnLongExecutionMs` and `optionsCancelOnLongExecutionMs`, which previously could only be set from the command line.
 * Keep acronyms intact in discovered folder names (#137).
+* `createProcessWithLogging` and `readCreateProcessWithLogging` close the parent's copy of the logging pipe's write end and spawn with `close_fds`, so the log reader reaches EOF when the process exits (avoids hang on Windows).
 
 ## 0.3.1.0
 

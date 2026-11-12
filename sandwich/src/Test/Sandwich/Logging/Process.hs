@@ -39,6 +39,17 @@ import Control.Monad.Fail
 #endif
 
 
+-- | Whether to spawn with 'close_fds', so other children don't inherit our logging pipe.
+-- Before process-1.6.18, close_fds makes it fall back to fork/exec, where looking up a bare
+-- command name with a custom 'env' and no 'cwd' dereferences NULL and segfaults on macOS
+-- (haskell/process#295). There we keep the old behavior.
+closeFdsIfSafe :: Bool
+#if MIN_VERSION_process(1,6,18)
+closeFdsIfSafe = True
+#else
+closeFdsIfSafe = False
+#endif
+
 -- | Spawn a process with its stdout and stderr connected to the logging system.
 -- Every line output by the process will be fed to a 'debug' call.
 createProcessWithLogging :: (HasCallStack, MonadUnliftIO m, MonadLogger m, HasBaseContextMonad context m) => CreateProcess -> m (ProcessHandle, Async ())
@@ -57,7 +68,9 @@ createProcessWithLogging' logLevel cp = do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
-  (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
+  (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite, close_fds = closeFdsIfSafe })
+  -- The child has its own copy; ours would keep hRead from ever reaching EOF
+  liftIO $ hClose hWrite
   return (p, streamsReaderAsy)
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
@@ -80,11 +93,13 @@ readCreateProcessWithLogging' logLevel cp input = do
 
   (ex, output) <-
     managedWithAsyncContext_ "stderr-reader" stderrReader $
-    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p ->
+    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr, close_fds = closeFdsIfSafe }) $ \sin' sout _ p ->
       -- Do this just like 'readCreateProcess'
       -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
       case (sin', sout) of
         (Just hIn, Just hOut) -> liftIO $ do
+          -- The child has its own copy; ours would keep hReadErr from ever reaching EOF
+          hClose hWriteErr
           output  <- hGetContents hOut
           withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
             -- now write any input
