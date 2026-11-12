@@ -57,7 +57,9 @@ createProcessWithLogging' logLevel cp = do
     line <- liftIO $ hGetLine hRead
     logOtherCS callStack logLevel [i|#{name}: #{line}|]
 
-  (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite })
+  (_, _, _, p) <- liftIO $ createProcess (cp { std_out = UseHandle hWrite, std_err = UseHandle hWrite, close_fds = True })
+  -- The child has its own copy; ours would keep hRead from ever reaching EOF
+  liftIO $ hClose hWrite
   return (p, streamsReaderAsy)
 
 -- | Like 'readCreateProcess', but capture the stderr output in the logs.
@@ -80,11 +82,13 @@ readCreateProcessWithLogging' logLevel cp input = do
 
   (ex, output) <-
     managedWithAsyncContext_ "stderr-reader" stderrReader $
-    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr }) $ \sin' sout _ p ->
+    withCreateProcess (cp { std_in = CreatePipe, std_out = CreatePipe, std_err = UseHandle hWriteErr, close_fds = True }) $ \sin' sout _ p ->
       -- Do this just like 'readCreateProcess'
       -- https://hackage.haskell.org/package/process-1.6.17.0/docs/src/System.Process.html#readCreateProcess
       case (sin', sout) of
         (Just hIn, Just hOut) -> liftIO $ do
+          -- The child has its own copy; ours would keep hReadErr from ever reaching EOF
+          hClose hWriteErr
           output  <- hGetContents hOut
           withForkWait (C.evaluate $ rnf output) $ \waitOut -> do
             -- now write any input
