@@ -292,6 +292,7 @@ executable sandwich-test
       Before
       CancelOnLongExecution
       Describe
+      FolderPaths
       Introduce
       IntroduceWith
       TestUtil
@@ -361,6 +362,7 @@ test-suite sandwich-test-suite
       Before
       CancelOnLongExecution
       Describe
+      FolderPaths
       Introduce
       IntroduceWith
       TestUtil

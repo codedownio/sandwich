@@ -26,6 +26,15 @@ module Test.Sandwich.Internal (
   , SomeAsyncExceptionWithEq(..)
   , logEntryStr
 
+  -- * Folder path budgeting
+  , FolderComponent(..)
+  , FolderChain(..)
+  , folderChainLength
+  , computeFolderNameCaps
+  , minFolderNameCap
+  , specToRunTreeWithWarnings
+  , BaseContext(..)
+
   -- * For debugging
   , getRunTree
   , getRunTree'
@@ -37,6 +46,7 @@ module Test.Sandwich.Internal (
   , module Test.Sandwich.Internal.Running
   ) where
 
+import Test.Sandwich.Interpreters.RunTree
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown
