@@ -24,7 +24,6 @@ tests = do
   run capsReportOverflows
   run deepTreeFitsBudget
   run deepTreeKeepsShallowNamesAndUniqueSiblings
-  run reserveIsRespected
   run noBudgetLeavesNamesAlone
   run tinyBudgetWarns
 
@@ -33,9 +32,9 @@ main = mainWith tests
 
 -- * Cap computation
 
--- | Room left under a 260 budget after a 69-char root and a 60-char reserve.
+-- | Room left under a 200 budget after a 69-char root.
 available :: Int
-available = 260 - 69 - 60
+available = 200 - 69
 
 chainLengthWithCaps :: M.Map Int Int -> [FolderComponent] -> Int
 chainLengthWithCaps caps chain =
@@ -57,7 +56,7 @@ capsMakeEveryChainFit = do
   overflows `mustBe` []
   forM_ allChains $ \chain -> do
     let len = chainLengthWithCaps caps chain
-    unless (len < available) $ expectationFailure [i|Chain of length #{len} doesn't fit: #{chain}|]
+    unless (len <= available) $ expectationFailure [i|Chain of length #{len} doesn't fit: #{chain}|]
 
 capsLeaveShallowChainsAlone :: (HasCallStack) => IO ()
 capsLeaveShallowChainsAlone = do
@@ -79,13 +78,10 @@ longLabel n = [i|#{n}_manually goes back to the revision prior to the one that c
 
 -- | Nested describes with long labels, each with a couple of its, plus a shallow sibling at the top.
 deepSpec :: CoreSpec
-deepSpec = deepSpecOfDepth 12
-
-deepSpecOfDepth :: Int -> CoreSpec
-deepSpecOfDepth depth = do
+deepSpec = do
   describe "shallow sibling with a fairly long but harmless label" $
     it "does a shallow thing with a fairly long but harmless label" $ return ()
-  go depth
+  go (12 :: Int)
   where
     go 0 = it (longLabel 0) $ return ()
     go n = describe (longLabel n) $ do
@@ -104,17 +100,17 @@ getFolders options spec = do
   return (folders, warnings)
 
 budgetOptions :: Options
-budgetOptions = defaultOptions { optionsMaxFolderPathLength = Just 260, optionsFolderPathReserve = 60 }
+budgetOptions = defaultOptions { optionsMaxFolderPathLength = Just 200 }
 
 deepTreeFitsBudget :: (HasCallStack) => IO ()
 deepTreeFitsBudget = do
   (folders, warnings) <- getFolders budgetOptions deepSpec
   warnings `mustBe` []
   forM_ folders $ \(_, folder) ->
-    unless (L.length folder + 60 < 260) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
+    unless (L.length folder <= 200) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
   -- Sanity check that the budget actually did something
   (uncapped, _) <- getFolders (budgetOptions { optionsMaxFolderPathLength = Nothing }) deepSpec
-  unless (L.any (\(_, f) -> L.length f + 60 >= 260) uncapped) $ expectationFailure "Expected the uncapped tree to exceed the budget"
+  unless (L.any (\(_, f) -> L.length f > 200) uncapped) $ expectationFailure "Expected the uncapped tree to exceed the budget"
 
 deepTreeKeepsShallowNamesAndUniqueSiblings :: (HasCallStack) => IO ()
 deepTreeKeepsShallowNamesAndUniqueSiblings = do
@@ -124,13 +120,6 @@ deepTreeKeepsShallowNamesAndUniqueSiblings = do
   case L.lookup "does a shallow thing with a fairly long but harmless label" folders of
     Nothing -> expectationFailure "Couldn't find shallow node"
     Just f -> takeFileName f `mustBe` "does a shallow thing with a fairly long but harmless label"
-
-reserveIsRespected :: (HasCallStack) => IO ()
-reserveIsRespected = do
-  (folders, warnings) <- getFolders (budgetOptions { optionsFolderPathReserve = 130 }) (deepSpecOfDepth 4)
-  warnings `mustBe` []
-  forM_ folders $ \(_, folder) ->
-    unless (L.length folder + 130 < 260) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
 
 noBudgetLeavesNamesAlone :: (HasCallStack) => IO ()
 noBudgetLeavesNamesAlone = do

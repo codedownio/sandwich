@@ -331,9 +331,7 @@ data Options = Options {
   , optionsRunId :: T.Text
   -- ^ An identifier for this test run, used to track managed async threads.
   , optionsMaxFolderPathLength :: Maybe Int
-  -- ^ If set, shorten node folder names so every folder path plus 'optionsFolderPathReserve' is shorter than this.
-  , optionsFolderPathReserve :: Int
-  -- ^ Characters to leave for files written inside each node folder.
+  -- ^ If set, shorten node folder names to keep every node folder path at most this long.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

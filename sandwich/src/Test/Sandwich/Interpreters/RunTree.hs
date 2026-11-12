@@ -98,7 +98,7 @@ specToRunTreeM' baseContext spec = do
     (Just budget, Just (rootFolder, _)) -> do
       -- Convert again with caps that make every chain fit. Node IDs match since the walk is identical.
       let chains = [_createdFolderChain cf | CreatedNode (Just cf) <- M.elems (_convertStateCreatedNodes finalState)]
-      let available = budget - L.length rootFolder - optionsFolderPathReserve options
+      let available = budget - L.length rootFolder
       let (caps, overflows) = computeFolderNameCaps available chains
       if | M.null caps && L.null overflows -> return (ret, [])
          | otherwise -> do

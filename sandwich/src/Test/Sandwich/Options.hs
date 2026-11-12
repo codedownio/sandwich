@@ -34,7 +34,6 @@ module Test.Sandwich.Options (
 
   -- * Folder path lengths
   , optionsMaxFolderPathLength
-  , optionsFolderPathReserve
   , defaultMaxFolderPathLength
 
   -- * Dry run
@@ -71,13 +70,12 @@ defaultOptions = Options {
   , optionsLateLogFile = Nothing
   , optionsRunId = "run0"
   , optionsMaxFolderPathLength = defaultMaxFolderPathLength
-  , optionsFolderPathReserve = 60
   }
 
--- | Windows' @MAX_PATH@ on Windows, unlimited elsewhere.
+-- | 200 on Windows, which leaves room under @MAX_PATH@ (260) for files inside the folders. Unlimited elsewhere.
 defaultMaxFolderPathLength :: Maybe Int
 #ifdef mingw32_HOST_OS
-defaultMaxFolderPathLength = Just 260
+defaultMaxFolderPathLength = Just 200
 #else
 defaultMaxFolderPathLength = Nothing
 #endif
