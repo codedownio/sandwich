@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -113,6 +114,10 @@ getCommon l srcLoc node (NodeOptions {..}) = do
   -- Determine the folder for the node
   folder <- case nodeOptionsCreateFolder of
     False -> pure Nothing
+#ifdef mingw32_HOST_OS
+    -- Nested folders quickly pass MAX_PATH, so every node gets a folder directly under the root
+    True -> pure $ fmap (\(rootFolder, _) -> rootFolder </> nodeToFolderName l 100000 ident) runTreeRootFolderAndNumChildren
+#else
     True -> do
       createdNodes <- _convertStateCreatedNodes <$> get
       -- Look up the first ancestor that has a folder
@@ -131,6 +136,7 @@ getCommon l srcLoc node (NodeOptions {..}) = do
               bumpAncestorNextChildIndex = M.adjust (over (createdNodeFolder . _Just . _3) (+1)) ancestor
           modify (over convertStateCreatedNodes bumpAncestorNextChildIndex)
           pure $ Just (folder </> nodeToFolderName l totalChildren nextChildIndex)
+#endif
 
   -- Insert this node into the ConvertState
   modify $ over convertStateCreatedNodes $ M.insert ident $ CreatedNode $ case folder of

@@ -45,7 +45,11 @@ countSubspecFolderChildren (Free node) = countImmediateFolderChildren (subspec n
 countSubspecFolderChildren (Pure _) = 0
 
 maxFileNameLength :: Int
+#ifdef mingw32_HOST_OS
+maxFileNameLength = 40
+#else
 maxFileNameLength = 150
+#endif
 
 nodeToFolderName :: String -> Int -> Int -> String
 nodeToFolderName name 1 0 = truncateFileNameToLength maxFileNameLength $ fixupName name

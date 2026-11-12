@@ -10,6 +10,7 @@
 * Fix nodes being left `Running` or `NotStarted` forever when a subtree is cancelled, which hung the `--print-failures` formatter (and anything else that calls `waitForTree`).
 * Export `optionsWarnOnLongExecutionMs` and `optionsCancelOnLongExecutionMs`, which previously could only be set from the command line.
 * Keep acronyms intact in discovered folder names (#137).
+* Windows: put every test node's folder directly under the run root, with names capped at 40 characters, so test artifacts stay within `MAX_PATH`.
 
 ## 0.3.1.0
 
