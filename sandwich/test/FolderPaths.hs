@@ -51,9 +51,6 @@ tests = do
     forM_ (splitDirectories (makeRelative "/root/results" deepest)) $ \component ->
       unless (L.length component <= 9) $ expectationFailure [i|Expected the shortest names, got: #{deepest}|]
 
-main :: IO ()
-main = mainWith tests
-
 -- | Nested describes with long labels, each with a couple of its, plus a shallow sibling at the top.
 deepSpec :: CoreSpec
 deepSpec = do
@@ -75,3 +72,6 @@ getFolders :: Maybe Int -> IO [(String, FilePath)]
 getFolders maxLength = do
   tree <- getRunTree (defaultOptions { optionsMaxFolderPathLength = maxLength }) deepSpec
   return [(label, folder) | (label, Just folder) <- concatMap (extractValues (\n -> (runTreeLabel (runNodeCommon n), runTreeFolder (runNodeCommon n)))) tree]
+
+main :: IO ()
+main = mainWith tests
