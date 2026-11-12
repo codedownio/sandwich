@@ -220,15 +220,11 @@ data NodeOptions = NodeOptions {
   -- ^ Whether to time this node.
   , nodeOptionsModuleInfo :: Maybe NodeModuleInfo
   -- ^ A main function run this entire node in isolation.
-  , nodeOptionsFolderPathReserve :: Maybe Int
-  -- ^ When folder paths are length-limited (see 'optionsMaxFolderPathLength'), the number of characters to
-  -- leave free under this node's folder for whatever gets written inside it. Overrides 'optionsFolderPathReserve'
-  -- for this node; useful for nodes known to hold deep artifacts, like an 'introduce' that starts a server.
   } deriving Show
 
 -- | Reasonable default node options.
 defaultNodeOptions :: NodeOptions
-defaultNodeOptions = NodeOptions 100 True True Nothing Nothing
+defaultNodeOptions = NodeOptions 100 True True Nothing
 
 data SpecCommand context m next where
   Before'' :: {

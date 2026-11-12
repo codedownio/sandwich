@@ -74,7 +74,7 @@ defaultOptions = Options {
   , optionsFolderPathReserve = 60
   }
 
--- | @Just 260@ (Windows' @MAX_PATH@) on Windows, 'Nothing' elsewhere.
+-- | Windows' @MAX_PATH@ on Windows, unlimited elsewhere.
 defaultMaxFolderPathLength :: Maybe Int
 #ifdef mingw32_HOST_OS
 defaultMaxFolderPathLength = Just 260

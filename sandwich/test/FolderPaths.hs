@@ -13,7 +13,6 @@ import GHC.Stack
 import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Internal
-import Test.Sandwich.Nodes
 import TestUtil
 import UnliftIO.Exception
 
@@ -25,7 +24,7 @@ tests = do
   run capsReportOverflows
   run deepTreeFitsBudget
   run deepTreeKeepsShallowNamesAndUniqueSiblings
-  run nodeReserveIsRespected
+  run reserveIsRespected
   run noBudgetLeavesNamesAlone
   run tinyBudgetWarns
 
@@ -34,45 +33,42 @@ main = mainWith tests
 
 -- * Cap computation
 
--- | A root (69 chars, like codedown's Windows run root) of the given length.
-rootLen :: Int
-rootLen = 69
+-- | Room left under a 260 budget after a 69-char root and a 60-char reserve.
+available :: Int
+available = 260 - 69 - 60
 
-chainLengthWithCaps :: M.Map Int Int -> FolderChain -> Int
-chainLengthWithCaps caps (FolderChain reserve components) =
-  rootLen + reserve + sum [1 + folderComponentPaddingLength c + maybe id min (M.lookup (folderComponentNodeId c) caps) (folderComponentNameLength c)
-                          | c <- components]
+chainLengthWithCaps :: M.Map Int Int -> [FolderComponent] -> Int
+chainLengthWithCaps caps chain =
+  sum [1 + folderComponentPaddingLength c + maybe id min (M.lookup (folderComponentNodeId c) caps) (folderComponentNameLength c) | c <- chain]
 
--- Node 0 is the shared root; 1..10 form a deep chain of long names, 11 is a shallow sibling.
-deepComponents :: [FolderComponent]
-deepComponents = [FolderComponent i 2 80 | i <- [0..10]]
+-- Node 0 is the shared root, 1..10 form a deep chain of long names, and 11 is a short shallow sibling.
+deepChain :: [FolderComponent]
+deepChain = [FolderComponent n 2 80 | n <- [0..10]]
 
-shallowChain :: FolderChain
-shallowChain = FolderChain 60 [FolderComponent 0 2 80, FolderComponent 11 2 20]
+shallowChain :: [FolderComponent]
+shallowChain = [FolderComponent 0 2 80, FolderComponent 11 2 20]
 
-allChains :: [FolderChain]
-allChains = shallowChain : [FolderChain 60 (L.take n deepComponents) | n <- [1..L.length deepComponents]]
+allChains :: [[FolderComponent]]
+allChains = shallowChain : [L.take n deepChain | n <- [1..L.length deepChain]]
 
 capsMakeEveryChainFit :: (HasCallStack) => IO ()
 capsMakeEveryChainFit = do
-  let (caps, overflows) = computeFolderNameCaps 260 rootLen allChains
+  let (caps, overflows) = computeFolderNameCaps available allChains
   overflows `mustBe` []
   forM_ allChains $ \chain -> do
     let len = chainLengthWithCaps caps chain
-    unless (len < 260) $ expectationFailure [i|Chain of length #{len} doesn't fit: #{chain}|]
+    unless (len < available) $ expectationFailure [i|Chain of length #{len} doesn't fit: #{chain}|]
 
 capsLeaveShallowChainsAlone :: (HasCallStack) => IO ()
 capsLeaveShallowChainsAlone = do
-  let (caps, _) = computeFolderNameCaps 260 rootLen allChains
-  -- The shallow sibling only sits on a chain that fits uncapped
+  let (caps, _) = computeFolderNameCaps available allChains
   M.lookup 11 caps `mustBe` Nothing
-  -- Everything on the deep chain is capped
   forM_ [0..10] $ \n -> unless (isJust (M.lookup n caps)) $ expectationFailure [i|Expected node #{n} to be capped|]
 
 capsReportOverflows :: (HasCallStack) => IO ()
 capsReportOverflows = do
-  let chain = FolderChain 60 [FolderComponent i 2 80 | i <- [0..40]]
-  let (caps, overflows) = computeFolderNameCaps 260 rootLen [chain]
+  let chain = [FolderComponent n 2 80 | n <- [0..40]]
+  let (caps, overflows) = computeFolderNameCaps available [chain]
   overflows `mustBe` [chain]
   M.lookup 0 caps `mustBe` Just minFolderNameCap
 
@@ -81,12 +77,15 @@ capsReportOverflows = do
 longLabel :: Int -> String
 longLabel n = [i|#{n}_manually goes back to the revision prior to the one that created the dummy settings file|]
 
--- | 12 levels of describes with long labels, each with a couple of its, plus a shallow sibling at the top.
+-- | Nested describes with long labels, each with a couple of its, plus a shallow sibling at the top.
 deepSpec :: CoreSpec
-deepSpec = do
+deepSpec = deepSpecOfDepth 12
+
+deepSpecOfDepth :: Int -> CoreSpec
+deepSpecOfDepth depth = do
   describe "shallow sibling with a fairly long but harmless label" $
     it "does a shallow thing with a fairly long but harmless label" $ return ()
-  go (12 :: Int)
+  go depth
   where
     go 0 = it (longLabel 0) $ return ()
     go n = describe (longLabel n) $ do
@@ -126,18 +125,12 @@ deepTreeKeepsShallowNamesAndUniqueSiblings = do
     Nothing -> expectationFailure "Couldn't find shallow node"
     Just f -> takeFileName f `mustBe` "does a shallow thing with a fairly long but harmless label"
 
-nodeReserveIsRespected :: (HasCallStack) => IO ()
-nodeReserveIsRespected = do
-  let spec = describe' (defaultNodeOptions { nodeOptionsFolderPathReserve = Just 150 }) "server holder with a long label that would otherwise fit" $
-               it "does a thing with a long label that would otherwise fit" $ return ()
-  (folders, warnings) <- getFolders budgetOptions spec
+reserveIsRespected :: (HasCallStack) => IO ()
+reserveIsRespected = do
+  (folders, warnings) <- getFolders (budgetOptions { optionsFolderPathReserve = 130 }) (deepSpecOfDepth 4)
   warnings `mustBe` []
-  case L.lookup "server holder with a long label that would otherwise fit" folders of
-    Nothing -> expectationFailure "Couldn't find server holder node"
-    Just f -> do
-      unless (L.length f + 150 < 260) $ expectationFailure [i|Folder too long (#{L.length f}): #{f}|]
-      unless (L.length (takeFileName f) < L.length ("server holder with a long label that would otherwise fit" :: String)) $
-        expectationFailure [i|Expected server holder's folder name to be shortened: #{f}|]
+  forM_ folders $ \(_, folder) ->
+    unless (L.length folder + 130 < 260) $ expectationFailure [i|Folder too long (#{L.length folder}): #{folder}|]
 
 noBudgetLeavesNamesAlone :: (HasCallStack) => IO ()
 noBudgetLeavesNamesAlone = do

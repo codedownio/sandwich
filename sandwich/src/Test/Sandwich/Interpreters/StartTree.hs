@@ -36,6 +36,7 @@ import Test.Sandwich.Formatters.Print.FailureReason
 import Test.Sandwich.Formatters.Print.Logs
 import Test.Sandwich.Formatters.Print.Printing
 import Test.Sandwich.Interpreters.RunTree.Logging
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.ManagedAsync
 import Test.Sandwich.RunTree

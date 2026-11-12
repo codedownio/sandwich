@@ -11,8 +11,7 @@
 * Export `optionsWarnOnLongExecutionMs` and `optionsCancelOnLongExecutionMs`, which previously could only be set from the command line.
 * Keep acronyms intact in discovered folder names (#137).
 * `createProcessWithLogging` and `readCreateProcessWithLogging` close the parent's copy of the logging pipe's write end and spawn with `close_fds`, so the log reader reaches EOF when the process exits (avoids hang on Windows).
-* On Windows, shorten test folder names by default so every node folder path, plus a reserve for files written inside it, stays under `MAX_PATH` (260). The tree structure is kept; only names are truncated, and only as much as the deepest chain through each folder needs. Controlled by the new `optionsMaxFolderPathLength` (default `Just 260` on Windows, `Nothing` elsewhere) and `optionsFolderPathReserve` (default 60) options, the `--max-folder-path-length`, `--no-max-folder-path-length` and `--folder-path-reserve` flags, and a per-node `nodeOptionsFolderPathReserve`.
-* BREAKING CHANGE: `NodeOptions` has a new field, `nodeOptionsFolderPathReserve`. Build `NodeOptions` from `defaultNodeOptions` rather than the positional constructor.
+* Shorten test folder names to keep paths under Windows' `MAX_PATH`, preserving the tree structure. Configure with `optionsMaxFolderPathLength`/`--max-folder-path-length` (0 disables) and `optionsFolderPathReserve`/`--folder-path-reserve`.
 
 ## 0.3.1.0
 

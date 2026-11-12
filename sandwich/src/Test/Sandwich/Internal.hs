@@ -28,8 +28,6 @@ module Test.Sandwich.Internal (
 
   -- * Folder path budgeting
   , FolderComponent(..)
-  , FolderChain(..)
-  , folderChainLength
   , computeFolderNameCaps
   , minFolderNameCap
   , specToRunTreeWithWarnings
@@ -47,6 +45,7 @@ module Test.Sandwich.Internal (
   ) where
 
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree
 import Test.Sandwich.Shutdown

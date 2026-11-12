@@ -143,9 +143,6 @@ data RunTreeContext = RunTreeContext {
   runTreeCurrentAncestors :: Seq Int
   , runTreeRootFolderAndNumChildren :: Maybe (FilePath, Int)
   , runTreeFolderNameCaps :: M.Map Int Int
-  -- ^ Caps on the name part of node folders, by node ID (see 'optionsMaxFolderPathLength').
-  , runTreeFolderPathReserve :: Int
-  -- ^ Default number of characters to reserve under each node folder.
   }
 
 -- * Base context
@@ -334,12 +331,9 @@ data Options = Options {
   , optionsRunId :: T.Text
   -- ^ An identifier for this test run, used to track managed async threads.
   , optionsMaxFolderPathLength :: Maybe Int
-  -- ^ If set, shorten node folder names so that every node folder path, plus 'optionsFolderPathReserve', is
-  -- shorter than this many characters. The tree structure is kept; only names are truncated.
-  -- Defaults to @Just 260@ (Windows' @MAX_PATH@) on Windows and 'Nothing' elsewhere.
+  -- ^ If set, shorten node folder names so every folder path plus 'optionsFolderPathReserve' is shorter than this.
   , optionsFolderPathReserve :: Int
-  -- ^ Characters to leave free under each node folder for files written inside it, when
-  -- 'optionsMaxFolderPathLength' is set. Can be overridden per node with 'nodeOptionsFolderPathReserve'.
+  -- ^ Characters to leave for files written inside each node folder.
   }
 
 -- | A wrapper type for exceptions with attached callstacks. Haskell doesn't currently offer a way

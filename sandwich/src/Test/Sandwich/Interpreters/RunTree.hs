@@ -20,8 +20,6 @@ import Data.Foldable (toList)
 import Data.Functor.Identity
 import qualified Data.List as L
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe)
-import Data.Ord (comparing)
 import Data.String.Interpolate
 import qualified Data.Text as T
 import Data.Sequence as Seq
@@ -30,6 +28,7 @@ import Lens.Micro
 import Lens.Micro.TH
 import Safe (headMay)
 import System.FilePath
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.RunTree (unFixRunTree)
 import Test.Sandwich.Types.RunTree
@@ -40,9 +39,9 @@ data CreatedFolder = CreatedFolder {
   _createdFolderPath :: FilePath
   , _createdFolderNumChildren :: Int
   , _createdFolderNextChildIndex :: Int
-  , _createdFolderChain :: FolderChain
+  , _createdFolderChain :: [FolderComponent]
   } deriving (Show)
-makeLenses ''CreatedFolder
+makeLensesFor [("_createdFolderNextChildIndex", "createdFolderNextChildIndex")] ''CreatedFolder
 
 data CreatedNode = CreatedNode {
   _createdNodeFolder :: Maybe CreatedFolder
@@ -64,8 +63,6 @@ specToRunTree baseContext spec = fst $ specToRunTreeWithWarnings baseContext spe
 specToRunTreeVariable :: BaseContext -> Free (SpecCommand BaseContext IO) () -> STM [RunNode BaseContext]
 specToRunTreeVariable bc spec = mapM unFixRunTree $ specToRunTree bc spec
 
--- | Convert a spec to a run tree, also returning any warnings (such as folder paths that couldn't be
--- shortened enough to fit within 'optionsMaxFolderPathLength').
 specToRunTreeWithWarnings :: BaseContext -> Free (SpecCommand BaseContext IO) () -> ([RunNodeFixed BaseContext], [String])
 specToRunTreeWithWarnings baseContext spec = runIdentity $ runNoLoggingT $ specToRunTreeM' baseContext spec
 
@@ -75,7 +72,6 @@ isEmptySpec spec = L.null ret
           runTreeCurrentAncestors = mempty
           , runTreeRootFolderAndNumChildren = Nothing
           , runTreeFolderNameCaps = mempty
-          , runTreeFolderPathReserve = 0
           }
         (ret, _, _) = runIdentity $ runNoLoggingT $ runRWST (specToRunTree' spec) context emptyConvertState
 
@@ -95,31 +91,22 @@ specToRunTreeM' baseContext spec = do
         runTreeCurrentAncestors = mempty
         , runTreeRootFolderAndNumChildren = rootFolderAndNumChildren
         , runTreeFolderNameCaps = mempty
-        , runTreeFolderPathReserve = optionsFolderPathReserve options
         }
   (ret, finalState, _) <- runRWST (specToRunTree' spec) context emptyConvertState
 
   case (optionsMaxFolderPathLength options, rootFolderAndNumChildren) of
     (Just budget, Just (rootFolder, _)) -> do
-      -- Now that we know every folder chain, choose caps so they all fit, and convert again using them.
-      -- The second pass walks the spec identically, so node IDs match up with the first.
+      -- Convert again with caps that make every chain fit. Node IDs match since the walk is identical.
       let chains = [_createdFolderChain cf | CreatedNode (Just cf) <- M.elems (_convertStateCreatedNodes finalState)]
-      let (caps, overflows) = computeFolderNameCaps budget (L.length rootFolder) chains
+      let available = budget - L.length rootFolder - optionsFolderPathReserve options
+      let (caps, overflows) = computeFolderNameCaps available chains
       if | M.null caps && L.null overflows -> return (ret, [])
          | otherwise -> do
              (ret', _, _) <- runRWST (specToRunTree' spec) (context { runTreeFolderNameCaps = caps }) emptyConvertState
-             return (ret', overflowWarnings budget rootFolder overflows)
+             let warnings = [[i|#{L.length overflows} test folder path(s) exceed #{budget} characters even with the shortest folder names (deepest: #{L.length deepest} levels)|]
+                            | deepest <- L.take 1 (L.sortOn (negate . L.length) overflows)]
+             return (ret', warnings)
     _ -> return (ret, [])
-
-overflowWarnings :: Int -> FilePath -> [FolderChain] -> [String]
-overflowWarnings _ _ [] = []
-overflowWarnings budget rootFolder overflows@(_:_) = [
-  [i|#{L.length overflows} test folder path(s) don't fit within #{budget} characters even with every folder name shortened to #{minFolderNameCap} characters. |]
-  <> [i|The deepest is #{L.length (folderChainComponents deepest)} folders deep under #{rootFolder} (reserving #{folderChainReserve deepest} characters inside it). |]
-  <> [i|Using the shortest names anyway. Set a smaller folder path reserve, or turn off the limit if long paths are enabled on this system.|]
-  ]
-  where
-    deepest = L.maximumBy (comparing (L.length . folderChainComponents)) overflows
 
 -- | Convert a spec to a run tree
 specToRunTree' :: (MonadLogger m) => Free (SpecCommand context IO) r -> ConvertM m [RunNodeFixed context]
@@ -162,7 +149,6 @@ getCommon l srcLoc node (NodeOptions {..}) = do
   ident <- _convertStateIdCounter <$> get
   modify (over convertStateIdCounter (+1))
 
-  let reserve = fromMaybe runTreeFolderPathReserve nodeOptionsFolderPathReserve
   let cap = M.lookup ident runTreeFolderNameCaps
 
   -- Determine the folder for the node
@@ -180,15 +166,14 @@ getCommon l srcLoc node (NodeOptions {..}) = do
               nextRootChild <- _convertStateRootNextChildIndex <$> get
               modify (over convertStateRootNextChildIndex (+1))
               pure $ Just (rootFolder </> nodeToFolderNameCapped cap l numRootChildren nextRootChild
-                          , FolderChain reserve [folderComponent ident l numRootChildren nextRootChild])
+                          , [folderComponent ident l numRootChildren nextRootChild])
             Nothing -> pure Nothing
         Just (ancestor, CreatedFolder {..}) -> do
           let bumpAncestorNextChildIndex :: M.Map Int CreatedNode -> M.Map Int CreatedNode
               bumpAncestorNextChildIndex = M.adjust (over (createdNodeFolder . _Just . createdFolderNextChildIndex) (+1)) ancestor
           modify (over convertStateCreatedNodes bumpAncestorNextChildIndex)
           pure $ Just (_createdFolderPath </> nodeToFolderNameCapped cap l _createdFolderNumChildren _createdFolderNextChildIndex
-                      , FolderChain reserve (folderChainComponents _createdFolderChain
-                                             <> [folderComponent ident l _createdFolderNumChildren _createdFolderNextChildIndex]))
+                      , _createdFolderChain <> [folderComponent ident l _createdFolderNumChildren _createdFolderNextChildIndex])
 
   let folder = fst <$> folderAndChain
 

@@ -95,9 +95,8 @@ mainCommandLineOptions userOptionsParser individualTestParser = CommandLineOptio
   <*> optional (flag False True (long "dry-run" <> help "Skip actually launching the tests. This is useful if you want to see the set of the tests that would be run, or start them manually in the terminal UI."))
   <*> optional (option auto (long "warn-on-long-execution-ms" <> showDefault <> help "Warn on long-running nodes by writing to a file in the run root." <> metavar "INT"))
   <*> optional (option auto (long "cancel-on-long-execution-ms" <> showDefault <> help "Cancel long-running nodes and write to a file in the run root." <> metavar "INT"))
-  <*> optional (option auto (long "max-folder-path-length" <> help "Shorten test folder names so every test folder path (plus the reserve) is shorter than this. Defaults to 260 on Windows, unlimited elsewhere." <> metavar "INT"))
-  <*> switch (long "no-max-folder-path-length" <> help "Don't shorten test folder names to fit a path length limit (e.g. on Windows with long paths enabled)")
-  <*> optional (option auto (long "folder-path-reserve" <> help "Characters to leave free under each test folder for files written inside it, when folder paths are length-limited (default 60)" <> metavar "INT"))
+  <*> optional (option auto (long "max-folder-path-length" <> help "Shorten test folder names to keep paths under this length; 0 for no limit (default 260 on Windows, 0 elsewhere)" <> metavar "INT"))
+  <*> optional (option auto (long "folder-path-reserve" <> help "Characters to leave for files written inside each test folder (default 60)" <> metavar "INT"))
   <*> optional (strOption (long "markdown-summary" <> help "File path to write a Markdown summary of the results." <> metavar "STRING"))
   <*> switch (long "tui-debug" <> help "Enable TUI debug socket at <test-root>/tui-debug.sock")
   <*> switch (long "socket" <> help "Enable interactive socket formatter at <test-root>/socket.sock")
@@ -308,9 +307,10 @@ addOptionsFromArgs baseOptions (CommandLineOptions {..}) = do
     , optionsDryRun = fromMaybe (optionsDryRun baseOptions) optDryRun
     , optionsWarnOnLongExecutionMs = (optionsWarnOnLongExecutionMs baseOptions) <|> optWarnOnLongExecutionMs
     , optionsCancelOnLongExecutionMs = (optionsCancelOnLongExecutionMs baseOptions) <|> optCancelOnLongExecutionMs
-    , optionsMaxFolderPathLength = case optNoMaxFolderPathLength of
-        True -> Nothing
-        False -> optMaxFolderPathLength <|> optionsMaxFolderPathLength baseOptions
+    , optionsMaxFolderPathLength = case optMaxFolderPathLength of
+        Just 0 -> Nothing
+        Just n -> Just n
+        Nothing -> optionsMaxFolderPathLength baseOptions
     , optionsFolderPathReserve = fromMaybe (optionsFolderPathReserve baseOptions) optFolderPathReserve
     , optionsLogBroadcast = maybeLogBroadcast
     , optionsEventBroadcast = maybeEventBroadcast
