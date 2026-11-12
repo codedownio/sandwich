@@ -32,6 +32,10 @@ module Test.Sandwich.Options (
   , optionsWarnOnLongExecutionMs
   , optionsCancelOnLongExecutionMs
 
+  -- * Folder path lengths
+  , optionsMaxFolderPathLength
+  , defaultMaxFolderPathLength
+
   -- * Dry run
   , optionsDryRun
 
@@ -65,7 +69,16 @@ defaultOptions = Options {
   , optionsEventBroadcast = Nothing
   , optionsLateLogFile = Nothing
   , optionsRunId = "run0"
+  , optionsMaxFolderPathLength = defaultMaxFolderPathLength
   }
+
+-- | 200 on Windows, which leaves 59 characters for files under @MAX_PATH@ (260, including the terminating NUL). Unlimited elsewhere.
+defaultMaxFolderPathLength :: Maybe Int
+#ifdef mingw32_HOST_OS
+defaultMaxFolderPathLength = Just 200
+#else
+defaultMaxFolderPathLength = Nothing
+#endif
 
 -- | Generate a test artifacts directory based on a timestamp.
 --

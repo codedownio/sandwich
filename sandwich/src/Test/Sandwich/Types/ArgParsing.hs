@@ -58,6 +58,7 @@ data CommandLineOptions a = CommandLineOptions {
   , optDryRun :: Maybe Bool
   , optWarnOnLongExecutionMs :: Maybe Int
   , optCancelOnLongExecutionMs :: Maybe Int
+  , optMaxFolderPathLength :: Maybe Int
   , optMarkdownSummaryPath :: Maybe FilePath
   , optTuiDebugSocket :: Bool
   , optSocketFormatter :: Bool

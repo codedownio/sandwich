@@ -124,13 +124,13 @@ getCommon l srcLoc node (NodeOptions {..}) = do
             Just (rootFolder, numRootChildren) -> do
               nextRootChild <- _convertStateRootNextChildIndex <$> get
               modify (over convertStateRootNextChildIndex (+1))
-              pure $ Just (rootFolder </> nodeToFolderName l numRootChildren nextRootChild)
+              pure $ Just (rootFolder </> nodeToFolderNameCapped nodeOptionsFolderNameCap l numRootChildren nextRootChild)
             Nothing -> pure Nothing
         Just (ancestor, (folder, totalChildren, nextChildIndex)) -> do
           let bumpAncestorNextChildIndex :: M.Map Int CreatedNode -> M.Map Int CreatedNode
               bumpAncestorNextChildIndex = M.adjust (over (createdNodeFolder . _Just . _3) (+1)) ancestor
           modify (over convertStateCreatedNodes bumpAncestorNextChildIndex)
-          pure $ Just (folder </> nodeToFolderName l totalChildren nextChildIndex)
+          pure $ Just (folder </> nodeToFolderNameCapped nodeOptionsFolderNameCap l totalChildren nextChildIndex)
 
   -- Insert this node into the ConvertState
   modify $ over convertStateCreatedNodes $ M.insert ident $ CreatedNode $ case folder of

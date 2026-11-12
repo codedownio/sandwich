@@ -84,6 +84,7 @@ library
       Test.Sandwich.Interpreters.PrettyShow
       Test.Sandwich.Interpreters.PruneTree
       Test.Sandwich.Interpreters.RunTree
+      Test.Sandwich.Interpreters.RunTree.FolderNameLength
       Test.Sandwich.Interpreters.RunTree.Logging
       Test.Sandwich.Interpreters.RunTree.Util
       Test.Sandwich.Interpreters.StartTree
@@ -292,6 +293,7 @@ executable sandwich-test
       Before
       CancelOnLongExecution
       Describe
+      FolderPaths
       Introduce
       IntroduceWith
       TestUtil
@@ -361,6 +363,7 @@ test-suite sandwich-test-suite
       Before
       CancelOnLongExecution
       Describe
+      FolderPaths
       Introduce
       IntroduceWith
       TestUtil

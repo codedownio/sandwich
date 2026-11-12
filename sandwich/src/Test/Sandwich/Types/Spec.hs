@@ -220,11 +220,13 @@ data NodeOptions = NodeOptions {
   -- ^ Whether to time this node.
   , nodeOptionsModuleInfo :: Maybe NodeModuleInfo
   -- ^ A main function run this entire node in isolation.
+  , nodeOptionsFolderNameCap :: Maybe Int
+  -- ^ Set by 'fitFolderPaths' to cap the length of this node's folder name.
   } deriving Show
 
 -- | Reasonable default node options.
 defaultNodeOptions :: NodeOptions
-defaultNodeOptions = NodeOptions 100 True True Nothing
+defaultNodeOptions = NodeOptions 100 True True Nothing Nothing
 
 data SpecCommand context m next where
   Before'' :: {

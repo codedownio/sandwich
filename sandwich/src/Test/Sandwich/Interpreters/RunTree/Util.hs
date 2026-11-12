@@ -48,8 +48,18 @@ maxFileNameLength :: Int
 maxFileNameLength = 150
 
 nodeToFolderName :: String -> Int -> Int -> String
-nodeToFolderName name 1 0 = truncateFileNameToLength maxFileNameLength $ fixupName name
-nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToLength (maxFileNameLength - (L.length padding)) (fixupName name)
+nodeToFolderName = nodeToFolderNameCapped Nothing
+
+-- | Like 'nodeToFolderName', but caps the name part (not the index padding).
+nodeToFolderNameCapped :: Maybe Int -> String -> Int -> Int -> String
+nodeToFolderNameCapped cap name numSiblings indexInParent = padding <> truncateFileNameToLength nameCap (fixupName name)
+  where
+    padding = folderNamePadding numSiblings indexInParent
+    nameCap = maybe id min cap (maxFileNameLength - L.length padding)
+
+folderNamePadding :: Int -> Int -> String
+folderNamePadding 1 _ = ""
+folderNamePadding numSiblings indexInParent = paddedNumber <> "_"
   where
     paddingNeeded
       | numSiblings < 10 = 1
@@ -63,9 +73,6 @@ nodeToFolderName name numSiblings indexInParent = padding <> truncateFileNameToL
       | otherwise = 15
 
     paddedNumber = printf [i|%0#{paddingNeeded :: Int}d|] indexInParent
-
-    padding = if | numSiblings == 1 -> ""
-                 | otherwise -> paddedNumber <> "_"
 
 
 charsToReplace :: [Char]

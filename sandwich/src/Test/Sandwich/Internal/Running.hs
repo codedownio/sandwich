@@ -20,6 +20,7 @@ import System.FilePath
 import Test.Sandwich.Interpreters.FilterTree
 import Test.Sandwich.Interpreters.PruneTree
 import Test.Sandwich.Interpreters.RunTree
+import Test.Sandwich.Interpreters.RunTree.FolderNameLength
 import Test.Sandwich.Interpreters.RunTree.Util
 import Test.Sandwich.Interpreters.StartTree
 import Test.Sandwich.ManagedAsync
@@ -43,6 +44,7 @@ startSandwichTree' baseContext (Options {optionsPruneTree=(unwrapTreeFilter -> p
   runTree <- spec
     & (\tree -> L.foldl' pruneTree tree pruneOpts)
     & (\tree -> L.foldl' filterTree tree filterOpts)
+    & fitFolderPaths baseContext
     & atomically . specToRunTreeVariable baseContext
 
   if | optionsDryRun -> markAllChildrenWithResult runTree baseContext DryRun
