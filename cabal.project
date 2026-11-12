@@ -20,9 +20,9 @@ constraints: transformers-compat < 0.8
 -- everywhere rather than making the solver rediscover this per platform.
 constraints: kubernetes-api -usekatip
 
--- network-3.2.12 exports getHostName from Network.Socket, which clashes with the
+-- network-3.2.10 added getHostName to Network.Socket, which clashes with the
 -- Network.BSD import in HaskellNet-0.6.2 (the latest) and stops it compiling.
-constraints: network < 3.2.12
+constraints: network < 3.2.10
 
 -- We keep tripping the default 4000-backjump limit on Windows: the solver commits to a
 -- dead end early and runs out of budget before it can unwind. The constraints above kill
