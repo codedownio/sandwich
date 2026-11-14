@@ -90,9 +90,4 @@ fixupName = replaceAll charsToReplace '_'
 
 truncateFileNameToLength :: Int -> String -> String
 truncateFileNameToLength len x | L.length x <= len = x
-truncateFileNameToLength len x = "..." <> (takeEnd (len - 3) x)
-
-takeEnd :: Int -> [a] -> [a]
-takeEnd j xs = f xs (L.drop j xs)
-  where f (_:zs) (_:ys) = f zs ys
-        f zs _ = zs
+truncateFileNameToLength len x = L.take (len - 1) x <> "_"

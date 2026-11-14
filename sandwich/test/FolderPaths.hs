@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module FolderPaths where
 
@@ -30,6 +31,17 @@ tests = do
     case L.lookup "does a shallow thing with a fairly long but harmless label" folders of
       Nothing -> expectationFailure "Couldn't find shallow node"
       Just f -> takeFileName f `mustBe` "does a shallow thing with a fairly long but harmless label"
+
+  -- Shortened names keep the start of the label
+  run $ do
+    folders <- getFolders (Just 150)
+    let shortened = [(label, L.init name) | (label, takeFileName -> name) <- folders
+                                          , "_" `L.isSuffixOf` name
+                                          , not (label `L.isSuffixOf` name)]
+    when (L.null shortened) $ expectationFailure "Expected some names to be shortened"
+    forM_ shortened $ \(label, stem) ->
+      unless (L.any (\k -> L.drop k stem `L.isPrefixOf` label) [0..4]) $
+        expectationFailure [i|Expected '#{stem}' to start like '#{label}'|]
 
   -- Siblings stay unique
   run $ do
