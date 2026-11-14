@@ -12,7 +12,6 @@
 * Keep acronyms intact in discovered folder names (#137).
 * `createProcessWithLogging` and `readCreateProcessWithLogging` close the parent's copy of the logging pipe's write end and spawn with `close_fds`, so the log reader reaches EOF when the process exits (avoids hang on Windows).
 * Shorten test folder names to keep paths under Windows' `MAX_PATH`, preserving the tree structure. Configure with `optionsMaxFolderPathLength`/`--max-folder-path-length` (0 disables). It defaults to 200 on Windows, leaving 59 characters for files under `MAX_PATH` (260, including the terminating NUL).
-* Shortened folder names keep the start of the label and end in `_`, rather than keeping the end behind a `...` prefix.
 
 ## 0.3.1.0
 
