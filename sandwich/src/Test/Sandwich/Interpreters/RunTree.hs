@@ -18,7 +18,8 @@ import Data.Foldable (toList)
 import Data.Functor.Identity
 import qualified Data.List as L
 import qualified Data.Map as M
-import Data.Sequence as Seq
+import Data.Sequence ((|>))
+import qualified Data.Sequence as Seq
 import GHC.Stack
 import Lens.Micro
 import Lens.Micro.TH
