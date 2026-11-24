@@ -297,6 +297,7 @@ executable sandwich-test
       Introduce
       IntroduceWith
       TestUtil
+      UnicodeLabels
       Paths_sandwich
   hs-source-dirs:
       test
@@ -367,6 +368,7 @@ test-suite sandwich-test-suite
       Introduce
       IntroduceWith
       TestUtil
+      UnicodeLabels
       Paths_sandwich
   hs-source-dirs:
       test

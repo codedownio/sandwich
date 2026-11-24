@@ -116,7 +116,7 @@ import qualified Options.Applicative as OA
 import System.Environment
 import System.Exit
 import System.FilePath
-import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose)
+import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose, hGetEncoding, hSetEncoding, stdout, stderr)
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
@@ -164,6 +164,8 @@ runSandwichWithCommandLineArgs baseOptions = runSandwichWithCommandLineArgs' bas
 -- The options will become available as a test context, which you can access by calling 'getCommandLineOptions'.
 runSandwichWithCommandLineArgs' :: forall a. (Typeable a) => Options -> Parser a -> TopSpecWithOptions' a -> IO ()
 runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
+  useUtf8Encodings
+
   (clo, individualTestParser, modulesAndShorthands) <- parseCommandLineArgs' userOptionsParser spec
   (options, repeatCount) <- liftIO $ addOptionsFromArgs baseOptions clo
 
@@ -225,6 +227,8 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 -- may also include other nodes like "introduce" nodes).
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
+  useUtf8Encodings
+
   let runId = optionsRunId options
   baseContext <- baseContextFromOptions options
 
@@ -244,15 +248,6 @@ runSandwich' maybeCommandLineOptions options spec' = do
         case optionsEventBroadcast options' of
           Just chan -> atomically $ writeTChan chan (NodeEvent now 0 "sandwich" (EventMilestone msg))
           Nothing -> return ()
-
-  -- To prevent weird errors saving files like "commitAndReleaseBuffer: invalid argument (invalid character)",
-  -- especially on Windows
-  -- See https://gitlab.haskell.org/ghc/ghc/issues/8118
-  setLocaleEncoding utf8
-#ifdef mingw32_HOST_OS
-  -- Fix Windows console output. Makes sandwich-hedgehog unicode print properly
-  setConsoleOutputCP 65001
-#endif
 
   -- Wrap the spec in a finalizer for the test timer, when one is present
   let spec = case baseContextTestTimer baseContext of
@@ -383,6 +378,29 @@ runSandwich' maybeCommandLineOptions options spec' = do
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
   return (exitReason, failedItBlocks, failedBlocks)
+
+-- | Use UTF-8 regardless of locale, so non-ASCII test labels work under e.g. @LANG=C@.
+useUtf8Encodings :: IO ()
+useUtf8Encodings = do
+  -- To prevent weird errors saving files like "commitAndReleaseBuffer: invalid argument (invalid character)",
+  -- especially on Windows
+  -- See https://gitlab.haskell.org/ghc/ghc/issues/8118
+  setLocaleEncoding utf8
+
+#ifdef mingw32_HOST_OS
+  -- Fix Windows console output. Makes sandwich-hedgehog unicode print properly
+  setConsoleOutputCP 65001
+#endif
+
+#ifndef mingw32_HOST_OS
+  -- ROUNDTRIP keeps paths that aren't valid UTF-8 working. (Windows paths are UTF-16.)
+  setFileSystemEncoding =<< mkTextEncoding "UTF-8//ROUNDTRIP"
+#endif
+
+  -- The std handles take the locale encoding on first use, which may have been before now
+  forM_ [stdout, stderr] $ \h -> hGetEncoding h >>= \case
+    Just _ -> hSetEncoding h utf8
+    Nothing -> return ()
 
 
 -- | Count the it nodes
