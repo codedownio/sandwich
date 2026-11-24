@@ -6,6 +6,7 @@ import qualified Around
 import qualified Before
 import qualified CancelOnLongExecution
 import qualified Describe
+import qualified EscapedExceptions
 import qualified FolderPaths
 import qualified Introduce
 import qualified IntroduceWith
@@ -21,6 +22,7 @@ main = do
     Before.tests
     CancelOnLongExecution.tests
     Describe.tests
+    EscapedExceptions.tests testRunsDir
     FolderPaths.tests
     Introduce.tests
     IntroduceWith.tests

@@ -285,7 +285,7 @@ runInAsync node ctx action = do
   let asyncName = T.pack [i|node #{runTreeId}, #{runTreeLabel}|]
   startTime <- liftIO getCurrentTime
   mvar <- liftIO newEmptyMVar
-  myAsync <- liftIO $ managedAsyncWithUnmaskAndHandler baseContextRunId asyncName (recordExceptionInStatus runTreeStatus) $ \unmask ->
+  myAsync <- liftIO $ managedAsyncWithUnmaskAndHandler baseContextRunId asyncName (recordExceptionInStatus node) $ \unmask ->
     unmask $ do
       readMVar mvar
       -- Resolve the timing profile now rather than when this node was created, since a lane may
@@ -517,15 +517,20 @@ emitEvent (Options {optionsEventBroadcast = Just chan}) ts nid label evtType =
   atomically $ writeTChan chan (NodeEvent ts nid label evtType)
 emitEvent _ _ _ _ _ = return ()
 
-recordExceptionInStatus :: (MonadIO m) => TVar Status -> SomeException -> m ()
-recordExceptionInStatus status e = do
+-- | Record an exception that escaped a node's runner. Besides the node itself, this finishes any
+-- of its descendants that haven't finished yet: the exception may have cut the node off before it
+-- got to them, and nothing else is going to give them a result.
+recordExceptionInStatus :: (MonadIO m) => RunNode context -> SomeException -> m ()
+recordExceptionInStatus node e = do
   endTime <- liftIO getCurrentTime
   let ret = case fromException e of
         Just (e' :: SomeAsyncException) -> Failure (GotAsyncException Nothing Nothing (SomeAsyncExceptionWithEq e'))
         _ -> case fromException e of
           Just (e' :: FailureReason) -> Failure e'
           _ -> Failure (GotException Nothing Nothing (SomeExceptionWithEq e))
-  liftIO $ atomically $ modifyTVar' status $ \case
+  -- Do the descendants first, so anyone waiting on this node sees a finished subtree
+  liftIO $ markUnfinishedNodesDone node ret
+  liftIO $ atomically $ modifyTVar' (runTreeStatus (runNodeCommon node)) $ \case
     Running {..} -> Done statusStartTime statusSetupFinishTime statusTeardownStartTime endTime ret
     _ -> Done endTime Nothing Nothing endTime ret
 
