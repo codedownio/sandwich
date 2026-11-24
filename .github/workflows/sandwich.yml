@@ -202,6 +202,43 @@ jobs:
           sandwich-webdriver/test_runs
         retention-days: 14
 
+  stack-windows:
+    name: stack / windows / ghc ${{ matrix.ghc }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - ghc: "9.12.2"
+          yaml: "stack-9.12.2.yaml"
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: haskell-actions/setup@v2
+      id: setup-haskell-stack
+      name: Setup Haskell Stack
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        enable-stack: true
+        stack-version: "latest"
+
+    - uses: actions/cache/restore@v5
+      name: Cache restore stack root
+      id: cache-restore
+      with:
+        path: ${{ steps.setup-haskell-stack.outputs.stack-root }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
+    - name: Test (sandwich)
+      run: stack test sandwich --stack-yaml stack/${{matrix.yaml}} --system-ghc
+
+    - uses: actions/cache/save@v5
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.setup-haskell-stack.outputs.stack-root }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.yaml }}-stack
+
   stack:
     name: stack / ghc ${{ matrix.ghc }}
     runs-on: ubuntu-latest
