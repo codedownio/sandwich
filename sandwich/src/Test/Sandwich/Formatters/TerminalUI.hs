@@ -153,7 +153,9 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
         when (V.supportsMode output V.Mouse) $
           liftIO $ V.setMode output V.Mouse True
         return v
+#if !MIN_VERSION_brick(3,1,0)
   initialVty <- liftIO buildVty
+#endif
 
   let updateCurrentTimeForever period = forever $ do
         now <- getCurrentTime
@@ -171,7 +173,11 @@ runApp (TerminalUIFormatter {..}) rts _maybeCommandLineOptions baseContext = do
     withDebugSocket $
     (case terminalUIClockUpdatePeriod of Nothing -> id; Just ts -> \action -> managedWithAsync_ runId "tui-clock-update" (updateCurrentTimeForever ts) action) $
     managedWithAsync_ runId "tui-event-async" eventAsync $
+#if MIN_VERSION_brick(3,1,0)
+    void $ customMain (Just buildVty) (Just eventChan) app initialState
+#else
     void $ customMain initialVty buildVty (Just eventChan) app initialState
+#endif
 
 app :: App AppState AppEvent ClickableName
 app = App {
