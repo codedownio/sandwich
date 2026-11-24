@@ -1,7 +1,9 @@
 # Changelog for sandwich-webdriver
 
-# Unreleased
+# 0.6.0.0
 
+* Add `webDriverResponseMaxLogLength` to `WdOptions`, to limit how much of each WebDriver request and response body is logged. Defaults to 300 characters; `Just 0` turns this logging off and `Nothing` logs bodies in full.
+* BREAKING CHANGE: the `WebDriverBase (ExampleT context m)` instance now requires `HasTestWebDriverContext context`. Code that runs WebDriver commands with only `HasWebDriverSessionContext` in scope needs to add it (or use `WebDriverSessionMonad`).
 * Fix a `wdSessionMap` desync in `closeSession`/`closeAllSessionsExcept`: drop a session from the map only once its WebDriver-side close succeeds, and bound each close with a timeout. Previously an interrupted close could leave `wdSessionMap` out of sync with the driver's session map, causing `SessionNameAlreadyExists` on a later create of the same session name.
 
 # 0.5.0.0
