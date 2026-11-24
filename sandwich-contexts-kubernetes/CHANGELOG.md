@@ -1,15 +1,28 @@
 # Changelog for sandwich-contexts-kubernetes
 
-## Unreleased
+## 0.2.0.0
 
 * Add `Test.Sandwich.Contexts.Kubernetes.MetricsServer` to install the metrics-server (so `kubectl top` / the metrics API work), with configurable manifest source and `--kubelet-insecure-tls`.
 * Add `Test.Sandwich.Contexts.Kubernetes.OOMWatcher` to detect OOMKilled containers, via a streaming pod watch (`withOOMWatcher`) or a one-shot check (`checkForOOMKills`).
-* Add `Test.Sandwich.Contexts.Kubernetes.ResourceWatcher` to record per-pod CPU and memory over a test using `kubectl top`, writing a CSV, peak summaries, and SVG charts. All three watchers default to cluster-wide and can be scoped to a namespace.
+* Add `Test.Sandwich.Contexts.Kubernetes.ResourceWatcher` to record per-pod CPU, memory and network usage over a test by polling the kubelet summary API (no metrics-server needed), writing a CSV, peak summaries, and SVG charts. All three watchers default to cluster-wide and can be scoped to a namespace.
 * Make metrics-server installation on kind clusters configurable via `kindClusterMetricsServer` (defaults on, bumped to v0.7.2) instead of always installing v0.6.4.
 * Clean up leftover container-runtime volumes and per-profile state dirs after tearing down a Minikube cluster.
+* SeaweedFS: install the CSI driver (`seaweedFsCsiDriver`) and a standalone S3 gateway (`seaweedFsS3`), both on by default, and build the operator image with Nix. `SeaweedFSContext` now has the CSI `StorageClass`.
+* BREAKING CHANGE: `seaweedFsImage` is now an `ImageLoadSpec` rather than `Text`.
+* SeaweedFS: add `seaweedFsExtraImages` to preload extra images, and `seaweedFsOperatorImageExpr` to choose the Nix expression for the operator image.
+* SeaweedFS: `SeaweedFSContext` now has the filer JWT signing keys.
+* SeaweedFS: add `fastSeaweedFSOptions` for faster startup, along with the options it uses: `seaweedFsMasterConcurrentStart`, `seaweedFsServerExtraArgs`, and readiness/liveness probe overrides.
+* SeaweedFS: add `seaweedFsFilerConfig` to choose the filer store.
+* Add `minikubeClusterExtraEnv` to set environment variables on every `minikube` invocation.
+* BREAKING CHANGE: `loadImageIfNecessary` and `loadImageIfNecessary'` now return the image name the cluster knows the image by. The SeaweedFS server image is now loaded only if the cluster doesn't have it already.
+* Add `Test.Sandwich.Contexts.Kubernetes.SeaweedFSMini`, a single-pod SeaweedFS without the operator. It starts much faster and provides the same `SeaweedFSContext`.
+* Add `postgresK8SExtraEnv` to pass extra environment variables to the Postgres container.
+* Add `minikubeClusterForceRemove` to tear down a docker-driver cluster by removing its containers instead of running `minikube delete`.
+* `withKubectlLogs` now follows the logs (previously it only captured what was there at startup) and prefixes each line with a timestamp.
 * Fix `withKubectlPortForward` never restarting the forward after it exits, leaving the local port unbound for the rest of the run.
 * Gate the Postgres readiness probe on the pod IP, so it doesn't report ready against the temporary server the entrypoint runs during setup.
 * Retry `minikube image load` when it reports a transient push failure, instead of failing the cluster context outright.
+* BREAKING CHANGE: new fields in `SeaweedFSOptions`, `SeaweedFSContext`, `KindClusterOptions`, `MinikubeClusterOptions`, `PostgresK8SOptions` and `KubernetesClusterType`. Build these by updating the defaults rather than with the constructor.
 
 ## 0.1.3.0
 

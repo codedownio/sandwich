@@ -1,7 +1,11 @@
 # Changelog for sandwich-contexts
 
-## Unreleased
+## 0.3.1.0
 
+* Export `renderDerivationWithPkgs` from `Test.Sandwich.Contexts.Nix`.
+* Add `Test.Sandwich.Contexts.MySQL`, for MySQL/MariaDB via Nix (`introduceMysqlViaNix`), with an option to choose the auth plugin (e.g. `caching_sha2_password`).
+* The TCP-to-Unix-socket proxy now closes the connection when either side closes.
+* Postgres contexts now report `127.0.0.1` instead of `localhost` in `postgresAddress` and `postgresConnString`, so clients don't try IPv6 `::1` first and fail to connect. The TCP-to-Unix-socket proxy now listens on loopback only.
 * Bump `nixpkgsMaster` to a commit from 10/22/2026.
 
 ## 0.3.0.4
