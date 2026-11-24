@@ -10,8 +10,11 @@ import Control.Monad.Logger
 import Control.Monad.Trans.Writer
 import Data.Foldable
 import Data.String.Interpolate
+import Data.Time.Clock.POSIX (getPOSIXTime)
 import GHC.Stack
+import System.Directory
 import System.Exit
+import System.FilePath
 import Test.Sandwich
 import Test.Sandwich.Internal
 import UnliftIO.Exception
@@ -91,6 +94,16 @@ mustBe :: (HasCallStack, Eq a, Show a) => a -> a -> IO ()
 mustBe x y
   | x == y = return ()
   | otherwise = error [i|Expected #{show y} but got #{show x} (#{callStack})|]
+
+getTestRunsDir :: IO FilePath
+getTestRunsDir = (</> "test_runs") <$> getCurrentDirectory
+
+withTempArtifactsDir :: FilePath -> (FilePath -> IO a) -> IO a
+withTempArtifactsDir testRunsDir action = do
+  micros :: Integer <- round . (* 1000000) <$> getPOSIXTime
+  let dir = testRunsDir </> [i|sandwich-test-#{micros}|]
+  createDirectoryIfMissing True dir
+  action dir `finally` removePathForcibly dir
 
 waitUntilRunning :: TVar Status -> IO ()
 waitUntilRunning status = atomically $ do
