@@ -116,7 +116,7 @@ import qualified Options.Applicative as OA
 import System.Environment
 import System.Exit
 import System.FilePath
-import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose, hGetEncoding, hSetEncoding, stdout, stderr)
+import System.IO (hSetBuffering, BufferMode(..), IOMode(..), openFile, hClose, hGetEncoding, hSetEncoding, hPutStrLn, stdout, stderr)
 import Test.Sandwich.ArgParsing
 import Test.Sandwich.Contexts
 import Test.Sandwich.Expectations
@@ -225,6 +225,8 @@ runSandwichWithCommandLineArgs' baseOptions userOptionsParser spec = do
 -- | Run the spec with optional custom 'CommandLineOptions'. When finished, return the exit reason,
 -- the number of "it" nodes which failed, and the total failed nodes (which includes "it" nodes, and
 -- may also include other nodes like "introduce" nodes).
+--
+-- If a formatter throws in 'finalizeFormatter', the exception is rethrown once the run has shut down.
 runSandwich' :: Maybe (CommandLineOptions ()) -> Options -> CoreSpec -> IO (ExitReason, Int, Int)
 runSandwich' maybeCommandLineOptions options spec' = do
   useUtf8Encodings
@@ -324,19 +326,25 @@ runSandwich' maybeCommandLineOptions options spec' = do
   finalResults :: [Either E.SomeException ()] <- forM formatterAsyncs $ E.try . wait
   let failures = lefts finalResults
   unless (null failures) $
-    putStrLn [i|Some formatters failed: '#{failures}'|]
+    hPutStrLn stderr [i|Some formatters failed: '#{failures}'|]
   milestone "formatters finished"
 
-  -- Run finalizeFormatter method on formatters
+  -- Run finalizeFormatter method on formatters. A failure here shouldn't stop us from shutting
+  -- down cleanly, so hold on to it and rethrow at the end.
   milestone [i|finalizing formatters: #{optionsFormatters options'}|]
-  forM_ (optionsFormatters options') $ \(SomeFormatter f) -> do
+  finalizeFailures <- fmap catMaybes $ forM (optionsFormatters options') $ \(SomeFormatter f) -> do
     milestone [i|finalizing formatter: #{f}|]
 
     let loggingFn = case baseContextRunRoot baseContext of
           Nothing -> flip runLoggingT (\_ _ _ _ -> return ())
           Just rootPath -> runFileLoggingT (rootPath </> (formatterName f) <.> "log")
 
-    loggingFn $ finalizeFormatter f rts baseContext
+    tryAny (loggingFn $ finalizeFormatter f rts baseContext) >>= \case
+      Right () -> return Nothing
+      Left e -> do
+        milestone [i|formatter failed to finalize: #{formatterName f}: #{e}|]
+        hPutStrLn stderr [i|Formatter '#{formatterName f}' failed to finalize: #{e}|]
+        return (Just e)
 
   milestone "fixing tree"
   fixedTree <- atomically $ mapM fixRunTree rts
@@ -377,6 +385,10 @@ runSandwich' maybeCommandLineOptions options spec' = do
   exitReason <- readIORef exitReasonRef
   let failedItBlocks = countWhere isFailedItBlock fixedTree
   let failedBlocks = countWhere isFailedBlock fixedTree
+
+  -- Now that we've shut down cleanly, fail the run if a formatter failed to finalize
+  forM_ (listToMaybe finalizeFailures) throwIO
+
   return (exitReason, failedItBlocks, failedBlocks)
 
 -- | Use UTF-8 regardless of locale, so non-ASCII test labels work under e.g. @LANG=C@.

@@ -14,6 +14,7 @@
 * Shorten test folder names to keep paths under Windows' `MAX_PATH`, preserving the tree structure. Configure with `optionsMaxFolderPathLength`/`--max-folder-path-length` (0 disables). It defaults to 200 on Windows, leaving 59 characters for files under `MAX_PATH` (260, including the terminating NUL).
 * Fix build with `containers` >= 0.8.1, whose `Data.Sequence` now exports `toList` (#143).
 * Use UTF-8 for file paths and stdout/stderr regardless of locale, so test labels with non-ASCII characters work under e.g. `LANG=C`.
+* Fix a hang after an unexpected exception in a node, and rethrow `finalizeFormatter` errors once the run has shut down instead of aborting the shutdown (#145).
 
 ## 0.3.1.0
 
